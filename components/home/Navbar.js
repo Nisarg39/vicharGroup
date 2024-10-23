@@ -4,12 +4,13 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from'react-redux'
 import { loggedIn, loggedOut } from '../../features/login/LoginSlice'
-import { FaGraduationCap, FaHeartbeat, FaChartLine, FaBook, FaChartBar, FaExchangeAlt } from 'react-icons/fa'
+import { FaGraduationCap, FaHeartbeat, FaChartLine, FaBook, FaChartBar, FaExchangeAlt, FaClipboardCheck, FaFlask, FaCalculator, FaUserTie } from 'react-icons/fa'
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeLink, setActiveLink] = useState('')
   const [isCoursesDropdownOpen, setIsCoursesDropdownOpen] = useState(false)
+  const [isTestSeriesDropdownOpen, setIsTestSeriesDropdownOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
   const isLoggedIn = useSelector(state => state.login.loginStatus)
@@ -30,12 +31,24 @@ const Navbar = () => {
   const closeMenu = () => {
     setIsMenuOpen(false)
     setIsCoursesDropdownOpen(false)
+    setIsTestSeriesDropdownOpen(false)
   }
 
   const toggleCoursesDropdown = (e) => {
     e.preventDefault()
     setIsCoursesDropdownOpen(!isCoursesDropdownOpen)
+    setIsTestSeriesDropdownOpen(false)
     setActiveLink(isCoursesDropdownOpen ? '' : 'courses')
+    if (!isMobile) {
+      closeMenu()
+    }
+  }
+
+  const toggleTestSeriesDropdown = (e) => {
+    e.preventDefault()
+    setIsTestSeriesDropdownOpen(!isTestSeriesDropdownOpen)
+    setIsCoursesDropdownOpen(false)
+    setActiveLink(isTestSeriesDropdownOpen ? '' : 'test-series')
     if (!isMobile) {
       closeMenu()
     }
@@ -75,6 +88,13 @@ const Navbar = () => {
     ]}
   ]
 
+  const testSeriesData = [
+    { name: "JEE", link: "/test-series/jee", icon: <FaGraduationCap /> },
+    { name: "NEET", link: "/test-series/neet", icon: <FaHeartbeat /> },
+    { name: "MHT-CET", link: "/test-series/mht-cet", icon: <FaCalculator /> },
+    { name: "SSC", link: "/test-series/ssc", icon: <FaUserTie /> }
+  ]
+
   return (
     <nav className="bg-white p-4 md:p-5 lg:p-6 relative">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
@@ -95,7 +115,7 @@ const Navbar = () => {
                 <span className='text-[#e96030]'>VICHAR</span>{' '}
                 <span className="text-[#1d77bc] ml-1">GROUP</span>
               </h1>
-              <p className="text-xs text-gray-500 ml-2">Soch Sahi Disha Mein</p>
+              <p className="text-xs text-gray-500 ml-2 italic font-cursive">Soch Sahi Disha Mein</p>
             </div>
           </div>
           <button
@@ -135,9 +155,24 @@ const Navbar = () => {
                   ))}
                 </ul>
               </div>
-              <Link href="/test-series" onClick={() => { closeMenu(); setActiveLink('test-series'); }} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
-                Test Series
-              </Link>
+              <div className="relative group w-full md:w-auto">
+                <a href="#" onClick={toggleTestSeriesDropdown} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
+                  Test Series
+                  <svg className={`w-4 h-4 ml-1 transform ${isTestSeriesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+                <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-48 bg-white rounded-md shadow-lg ${isTestSeriesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)}>
+                  {testSeriesData.map((testSeries, index) => (
+                    <li key={index}>
+                      <Link href={testSeries.link} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#22a1d7] transition duration-200 flex items-center" onClick={closeMenu}>
+                        <span className="mr-2">{testSeries.icon}</span>
+                        {testSeries.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 Gallery
               </Link>

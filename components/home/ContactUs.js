@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa'
+import { FaFacebook, FaInstagram, FaPhone, FaEnvelope, FaMapMarkerAlt, FaYoutube } from 'react-icons/fa'
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -29,22 +29,21 @@ const ContactUs = () => {
         <div className="flex flex-col md:flex-row bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
           <div className="md:w-1/2 bg-gradient-to-br from-[#106fb8] to-[#0d5a94] p-8">
             <h3 className="text-2xl font-bold text-white mb-6">Connect With Us</h3>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-[#106fb8] bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaFacebook /></a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-[#106fb8] bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaTwitter /></a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-pink-600 bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaInstagram /></a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-[#106fb8] bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaLinkedin /></a>
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <a href="https://www.facebook.com/profile.php?id=61565119954603" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-[#106fb8] bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaFacebook /></a>
+              <a href="https://www.instagram.com/vichar_group/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-pink-600 bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaInstagram /></a>
+              <a href="https://youtube.com/@vichargroup" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-xl text-red-600 bg-white hover:bg-gray-100 rounded-full p-3 transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"><FaYoutube /></a>
             </div>
             <div className="space-y-4">
-              <a href="tel:+1234567890" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +1 (234) 567-890</a>
-              <a href="tel:+9876543210" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +9 (876) 543-210</a>
-              <a href="mailto:contact@dummyemail.com" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaEnvelope className="mr-3 text-lg" /> contact@dummyemail.com</a>
+              <a href="tel:+919270189405" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +91 9270189405</a>
+              <a href="tel:+919370954406" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +91 9370954406</a>
+              <a href="mailto:info@vichargroup.com" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaEnvelope className="mr-3 text-lg" /> info@vichargroup.com</a>
               <div className="text-base text-gray-600 flex items-center bg-blue-50 rounded-lg p-3 transition-all duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200">
                 <FaMapMarkerAlt className="mr-3 text-lg" />
                 <address className="not-italic">
-                  123 Main Street, Suite 456<br />
-                  Cityville, State 78901<br />
-                  Country
+                  Shop No. 65, Vichar Education, <br />
+                  Lighthouse, Bibwewadi,<br />
+                  Pune, Maharashtra. 411037
                 </address>
               </div>
             </div>
@@ -103,7 +102,8 @@ const ContactUs = () => {
         </div>
         <div className="mt-10 text-center">
           <a href="/terms-and-conditions" className="text-[#106fb8] hover:text-[#0d5a94] mr-4 text-sm sm:text-base">Terms and Conditions</a>
-          <a href="/privacy-policy" className="text-[#106fb8] hover:text-[#0d5a94] text-sm sm:text-base">Privacy Policy</a>
+          <a href="/privacy-policy" className="text-[#106fb8] hover:text-[#0d5a94] mr-4 text-sm sm:text-base">Privacy Policy</a>
+          <a href="/refund-policy" className="text-[#106fb8] hover:text-[#0d5a94] text-sm sm:text-base">Refund Policy</a>
         </div>
         <div className="mt-3 text-center text-gray-600 text-xs sm:text-sm">
           © {new Date().getFullYear()} Vichar Group. All rights reserved.
