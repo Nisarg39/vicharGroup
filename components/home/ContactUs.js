@@ -21,7 +21,7 @@ const ContactUs = () => {
   }
 
   return (
-    <section className="bg-gray-100 py-20" id='contact-us-section'>
+    <section className="bg-gray-100 py-20 mt-12" id='contact-us-section'>
       <div className="container mx-auto px-4">
         <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-gray-800 leading-tight">Contact Us</h2>
         <p className="text-lg md:text-xl text-gray-700 text-center mb-16 max-w-3xl mx-auto leading-relaxed">We are a passionate team dedicated to delivering high-quality solutions to our clients, with a focus on innovation and customer satisfaction.</p>

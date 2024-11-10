@@ -54,37 +54,18 @@ const Navbar = () => {
     }
   }
 
-  const scrollToAboutUs = (e) => {
-    e.preventDefault()
-    const aboutUsSection = document.getElementById('about-us-section')
-    if (aboutUsSection) {
-      aboutUsSection.scrollIntoView({ behavior: 'smooth' })
-    }
-    setActiveLink('about-us')
-    closeMenu()
-  }
-
-  const scrollToContactUs = (e) => {
-    e.preventDefault()
-    const contactUsSection = document.getElementById('contact-us-section')
-    if (contactUsSection) {
-      contactUsSection.scrollIntoView({ behavior: 'smooth' })
-    }
-    setActiveLink('contact-us')
-    closeMenu()
-  }
 
   const coursesData = [
     { category: "Vichar Education", courses: [
-      { name: "JEE", link: "/course/upsc", icon: <FaGraduationCap /> },
-      { name: "NEET", link: "/course/ssc", icon: <FaHeartbeat /> },
-      { name: "MHT-CET", link: "/course/banking", icon: <FaGraduationCap /> },
-      { name: "11th - 12th", link: "/course/state-psc", icon: <FaBook /> }
+      { name: "JEE", link: "/course/jee", icon: <FaGraduationCap /> },
+      { name: "NEET", link: "/course/neet", icon: <FaHeartbeat /> },
+      { name: "MHT-CET", link: "/course/mht-cet", icon: <FaGraduationCap /> },
+      { name: "FOUNDATION", link: "/course/state-psc", icon: <FaBook /> }
     ]},
     { category: "Vichar Stock Market", courses: [
-      { name: "PRICE ACTION", link: "/course/jee", icon: <FaChartLine /> },
-      { name: "RSI", link: "/course/neet", icon: <FaChartBar /> },
-      { name: "OPTION TRADING", link: "/course/cat", icon: <FaExchangeAlt /> }
+      { name: "PRICE ACTION", link: "/course/stock-market", icon: <FaChartLine /> },
+      { name: "RSI", link: "/course/stock-market", icon: <FaChartBar /> },
+      { name: "OPTION TRADING", link: "/course/stock-market", icon: <FaExchangeAlt /> }
     ]}
   ]
 
@@ -115,7 +96,7 @@ const Navbar = () => {
                 <span className='text-[#e96030]'>VICHAR</span>{' '}
                 <span className="text-[#1d77bc] ml-1">GROUP</span>
               </h1>
-              <p className="text-xs text-gray-500 ml-2 italic font-cursive">Soch Sahi Disha Mein</p>
+              <p className="text-xs text-gray-500 ml-2 italic">Soch Sahi Disha Mein</p>
             </div>
           </div>
           <button
@@ -128,6 +109,9 @@ const Navbar = () => {
           </button>
         </div>
         <div className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto items-start md:items-center bg-white md:bg-transparent shadow-lg md:shadow-none rounded-lg md:rounded-none p-4 md:p-0 absolute md:static left-0 right-0 top-full z-20 transition-all duration-300 ease-in-out`}>
+        <Link href="/about-us" onClick={() => { closeMenu(); setActiveLink('about-us'); }} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
+                About Us
+        </Link>
           {activeLink !== 'login' && (
             <>
               <div className="relative group w-full md:w-auto">
@@ -176,12 +160,9 @@ const Navbar = () => {
               <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 Gallery
               </Link>
-              <a href="#about-us-section" onClick={scrollToAboutUs} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
-                About Us
-              </a>
-              <a href="#contact-us-section" onClick={scrollToContactUs} className={`${activeLink === 'contact-us' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
+              <Link href="/contact-us" onClick={() => { closeMenu(); setActiveLink('contact us'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 Contact Us
-              </a>
+              </Link>
             </>
           )}
           {activeLink === 'login' && (
