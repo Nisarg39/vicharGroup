@@ -7,7 +7,7 @@ export default function Whatyoulearn(){
     const learningPoints = [
         { icon: FaChartLine, title: 'Basics of Stock Market', text: 'Understand the fundamentals, key terms, and mechanics of how the stock market operates.' },
         { icon: FaBriefcase, title: 'Investment Strategies', text: 'Learn about different investment approaches, risk management, and strategies tailored to meet your financial goals.' },
-        { icon: FaChartBar, title: 'Technical Analysis', text: 'Dive into the art of reading charts, patterns, and indicators to make informed trading decisions.' },
+        { icon: FaChartBar, title: 'Technical Analysis', text: 'Dive into the art of reading prices, charts, patterns, and indicators to make informed trading decisions.' },
         { icon: FaSearch, title: 'Fundamental Analysis', text: 'Develop the ability to evaluate a company\'s financial health, assess stock value, and understand how economic factors impact the market.' },
         { icon: FaFolderOpen, title: 'Portfolio Management', text: 'Gain insights into building and managing a diversified portfolio aligned with your risk tolerance and goals.' },
         { icon: FaGamepad, title: 'Real-World Simulations', text: 'Engage in live market simulations and hands-on trading exercises to apply what you learn in a practical setting.' }
