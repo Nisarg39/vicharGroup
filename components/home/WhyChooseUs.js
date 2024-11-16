@@ -5,39 +5,54 @@ function WhyChooseUs() {
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/16675/16675766.gif" alt="Expert Faculty" className="h-12 w-12 md:h-16 md:w-16" />,
             title: "Expert Faculty",
-            description: "Passionate and dedicated physics educators nurture your understanding"
+            description: "Learn from our top-notch faculty who simplify tough concepts, sharpen problem-solving skills, and boost exam confidence."
         },
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/15557/15557664.gif" alt="Innovative Teaching Methods" className="h-12 w-12 md:h-16 md:w-16" />,
-            title: "Innovative Teaching Methods",
-            description: "Select a modern institute with interactive classes, audio-visual aids, and technology integration for better learning."
+            title: "Innovative Teaching Approach",
+            description: "Experience a fresh way of learning with our innovative teaching approach! "
         },
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/15588/15588894.gif" alt="Comprehensive Curriculum" className="h-12 w-12 md:h-16 md:w-16" />,
             title: "Comprehensive Curriculum",
-            description: "Our Physics curriculum is comprehensive and prepares you for exams and beyond."
+            description: "A well-structured, in-depth program covering all subjects from basics to advanced, building a strong foundation and confidence in students."
         },
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/16903/16903721.gif" alt="Interactive Learning" className="h-12 w-12 md:h-16 md:w-16" />,
             title: "Interactive Learning",
-            description: "Our classes are interactive and engaging with hands-on, discussions, and problemsolving sessions, no more boring lectures!"
-        },
-        {
-            icon: <img src="https://cdn-icons-gif.flaticon.com/16059/16059865.gif" alt="Proven Track Record" className="h-12 w-12 md:h-16 md:w-16" />,
-            title: "Proven Track Record",
-            description: "Check the institute's history for successful outcomes as an indicator of its effectiveness."
+            description: "Active, engaging sessions that encourage participation, questions, and hands-on understanding."
         },
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/11545/11545391.gif" alt="Personalized Attention" className="h-12 w-12 md:h-16 md:w-16" />,
             title: "Personalized Attention",
-            description: "We prioritize personal growth with small classes for individualized attention to prevent students from falling behind"
+            description: "This unique facility is extended to all students to clarify  doubts in one-to-one mode even outside the classrooms."
+        },
+        {
+            icon: <img src="https://cdn-icons-gif.flaticon.com/15766/15766768.gif" alt="Flexible Learning Options" className="h-12 w-12 md:h-16 md:w-16" />,
+            title: "Doubt Session",
+            description: "24/7 working Doubt Support System"
+        },
+        {
+            icon: <img src="https://cdn-icons-gif.flaticon.com/12146/12146104.gif" alt="Proven Track Record" className="h-12 w-12 md:h-16 md:w-16" />,
+            title: "Weekly Exam",
+            description: "DPPs,PYQ & Weekly Exam & Exam result analysis."
+        },
+        {
+            icon: <img src="https://cdn-icons-gif.flaticon.com/12743/12743771.gif" alt="Regular Assessments" className="h-12 w-12 md:h-16 md:w-16" />,
+            title: "Study Material",
+            description: "Highly systematic & complete Study Material will be provided to students."
+        },
+        {
+            icon: <img src="https://cdn-icons-gif.flaticon.com/16664/16664316.gif" alt="Career Guidance" className="h-12 w-12 md:h-16 md:w-16" />,
+            title: "Test Series",
+            description: "Simulate the real exam experience with our Vichar Test App."
         }
     ]
 
     const [hoveredIndex, setHoveredIndex] = useState(null)
 
     return (
-        <section className="py-16">
+        <section className="py-16 bg-gradient-to-b from-gray-100 to-gray-200">
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-dark">Why Choose Us</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

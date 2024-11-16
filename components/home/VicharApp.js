@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { IoLogoWhatsapp } from 'react-icons/io'
-import { IoChatbubbleEllipsesOutline } from 'react-icons/io5'
 
 function VicharApp() {
     const [showOptions, setShowOptions] = useState(false)
@@ -29,8 +28,14 @@ function VicharApp() {
                         </a>
                     </>
                 )}
-                <button onClick={toggleOptions} className="rounded-full overflow-hidden w-14 sm:w-14 md:w-16 h-14 sm:h-14 md:h-16 flex justify-center items-center bg-gray-200 shadow-lg">
-                    <IoChatbubbleEllipsesOutline size={36} color="black" className="sm:w-10 sm:h-10" />
+                <button onClick={toggleOptions} className="rounded-full overflow-hidden w-14 sm:w-14 md:w-16 h-14 sm:h-14 md:h-16 flex justify-center items-center bg-gray-200 shadow-lg border border-black">
+                    <Image
+                        src="https://cdn-icons-gif.flaticon.com/15164/15164867.gif"
+                        alt="Chat Icon"
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover"
+                    />
                 </button>
             </div>
         </>

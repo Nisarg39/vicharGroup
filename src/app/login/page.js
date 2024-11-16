@@ -110,7 +110,7 @@ const Login = () => {
                             </div>
                             {passwordError && <p className="text-red-500 text-xs italic mt-1">{passwordError}</p>}
                         </div>
-                        <div className="flex flex-col space-y-4">
+                        <div className="flex flex-col space-y-6">
                             <button
                                 className="bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ef5a2a] hover:to-[#fe9852] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto"
                                 type="submit"

@@ -57,10 +57,10 @@ const Navbar = () => {
 
   const coursesData = [
     { category: "Vichar Education", courses: [
-      { name: "JEE", link: "/course/jee", icon: <FaGraduationCap /> },
-      { name: "NEET", link: "/course/neet", icon: <FaHeartbeat /> },
-      { name: "MHT-CET", link: "/course/mht-cet", icon: <FaGraduationCap /> },
-      { name: "FOUNDATION", link: "/course/state-psc", icon: <FaBook /> }
+      { name: "JEE", link: "/vichar-education/vichar-jee", icon: <FaGraduationCap /> },
+      { name: "NEET", link: "/vichar-education/vichar-neet", icon: <FaHeartbeat /> },
+      { name: "MHT-CET", link: "/vichar-education/vichar-mht-cet", icon: <FaGraduationCap /> },
+      { name: "FOUNDATION", link: "/vichar-education/vichar-foundation", icon: <FaBook /> }
     ]},
     { category: "Vichar Stock Market", courses: [
       { name: "PRICE ACTION", link: "/course/stock-market", icon: <FaChartLine /> },
@@ -112,69 +112,60 @@ const Navbar = () => {
         <Link href="/about-us" onClick={() => { closeMenu(); setActiveLink('about-us'); }} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 About Us
         </Link>
-          {activeLink !== 'login' && (
-            <>
-              <div className="relative group w-full md:w-auto">
-                <a href="#" onClick={toggleCoursesDropdown} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)} className={`${activeLink === 'courses' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
-                  Courses
-                  <svg className={`w-4 h-4 ml-1 transform ${isCoursesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </a>
-                <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-72 bg-white rounded-md shadow-lg ${isCoursesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)}>
-                  {coursesData.map((category, index) => (
-                    <li key={index} className="border-b border-gray-200 last:border-b-0">
-                      <div className="font-bold px-4 py-3 text-sm text-gray-800 bg-gray-50 uppercase">{category.category}</div>
-                      <ul className="py-2">
-                        {category.courses.map((course, courseIndex) => (
-                          <li key={courseIndex}>
-                            <Link href={course.link} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#22a1d7] transition duration-200 flex items-center" onClick={closeMenu}>
-                              <span className="mr-2">{course.icon}</span>
-                              {course.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="relative group w-full md:w-auto">
-                <a href="#" onClick={toggleTestSeriesDropdown} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
-                  Test Series
-                  <svg className={`w-4 h-4 ml-1 transform ${isTestSeriesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </a>
-                <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-48 bg-white rounded-md shadow-lg ${isTestSeriesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)}>
-                  {testSeriesData.map((testSeries, index) => (
-                    <li key={index}>
-                      <Link href={testSeries.link} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#22a1d7] transition duration-200 flex items-center" onClick={closeMenu}>
-                        <span className="mr-2">{testSeries.icon}</span>
-                        {testSeries.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
-                Gallery
-              </Link>
-              <Link href="/contact-us" onClick={() => { closeMenu(); setActiveLink('contact us'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
-                Contact Us
-              </Link>
-            </>
-          )}
-          {activeLink === 'login' && (
-            <Link href="/" onClick={() => { closeMenu(); setActiveLink('home'); }} className={`${activeLink === 'home' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
-              Home
-            </Link>
-          )}
+          <div className="relative group w-full md:w-auto">
+            <a href="#" onClick={toggleCoursesDropdown} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)} className={`${activeLink === 'courses' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
+              Courses
+              <svg className={`w-4 h-4 ml-1 transform ${isCoursesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </a>
+            <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-72 bg-white rounded-md shadow-lg ${isCoursesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)}>
+              {coursesData.map((category, index) => (
+                <li key={index} className="border-b border-gray-200 last:border-b-0">
+                  <div className="font-bold px-4 py-3 text-sm text-gray-800 bg-gray-50 uppercase">{category.category}</div>
+                  <ul className="py-2">
+                    {category.courses.map((course, courseIndex) => (
+                      <li key={courseIndex}>
+                        <Link href={course.link} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#22a1d7] transition duration-200 flex items-center" onClick={closeMenu}>
+                          <span className="mr-2">{course.icon}</span>
+                          {course.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="relative group w-full md:w-auto">
+            <a href="#" onClick={toggleTestSeriesDropdown} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
+              Test Series
+              <svg className={`w-4 h-4 ml-1 transform ${isTestSeriesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </a>
+            <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-48 bg-white rounded-md shadow-lg ${isTestSeriesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsTestSeriesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsTestSeriesDropdownOpen(false)}>
+              {testSeriesData.map((testSeries, index) => (
+                <li key={index}>
+                  <Link href={testSeries.link} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#22a1d7] transition duration-200 flex items-center" onClick={closeMenu}>
+                    <span className="mr-2">{testSeries.icon}</span>
+                    {testSeries.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
+            Gallery
+          </Link>
+          <Link href="/contact-us" onClick={() => { closeMenu(); setActiveLink('contact us'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
+            Contact Us
+          </Link>
           <div className="w-full md:w-auto">
             {isLoggedIn ? 
               <span className="text-black px-4 py-3 rounded-md block w-full text-left md:text-center md:whitespace-nowrap">Log Out</span>
             : 
-              <Link href="/login" onClick={() => { closeMenu(); setActiveLink('login'); }} className={`${activeLink === 'login' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
+              <Link href="/login" className={`${activeLink === 'login' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 Log In
               </Link>
             }
