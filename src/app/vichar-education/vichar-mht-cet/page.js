@@ -3,7 +3,7 @@ import MhtCetInfo from "../../../../components/vicharEducation/mht-cet/MhtCetInf
 import MhtCetAnswerMarking from "../../../../components/vicharEducation/mht-cet/MhtCetAnswerMarking"
 import MhtConclusion from "../../../../components/vicharEducation/mht-cet/MhtConclusion"
 import StudentEnquiryForm from "../../../../components/home/StudentEnquiryForm"
-import NeetTestimonials from "../../../../components/vicharEducation/Neet/NeetTestimonials"
+import NeetTestimonials from "../../../../components/vicharEducation/neet/NeetTestimonials"
 const Contact = () => {
     
     return (

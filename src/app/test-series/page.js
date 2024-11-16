@@ -1,6 +1,6 @@
 import JeeHero from "../../../components/vicharEducation/jee/JeeHero"
 import MhtCetHero from "../../../components/vicharEducation/mht-cet/MhtCetHero"
-import NeetHero from "../../../components/vicharEducation/Neet/NeetHero"
+import NeetHero from "../../../components/vicharEducation/neet/NeetHero"
 import FoundationCourses from "../../../components/vicharEducation/vicharFoundation/FoundationCourses"
 import StudentEnquiryForm from "../../../components/home/StudentEnquiryForm"
 const Home = () => {
