@@ -1,7 +1,7 @@
 import NeetHero from "../../../../components/vicharEducation/Neet/NeetHero"
-import NeetInfo from "../../../../components/vicharEducation/neet/NeetInfo"
-import NeetAnswerMarking from "../../../../components/vicharEducation/neet/NeetAnswerMarking"
-import NeetConclusion from "../../../../components/vicharEducation/neet/NeetConclusion"
+import NeetInfo from "../../../../components/vicharEducation/Neet/NeetInfo"
+import NeetAnswerMarking from "../../../../components/vicharEducation/Neet/NeetAnswerMarking"
+import NeetConclusion from "../../../../components/vicharEducation/Neet/NeetConclusion"
 import StudentEnquiryForm from "../../../../components/home/StudentEnquiryForm"
 import NeetTestimonials from "../../../../components/vicharEducation/Neet/NeetTestimonials"
 const Contact = () => {
