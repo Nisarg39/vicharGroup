@@ -45,7 +45,7 @@ const ContactUs = () => {
               <div className="text-base text-gray-600 flex items-center bg-blue-50 rounded-lg p-3 transition-all duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200">
                 <FaMapMarkerAlt className="mr-3 text-lg" />
                 <address className="not-italic">
-                  Shop No. 65, Vichar Education, <br />
+                  Office No. 65, Vichar Education, <br />
                   Lighthouse, Bibwewadi,<br />
                   Pune, Maharashtra. 411037
                 </address>

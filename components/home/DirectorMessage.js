@@ -6,7 +6,7 @@ function DirectorMessage() {
 
     const directorPoints = [
         {
-            text: "To all aspiring candidates with big dreams, remember that success is a journey that begins with the right start. If your goal is to crack competitive exams like NEET, IIT-JEE, AIIMS, FOUNDATION or to gain a solid foundation in the Stock Market, Vichar Group is here to guide you every step of the way."
+            text: "To all aspiring candidates with big dreams, remember that success is a journey that begins with the right start. If your goal is to crack competitive exams like NEET, IIT-JEE, MHT-CET, FOUNDATION or to gain a solid foundation in the Stock Market, Vichar Group is here to guide you every step of the way."
         },
         {
             text: "These exams require dedication, hard work, and the right guidance, and at Vichar Group, we are committed to helping each student reach their full potential. For us, success goes beyond simply qualifying in tough exams; it's about building a deep understanding and a strong foundation in the subjects, ensuring that you thrive not only in exams but throughout your career."
@@ -49,7 +49,7 @@ function DirectorMessage() {
                         </div>
                         <div className="w-full md:w-2/3">
                             <div className="bg-white p-6 rounded-lg shadow-md">
-                                <div ref={scrollRef} className="h-48 overflow-y-auto mb-4 pr-4 flex items-center justify-center" style={{ scrollbarWidth: 'thin', scrollbarColor: '#106fb8 #f1f1f1' }}>
+                                <div ref={scrollRef} className="h-48 overflow-y-auto mb-4 pr-4 flex items-center justify-center pt-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#106fb8 #f1f1f1' }}>
                                     <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">{directorPoints[activeIndex].text}</p>
                                 </div>
                                 <div className="flex justify-between items-center mt-6">

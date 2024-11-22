@@ -38,14 +38,26 @@ export default function JeeInfo(){
                             <td className="border border-gray-300 px-4 py-3">Physics: 20<br/>Chemistry: 20<br/>Mathematics: 20</td>
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+                            <td className="border border-gray-300 px-4 py-3 font-semibold">Sections B (Numerical Value)</td>
+                            <td className="border border-gray-300 px-4 py-3">Physics: 5<br/>Chemistry: 5<br/>Mathematics: 5</td>
+                        </tr>
+                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
+                            <td className="border border-gray-300 px-4 py-3 font-semibold">Number of Questions</td>
+                            <td className="border border-gray-300 px-4 py-3">75 (25 questions from each subject)</td>
+                        </tr>
+                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+                            <td className="border border-gray-300 px-4 py-3 font-semibold">Total Marks</td>
+                            <td className="border border-gray-300 px-4 py-3">300 (100 marks for each subject)</td>
+                        </tr>
+                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Question Types</td>
                             <td className="border border-gray-300 px-4 py-3">MCQs and Numerical Value Questions</td>
                         </tr>
-                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
+                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Negative Marking</td>
                             <td className="border border-gray-300 px-4 py-3">-1 for incorrect MCQs<br/>No negative marking for NVQs</td>
                         </tr>
-                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Medium of Exam</td>
                             <td className="border border-gray-300 px-4 py-3">English, Hindi, and other regional languages</td>
                         </tr>
@@ -55,7 +67,7 @@ export default function JeeInfo(){
                     <h3 className="text-lg font-semibold mb-2">JEE Exam Date:</h3>
                     <p className="mb-4">The JEE exam date will be conducted in two sessions:</p>
                     <ul className="list-disc list-inside mb-4">
-                        <li>Session 1: Every year in the month of January/February</li>
+                        <li>Session 1: Every year in the month of January</li>
                         <li>Session 2: Every year in the month of April</li>
                     </ul>
                     <p className="mb-4">Also, make sure you have all the necessary JEE Main and advanced resources to stay ahead.</p>

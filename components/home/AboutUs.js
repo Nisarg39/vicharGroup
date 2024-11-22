@@ -61,10 +61,6 @@ const AboutUs = () => {
             </ul>
           </div>
         </div>
-        <p className="text-center text-gray-600 mt-12 max-w-2xl mx-auto leading-relaxed">
-          Vichar Group is an educational platform that offers online courses, workshops, and other learning resources.
-          Various courses are available for you to choose from at any time with affordable prices.
-        </p>
       </div>
     </section>
   )

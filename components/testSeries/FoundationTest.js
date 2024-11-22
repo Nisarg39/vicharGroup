@@ -1,9 +1,9 @@
 "use client"
-import React from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-const FoundationCourses = (props) => {
+const FoundationTest = (props) => {
   const courses = [
     { id: 1, title: '8th SSC', level: '8th', image: 'https://cdn-icons-png.flaticon.com/256/2232/2232688.png', link: '/vichar-education' },
     { id: 2, title: '8th CBSE', level: '8th', image: 'https://cdn-icons-png.flaticon.com/256/2232/2232688.png', link: '/vichar-stock-market' },
@@ -27,7 +27,7 @@ const FoundationCourses = (props) => {
         {[coursesGroup1, coursesGroup2, coursesGroup3].map((group, groupIndex) => (
           <div key={groupIndex} className="mb-8 overflow-hidden">
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-800">{group[0].level} Standard - SSC, CBSE, and ICSE</h3>
-            <div className="flex gap-6 min-w-max pb-8 px-8">
+            <div className="flex gap-6 pb-8 px-8">
               {group.map((course) => (
                 <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] flex-shrink-0 w-80 sm:w-64 md:w-auto">
                   <div className="relative h-40 overflow-hidden">
@@ -39,7 +39,7 @@ const FoundationCourses = (props) => {
                     <p className="text-gray-600 mb-4 text-sm">Comprehensive preparation course for {course.level} students.</p>
                     <Link href={course.link} passHref>
                       <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm">
-                        <span className="group-hover:hidden">Explore Course</span>
+                        <span className="group-hover:hidden">Enter Test</span>
                         <span className="hidden group-hover:inline-block">Enroll Now →</span>
                       </button>
                     </Link>
@@ -54,4 +54,4 @@ const FoundationCourses = (props) => {
   )
 }
 
-export default FoundationCourses
+export default FoundationTest
