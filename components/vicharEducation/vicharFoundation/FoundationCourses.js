@@ -25,7 +25,7 @@ const FoundationCourses = (props) => {
       <div className="container mx-auto px-4 py-4 sm:py-8 md:py-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">{props.title}</h2>
         {[coursesGroup1, coursesGroup2, coursesGroup3].map((group, groupIndex) => (
-          <div key={groupIndex} className="mb-8 overflow-hidden">
+          <div key={groupIndex} className="mb-8 overflow-x-auto">
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-800">{group[0].level} Standard - SSC, CBSE, and ICSE</h3>
             <div className="flex gap-6 min-w-max pb-8 px-8">
               {group.map((course) => (

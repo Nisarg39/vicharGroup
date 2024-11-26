@@ -20,9 +20,9 @@ const Courses = () => {
                 <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-2 sm:px-3 py-1 rounded-bl-lg text-xs sm:text-sm font-semibold">{course.level}</div>
               </div>
               <div className="p-4 sm:p-6 md:p-8">
-                <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{course.title}</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed line-clamp-3">{course.description}</p>
-                <div className="flex items-center justify-between mb-4 sm:mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300 text-center">{course.title}</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-2 sm:mb-2 leading-relaxed line-clamp-3">{course.description}</p>
+                <div className="flex items-center justify-between mb-2 sm:mb-2">
                 </div>
                 <Link href={course.link} passHref>
                   <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base">

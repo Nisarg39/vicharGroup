@@ -5,11 +5,11 @@ import ContactUs from "../../../components/home/ContactUs"
 const Contact = () => {
     
     return (
-        <>
+        <section id="about-us" className="pt-24">
             <DirectorMessage />
             <AboutUs />
             <ContactUs />
-        </>
+        </section>
     )
 }
 

@@ -30,7 +30,7 @@ function VicharApp() {
                 )}
                 <button onClick={toggleOptions} className="rounded-full overflow-hidden w-14 sm:w-14 md:w-16 h-14 sm:h-14 md:h-16 flex justify-center items-center bg-gray-200 shadow-lg border border-black">
                     <Image
-                        src="https://cdn-icons-gif.flaticon.com/15164/15164867.gif"
+                        src="https://cdn-icons-gif.flaticon.com/15164/15164893.gif"
                         alt="Chat Icon"
                         width={56}
                         height={56}

@@ -10,7 +10,7 @@ const NeetTest = (props) => {
   ]
 
   return (
-    <div className="bg-gradient-to-b pt-8 sm:pt-12 flex items-center" id='courses-section'>
+    <div className="bg-gradient-to-b pt-8 sm:pt-12 flex items-center pb-16" id='courses-section'>
       <div className="container mx-auto px-4 py-8 sm:py-16 md:py-8">
         <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">{props.title}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -23,12 +23,10 @@ const NeetTest = (props) => {
               <div className="p-6">
                 <h3 className="text-2xl font-bold mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{course.title}</h3>
                 <p className="text-gray-600 mb-6">Comprehensive JEE preparation course for {course.level} students.</p>
-                <Link href={course.link} passHref>
-                  <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
-                    <span className="group-hover:hidden">Enter Test</span>
-                    <span className="hidden group-hover:inline-block">Enroll Now →</span>
-                  </button>
-                </Link>
+                <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
+                  <span className="group-hover:hidden">Enter Test</span>
+                  <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                </button>
               </div>
             </div>
           ))}

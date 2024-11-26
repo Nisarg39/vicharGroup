@@ -1,30 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// Dont use array to store the points because tailwind classes wont work properly if you use array strings
+// for highlighting the points like JEE, NEET, MHT-CET, FOUNDATION
 function DirectorMessage() {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollRef = useRef(null);
 
-    const directorPoints = [
-        {
-            text: "To all aspiring candidates with big dreams, remember that success is a journey that begins with the right start. If your goal is to crack competitive exams like NEET, IIT-JEE, MHT-CET, FOUNDATION or to gain a solid foundation in the Stock Market, Vichar Group is here to guide you every step of the way."
-        },
-        {
-            text: "These exams require dedication, hard work, and the right guidance, and at Vichar Group, we are committed to helping each student reach their full potential. For us, success goes beyond simply qualifying in tough exams; it's about building a deep understanding and a strong foundation in the subjects, ensuring that you thrive not only in exams but throughout your career."
-        },
-        {
-            text: "Vichar Group has earned the trust of both students and parents alike. Our students consistently achieve high ranks in medical and engineering entrance exams, and many go on to successful careers. We are equally dedicated to preparing students for success in the Stock Market, offering them the skills and knowledge to navigate today's financial world confidently."
-        },
-        {
-            text: "We believe every student brings unique potential, and we take special care to support students from all backgrounds, including those from economically underprivileged families, helping them make their dreams a reality. At Vichar Group, we nurture not only academic skills but also personal growth, so every student leaves our institute with the confidence and drive to succeed."
-        }
-    ]
+    const totalPoints = 4;
 
     const handleNext = () => {
-        setActiveIndex((prevIndex) => (prevIndex + 1) % directorPoints.length);
+        setActiveIndex((prevIndex) => (prevIndex + 1) % totalPoints);
     };
 
     const handlePrev = () => {
-        setActiveIndex((prevIndex) => (prevIndex - 1 + directorPoints.length) % directorPoints.length);
+        setActiveIndex((prevIndex) => (prevIndex - 1 + totalPoints) % totalPoints);
     };
 
     useEffect(() => {
@@ -50,15 +39,36 @@ function DirectorMessage() {
                         <div className="w-full md:w-2/3">
                             <div className="bg-white p-6 rounded-lg shadow-md">
                                 <div ref={scrollRef} className="h-48 overflow-y-auto mb-4 pr-4 flex items-center justify-center pt-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#106fb8 #f1f1f1' }}>
-                                    <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">{directorPoints[activeIndex].text}</p>
+                                    {activeIndex === 0 && (
+                                        <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">
+                                            To all aspiring candidates with big dreams, remember that success is a journey that begins with the right start. If your goal is to crack competitive exams like <span className='text-[#e96030] font-semibold'>NEET, IIT-JEE, MHT-CET, FOUNDATION</span> or to gain a solid foundation in the Stock Market, Vichar Group is here to guide you every step of the way.
+                                        </p>
+                                    )}
+                                    {activeIndex === 1 && (
+                                        <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">
+                                            These exams require dedication, hard work, and the right guidance, and at Vichar Group, we are committed to helping each student reach their full potential. For us, success goes beyond simply qualifying in tough exams; it's about building a deep understanding and a strong foundation in the subjects, ensuring that you thrive not only in exams but throughout your career.
+                                        </p>
+                                    )}
+                                    {activeIndex === 2 && (
+                                        <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">
+                                            Vichar Group has earned the trust of both students and parents alike. Our students consistently achieve high ranks in medical and engineering entrance exams, and many go on to successful careers. We are equally dedicated to preparing students for success in the Stock Market, offering them the skills and knowledge to navigate today's financial world confidently.
+                                        </p>
+                                    )}
+                                    {activeIndex === 3 && (
+                                        <p className="text-sm sm:text-base md:text-lg leading-relaxed text-center">
+                                            We believe every student brings unique potential, and we take special care to support students from all backgrounds, including those from economically underprivileged families, helping them make their dreams a reality. At Vichar Group, we nurture not only academic skills but also personal growth, so every student leaves our institute with the confidence and drive to succeed.
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center mt-6">
                                     <button onClick={handlePrev} className="bg-[#106fb8] text-white px-4 py-2 rounded-md hover:bg-[#f8f8f8] hover:text-[#106fb8] transition-colors duration-300">←</button>
                                     <div className="flex">
-                                        {directorPoints.map((_, index) => (
+                                        {[...Array(totalPoints)].map((_, index) => (
                                             <div
                                                 key={index}
-                                                className={`w-3 h-3 rounded-full mx-1 ${index === activeIndex ? 'bg-primary-500' : 'bg-gray-300'}`}
+                                                className={`w-3 h-3 rounded-full mx-1 ${index === activeIndex ? 'bg-[#106fb8]' : 'bg-gray-300'}`}
+                                                onClick={() => setActiveIndex(index)}
+                                                style={{ cursor: 'pointer' }}
                                             ></div>
                                         ))}
                                     </div>

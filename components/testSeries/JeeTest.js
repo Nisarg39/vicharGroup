@@ -22,12 +22,10 @@ const JeeTest = (props) => {
               <div className="p-6">
                 <h3 className="text-2xl font-bold mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{course.title}</h3>
                 <p className="text-gray-600 mb-6">Comprehensive JEE preparation course for {course.level} students.</p>
-                <Link href={course.link} passHref>
-                  <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
-                    <span className="group-hover:hidden">Enter Test</span>
-                    <span className="hidden group-hover:inline-block">Enroll Now →</span>
-                  </button>
-                </Link>
+                <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
+                  <span className="group-hover:hidden">Enter Test</span>
+                  <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                </button>
               </div>
             </div>
           ))}

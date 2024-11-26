@@ -7,14 +7,14 @@ const MhtCetTest = (props) => {
   const [selectedClass, setSelectedClass] = useState('11th')
   
   const courses = [
-    { id: 1, title: 'PCM Course', level: 'PCM', image: 'https://cdn-icons-png.flaticon.com/256/13558/13558061.png', link: '/vichar-education' },
-    { id: 2, title: 'PCB Course', level: 'PCB', image: 'https://cdn-icons-png.flaticon.com/256/9394/9394536.png', link: '/vichar-stock-market' },
+    { id: 1, title: 'PCM', level: 'PCM', image: 'https://cdn-icons-png.flaticon.com/256/13558/13558061.png', link: '/vichar-education' },
+    { id: 2, title: 'PCB', level: 'PCB', image: 'https://cdn-icons-png.flaticon.com/256/9394/9394536.png', link: '/vichar-stock-market' },
   ]
 
   return (
-    <div className="bg-gradient-to-b flex items-center bg-gray-100" id='courses-section'>
+    <div className="bg-gradient-to-b flex items-center bg-gray-100 pb-16" id='courses-section'>
       <div className="container mx-auto px-4 py-8 sm:py-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">{props.title}</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800 mt-8">{props.title}</h2>
         <div className="flex justify-center mb-8">
           <div className="inline-flex rounded-lg border border-[#106fb8] p-1">
             <button
@@ -41,12 +41,10 @@ const MhtCetTest = (props) => {
               <div className="p-6">
                 <h3 className="text-2xl font-bold mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{`${selectedClass} ${course.title}`}</h3>
                 <p className="text-gray-600 mb-6">Comprehensive MHT-CET preparation course for {selectedClass} {course.level} students.</p>
-                <Link href={course.link} passHref>
-                  <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
-                    <span className="group-hover:hidden">Enter Test</span>
-                    <span className="hidden group-hover:inline-block">Enroll Now →</span>
-                  </button>
-                </Link>
+                <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
+                  <span className="group-hover:hidden">Enter Test</span>
+                  <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                </button>
               </div>
             </div>
           ))}

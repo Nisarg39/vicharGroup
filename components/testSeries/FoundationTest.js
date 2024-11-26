@@ -23,11 +23,11 @@ const FoundationTest = (props) => {
   return (
     <div className="bg-gray-100 flex items-center" id='courses-section'>
       <div className="container mx-auto px-4 py-4 sm:py-8 md:py-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800">{props.title}</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800 mt-8 mb-8">{props.title}</h2>
         {[coursesGroup1, coursesGroup2, coursesGroup3].map((group, groupIndex) => (
           <div key={groupIndex} className="mb-8 overflow-hidden">
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-800">{group[0].level} Standard - SSC, CBSE, and ICSE</h3>
-            <div className="flex gap-6 pb-8 px-8">
+            <div className="flex gap-6 pb-8 px-8 overflow-x-auto scrollbar-hide">
               {group.map((course) => (
                 <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] flex-shrink-0 w-80 sm:w-64 md:w-auto">
                   <div className="relative h-40 overflow-hidden">
@@ -37,12 +37,10 @@ const FoundationTest = (props) => {
                   <div className="p-4">
                     <h3 className="text-xl font-bold mb-2 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{course.title}</h3>
                     <p className="text-gray-600 mb-4 text-sm">Comprehensive preparation course for {course.level} students.</p>
-                    <Link href={course.link} passHref>
-                      <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm">
-                        <span className="group-hover:hidden">Enter Test</span>
-                        <span className="hidden group-hover:inline-block">Enroll Now →</span>
-                      </button>
-                    </Link>
+                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm">
+                      <span className="group-hover:hidden">Enter Test</span>
+                      <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                    </button>
                   </div>
                 </div>
               ))}
