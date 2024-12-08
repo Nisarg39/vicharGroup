@@ -14,7 +14,7 @@ const MhtCetTest = (props) => {
   return (
     <div className="bg-gradient-to-b flex items-center bg-gray-100 pb-16" id='courses-section'>
       <div className="container mx-auto px-4 py-8 sm:py-8">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 text-gray-800 mt-8">{props.title}</h2>
+        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">{props.title}</h2>
         <div className="flex justify-center mb-8">
           <div className="inline-flex rounded-lg border border-[#106fb8] p-1">
             <button
@@ -42,7 +42,7 @@ const MhtCetTest = (props) => {
                 <h3 className="text-2xl font-bold mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{`${selectedClass} ${course.title}`}</h3>
                 <p className="text-gray-600 mb-6">Comprehensive MHT-CET preparation course for {selectedClass} {course.level} students.</p>
                 <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-base">
-                  <span className="group-hover:hidden">Enter Test</span>
+                  <span className="group-hover:hidden">Enroll Now</span>
                   <span className="hidden group-hover:inline-block">Enroll Now →</span>
                 </button>
               </div>

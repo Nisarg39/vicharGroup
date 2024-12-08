@@ -7,18 +7,22 @@
           {
               text: "Joining the JEE course at Vichar Education was a game-changer for me! The classes covered everything we needed in a clear and easy-to-understand way, and the practice tests were super close to the actual JEE exam. Taking these tests weekly really helped me get used to the timing and question formats, so I felt less stressed and more prepared.Thanks to the amazing faculty for helping me to achieve my goal.",
               name: "Varad Kongari, IIT Guwahati",
+              gender: "male"
           },
           {
               text: "I loved how well-structured the JEE course was at Vichar Education. The instructors broke down complex topics into simple steps, making even the toughest subjects easier to understand. The regular practice tests were a great boost to my confidence! After each test, I got a detailed report that showed where I was doing well and what I needed to improve. This feedback was so helpful because I could see exactly where to focus my energy.",
               name: "Vidhisha Bhakat IIT Kharagpur",
+              gender: "female"
           },
           {
               text: "Vichar Education's JEE course went beyond just teaching content. The practice tests and time management tips made a huge difference in my preparation. I now know where to focus my time and feel well-prepared for the exam! Thanks to the amazing faculty and well-designed tests, I feel ready to ace JEE!",
               name: "Shrushti Bhakare NIT Nagpur",
+              gender: "female"
           },
           {
               text: "Amazing experience with the Vichar Education JEE course! The Vichar App provides video lectures, DPPs, CPS, and a test series that truly set it apart from other classes. The mock tests, in-depth explanations, and constant feedback really improved my scores over time. If you're serious about JEE, this course is the best for boosting your skills and scores.",
               name: "Heeth Bhandari NIT Durgapur",
+              gender: "male"
           }
       ]
 
@@ -66,12 +70,18 @@
                                           {expandedTestimonials[index] ? 'Read less' : 'Read more'}
                                       </button>
                                   )}
-                                  <div className="flex items-center">
-                                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#1d77bc] rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl mr-3 sm:mr-4 shadow-md">
-                                          {testimonial.name.charAt(0)}
-                                      </div>
+                                  <div className="flex items-center justify-end">
                                       <div>
-                                          <h4 className="font-semibold text-gray-800 text-xs sm:text-sm">{testimonial.name}</h4>
+                                          <h4 className="font-semibold text-gray-800 text-xs sm:text-sm text-right">{testimonial.name}</h4>
+                                      </div>
+                                      <div className="w-10 h-10 sm:w-12 sm:h-12 ml-3 sm:ml-4">
+                                          <img 
+                                              src={testimonial.gender === 'male' 
+                                                  ? 'https://cdn-icons-gif.flaticon.com/17905/17905222.gif' 
+                                                  : 'https://cdn-icons-gif.flaticon.com/17905/17905242.gif'} 
+                                              alt="Avatar"
+                                              className="w-full h-full object-cover rounded-full shadow-md border-2 border-[#1d77bc]"
+                                          />
                                       </div>
                                   </div>
                               </motion.div>

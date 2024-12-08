@@ -4,8 +4,8 @@ import Link from 'next/link'
 
 const Courses = () => {
   const courses = [
-    { id: 1, title: 'Vichar Education', level: '8th - 12th', description: 'Offering comprehensive academic classes for grades 8th-10th, including expert coaching for JEE, NEET, MHT-CET, and 11th-12th boards. It emphasizes building a solid foundation and strategic preparation for competitive exams.', image: 'https://cdn-icons-png.flaticon.com/256/13558/13558061.png', link: '/vichar-education' },
-    { id: 2, title: 'Vichar Stock Market', level: 'Finance', description: 'Dedicated to simplifying stock market trends and strategies for learners at various stages, from beginners to advanced traders.The VICHAR App complements these efforts with interactive lessons and practice tests available anytime, anywhere.', image: 'https://cdn-icons-png.flaticon.com/256/9394/9394536.png', link: '/vichar-stock-market' },
+    { id: 1, title: 'Vichar Education', level: '8th - 12th', description: 'Expert academic coaching for Grades 8-12 and Boards (8th-12th).Specialized preparation for JEE, NEET, and MHT-CET.', image: '/course-photo/foundationStudents.jpg', link: '/vichar-education' },
+    { id: 2, title: 'Vichar Stock Market', level: 'Finance', description: 'Master stock market trends and strategies with our course, tailored for beginners to advanced traders.', image: '/stock-market/stockStudents.jpg', link: '/vichar-stock-market' },
   ]
 
   return (
@@ -16,7 +16,7 @@ const Courses = () => {
           {courses.map((course) => (
             <div key={course.id} className="bg-white rounded-2xl shadow-2xl overflow-hidden transform transition duration-500 hover:scale-105 border border-gray-200 hover:border-[#106fb8] w-full sm:w-[calc(50%-1.25rem)] lg:w-[calc(33.333%-1.5rem)]">
               <div className="relative h-40 sm:h-48 overflow-hidden">
-                <Image src={course.image} alt={course.title} fill style={{objectFit: 'contain'}} className="transition-transform duration-300 hover:scale-110" />
+                <Image src={course.image} alt={course.title} fill style={{objectFit: 'cover'}} className="transition-transform duration-300 hover:scale-110" />
                 <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-2 sm:px-3 py-1 rounded-bl-lg text-xs sm:text-sm font-semibold">{course.level}</div>
               </div>
               <div className="p-4 sm:p-6 md:p-8">

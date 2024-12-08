@@ -45,61 +45,63 @@ export default function MhtCetInfo(){
                     </tbody>
                 </table>
                 <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mt-8 mb-4">MHT CET 2025 Marking Scheme</h2>
-                <table className="w-full mt-4 border-collapse border border-gray-300 shadow-lg rounded-lg overflow-hidden">
-                    <thead>
-                        <tr className="bg-[#1d77bc] text-white">
-                            <th className="border border-gray-300 px-4 py-3 text-left">Paper</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Subject</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left" colSpan="2">No of MCQs based on</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Marks per question</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Total Marks</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Duration in Minutes</th>
-                        </tr>
-                        <tr className="bg-[#1d77bc] text-white">
-                            <th className="border border-gray-300 px-4 py-3 text-left"></th>
-                            <th className="border border-gray-300 px-4 py-3 text-left"></th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Class 11</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left">Class 12</th>
-                            <th className="border border-gray-300 px-4 py-3 text-left"></th>
-                            <th className="border border-gray-300 px-4 py-3 text-left"></th>
-                            <th className="border border-gray-300 px-4 py-3 text-left"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3">Paper-1</td>
-                            <td className="border border-gray-300 px-4 py-3">Mathematics</td>
-                            <td className="border border-gray-300 px-4 py-3">10</td>
-                            <td className="border border-gray-300 px-4 py-3">40</td>
-                            <td className="border border-gray-300 px-4 py-3">2</td>
-                            <td className="border border-gray-300 px-4 py-3">100</td>
-                            <td className="border border-gray-300 px-4 py-3">90</td>
-                        </tr>
-                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3" rowSpan="2">Paper-2</td>
-                            <td className="border border-gray-300 px-4 py-3">Physics</td>
-                            <td className="border border-gray-300 px-4 py-3">10</td>
-                            <td className="border border-gray-300 px-4 py-3">40</td>
-                            <td className="border border-gray-300 px-4 py-3" rowSpan="2">1</td>
-                            <td className="border border-gray-300 px-4 py-3" rowSpan="2">100</td>
-                            <td className="border border-gray-300 px-4 py-3" rowSpan="2">90</td>
-                        </tr>
-                        <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3">Chemistry</td>
-                            <td className="border border-gray-300 px-4 py-3">10</td>
-                            <td className="border border-gray-300 px-4 py-3">40</td>
-                        </tr>
-                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3">Paper-3</td>
-                            <td className="border border-gray-300 px-4 py-3">Biology</td>
-                            <td className="border border-gray-300 px-4 py-3">20</td>
-                            <td className="border border-gray-300 px-4 py-3">80</td>
-                            <td className="border border-gray-300 px-4 py-3">1</td>
-                            <td className="border border-gray-300 px-4 py-3">100</td>
-                            <td className="border border-gray-300 px-4 py-3">90</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div className="w-full overflow-x-auto">
+                    <table className="min-w-full md:w-full mt-4 border-collapse border border-gray-300 shadow-lg rounded-lg overflow-hidden">
+                        <thead>
+                            <tr className="bg-[#1d77bc] text-white">
+                                <th className="border border-gray-300 px-4 py-3 text-left">Paper</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Subject</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left" colSpan="2">No of MCQs based on</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Marks per question</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Total Marks</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Duration in Minutes</th>
+                            </tr>
+                            <tr className="bg-[#1d77bc] text-white">
+                                <th className="border border-gray-300 px-4 py-3 text-left"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-left"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Class 11</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Class 12</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-left"></th>
+                                <th className="border border-gray-300 px-4 py-3 text-left"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
+                                <td className="border border-gray-300 px-4 py-3">Paper-1</td>
+                                <td className="border border-gray-300 px-4 py-3">Mathematics</td>
+                                <td className="border border-gray-300 px-4 py-3">10</td>
+                                <td className="border border-gray-300 px-4 py-3">40</td>
+                                <td className="border border-gray-300 px-4 py-3">2</td>
+                                <td className="border border-gray-300 px-4 py-3">100</td>
+                                <td className="border border-gray-300 px-4 py-3">90</td>
+                            </tr>
+                            <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+                                <td className="border border-gray-300 px-4 py-3" rowSpan="2">Paper-2</td>
+                                <td className="border border-gray-300 px-4 py-3">Physics</td>
+                                <td className="border border-gray-300 px-4 py-3">10</td>
+                                <td className="border border-gray-300 px-4 py-3">40</td>
+                                <td className="border border-gray-300 px-4 py-3" rowSpan="2">1</td>
+                                <td className="border border-gray-300 px-4 py-3" rowSpan="2">100</td>
+                                <td className="border border-gray-300 px-4 py-3" rowSpan="2">90</td>
+                            </tr>
+                            <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
+                                <td className="border border-gray-300 px-4 py-3">Chemistry</td>
+                                <td className="border border-gray-300 px-4 py-3">10</td>
+                                <td className="border border-gray-300 px-4 py-3">40</td>
+                            </tr>
+                            <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
+                                <td className="border border-gray-300 px-4 py-3">Paper-3</td>
+                                <td className="border border-gray-300 px-4 py-3">Biology</td>
+                                <td className="border border-gray-300 px-4 py-3">20</td>
+                                <td className="border border-gray-300 px-4 py-3">80</td>
+                                <td className="border border-gray-300 px-4 py-3">1</td>
+                                <td className="border border-gray-300 px-4 py-3">100</td>
+                                <td className="border border-gray-300 px-4 py-3">90</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-2">MHT-CET Exam Date:</h3>
                     <p className="mb-4">The MHT-CET exam is typically conducted in May each year.</p>

@@ -1,9 +1,13 @@
+"use client"
 import { FaUser, FaEnvelope, FaPhone, FaBook, FaGraduationCap, FaComment } from 'react-icons/fa'
-
+import React from 'react'
 function StudentEnquiryForm() {
+    const [selectedStream, setSelectedStream] = React.useState('')
+
     return (
-        <>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">
+
+        <div className="min-h-screen bg-cover bg-center bg-no-repeat">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">
                 Student Enquiry Form
             </h2>
             <div className="p-4 sm:p-6 md:p-10 rounded-xl shadow-2xl max-w-3xl mx-auto my-4 sm:my-8 md:my-16 bg-white border-t-4 border-[#106fb8] transition-all duration-300 hover:shadow-3xl backdrop-filter backdrop-blur-lg bg-opacity-90">
@@ -31,12 +35,12 @@ function StudentEnquiryForm() {
                             <label htmlFor="stream" className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaBook className="inline mr-2" />Stream
                             </label>
-                            <select id="stream" name="stream" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md">
+                            <select id="stream" name="stream" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" onChange={(e) => setSelectedStream(e.target.value)}>
                                 <option value="">Select a stream</option>
-                                <option value="science">Engineering</option>
-                                <option value="commerce">Medical</option>
-                                <option value="arts">Boards-MHTCET</option>
-                                <option value="arts">Foundation</option>
+                                <option value="engineering">Engineering</option>
+                                <option value="medical">Medical</option>
+                                <option value="boards-mhtcet">Boards-MHTCET</option>
+                                <option value="foundation">Foundation</option>
                             </select>
                         </div>
                         <div className="group relative">
@@ -45,9 +49,19 @@ function StudentEnquiryForm() {
                             </label>
                             <select id="class" name="class" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md">
                                 <option value="">Select a class</option>
-                                <option value="8">Repeater</option>
-                                <option value="9">11th</option>
-                                <option value="10">12th</option>
+                                {selectedStream === 'foundation' ? (
+                                    <>
+                                        <option value="8">8th</option>
+                                        <option value="9">9th</option>
+                                        <option value="10">10th</option>
+                                    </>
+                                ) : (
+                                    <>
+                                        <option value="repeater">Repeater</option>
+                                        <option value="11">11th</option>
+                                        <option value="12">12th</option>
+                                    </>
+                                )}
                             </select>
                         </div>
                     </div>
@@ -65,7 +79,8 @@ function StudentEnquiryForm() {
                     </div>
                 </form>
             </div>
-        </>
+
+        </div>
     )
 }
 export default StudentEnquiryForm

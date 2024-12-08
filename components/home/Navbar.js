@@ -43,10 +43,10 @@ const Navbar = () => {
 
   const coursesData = [
     { category: "Vichar Education", courses: [
-      { name: "JEE", link: "/vichar-education/vichar-jee", icon: <FaGraduationCap /> },
-      { name: "NEET", link: "/vichar-education/vichar-neet", icon: <FaHeartbeat /> },
-      { name: "MHT-CET", link: "/vichar-education/vichar-mht-cet", icon: <FaGraduationCap /> },
-      { name: "FOUNDATION", link: "/vichar-education/vichar-foundation", icon: <FaBook /> }
+      { name: "JEE", link: "/vichar-education/jee", icon: <FaGraduationCap /> },
+      { name: "NEET", link: "/vichar-education/neet", icon: <FaHeartbeat /> },
+      { name: "MHT-CET", link: "/vichar-education/mht-cet", icon: <FaGraduationCap /> },
+      { name: "FOUNDATION", link: "/vichar-education/foundation", icon: <FaBook /> }
     ]},
     { category: "Vichar Stock Market", courses: [
       { name: "PRICE ACTION", link: "/vichar-stock-market", icon: <FaChartLine /> },

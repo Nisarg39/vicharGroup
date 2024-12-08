@@ -27,9 +27,8 @@ const AboutUs = () => {
   ]
 
   return (
-    <section className="bg-gradient-to-b from-gray-100 to-white py-20 pt-28" id='about-us-section'>
+    <section className="pt-8" id='about-us-section'>
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-gray-800 leading-tight">About Us</h2>
         <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:border-2 hover:border-[#106fb8] hover:-translate-y-2">
           <div className="bg-white rounded-lg p-2 sm:p-5 w-full sm:w-auto">
             <ul className="space-y-4 text-gray-600">

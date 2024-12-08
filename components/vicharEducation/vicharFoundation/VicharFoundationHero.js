@@ -11,12 +11,12 @@ const VicharFoundationHero = () => {
     <section className="bg-white min-h-screen flex flex-col items-center justify-center text-center px-4 py-8 mt-8">
       <div className="w-full max-w-3xl mb-8 sm:mt-0">
         <img
-          src="/vicharlogo.png"
+          src="/foundation-students/foundationGroup.jpg"
           alt="Vichar Education Hero"
-          className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] object-contain border border-gray-300"
+          className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] object-cover border border-gray-300"
         />
       </div>
-      <h1 className="text-5xl font-bold text-center mb-8 md:mb-4 text-gray-800">Vichar Education Foundation</h1>
+      <h1 className="text-5xl font-bold text-center mb-8 md:mb-4 text-gray-800">Foundation</h1>
       <div className="max-w-2xl">
         <p className="text-base leading-relaxed mb-4">
           Welcome to Vichar Education Foundation, where we are dedicated to laying a solid foundation for academic excellence and personal growth in students of Classes 8, 9, and 10. Our foundation courses are meticulously designed to go beyond traditional education, creating an environment where young minds are inspired, challenged, and motivated to reach their highest potential.
