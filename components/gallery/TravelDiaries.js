@@ -1,7 +1,20 @@
 "use client"
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 export default function TravelDiaries(){
     const [showMore, setShowMore] = useState(false)
+    const [isSmallScreen, setIsSmallScreen] = useState(false)
+
+    useEffect(() => {
+        setIsSmallScreen(window.innerWidth < 640)
+        
+        const handleResize = () => {
+            setIsSmallScreen(window.innerWidth < 640)
+        }
+
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
     return(
         <section className="p-4 bg-gray-100">
@@ -10,7 +23,7 @@ export default function TravelDiaries(){
                 <div className="col-span-1 sm:col-span-2 row-span-2 rounded-xl overflow-hidden">
                     <img src="/course-photo/foundationStudents.jpg" alt="Featured travel moment" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"/>
                 </div>
-                {(showMore || window.innerWidth >= 640) && (
+                {(showMore || !isSmallScreen) && (
                     <>
                         <div className="rounded-xl overflow-hidden">
                             <img src="/course-photo/neetStudents.jpg" alt="Travel spot 1" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"/>
@@ -24,7 +37,7 @@ export default function TravelDiaries(){
                     </>
                 )}
             </div>
-            {window.innerWidth < 640 && !showMore && (
+            {isSmallScreen && !showMore && (
                 <button 
                     onClick={() => setShowMore(true)}
                     className="mt-4 px-6 py-2 bg-[#1d77bc] text-white rounded-lg hover:bg-blue-700 transition-colors"
