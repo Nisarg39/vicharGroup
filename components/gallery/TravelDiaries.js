@@ -4,18 +4,70 @@ export default function TravelDiaries(){
     return(
         <section className="p-4 bg-gray-100">
             <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2 sm:mb-4 md:mb-6 text-center text-gray-800 tracking-tight">Travel Diaries</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[200px] sm:auto-rows-[250px] md:auto-rows-[300px]">
-                <div className="col-span-1 sm:col-span-2 row-span-2 rounded-xl overflow-hidden relative">
-                    <Image src="/course-photo/foundationStudentsCourse.jpg" alt="Featured travel moment" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" priority className="object-cover hover:scale-105 transition-transform duration-300"/>
+            <div className="grid grid-cols-4 grid-rows-3 gap-4 h-[600px] max-w-6xl mx-auto">
+                <div className="col-span-2 row-span-2 relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/foundationStudentsCourse.jpg"
+                        alt="Travel scene 1"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
                 </div>
-                <div className="rounded-xl overflow-hidden relative">
-                    <Image src="/course-photo/neetStudents.jpg" alt="Travel spot 1" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" className="object-cover hover:scale-105 transition-transform duration-300"/>
+                <div className="col-span-2 relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/neetStudents.jpg"
+                        alt="Travel scene 2"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
                 </div>
-                <div className="rounded-xl overflow-hidden relative">
-                    <Image src="/course-photo/cetStudents.jpg" alt="Travel spot 2" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" className="object-cover hover:scale-105 transition-transform duration-300"/>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/jeeStudents.jpg"
+                        alt="Travel scene 3"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
                 </div>
-                <div className="rounded-xl overflow-hidden col-span-1 sm:col-span-2 relative">
-                    <Image src="/course-photo/jeeStudents.JPG" alt="Travel spot 3" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" className="object-cover hover:scale-105 transition-transform duration-300"/>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/cetStudents.jpg"
+                        alt="Travel scene 4"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/dummyNeetStudents.jpg"
+                        alt="Travel scene 5"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/studentsPicnic.jpeg"
+                        alt="Travel scene 6"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/purpleTstudents.jpg"
+                        alt="Travel scene 7"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="relative rounded-xl overflow-hidden">
+                    <Image
+                        src="/course-photo/blackTstudents.jpg"
+                        alt="Travel scene 8"
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
                 </div>
             </div>
         </section>
