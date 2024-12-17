@@ -53,7 +53,7 @@
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Student Enquiry
+                Student Enquiries
               </button>
               <button
                 onClick={() => fetchContactMessages()}
