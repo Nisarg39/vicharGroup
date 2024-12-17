@@ -2,8 +2,7 @@
 import SignIn from "./SignIn";
 import Dashboard from "./Dashboard";
 import { useEffect, useState } from "react";
-import Modal from "../common/modal";
-import { set } from "mongoose";
+import Modal from "../common/Modal";
 export default function AdminHome() {
 
       const [isAdmin, setIsAdmin] = useState(false);
