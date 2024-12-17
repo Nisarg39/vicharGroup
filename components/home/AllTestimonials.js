@@ -36,7 +36,7 @@
       }
 
       return (
-          <section className="bg-gray-100 py-10 sm:py-20">
+          <section className="bg-gray-100 py-4 sm:py-10">
               <div className="container mx-auto px-4">
                   <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-gray-800 relative">
                       What Our Students Say

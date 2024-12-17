@@ -1,25 +1,36 @@
 import React, { useState } from 'react'
 import { FaFacebook, FaInstagram, FaPhone, FaEnvelope, FaMapMarkerAlt, FaYoutube, FaGooglePlay } from 'react-icons/fa'
+import { contactUs } from '../../server_actions/actions/userActions'
+import Modal from '../common/modal'
 
 const ContactUs = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    mobile: '',
-    message: '',
-    interestArea: ''
-  })
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = (e) => {
+  const [showModal, setShowModal] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [isSuccess, setIsSuccess] = useState(false)
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log(formData)
-    // Reset form after submission
-    setFormData({ name: '', email: '', mobile: '', message: '', interestArea: '' })
+    const formData = new FormData()
+    formData.append('name', e.target.elements.name.value)
+    formData.append('email', e.target.elements.email.value)
+    formData.append('mobile_number', e.target.elements.mobile_number.value)
+    formData.append('interest_area', e.target.elements.interest_area.value)
+    formData.append('message', e.target.elements.message.value)
+
+    try {
+      const result = await contactUs(formData)
+      console.log(result)
+      setIsSuccess(result.success)
+      setModalMessage(result.success ? 'Message sent successfully!' : result.message)
+      if (result.success) {
+        e.target.reset()
+      }
+      setShowModal(true)
+    } catch (error) {
+      setIsSuccess(false)
+      setModalMessage('An error occurred. Please try again later.')
+      setShowModal(true)
+      console.error(error)
+    }
   }
 
   return (
@@ -66,8 +77,6 @@ const ContactUs = () => {
                     type="text"
                     id="name"
                     name="name"
-                    value={formData.name}
-                    onChange={handleChange}
                     required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
                     placeholder="Your name"
@@ -79,8 +88,6 @@ const ContactUs = () => {
                     type="email"
                     id="email"
                     name="email"
-                    value={formData.email}
-                    onChange={handleChange}
                     required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
                     placeholder="your.email@example.com"
@@ -91,9 +98,7 @@ const ContactUs = () => {
                   <input
                     type="tel"
                     id="mobile"
-                    name="mobile"
-                    value={formData.mobile}
-                    onChange={handleChange}
+                    name="mobile_number"
                     required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
                     placeholder="Your mobile number"
@@ -103,17 +108,15 @@ const ContactUs = () => {
                   <label htmlFor="interestArea" className="block text-sm font-medium text-gray-700 mb-1">Interest Area</label>
                   <select
                     id="interestArea"
-                    name="interestArea"
-                    value={formData.interestArea}
-                    onChange={handleChange}
+                    name="interest_area"
                     required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
                   >
                     <option value="">Select an option</option>
-                    <option value="education">Education</option>
-                    <option value="technology">Stock Market</option>
-                    <option value="business">Business</option>
-                    <option value="other">Other</option>
+                    <option value="Education">Education</option>
+                    <option value="Stock Market">Stock Market</option>
+                    <option value="Business">Business</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
@@ -122,8 +125,6 @@ const ContactUs = () => {
                     id="message"
                     name="message"
                     rows="4"
-                    value={formData.message}
-                    onChange={handleChange}
                     required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white resize-none"
                     placeholder="Your message here..."
@@ -139,6 +140,7 @@ const ContactUs = () => {
           </div>
         </div>
       </div>
+      <Modal showModal={showModal} setShowModal={setShowModal} isSuccess={isSuccess} modalMessage={modalMessage} />
     </section>
   )
 }

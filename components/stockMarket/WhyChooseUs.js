@@ -10,7 +10,7 @@ export default function WhyChooseUs() {
     ]
 
     return (
-      <div className="py-8 sm:py-12 md:py-16 px-4 sm:px-6 md:px-8 bg-white-100">
+      <div className="py-8 sm:pt-12 md:pt-16 px-4 sm:px-6 md:px-8 bg-white-100">
         <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-gray-800 leading-tight">Why Choose Us ?</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           {domains.map((domain, index) => (

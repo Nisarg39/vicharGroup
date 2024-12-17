@@ -27,9 +27,8 @@ export default function StockTestimonials() {
     return (
         <section className="bg-gradient-to-b from-gray-100 to-white py-12">
             <div className="container mx-auto px-6">
-                <h2 className="text-5xl font-extrabold text-center mb-20 text-gray-800 relative">
+                <h2 className="text-5xl font-extrabold text-center mb-10 text-gray-800 relative">
                     What Our Students Say
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#1d77bc] mt-4"></span>
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     {testimonials.map((testimonial) => (

@@ -22,12 +22,12 @@ const FoundationCourses = (props) => {
 
   return (
     <div className="bg-gray-100 flex items-center" id='courses-section'>
-      <div className="container mx-auto px-4 py-4 sm:py-8 md:py-8">
-        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">{props.title}</h2>
+      <div className="container mx-auto px-4 sm:py-8 md:py-8">
+        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-2 sm:mt-4 animate-fade-in-down relative">{props.title}</h2>
         {[coursesGroup1, coursesGroup2, coursesGroup3].map((group, groupIndex) => (
           <div key={groupIndex} className="mb-8 overflow-x-auto">
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-800">{group[0].level} Standard - SSC, CBSE, and ICSE</h3>
-            <div className="flex gap-6 min-w-max pb-8 px-8">
+            <div className="flex justify-center gap-6 min-w-max pb-8 px-8">
               {group.map((course) => (
                 <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] flex-shrink-0 w-80 sm:w-64 md:w-auto">
                   <div className="relative h-40 overflow-hidden">

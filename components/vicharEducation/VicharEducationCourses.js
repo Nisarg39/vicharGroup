@@ -48,7 +48,7 @@ export default function VicharEducationCourses() {
     ]
 
     return (
-        <div className="max-w-full mx-auto px-8 pb-20 pt-8 bg-gray-100">
+        <div className="max-w-full mx-auto px-8 pb-10 pt-10 bg-gray-100">
             <h1 className="text-5xl font-bold text-center mb-8 mt-0 text-gray-800">Courses</h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {courses.map((course) => (
