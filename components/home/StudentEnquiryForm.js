@@ -1,7 +1,7 @@
 "use client"
 import { FaUser, FaEnvelope, FaPhone, FaBook, FaGraduationCap, FaComment } from 'react-icons/fa'
 import { studentEnq } from '../../server_actions/actions/userActions'
-import Modal from '../common/modal'
+import Modal from '../common/Modal'
 import React from 'react'
 
 function StudentEnquiryForm() {

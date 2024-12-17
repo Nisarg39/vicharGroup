@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { FaFacebook, FaInstagram, FaPhone, FaEnvelope, FaMapMarkerAlt, FaYoutube, FaGooglePlay } from 'react-icons/fa'
 import { contactUs } from '../../server_actions/actions/userActions'
-import Modal from '../common/modal'
+import Modal from '../common/Modal'
 
 const ContactUs = () => {
   const [showModal, setShowModal] = useState(false)
