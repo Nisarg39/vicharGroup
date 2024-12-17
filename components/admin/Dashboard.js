@@ -5,7 +5,7 @@
   import { ContactUsTable } from './ContactUsTable';
   import ChangePassword from './ChangePassword';
   import { useRouter } from 'next/navigation';
-  import Modal from '../common/modal';
+  import Modal from '../common/Modal';
   export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('enquiry');
     const [showLogoutModal, setShowLogoutModal] = useState(false);

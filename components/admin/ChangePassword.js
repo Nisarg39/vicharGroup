@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { changePassword } from '../../server_actions/actions/adminActions';
-import Modal from '../common/modal';
+import Modal from '../common/Modal';
 
 export default function ChangePassword() {
     const [currentPassword, setCurrentPassword] = useState('');
