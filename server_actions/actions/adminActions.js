@@ -51,7 +51,6 @@ export async function adminLogin(details) {
     }
 }
 export async function getEnquiries(page) {
-    console.log("getEnquiries")
     try {
         connectDB()
         const limit = 10
@@ -60,6 +59,7 @@ export async function getEnquiries(page) {
             .skip(skip)
             .limit(limit)
             .lean()
+            .sort({ createdAt: -1 })
         const totalCount = await EnquiryForm.countDocuments({})
         const serializedEnquiries = enquiries.map(enquiry => ({
             _id: enquiry._id.toString(),
@@ -80,7 +80,6 @@ export async function getEnquiries(page) {
     }
 }
 export async function getContactUs(page) {
-    console.log("getContactUs")
     try {
         connectDB()
         const limit = 10
@@ -89,6 +88,7 @@ export async function getContactUs(page) {
             .skip(skip)
             .limit(limit)
             .lean()
+            .sort({ createdAt: -1 })
         const totalCount = await ContactUs.countDocuments({})
         const serializedContactUs = contactUs.map(contact => ({
             _id: contact._id.toString(),

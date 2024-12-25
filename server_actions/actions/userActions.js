@@ -16,7 +16,8 @@ export  async function studentEnq(formData) {
         await newEnquiry.save()
         return {
             success: true,
-            message: "Enquiry Submitted Successfully"
+            message: "Enquiry Submitted Successfully",
+            data: sortedEnquiries
         }
     } catch (error) {
         // console.log(error)

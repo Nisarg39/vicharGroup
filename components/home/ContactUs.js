@@ -2,13 +2,17 @@ import React, { useState } from 'react'
 import { FaFacebook, FaInstagram, FaPhone, FaEnvelope, FaMapMarkerAlt, FaYoutube, FaGooglePlay } from 'react-icons/fa'
 import { contactUs } from '../../server_actions/actions/userActions'
 import Modal from '../common/Modal'
+import { motion } from 'framer-motion'
 
 const ContactUs = () => {
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
     const formData = new FormData()
     formData.append('name', e.target.elements.name.value)
     formData.append('email', e.target.elements.email.value)
@@ -30,7 +34,19 @@ const ContactUs = () => {
       setModalMessage('An error occurred. Please try again later.')
       setShowModal(true)
       console.error(error)
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const buttonVariants = {
+    loading: {
+      scale: [1, 0.95, 1],
+      transition: {
+        duration: 0.8,
+        repeat: Infinity,
+      },
+    },
   }
 
   return (
@@ -131,9 +147,15 @@ const ContactUs = () => {
                   ></textarea>
                 </div>
                 <div>
-                  <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition duration-300 ease-in-out transform hover:scale-105">
-                    Send Message
-                  </button>
+                  <motion.button
+                    type="submit"
+                    disabled={isLoading}
+                    animate={isLoading ? "loading" : ""}
+                    variants={buttonVariants}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-75"
+                  >
+                    {isLoading ? "Sending..." : "Send Message"}
+                  </motion.button>
                 </div>
               </form>
             </div>

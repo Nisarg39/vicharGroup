@@ -11,14 +11,14 @@ export const ContactUsTable = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const contactHeaders = ['Name', 'Email', 'Mobile', 'Interest Area', 'Message', 'Contacted'];
+  const contactHeaders = ['Date', 'Name', 'Email', 'Mobile', 'Interest Area', 'Message', 'Contacted'];
 
   useEffect(() => {
     const fetchData = async () => {
       const data = await getContactUs(currentPage);
       setContactData(data.contactUs);
       setTotalPages(data.totalPages);
-      console.log(data.contactUs[0].seen);
+      // console.log(data.contactUs[0].seen);
     };
     fetchData();
   }, [currentPage]);
@@ -36,6 +36,10 @@ export const ContactUsTable = () => {
 
   const renderContactRow = (message, index) => (
     <tr key={message.id || index} className={`border-b border-gray-50 last:border-0 ${message.seen ? 'bg-green-50' : ''}`}>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        {new Date(message.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}<br/>
+        {new Date(message.createdAt).toLocaleDateString()}
+      </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{message.name}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{message.email}</td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{message.mobile_number}</td>

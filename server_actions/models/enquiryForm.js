@@ -39,7 +39,9 @@ try {
       type: Boolean,
       default: false,
     },
-  }, { timestamps: true });
+  }, { 
+    timestamps: true ,
+  });
 
   EnquiryForm = mongoose.model('EnquiryForm', enquiryFormSchema);
 }
