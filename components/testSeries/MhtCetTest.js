@@ -7,8 +7,8 @@ const MhtCetTest = (props) => {
   const [selectedClass, setSelectedClass] = useState('11th')
   
   const courses = [
-    { id: 1, title: 'PCM', level: 'PCM', image: 'https://cdn-icons-png.flaticon.com/256/13558/13558061.png', link: '/vichar-education' },
-    { id: 2, title: 'PCB', level: 'PCB', image: 'https://cdn-icons-png.flaticon.com/256/9394/9394536.png', link: '/vichar-stock-market' },
+    { id: 1, title: 'PCM', level: 'PCM', image: '/course-photo/testSeries.jpeg', link: '/vichar-education' },
+    { id: 2, title: 'PCB', level: 'PCB', image: '/course-photo/testSeries.jpeg', link: '/vichar-stock-market' },
   ]
 
   return (
@@ -31,10 +31,10 @@ const MhtCetTest = (props) => {
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="flex flex-row justify-center gap-8">
           {courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] max-w-sm mx-auto">
-              <div className="relative h-48 overflow-hidden">
+            <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] w-72">
+              <div className="relative w-72 h-72 overflow-hidden">
                 <Image src={course.image} alt={course.title} fill style={{objectFit: 'contain'}} className="transition-transform duration-300 hover:scale-105" />
                 <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-3 py-1 rounded-bl-lg text-sm font-semibold">{course.level}</div>
               </div>
