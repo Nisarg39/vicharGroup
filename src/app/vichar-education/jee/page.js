@@ -6,10 +6,12 @@ import JeeConclusion from "../../../../components/vicharEducation/jee/JeeConclus
 import StudentEnquiryForm from "../../../../components/home/StudentEnquiryForm"
 import JeeTestimonials from "../../../../components/vicharEducation/jee/JeeTestimonials"
 import WhyChooseUs from "../../../../components/home/WhyChooseUs"
+import FullScreenBanner from "../../../../components/common/FullScreenBanner"
 const Contact = () => {
     
     return (
         <>
+            <FullScreenBanner />
             <JeeHero title="JEE Preparation Courses"/>
             <JeeInfo />
             <JeeAnswerMarking />

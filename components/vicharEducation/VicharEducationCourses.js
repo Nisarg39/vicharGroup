@@ -11,7 +11,7 @@ export default function VicharEducationCourses() {
             description: "Comprehensive preparation for IIT-JEE Main and Advanced with expert faculty guidance.",
             duration: "4 weeks",
             price: "$99",
-            image: "/course-photo/jeeStudents.JPG",
+            image: "/course-photo/jeeIcon.jpeg",
             difficulty: "11th - 12th",
             link: "/vichar-education/jee"
         },
@@ -21,7 +21,7 @@ export default function VicharEducationCourses() {
             description: "Complete medical entrance exam preparation covering Physics, Chemistry, and Biology.",
             duration: "6 weeks",
             price: "$149",
-            image: "/course-photo/neetStudents.JPG",
+            image: "/course-photo/neetIcon.jpeg",
             difficulty: "11th - 12th",
             link: "/vichar-education/neet"
         },
@@ -31,7 +31,7 @@ export default function VicharEducationCourses() {
             description: "Specialized coaching for Maharashtra Common Entrance Test with focus on state syllabus.",
             duration: "8 weeks",
             price: "$199",
-            image: "/course-photo/cetStudents.JPG",
+            image: "/course-photo/cetIcon.jpeg",
             difficulty: "11th - 12th",
             link: "/vichar-education/mht-cet"
         },
@@ -41,7 +41,7 @@ export default function VicharEducationCourses() {
             description: "Strong academic foundation for competitive exams with early preparation advantage.",
             duration: "10 weeks",
             price: "$299",
-            image: "/course-photo/foundationStudents.jpeg",
+            image: "/course-photo/foundationIcon.jpeg",
             difficulty: "8TH - 10TH",
             link: "/vichar-education/foundation"
         }
