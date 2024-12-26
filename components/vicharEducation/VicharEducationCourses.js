@@ -53,12 +53,12 @@ export default function VicharEducationCourses() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {courses.map((course) => (
                     <div key={course.id} className="bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl border-b-4 border-[#106FB7] flex flex-col">
-                        <div className="relative w-full h-48">
+                        <div className="relative w-full aspect-square">
                             <Image 
                                 src={course.image}
                                 alt={course.title}
                                 fill
-                                className="object-cover"
+                                className="object-contain"
                             />
                         </div>
                         <div className="p-6 pb-2 flex-grow">
