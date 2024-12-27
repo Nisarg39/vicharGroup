@@ -11,7 +11,7 @@ const Contact = () => {
     
     return (
         <>
-            <FullScreenBanner />
+            <FullScreenBanner url="/jee-students/jeeBanner.gif"/>
             <JeeHero title="JEE Preparation Courses"/>
             <JeeInfo />
             <JeeAnswerMarking />
