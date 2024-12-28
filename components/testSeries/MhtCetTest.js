@@ -12,9 +12,8 @@ const MhtCetTest = (props) => {
   ]
 
   return (
-    <div className="bg-gradient-to-b flex items-center bg-gray-100 pb-16" id='courses-section'>
-      <div className="container mx-auto px-4 py-8 sm:py-8">
-        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">{props.title}</h2>
+    <div className="bg-gradient-to-b flex items-center pb-2" id='courses-section'>
+      <div className="container mx-auto px-4 pb-8 sm:pb-8 pt-8">
         <div className="flex justify-center mb-8">
           <div className="inline-flex rounded-lg border border-[#106fb8] p-1">
             <button

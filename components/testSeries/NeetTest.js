@@ -11,8 +11,7 @@ const NeetTest = (props) => {
   return (
     <div className="bg-gradient-to-b pt-4 sm:pt-4 flex items-center pb-16" id='courses-section'>
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">{props.title}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 max-w-xl mx-auto">
           {courses.map((course) => (
             <div key={course.id} className="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8]">
               <div className="relative w-full aspect-square">

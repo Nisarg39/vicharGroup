@@ -9,9 +9,8 @@ const JeeTest = (props) => {
   ]
 
   return (
-    <div className="bg-gradient-to-b pt-16 sm:pt-24 min-h-screen flex items-center" id='courses-section'>
+    <div className="bg-gradient-to-b flex items-center" id='courses-section'>
       <div className="container mx-auto px-4 py-8 sm:py-16 md:py-8">
-        <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-gray-800 leading-tight mt-4 sm:mt-8 animate-fade-in-down relative">{props.title}</h2>
         <div className="flex flex-wrap justify-center gap-6">
           {courses.map((course) => (
             <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] w-[280px]">
