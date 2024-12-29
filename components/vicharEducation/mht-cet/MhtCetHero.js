@@ -4,9 +4,9 @@ import Link from 'next/link'
 
 const MhtCetHero = (props) => {
   const courses = [
-    { id: 1, title: 'PCM Course', level: 'PCM', image: '/course-photo/cetIcon.jpeg', link: '' },
-    { id: 2, title: 'PCB Course', level: 'PCB', image: '/course-photo/cetIcon.jpeg', link: '' },
-    { id: 3, title: 'Integrated Course', level: 'PCM & PCB', image: '/course-photo/cetIcon.jpeg', link: '' },
+    { id: 1, title: 'PCM + PCB Course', level: '11th', image: '/course-photo/cetIcon.jpeg', link: '' },
+    { id: 2, title: 'PCM + PCB Course', level: '12th', image: '/course-photo/cetIcon.jpeg', link: '' },
+    { id: 3, title: 'PCM + PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '' },
   ]
 
   return (

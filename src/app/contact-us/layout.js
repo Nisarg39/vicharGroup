@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Contact Us Vichar Group",
-  description: "Contact Us Vichar Group",
+  title: "Contact Us",
+  description: "Contact Us",
 };
 
 export default function Root({ children }) {

@@ -29,7 +29,7 @@ export default function Home() {
       <WhyChooseUs />
       <AllTestimonials />
       <StudentEnquiryForm />
-      <VicharApp />
+      {/* <VicharApp /> */}
     </>
   );
 }

@@ -63,7 +63,7 @@ export default function NeetInfo(){
                     <h3 className="text-lg font-semibold mb-2">NEET Exam Date:</h3>
                     <p className="mb-4">The NEET exam date will be conducted in the month April or May</p>
                     <p>
-                        <strong>NEET Official Website:</strong> <a href="https://n eet.nta.nic.in" className="text-blue-600 hover:underline">https://jeeadv.ac.in/</a>
+                        <strong>NEET Official Website:</strong> <a href="https://neet.nta.nic.in/" className="text-blue-600 hover:underline">https://neet.nta.nic.in/</a>
                     </p>
                 </div>
                 <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mt-8">NEET Main Exam Pattern: </h2>

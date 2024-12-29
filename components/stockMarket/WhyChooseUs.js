@@ -23,11 +23,6 @@ export default function WhyChooseUs() {
         <div className="bg-gray-100 py-8 sm:py-10 px-4 sm:px-6 mt-12">
           <h3 className="text-2xl sm:text-3xl font-semibold text-center mb-4 text-gray-800">Who Can Join?</h3>
           <p className="text-center text-gray-600 mb-6">Our stock market classes are open to students, professionals, retirees, and anyone eager to understand the intricacies of investing and trading.</p>
-          <div className="text-center">
-            <button className="bg-[#106FB7] text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-300">
-              Enroll Now
-            </button>
-          </div>
         </div>
       </div>
     )

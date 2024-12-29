@@ -4,8 +4,8 @@ import { ReduxProvider } from "./redux-provider";
 import Navbar from "../../components/home/Navbar"
 import Script from "next/script";
 const inter = Inter({ subsets: ["latin"] });
-import Head from 'next/head';
 import Footer from "../../components/home/Footer";
+import VicharApp from "../../components/home/VicharApp";
 export const metadata = {
   title: "Vichar Group",
   description: "Online Learning Platform",
@@ -42,6 +42,7 @@ export default function RootLayout({ children }) {
           <div style={{ paddingTop: 'navbarHeight', marginTop: 'navbarHeight' }}>
             {children}
           </div>
+          <VicharApp />
           <Footer />
         </ReduxProvider>
       </body>

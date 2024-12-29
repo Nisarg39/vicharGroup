@@ -57,10 +57,13 @@ function DirectorMessage() {
                                         <div className="absolute inset-0 bg-primary-200 rounded-2xl transform rotate-6 group-hover:rotate-12 transition-transform duration-300"></div>
                                         <img src="/vivekSir2.png" alt="Director" className="w-full h-full object-contain rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-primary-500" />
                                     </div>
-                                    <p className="font-bold text-3xl sm:text-3xl md:text-3xl lg:text-3xl text-primary-900">
+                                    <p className="font-bold text-4xl sm:text-4xl md:text-4xl lg:text-4xl text-primary-900">
                                         Vivek Gupta
                                     </p>
-                                    <p className="text-gray-500 text-xs sm:text-sm md:text-base font-medium bg-primary-100 inline-block rounded-full">( BTech IIT Madras )</p>
+                                    <p className="text-gray-600 text-base md:text-lg font-medium">
+                                        Director and Founder
+                                    </p>
+                                    <p className="text-gray-500 text-xs sm:text-sm font-medium bg-primary-100 inline-block rounded-full">( BTech IIT Madras )</p>
                                 </div>
                                 <div className="w-full md:w-2/2">
                                     <div 

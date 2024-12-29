@@ -27,7 +27,7 @@ const Courses = () => {
                 <Link href={course.link} passHref>
                   <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base">
                     <span className="group-hover:hidden">Learn More</span>
-                    <span className="hidden group-hover:inline-block">Start Learning →</span>
+                    <span className="hidden group-hover:inline-block">Explore Now →</span>
                   </button>
                 </Link>
               </div>

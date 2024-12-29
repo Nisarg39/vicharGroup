@@ -5,6 +5,7 @@ import ContactUs from "../models/contactUs"
 export  async function studentEnq(formData) {
     try {
         await connectDB()
+        // console.log(formData)
         const newEnquiry = new EnquiryForm({
             fullName: formData.get('fullName'),
             email: formData.get('email'),
@@ -17,7 +18,6 @@ export  async function studentEnq(formData) {
         return {
             success: true,
             message: "Enquiry Submitted Successfully",
-            data: sortedEnquiries
         }
     } catch (error) {
         // console.log(error)

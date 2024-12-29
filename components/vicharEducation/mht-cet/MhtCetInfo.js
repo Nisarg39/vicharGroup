@@ -36,7 +36,7 @@ export default function MhtCetInfo(){
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Total Marks</td>
-                            <td className="border border-gray-300 px-4 py-3">300 Marks</td>
+                            <td className="border border-gray-300 px-4 py-3">150 Marks</td>
                         </tr>
                         <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Medium of Exam</td>
