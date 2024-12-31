@@ -12,7 +12,7 @@ export  async function studentEnq(formData) {
             mobile: formData.get('mobile'),
             stream: formData.get('stream'),
             class: formData.get('class'),
-            message: formData.get('message'),
+            message: formData.get('message') || "No Message",
         })
         await newEnquiry.save()
         return {
@@ -21,16 +21,9 @@ export  async function studentEnq(formData) {
         }
     } catch (error) {
         // console.log(error)
-        if (error.code === 11000) {
-            return {
-                success: false,
-                message: "Enquiry Already Exists"
-            }
-        }else{
-            return {
-                success: false,
-                message: "Enquiry Submission Failed"
-            }
+        return {
+            success: false,
+            message: "Enquiry Submission Failed"
         }
     }
 }
@@ -44,7 +37,7 @@ export async function contactUs(formdata) {
             email: formdata.get('email'),
             mobile_number: formdata.get('mobile_number'),
             interest_area: formdata.get('interest_area'),
-            message: formdata.get('message'),
+            message: formdata.get('message') || "No Message",
         })
         await newContact.save()
         return {
@@ -53,17 +46,10 @@ export async function contactUs(formdata) {
         }
     }catch(error){
         // console.log(error)
-        if (error.code === 11000) {
-            return {
-                success: false,
-                message: "Contact Already Exists"
-            }
-        }else{
             return {
                 success: false,
                 message: "Contact Submission Failed"
             }
         }
-    }
 }
 

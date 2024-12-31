@@ -22,6 +22,7 @@ function StudentEnquiryForm() {
         formData.append('stream', e.target.stream.value)
         formData.append('class', e.target.class.value)
         formData.append('message', e.target.message.value)
+        
         const result = await studentEnq(formData)
         setIsSuccess(result.success)
         setModalMessage(result.success ? 'Enquiry submitted successfully!' : result.message)
@@ -32,6 +33,15 @@ function StudentEnquiryForm() {
         setShowModal(true)
         setIsLoading(false)
         return
+    }
+
+    const handleMobileInput = (e) => {
+        const value = e.target.value.replace(/\D/g, '')
+        if (value.length <= 10) {
+            e.target.value = value
+        } else {
+            e.target.value = value.slice(0, 10)
+        }
     }
 
     return (
@@ -74,7 +84,16 @@ function StudentEnquiryForm() {
                             <label htmlFor="mobile" className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaPhone className="inline mr-2 transform scale-x-[-1]" />Mobile Number
                             </label>
-                            <input type="tel" id="mobile" name="mobile" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" />
+                            <input 
+                                type="tel" 
+                                id="mobile" 
+                                name="mobile" 
+                                required 
+                                pattern="[0-9]{10}"
+                                maxLength="10"
+                                onInput={handleMobileInput}
+                                className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" 
+                            />
                         </div>
                         <div className="group relative">
                             <label htmlFor="stream" className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
@@ -114,7 +133,7 @@ function StudentEnquiryForm() {
                         <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                             <FaComment className="inline mr-2" />Message
                         </label>
-                        <textarea id="message" name="message" rows="4" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white resize-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md"></textarea>
+                        <textarea id="message" name="message" rows="4" className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 hover:bg-white resize-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md"></textarea>
                     </div>
                     <div className="flex justify-center">
                         <motion.button 

@@ -27,7 +27,6 @@ try {
     },
     message: {
       type: String,
-      required: true,
     },
     seen:  {
       type: Boolean,

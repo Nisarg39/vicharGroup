@@ -61,6 +61,7 @@ export async function getEnquiries(page) {
             .lean()
             .sort({ createdAt: -1 })
         const totalCount = await EnquiryForm.countDocuments({})
+        const unseenCount = await EnquiryForm.countDocuments({ seen: false })
         const serializedEnquiries = enquiries.map(enquiry => ({
             _id: enquiry._id.toString(),
             ...enquiry,
@@ -69,7 +70,9 @@ export async function getEnquiries(page) {
             success: true,
             enquiries: serializedEnquiries,
             totalPages: Math.ceil(totalCount / limit),
-            currentPage: page
+            currentPage: page,
+            totalCount,
+            unseenCount
         }
     } catch (error) {
         console.log(error)
@@ -90,6 +93,7 @@ export async function getContactUs(page) {
             .lean()
             .sort({ createdAt: -1 })
         const totalCount = await ContactUs.countDocuments({})
+        const unseenCount = await ContactUs.countDocuments({ seen: false })
         const serializedContactUs = contactUs.map(contact => ({
             _id: contact._id.toString(),
             ...contact,
@@ -98,7 +102,9 @@ export async function getContactUs(page) {
             success: true,
             contactUs: serializedContactUs,
             totalPages: Math.ceil(totalCount / limit),
-            currentPage: page
+            currentPage: page,
+            totalCount,
+            unseenCount
         }
     } catch (error) {
         console.log(error)
@@ -108,7 +114,6 @@ export async function getContactUs(page) {
         }
     }
 }
-
 export async function changePassword(details) {
     const admin = await Admin.findOne({password: details.currentPassword})
     if (!admin) {

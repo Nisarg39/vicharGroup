@@ -19,7 +19,6 @@ const contactUsSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true,
   },
   seen:  {
     type: Boolean,

@@ -112,10 +112,17 @@ const ContactUs = () => {
                 <div>
                   <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                   <input
-                    type="tel"
+                    type="text"
                     id="mobile"
                     name="mobile_number"
                     required
+                    pattern="[0-9]{10}"
+                    maxLength="10"
+                    onKeyPress={(e) => {
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault()
+                      }
+                    }}
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
                     placeholder="Your mobile number"
                   />
@@ -141,7 +148,6 @@ const ContactUs = () => {
                     id="message"
                     name="message"
                     rows="4"
-                    required
                     className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white resize-none"
                     placeholder="Your message here..."
                   ></textarea>

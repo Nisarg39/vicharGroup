@@ -55,7 +55,7 @@ export default function JeeInfo(){
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Negative Marking</td>
-                            <td className="border border-gray-300 px-4 py-3">-1 for incorrect MCQs<br/>No negative marking for NVQs</td>
+                            <td className="border border-gray-300 px-4 py-3">No Negative marking for unattempted questions and mark for review questions</td>
                         </tr>
                         <tr className="bg-white hover:bg-gray-50 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold">Medium of Exam</td>

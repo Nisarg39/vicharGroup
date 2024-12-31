@@ -12,9 +12,9 @@ const NeetHero = () => {
   return (
     <div className="bg-gradient-to-b flex items-center" id='courses-section'>
       <div className="container mx-auto px-4 py-4 sm:py-8 md:py-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-8">
           {courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] max-w-xs mx-auto">
+            <div key={course.id} className="bg-white rounded-xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] max-w-xs">
               <div className="relative w-full pt-[80%] overflow-hidden">
                 <Image src={course.image} alt={course.title} fill style={{objectFit: 'cover'}} className="transition-transform duration-300 hover:scale-105" />
                 <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-3 py-1 rounded-bl-lg text-sm font-semibold">{course.level}</div>

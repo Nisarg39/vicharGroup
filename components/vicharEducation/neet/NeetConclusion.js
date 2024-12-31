@@ -4,7 +4,7 @@ export default function NeetConclusion() {
             <div className="max-w-3xl mx-auto">
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Conclusion:</h2>
                 <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
-                    The NEET exam pattern provides a comprehensive framework for aspiring engineers and architects to prepare effectively for the exam. Understanding the subject-wise distribution of marks, question types, and marking schemes is crucial for strategic preparation. We have covered all the important and detailed information about the NEET exam pattern. Thoroughly reviewing the exam pattern and utilizing resources such as sample papers and previous years' question papers, candidates can gain a competitive edge and achieve their desired results in the NEET exam.
+                The NEET exam pattern provides a comprehensive framework for aspiring medical and dental students to prepare effectively for the exam. Understanding the subject-wise distribution of marks, question types, and marking schemes is crucial for strategic preparation. We have covered all the important and detailed information about the NEET exam pattern. By thoroughly reviewing the exam pattern and utilizing resources such as sample papers and previous years' question papers, candidates can gain a competitive edge and achieve their desired results in the NEET exam.
                 </p>
                 <h3 className="text-md sm:text-lg font-bold text-gray-900 mt-4 sm:mt-6">Note:</h3>
                 <p className="text-sm sm:text-md text-gray-700 leading-relaxed">

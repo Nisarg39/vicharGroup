@@ -12,12 +12,11 @@ const JeeHero = (props) => {
   return (
     <div className="bg-gradient-to-b min-h-80 pt-4 flex items-center" id='courses-section'>
       <div className="container mx-auto w-full py-4 sm:py-6 md:py-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-wrap justify-center gap-8">
           {courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden transition duration-300 hover:shadow-lg border border-gray-200 hover:border-[#106fb8] max-w-xs mx-auto">
+            <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden transition duration-300 hover:shadow-lg border border-gray-200 hover:border-[#106fb8] max-w-xs">
               <div className="relative w-full pt-[90%] overflow-hidden">
                 <Image src={course.image} alt={course.title} fill style={{objectFit: 'cover'}} className="transition-transform duration-300 hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                 <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-3 py-1.5 rounded-bl-lg text-sm font-semibold">{course.level}</div>
               </div>
               <div className="p-4">
