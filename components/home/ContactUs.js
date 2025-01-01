@@ -24,7 +24,7 @@ const ContactUs = () => {
       const result = await contactUs(formData)
       console.log(result)
       setIsSuccess(result.success)
-      setModalMessage(result.success ? 'Message sent successfully!' : result.message)
+      setModalMessage(result.message)
       if (result.success) {
         e.target.reset()
       }

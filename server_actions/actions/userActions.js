@@ -17,7 +17,7 @@ export  async function studentEnq(formData) {
         await newEnquiry.save()
         return {
             success: true,
-            message: "Enquiry Submitted Successfully",
+            message: "Thank You for Contacting Us, we will get back to you soon",
         }
     } catch (error) {
         // console.log(error)
@@ -42,7 +42,7 @@ export async function contactUs(formdata) {
         await newContact.save()
         return {
             success: true,
-            message: "Contact Us Submitted Successfully"
+            message: "Thank You for Contacting Us, we will get back to you soon",
         }
     }catch(error){
         // console.log(error)

@@ -22,10 +22,10 @@ function StudentEnquiryForm() {
         formData.append('stream', e.target.stream.value)
         formData.append('class', e.target.class.value)
         formData.append('message', e.target.message.value)
-        
+
         const result = await studentEnq(formData)
         setIsSuccess(result.success)
-        setModalMessage(result.success ? 'Enquiry submitted successfully!' : result.message)
+        setModalMessage(result.message)
         if (result.success) {
             e.target.reset()
             setSelectedStream('')
