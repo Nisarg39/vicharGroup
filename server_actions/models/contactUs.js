@@ -28,6 +28,10 @@ const contactUsSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  followUpNote: {
+    type: String,
+    default: "Enter Follow Up Note",
+  }
 }, { timestamps: true });
 
 const ContactUs = mongoose.models.ContactUs || mongoose.model('ContactUs', contactUsSchema);

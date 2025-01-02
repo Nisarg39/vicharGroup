@@ -11,7 +11,7 @@ export default function MhtCetAnswerMarking() {
                     </li>
                     <li className="flex items-start">
                         <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>
-                        <span>Correct answer: Award two marks (+2).</span>
+                        <span>Correct answer: (+2) marks for Maths and (+1) mark for Physics, Chemistry and Biology.</span>
                     </li>
                     <li className="flex items-start">
                         <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>
@@ -36,7 +36,7 @@ export default function MhtCetAnswerMarking() {
                     </li>
                     <li className="flex items-start">
                         <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>
-                        <span>Each correct answer carries 2 marks.</span>
+                        <span>Correct answer: (+2) marks for Maths and (+1) mark for Physics, Chemistry and Biology.</span>
                     </li>
                     <li className="flex items-start">
                         <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>

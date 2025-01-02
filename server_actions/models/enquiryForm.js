@@ -36,6 +36,10 @@ try {
       type: Boolean,
       default: false,
     },
+    followUpNote: {
+      type: String,
+      default: "Enter Follow Up Note",
+    },
   }, { 
     timestamps: true ,
   });

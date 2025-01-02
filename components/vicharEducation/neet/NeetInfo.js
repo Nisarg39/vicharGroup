@@ -74,8 +74,8 @@ export default function NeetInfo(){
                         <thead>
                             <tr className="bg-[#1d77bc] text-white">
                                 <th className="border border-gray-300 px-4 py-3 text-left">Subject</th>
-                                <th className="border border-gray-300 px-4 py-3 text-left">Number of MCQ's</th>
-                                <th className="border border-gray-300 px-4 py-3 text-left">Number of NVQ</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Section A - 35</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Section B - 15</th>
                                 <th className="border border-gray-300 px-4 py-3 text-left">Total Marks</th>
                             </tr>
                         </thead>

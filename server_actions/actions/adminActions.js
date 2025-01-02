@@ -4,7 +4,6 @@ import ContactUs from "../models/contactUs"
 import { connectDB } from "../config/mongoose"
 import Admin from "../models/admin"
 import jwt from "jsonwebtoken"
-import exp from "constants"
 
 export async function adminLogin(details) {
     try {
@@ -159,5 +158,36 @@ export async function messageSeenContactUs(id) {
     return {
         success: true,
         message: "Message Seen Successfully"
+    }
+}
+
+export async function contacted(id, followUpNote) {
+    // console.log(id, followUpNote)
+    try{
+        await connectDB()
+        const student = await EnquiryForm.findById(id)
+        if(!student){
+            return {
+                success: false,
+                message: "Student Not Found"
+            }
+        }
+        else{
+            student.contacted = true
+            if(followUpNote){
+                student.followUpNote = followUpNote
+            }
+            await student.save()
+            return {
+                success: true,
+                message: "Contact Status Updated Successfully"
+            }
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error contacting"
+        }
     }
 }

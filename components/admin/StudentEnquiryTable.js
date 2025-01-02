@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getEnquiries } from '../../server_actions/actions/adminActions';
 import { DataTable } from './DataTable';
 import { MessagePopup } from './MessagePopup';
-import {  messageSeenEnquiryForm } from '../../server_actions/actions/adminActions';
+import {  messageSeenEnquiryForm, contacted } from '../../server_actions/actions/adminActions';
 
 export const StudentEnquiryTable = () => {
   const [enquiriesData, setEnquiriesData] = useState([]);
@@ -13,6 +13,10 @@ export const StudentEnquiryTable = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [unseenCount, setUnseenCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [followUpNote, setFollowUpNote] = useState('');
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [selectedEnquiryId, setSelectedEnquiryId] = useState(null);
+  const [contactedId, setContactedId] = useState("");
 
   const enquiryHeaders = ['Date & Time', 'Name', 'Email', 'Mobile', 'Stream', 'Class', 'Message', 'Contacted'];
 
@@ -26,13 +30,28 @@ export const StudentEnquiryTable = () => {
     };
     fetchData();
   }, [currentPage]);
-  const toggleContacted = (index) => {
-    const updatedEnquiries = [...enquiriesData];
-    updatedEnquiries[index] = {
-      ...updatedEnquiries[index],
-      contacted: !updatedEnquiries[index].contacted
-    };
-    setEnquiriesData(updatedEnquiries);
+
+  const toggleContacted = (enquiry) => {
+    setContactedId(enquiry._id);
+    setFollowUpNote(enquiry.followUpNote)
+    setShowFollowUpModal(true);
+  };
+
+    const handleFollowUpSubmit = async () => {
+    const contactStatus = await contacted(contactedId, followUpNote);
+    if(contactStatus.success == true) {
+      enquiriesData.map(item => {
+        if(item._id == contactedId) {
+          item.contacted = true;
+          item.followUpNote = followUpNote;
+        }
+      })
+      setShowFollowUpModal(false);
+      setFollowUpNote('');
+      setContactedId("");
+    }else{
+      alert("Something went wrong");
+    }
   };
 
   const handlePageChange = async (newPage) => {
@@ -89,7 +108,7 @@ export const StudentEnquiryTable = () => {
       </td>
       <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm">
         <button 
-          onClick={() => toggleContacted(index)}
+          onClick={() => toggleContacted(enquiry)}
           className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           style={{ backgroundColor: enquiry.contacted ? '#10B981' : '#EF4444' }}
         >
@@ -146,6 +165,49 @@ export const StudentEnquiryTable = () => {
           setSelectedStudentName(null);
         }} 
       />
+      <FollowUpModal 
+        showModal={showFollowUpModal}
+        onClose={() => {
+          setShowFollowUpModal(false);
+          setFollowUpNote('');
+          setSelectedEnquiryId(null);
+        }}
+        followUpNote={followUpNote}
+        setFollowUpNote={setFollowUpNote}
+        onSubmit={handleFollowUpSubmit}
+      />
     </>
+  );
+};
+
+const FollowUpModal = ({ showModal, onClose, followUpNote, setFollowUpNote, onSubmit }) => {
+  return (
+    showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg w-96">
+          <h2 className="text-xl font-semibold mb-4">Follow Up Message</h2>
+          <textarea
+            value={followUpNote}
+            onChange={(e) => setFollowUpNote(e.target.value)}
+            className="w-full h-32 p-2 border rounded-lg mb-4"
+            placeholder="Enter follow up notes..."
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSubmit}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   );
 };

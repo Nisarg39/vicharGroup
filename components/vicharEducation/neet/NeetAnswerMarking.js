@@ -58,10 +58,6 @@ export default function NeetAnswerMarking() {
                         <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>
                         <span>Candidates are advised to use the constants provided (if any) in the questions for their calculations.</span>
                     </li>
-                    <li className="flex items-start">
-                        <span className="inline-block w-2 h-2 bg-black rounded-full mr-3 mt-2"></span>
-                        <span>Round off the answer to the nearest integer.</span>
-                    </li>
                 </ul>
             </div>
         </section>
