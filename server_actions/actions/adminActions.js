@@ -161,7 +161,7 @@ export async function messageSeenContactUs(id) {
     }
 }
 
-export async function contacted(id, followUpNote) {
+export async function contactedToogle(id, followUpNote) {
     // console.log(id, followUpNote)
     try{
         await connectDB()
@@ -184,6 +184,36 @@ export async function contacted(id, followUpNote) {
             }
         }
     }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error contacting"
+        }
+    }
+}
+
+export async function contactUsToogle(id, followUpNote){
+    // console.log(id, followUpNote)
+    try {
+        await connectDB()
+        const customer = await ContactUs.findById(id)
+        if(!customer){
+            return{
+                success : false,
+                message : "Customer not found"
+            }
+        }else{
+            customer.contacted=true
+            if(followUpNote){
+                customer.followUpNote = followUpNote
+            }
+            await customer.save()
+            return {
+                success: true,
+                message: "Contact Status Updated Successfully"
+            }
+        }
+    } catch (error) {
         console.log(error)
         return {
             success: false,

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { getEnquiries } from '../../server_actions/actions/adminActions';
 import { DataTable } from './DataTable';
 import { MessagePopup } from './MessagePopup';
-import {  messageSeenEnquiryForm, contacted } from '../../server_actions/actions/adminActions';
+import {  messageSeenEnquiryForm, contactedToogle } from '../../server_actions/actions/adminActions';
 
 export const StudentEnquiryTable = () => {
   const [enquiriesData, setEnquiriesData] = useState([]);
@@ -38,7 +38,7 @@ export const StudentEnquiryTable = () => {
   };
 
     const handleFollowUpSubmit = async () => {
-    const contactStatus = await contacted(contactedId, followUpNote);
+    const contactStatus = await contactedToogle(contactedId, followUpNote);
     if(contactStatus.success == true) {
       enquiriesData.map(item => {
         if(item._id == contactedId) {
@@ -77,6 +77,9 @@ export const StudentEnquiryTable = () => {
       <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm">
         <button 
           onClick={async () => {
+            if(!enquiry.seen) {
+              setUnseenCount(unseenCount - 1);
+            }
             await messageSeenEnquiryForm(enquiry._id);
             setSelectedMessage(enquiry.message);
             setSelectedStudentName(enquiry.fullName);

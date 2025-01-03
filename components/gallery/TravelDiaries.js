@@ -41,42 +41,6 @@ export default function TravelDiaries(){
                         className="object-cover hover:scale-105 transition-transform duration-300"
                     />
                 </div>
-                <div className="relative rounded-xl overflow-hidden min-h-[200px]">
-                    <Image
-                        src="/course-photo/dummyNeetStudents.jpg"
-                        alt="Travel scene 5"
-                        fill
-                        unoptimized
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                </div>
-                <div className="relative rounded-xl overflow-hidden min-h-[200px]">
-                    <Image
-                        src="/course-photo/studentsPicnic.jpeg"
-                        alt="Travel scene 6"
-                        fill    
-                        unoptimized
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                </div>
-                <div className="relative rounded-xl overflow-hidden min-h-[200px]">
-                    <Image
-                        src="/course-photo/purpleTstudents.jpg"
-                        alt="Travel scene 7"
-                        fill
-                        unoptimized
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                </div>
-                <div className="relative rounded-xl overflow-hidden min-h-[200px]">
-                    <Image
-                        src="/course-photo/blackTstudents.jpg"
-                        alt="Travel scene 8"
-                        fill
-                        unoptimized
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                </div>
             </div>
         </section>
     )

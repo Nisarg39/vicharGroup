@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { getContactUs } from '../../server_actions/actions/adminActions';
 import { DataTable } from './DataTable';
-import { messageSeenContactUs } from '../../server_actions/actions/adminActions';
+import { messageSeenContactUs, contactUsToogle } from '../../server_actions/actions/adminActions';
 
 export const ContactUsTable = () => {
   const [contactData, setContactData] = useState([]);
@@ -12,6 +12,10 @@ export const ContactUsTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [unseenCount, setUnseenCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpNote, setFollowUpNote] = useState("")
+  const [enquireId, setEnquireId] = useState("")
+
 
   const contactHeaders = ['Date', 'Name', 'Email', 'Mobile', 'Interest Area', 'Message', 'Contacted'];
 
@@ -33,8 +37,25 @@ export const ContactUsTable = () => {
     setTotalPages(data.totalPages);
   };
 
-  const handleContactToggle = async (messageId, currentStatus) => {
-    
+  const handleFollowUpSubmit = async () => {
+    const contactStatus = await contactUsToogle(enquireId, followUpNote)
+    if(contactStatus.success == true){
+      setEnquireId("")
+      setFollowUpNote("")
+      setContactData(contactData.map(item => {
+        if(item._id == enquireId) {
+          item.contacted = true;
+          item.followUpNote = followUpNote;
+        }
+        return item;
+      }))
+      setShowFollowUpModal(false)
+    }
+  }
+  const handleContactToggle = async (enquireId, followNote) => {
+    setEnquireId(enquireId)
+    setFollowUpNote(followNote)
+    setShowFollowUpModal(true)
   };
 
   const renderContactRow = (message, index) => (
@@ -51,6 +72,7 @@ export const ContactUsTable = () => {
         <button
           onClick={async () => {
             if (!message.seen) {
+              setUnseenCount(unseenCount - 1);
               const messageStatus = await messageSeenContactUs(message._id);
               const updatedData = contactData.map(item => 
                 item._id === message._id ? { ...item, seen: true } : item
@@ -85,7 +107,7 @@ export const ContactUsTable = () => {
             type="checkbox"
             id={`contact-toggle-${message.id}`}
             checked={message.contacted}
-            onChange={() => handleContactToggle(message.id, message.contacted)}
+            onChange={() => handleContactToggle(message._id, message.followUpNote)}
             className="sr-only peer"
           />
           <div className={`w-11 h-6 ${message.contacted ? 'bg-green-500' : 'bg-red-500'} peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
@@ -155,6 +177,48 @@ export const ContactUsTable = () => {
           </div>
         </div>
       )}
+      <FollowUpModal 
+        showModal={showFollowUpModal}
+        onClose={() => {
+          setShowFollowUpModal(false);
+          setFollowUpNote('');
+        }}
+        followUpNote={followUpNote}
+        setFollowUpNote={setFollowUpNote}
+        onSubmit={handleFollowUpSubmit}
+      />
     </>
+  );
+};
+
+const FollowUpModal = ({ showModal, onClose, followUpNote, setFollowUpNote, onSubmit }) => {
+  return (
+    showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg w-96">
+          <h2 className="text-xl font-semibold mb-4">Follow Up Message</h2>
+          <textarea
+            value={followUpNote}
+            onChange={(e) => setFollowUpNote(e.target.value)}
+            className="w-full h-32 p-2 border rounded-lg mb-4"
+            placeholder="Enter follow up notes..."
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSubmit}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   );
 };
