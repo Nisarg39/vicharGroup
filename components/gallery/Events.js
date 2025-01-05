@@ -1,149 +1,86 @@
 "use client"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
 
 export default function Events(){
-    const [currentIndex, setCurrentIndex] = useState(0)
-    const [direction, setDirection] = useState(0)
-    const [autoPlay, setAutoPlay] = useState(true)
     const images = [
         "/vichar-events/vivekSirEvent.jpeg",
         "/vichar-events/redSirEvent.jpeg",
         "/vichar-events/viverSirEvent2.jpeg"
     ]
 
+    const [currentIndex, setCurrentIndex] = useState(0)
+
     useEffect(() => {
-        let interval
-        if (autoPlay) {
-            interval = setInterval(() => {
-                setDirection(1)
-                setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length)
-            }, 3000)
-        }
-        return () => clearInterval(interval)
-    }, [autoPlay, images.length])
+        const timer = setInterval(() => {
+            setCurrentIndex((prevIndex) => 
+                prevIndex === images.length - 1 ? 0 : prevIndex + 1
+            )
+        }, 3000)
+        return () => clearInterval(timer)
+    }, [])
 
-    const slideVariants = {
-        enter: (direction) => ({
-            y: direction > 0 ? 300 : -300,
-            scale: 0.8,
-            opacity: 0
-        }),
-        center: {
-            zIndex: 1,
-            y: 0,
-            scale: 1,
-            opacity: 1
-        },
-        exit: (direction) => ({
-            zIndex: 0,
-            y: direction < 0 ? 300 : -300,
-            scale: 0.8,
-            opacity: 0
-        })
+    const nextSlide = () => {
+        setCurrentIndex((prevIndex) => 
+            prevIndex === images.length - 1 ? 0 : prevIndex + 1
+        )
     }
 
-    const swipeConfidenceThreshold = 10000
-    const swipePower = (offset, velocity) => {
-        return Math.abs(offset) * velocity
-    }
-
-    const paginate = (newDirection) => {
-        setAutoPlay(false)
-        setDirection(newDirection)
-        setCurrentIndex((prevIndex) => {
-            let nextIndex = prevIndex + newDirection
-            if (nextIndex >= images.length) nextIndex = 0
-            if (nextIndex < 0) nextIndex = images.length - 1
-            return nextIndex
-        })
+    const prevSlide = () => {
+        setCurrentIndex((prevIndex) => 
+            prevIndex === 0 ? images.length - 1 : prevIndex - 1
+        )
     }
 
     return(
-        <div className="events-section pb-12 pt-24">
-            <div className="max-w-6xl mx-auto px-4">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-2 sm:mb-4 md:mb-6 text-center text-gray-800 tracking-tight">
-                    Science Talk Show
-                </h1>
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-gray-900 p-2 sm:p-4 md:p-6 lg:p-8 border-[10px] sm:border-[15px] md:border-[20px] border-gray-800">
-                    <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-transparent opacity-20"></div>
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 sm:w-16 md:w-20 h-2 sm:h-3 md:h-4 bg-gray-800 rounded-b-xl"></div>
-                    <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-0 right-0 flex justify-between items-center px-2 sm:px-3 md:px-4">
-                        <div className="flex-1"></div>
-                        <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                            {images.map((_, index) => (
-                                <button
-                                    key={index}
-                                    className={`w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                                        currentIndex === index ? 'bg-blue-600 w-3 sm:w-4' : 'bg-gray-400'
-                                    }`}
-                                    onClick={() => {
-                                        setAutoPlay(false)
-                                        setDirection(index > currentIndex ? 1 : -1)
-                                        setCurrentIndex(index)
-                                    }}
-                                />
-                            ))}
-                        </div>
-                        <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 flex-1 justify-end">
-                            <div className="w-2 sm:w-2.5 md:w-3 h-2 sm:h-2.5 md:h-3 rounded-full bg-red-500"></div>
-                            <div className="w-2 sm:w-2.5 md:w-3 h-2 sm:h-2.5 md:h-3 rounded-full bg-green-500"></div>
-                        </div>
-                    </div>
-                    <div className="aspect-[16/9] sm:aspect-[18/9] md:aspect-[21/9] w-full relative">
-                        <div className="absolute inset-0 bg-blue-500 opacity-5 animate-pulse"></div>
-                        <AnimatePresence initial={false} custom={direction} mode="wait">
-                            <motion.img
-                                key={currentIndex}
-                                src={images[currentIndex]}
-                                custom={direction}
-                                variants={slideVariants}
-                                initial="enter"
-                                animate="center"
-                                exit="exit"
-                                transition={{
-                                    y: { type: "spring", stiffness: 300, damping: 30 },
-                                    opacity: { duration: 0.3 },
-                                    scale: { duration: 0.3 }
-                                }}
-                                drag="y"
-                                dragConstraints={{ top: 0, bottom: 0 }}
-                                dragElastic={0.7}
-                                onDragEnd={(e, { offset, velocity }) => {
-                                    const swipe = swipePower(offset.y, velocity.y)
-                                    if (swipe < -swipeConfidenceThreshold) {
-                                        paginate(1)
-                                    } else if (swipe > swipeConfidenceThreshold) {
-                                        paginate(-1)
-                                    }
-                                }}
-                                className="rounded-lg object-cover w-full h-full"
-                                alt={`Event ${currentIndex + 1}`}
-                            />
-                        </AnimatePresence>
-                    </div>
+        <div className="events-section pb-8 sm:pb-12 pt-8 sm:pt-12">
+            <div className="max-w-6xl mx-auto px-2 sm:px-4">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 mb-2 sm:mb-4 md:mb-6">
+                    <img src="https://cdn-icons-gif.flaticon.com/12743/12743773.gif" alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 object-contain" />
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center text-gray-800 tracking-tight hover:text-gray-900 transition-colors duration-300">
+                        Science Talk Show
+                    </h1>
                 </div>
-                <div className="flex items-center justify-center mt-4 space-x-4">
-                    <motion.button
-                        className="rounded-full bg-white/80 backdrop-blur-sm p-2 sm:p-3 text-gray-800 hover:bg-white transition-all duration-200 shadow-lg"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => paginate(-1)}
+                <div className="relative w-full max-w-3xl mx-auto bg-gradient-to-r from-[#1d77bc]/20 to-[#1d77bc]/10 p-3 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl">
+                    <motion.div
+                        key={currentIndex}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.5 }}
+                        className="rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 sm:border-4 border-white"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </motion.button>
-                    <motion.button
-                        className="rounded-full bg-white/80 backdrop-blur-sm p-2 sm:p-3 text-gray-800 hover:bg-white transition-all duration-200 shadow-lg"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => paginate(1)}
+                        <img
+                            src={images[currentIndex]}
+                            alt={`Event ${currentIndex + 1}`}
+                            className="w-full h-[200px] sm:h-[300px] md:h-[400px] object-cover transform hover:scale-105 transition-transform duration-500"
+                        />
+                    </motion.div>
+                    <button
+                        onClick={prevSlide}
+                        className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 bg-white/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-white hover:text-black transition-all duration-300 shadow-lg text-sm sm:text-base"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </motion.button>
+                        ❮
+                    </button>
+                    <button
+                        onClick={nextSlide}
+                        className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-white/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-white hover:text-black transition-all duration-300 shadow-lg text-sm sm:text-base"
+                    >
+                        ❯
+                    </button>
+                    <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-3 bg-white/30 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+                        {images.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentIndex(index)}
+                                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                                    currentIndex === index 
+                                        ? 'bg-[#1d77bc] scale-125' 
+                                        : 'bg-gray-400 hover:bg-[#1d77bc]/60'
+                                }`}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
