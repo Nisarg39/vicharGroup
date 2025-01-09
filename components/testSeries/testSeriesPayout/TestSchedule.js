@@ -1,9 +1,9 @@
 export default function TestSchedule(){
     return(
-        <div className="max-w-4xl mx-auto p-6">
-            <h2 className="font-bold text-center mb-6 text-4xl sm:text-4xl md:text-4xl text-gray-800 leading-tight">Test Schedule – JEE Main 2025</h2>
-            <div className="shadow-lg rounded-lg overflow-hidden">
-                <table className="w-full border-collapse bg-white">
+        <div className="max-w-4xl mx-auto p-2 sm:p-6">
+            <h2 className="font-bold text-center mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl text-gray-800 leading-tight">Test Schedule – JEE Main 2025</h2>
+            <div className="shadow-lg rounded-lg overflow-x-auto">
+                <table className="w-full border-collapse bg-white whitespace-nowrap">
                     <thead>
                         <tr className="bg-[#1d77bc] text-white">
                             <th className="border border-gray-200 p-3 text-left">S.N</th>
