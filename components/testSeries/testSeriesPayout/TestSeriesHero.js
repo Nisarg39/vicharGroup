@@ -74,20 +74,24 @@ function MainCard() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[
-                                    [<a href="https://play.google.com/store/apps/details?id=com.vichareducation.jee_neet" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 w-full bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg hover:scale-105 hover:bg-gray-50 transition-all duration-300"><div className="flex-shrink-0 p-3 rounded-lg" style={{backgroundColor: "#e0e0e0"}}><img src="https://cdn-icons-png.flaticon.com/128/299/299406.png" alt="Play Store" className="w-5 sm:w-6 h-5 sm:h-6" /></div><span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">Access to Vichar Group App for personalised preparation</span></a>, null, null, null],
+                                    [<a key="app-access" href="https://play.google.com/store/apps/details?id=com.vichareducation.jee_neet" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 w-full bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg hover:scale-105 hover:bg-gray-50 transition-all duration-300"><div className="flex-shrink-0 p-3 rounded-lg" style={{backgroundColor: "#e0e0e0"}}><img src="https://cdn-icons-png.flaticon.com/128/299/299406.png" alt="Play Store" className="w-5 sm:w-6 h-5 sm:h-6" /></div><span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">Access to Vichar Group App for personalised preparation</span></a>, null, null, null],
                                     ["Regular mock tests with detailed analysis", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", "#2488d8", "#e8f3fa"],
                                     ["One-on-one doubt clearing sessions", "M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z", "#4CAF50", "#e8f5e9"],
                                     ["Previous year question paper analysis", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4", "#9C27B0", "#f3e5f5"],
                                     ["Performance tracking and personalized feedback", "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", "#FF9800", "#fff3e0"],
                                     ["Study material and chapter-wise practice tests", "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253", "#F44336", "#ffebee"]
                                 ].map(([item, path, color, bgColor], index) => (
-                                    index === 0 ? item : <div key={index} className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-                                        <div className={`flex-shrink-0 p-3 rounded-lg`} style={{backgroundColor: bgColor}}>
-                                            <svg className={`w-5 sm:w-6 h-5 sm:h-6`} fill="none" stroke={color} viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={path} />
-                                            </svg>
-                                        </div>
-                                        <span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">{item}</span>
+                                    <div key={index} className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+                                        {index === 0 ? item : (
+                                            <>
+                                                <div className={`flex-shrink-0 p-3 rounded-lg`} style={{backgroundColor: bgColor}}>
+                                                    <svg className={`w-5 sm:w-6 h-5 sm:h-6`} fill="none" stroke={color} viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={path} />
+                                                    </svg>
+                                                </div>
+                                                <span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">{item}</span>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -97,7 +101,8 @@ function MainCard() {
             </div>
         </div>
     )
-}// EnrollmentCard.js
+}
+// EnrollmentCard.js
 function EnrollmentCard() {
     return (
         <div className="lg:col-span-1">
