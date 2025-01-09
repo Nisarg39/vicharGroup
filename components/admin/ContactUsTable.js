@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { getContactUs } from '../../server_actions/actions/adminActions';
 import { DataTable } from './DataTable';
 import { messageSeenContactUs, contactUsToogle } from '../../server_actions/actions/adminActions';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 export const ContactUsTable = () => {
   const [contactData, setContactData] = useState([]);
@@ -125,9 +126,7 @@ export const ContactUsTable = () => {
   return (
     <>
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
+        <LoadingSpinner />
       ) : (
         <DataTable 
           title={

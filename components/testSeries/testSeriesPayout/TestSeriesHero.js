@@ -1,0 +1,141 @@
+
+export default function TestSeriesHero() {
+    return(
+        <section className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-32 pb-20 px-4 md:px-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <MainCard />
+                    <EnrollmentCard />
+                </div>
+            </div>
+        </section>
+    )
+}
+
+// MainCard.js
+function MainCard() {
+    return (
+        <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-[#1d77bc]"></div>
+                <div className="p-5 sm:p-8 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-5 relative">
+                        <div className="flex items-center gap-4">
+                            <div className="w-1.5 h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 leading-tight">JEE Test Series - 2025</h2>
+                        </div>
+                        <div className="sm:absolute sm:right-0 bg-gradient-to-r from-[#22863a] to-[#2ea043] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg backdrop-blur-sm">
+                            Online Test Series
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                        <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center">
+                                <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Class:</span>
+                                <span className="text-sm font-bold text-gray-800">12</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center">
+                                <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Duration:</span>
+                                <span className="text-sm font-bold text-gray-800">1 Year</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center">
+                                <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Language: </span>
+                                <span className="text-sm font-bold text-gray-800">Hindi</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <h3 className="text-md text-gray-700">Subjects (PCM):</h3>
+                            <div className="flex flex-wrap gap-1.5">
+                                <span className="text-md font-bold text-gray-700">Physics,</span>
+                                <span className="text-md font-bold text-gray-700"> Chemistry,</span>
+                                <span className="text-md font-bold text-gray-700"> Mathematics</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <h3 className="text-md text-gray-700">Test Start Date:</h3>
+                            <div className="flex flex-wrap gap-1.5">
+                                <span className="text-sm text-white bg-[#e96030] px-4 py-1.5 rounded-full">1 Jan, 2025</span>
+                            </div>
+                        </div>
+                        <div className="border-t border-gray-300 pt-8 bg-gray-50 -mx-8 -mb-8 p-8">
+                            <div className="flex items-center gap-4 mb-8">
+                                <img 
+                                    src="https://cdn-icons-gif.flaticon.com/15575/15575248.gif" 
+                                    alt="JEE Logo" 
+                                    className="w-8 sm:w-10 h-8 sm:h-10 object-contain"
+                                />
+                                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Program Offerings</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {[
+                                    [<a href="https://play.google.com/store/apps/details?id=com.vichareducation.jee_neet" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 w-full bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg hover:scale-105 hover:bg-gray-50 transition-all duration-300"><div className="flex-shrink-0 p-3 rounded-lg" style={{backgroundColor: "#e0e0e0"}}><img src="https://cdn-icons-png.flaticon.com/128/299/299406.png" alt="Play Store" className="w-5 sm:w-6 h-5 sm:h-6" /></div><span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">Access to Vichar Group App for personalised preparation</span></a>, null, null, null],
+                                    ["Regular mock tests with detailed analysis", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", "#2488d8", "#e8f3fa"],
+                                    ["One-on-one doubt clearing sessions", "M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z", "#4CAF50", "#e8f5e9"],
+                                    ["Previous year question paper analysis", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4", "#9C27B0", "#f3e5f5"],
+                                    ["Performance tracking and personalized feedback", "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", "#FF9800", "#fff3e0"],
+                                    ["Study material and chapter-wise practice tests", "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253", "#F44336", "#ffebee"]
+                                ].map(([item, path, color, bgColor], index) => (
+                                    index === 0 ? item : <div key={index} className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+                                        <div className={`flex-shrink-0 p-3 rounded-lg`} style={{backgroundColor: bgColor}}>
+                                            <svg className={`w-5 sm:w-6 h-5 sm:h-6`} fill="none" stroke={color} viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={path} />
+                                            </svg>
+                                        </div>
+                                        <span className="text-gray-700 text-sm sm:text-base font-medium leading-tight">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}// EnrollmentCard.js
+function EnrollmentCard() {
+    return (
+        <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 sticky top-24 w-[280px] mx-auto overflow-hidden">
+                <div className="relative w-full h-[240px]">
+                    <img 
+                        src="/course-photo/testSeries.jpeg" 
+                        alt="Course Preview" 
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+                <div className="p-5 space-y-3">
+                    <div className="text-center">
+                        <div className="flex items-center justify-center">
+                            <span className="text-2xl font-bold text-gray-900">₹15,999</span>
+                            <span className="text-gray-600 ml-2">/year</span>
+                        </div>
+                    </div>
+                    <button className="w-full bg-[#e96030] text-white px-5 py-3 rounded-xl font-semibold hover:bg-[#d54e22] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Buy Now
+                    </button>
+                    <div className="pt-3 border-t border-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span className="text-sm text-gray-600">Secure payment via Razorpay</span>
+                            </div>
+                            <p className="text-xs text-gray-500">Get instant access after payment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

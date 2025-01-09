@@ -12,7 +12,7 @@ export default function Instructor() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-dark text-center">Rupesh Subhashchandra Paliwal</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-dark text-center">Mr. Rupesh Paliwal</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           <div className="bg-gradient-to-br from-white to-gray-50 p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
@@ -20,7 +20,7 @@ export default function Instructor() {
               <img src="https://cdn-icons-gif.flaticon.com/16664/16664314.gif" alt="Experience" className="h-16 w-16 sm:h-20 sm:w-20 mx-auto" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3">Experience</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Working in stock market since 2007</p>
+            <p className="text-gray-600 text-sm sm:text-base">17+ years of Experience in Teaching</p>
           </div>
           <div className="bg-gradient-to-br from-white to-gray-50 p-6 sm:p-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
             <div className="text-[#4ecdc4] mb-4">
