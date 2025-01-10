@@ -1,11 +1,11 @@
 
-export default function TestSeriesHero() {
+export default function TestSeriesHero(props) {
     return(
         <section className="min-h-screen bg-gradient-to-b from-white to-gray-50 pt-32 pb-20 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-3 gap-8">
-                    <MainCard />
-                    <EnrollmentCard />
+                    <MainCard props={props} />
+                    <EnrollmentCard price={props.price} />
                 </div>
             </div>
         </section>
@@ -13,7 +13,7 @@ export default function TestSeriesHero() {
 }
 
 // MainCard.js
-function MainCard() {
+function MainCard({props}) {
     return (
         <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden relative">
@@ -22,7 +22,7 @@ function MainCard() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-1.5 h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 leading-tight">JEE Test Series - 2025</h2>
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 leading-tight">{props.title}</h2>
                         </div>
                         <div className="sm:absolute sm:right-0 bg-gradient-to-r from-[#22863a] to-[#2ea043] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg backdrop-blur-sm">
                             Online Test Series
@@ -32,19 +32,19 @@ function MainCard() {
                         <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
                             <div className="flex items-center">
                                 <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Class:</span>
-                                <span className="text-sm font-bold text-gray-800">12</span>
+                                <span className="text-sm font-bold text-gray-800">{props.class}</span>
                             </div>
                         </div>
                         <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
                             <div className="flex items-center">
                                 <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Duration:</span>
-                                <span className="text-sm font-bold text-gray-800">1 Year</span>
+                                <span className="text-sm font-bold text-gray-800">{props.duration}</span>
                             </div>
                         </div>
                         <div className="flex items-center bg-[#e8f3fa] rounded-xl px-4 py-2.5 shadow-sm backdrop-blur-sm">
                             <div className="flex items-center">
                                 <span className="text-xs text-gray-600 font-semibold uppercase tracking-wider mr-2">Language: </span>
-                                <span className="text-sm font-bold text-gray-800">Hindi</span>
+                                <span className="text-sm font-bold text-gray-800">{props.language}</span>
                             </div>
                         </div>
                     </div>
@@ -52,15 +52,13 @@ function MainCard() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <h3 className="text-md text-gray-700">Subjects (PCM):</h3>
                             <div className="flex flex-wrap gap-1.5">
-                                <span className="text-md font-bold text-gray-700">Physics,</span>
-                                <span className="text-md font-bold text-gray-700"> Chemistry,</span>
-                                <span className="text-md font-bold text-gray-700"> Mathematics</span>
+                                <span className="text-md font-bold text-gray-700">{props.subjects}</span>
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <h3 className="text-md text-gray-700">Test Start Date:</h3>
                             <div className="flex flex-wrap gap-1.5">
-                                <span className="text-sm text-white bg-[#e96030] px-4 py-1.5 rounded-full">1 Jan, 2025</span>
+                                <span className="text-sm text-white bg-[#e96030] px-4 py-1.5 rounded-full">{props.testStartDate}</span>
                             </div>
                         </div>
                         <div className="border-t border-gray-300 pt-8 bg-gray-50 -mx-8 -mb-8 p-8">
@@ -97,9 +95,8 @@ function MainCard() {
             </div>
         </div>
     )
-}
-// EnrollmentCard.js
-function EnrollmentCard() {
+}// EnrollmentCard.js
+function EnrollmentCard(props) {
     return (
         <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 sticky top-24 w-full sm:w-[320px] md:w-full lg:w-[280px] xl:w-[320px] mx-auto overflow-hidden md:flex md:flex-row lg:flex-col">
@@ -114,7 +111,7 @@ function EnrollmentCard() {
                 <div className="p-4 sm:p-5 space-y-3 md:w-1/2 lg:w-full md:flex md:flex-col md:justify-center">
                     <div className="text-center">
                         <div className="flex items-center justify-center">
-                            <span className="text-xl sm:text-2xl font-bold text-gray-900">₹15,999</span>
+                            <span className="text-xl sm:text-2xl font-bold text-gray-900">{props.price}</span>
                             <span className="text-gray-600 ml-2">/year</span>
                         </div>
                     </div>

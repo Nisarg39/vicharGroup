@@ -1,7 +1,9 @@
-export default function TestSchedule(){
+export default function TestSchedule(props){
+    const testSchedule = props.testSchedule
+
     return(
         <div className="max-w-4xl mx-auto p-2 sm:p-6">
-            <h2 className="font-bold text-center mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl text-gray-800 leading-tight">Test Schedule – JEE Main 2025</h2>
+            <h2 className="font-bold text-center mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl text-gray-800 leading-tight">{props.title}</h2>
             <div className="shadow-lg rounded-lg overflow-x-auto">
                 <table className="w-full border-collapse bg-white whitespace-nowrap">
                     <thead>
@@ -13,66 +15,14 @@ export default function TestSchedule(){
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">1</td>
-                            <td className="border border-gray-200 p-3">3-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Monday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 1</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">2</td>
-                            <td className="border border-gray-200 p-3">5-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Wednesday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 2</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">3</td>
-                            <td className="border border-gray-200 p-3">8-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Saturday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 3</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">4</td>
-                            <td className="border border-gray-200 p-3">12-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Wednesday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 4</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">5</td>
-                            <td className="border border-gray-200 p-3">18-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Tuesday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 5</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">6</td>
-                            <td className="border border-gray-200 p-3">22-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Saturday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 6</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">7</td>
-                            <td className="border border-gray-200 p-3">26-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Wednesday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 7</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">8</td>
-                            <td className="border border-gray-200 p-3">31-Mar-25</td>
-                            <td className="border border-gray-200 p-3">Monday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 8</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">9</td>
-                            <td className="border border-gray-200 p-3">4-Apr-25</td>
-                            <td className="border border-gray-200 p-3">Friday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 9</td>
-                        </tr>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 p-3">10</td>
-                            <td className="border border-gray-200 p-3">7-Apr-25</td>
-                            <td className="border border-gray-200 p-3">Monday</td>
-                            <td className="border border-gray-200 p-3">Complete Syllabus - Test 10</td>
-                        </tr>
+                        {testSchedule.map((test) => (
+                            <tr key={test.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="border border-gray-200 p-3">{test.id}</td>
+                                <td className="border border-gray-200 p-3">{test.date}</td>
+                                <td className="border border-gray-200 p-3">{test.day}</td>
+                                <td className="border border-gray-200 p-3">{test.testType}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>

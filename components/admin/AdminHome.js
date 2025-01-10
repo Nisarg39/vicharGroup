@@ -3,12 +3,16 @@ import SignIn from "./SignIn";
 import Dashboard from "./Dashboard";
 import { useEffect, useState } from "react";
 import Modal from "../common/Modal";
+import Sidebar from './Sidebar'
+import AdminStats from "./AdminStats";
 export default function AdminHome() {
 
       const [isAdmin, setIsAdmin] = useState(false);
       const [success, setSuccess] = useState(false);
       const [message, setMessage] = useState("");
       const [showModal, setShowModal] = useState(false);
+      const [dashBoardName, setDashBoardName] = useState("dashboard");
+
 
       async function successHandler(status, message){
           setSuccess(status);
@@ -28,7 +32,12 @@ export default function AdminHome() {
     return (
       <div>
         {isAdmin ? (
-          <Dashboard />
+          <>
+            <Sidebar setDashBoardName={setDashBoardName} />
+            {dashBoardName === "dashboard" && <Dashboard />}
+            {dashBoardName === "statistics" && <AdminStats />}
+
+          </>
         ) : (
           <SignIn adminStatus={adminStatus} successHandler={successHandler} />
         )}
