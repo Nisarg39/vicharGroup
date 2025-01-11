@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"] });
 import Footer from "../../components/home/Footer";
 import VicharApp from "../../components/home/VicharApp";
 export const metadata = {
-  title: "Vichar Group",
-  description: "Online Learning Platform",
+  title: "Vichar Group - Official Homepage",
+  description: "Best Online Learning Platform for competitive exams like JEE, NEET,MHT-CET and Foundation.",
 };
 
 export default function RootLayout({ children }) {

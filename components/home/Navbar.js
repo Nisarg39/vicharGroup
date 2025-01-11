@@ -74,8 +74,9 @@ const Navbar = () => {
               <h1 className="ml-2">
                 <span className='text-[#e96030]'>VICHAR</span>{' '}
                 <span className="text-[#1d77bc] ml-1">GROUP</span>
+                <p className="text-xs text-gray-500 ml-2 italic">Soch Sahi Disha Mein</p>
               </h1>
-              <p className="text-xs text-gray-500 ml-2 italic">Soch Sahi Disha Mein</p>
+              
             </div>
           </div>
           <button
