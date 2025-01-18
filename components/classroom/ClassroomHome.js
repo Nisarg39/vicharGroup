@@ -29,6 +29,7 @@ export default function ClassroomHome() {
             router.push('/login')
         }
     }, [])
+
     return (
         <section className="min-h-screen">
             {loading ? (

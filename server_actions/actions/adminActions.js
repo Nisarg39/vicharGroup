@@ -3,7 +3,9 @@ import EnquiryForm from "../models/enquiryForm"
 import ContactUs from "../models/contactUs"
 import { connectDB } from "../config/mongoose"
 import Admin from "../models/admin"
+import Student from "../models/student"
 import jwt from "jsonwebtoken"
+
 
 export async function adminLogin(details) {
     try {
@@ -218,6 +220,37 @@ export async function contactUsToogle(id, followUpNote){
         return {
             success: false,
             message: "Error contacting"
+        }
+    }
+}
+
+export async function fetchAllStudents(page) {
+    try {
+        await connectDB()
+        const limit = 10
+        const skip = (page - 1) * limit
+        const students = await Student.find({})
+            .skip(skip)
+            .limit(limit)
+            .lean()
+            .sort({ createdAt: -1 })
+        const totalCount = await Student.countDocuments({})
+        const serializedStudents = students.map(student => ({
+            _id: student._id.toString(),
+            ...student,
+        }))
+        return {
+            success: true,
+            students: serializedStudents,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
+        }
+    }catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching students"
         }
     }
 }

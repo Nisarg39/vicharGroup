@@ -1,7 +1,7 @@
 import { mandatoryDetails } from "../../server_actions/actions/studentActions"
 import { useDispatch } from "react-redux"
 import { studentDetails } from "../../features/login/LoginSlice"
-export default function VerifyDetails() {
+export default function VerifyDetails(props) {
 
     const dispatch = useDispatch()
 
@@ -11,12 +11,8 @@ export default function VerifyDetails() {
         const email = e.target[1].value
         const token = localStorage.getItem('token')
         const response = await mandatoryDetails({name, email, token})
-        // console.log(response.student)
+        localStorage.setItem('token', response.student.token)
         dispatch(studentDetails(response.student))
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('name', response.student.name)
-        localStorage.setItem('email', response.student.email)
-        localStorage.setItem('phone', response.student.phone)
     }
 
     return (

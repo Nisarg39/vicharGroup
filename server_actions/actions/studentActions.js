@@ -75,7 +75,7 @@ export async function verifyOtp(data) {
 export async function getStudentDetails(token){
     await connectDB()
     const middleware = await verifyStudentMiddleware(token)
-    console.log(middleware)
+    // console.log(middleware)
     const student = {
         id: middleware.student._id.toString(),
         phone: middleware.student.phone,
@@ -113,13 +113,13 @@ export async function mandatoryDetails(data){
 
         // made a different object because there was an error saying cannot pass plain object
         const studentObject = {
-            id: middleware.student._id.toString(),
-            phone: middleware.student.phone,
-            otp: middleware.student.otp,
-            isVerified: middleware.student.isVerified,
-            token: middleware.student.token,
-            createdAt: middleware.student.createdAt.toString(),
-            updatedAt: middleware.student.updatedAt.toString()
+            id: student._id.toString(),
+            phone: student.phone,
+            otp: student.otp,
+            isVerified: student.isVerified,
+            token: student.token,
+            createdAt: student.createdAt.toString(),
+            updatedAt: student.updatedAt.toString()
         }
         return {
             message: "Mandatory details updated successfully",
