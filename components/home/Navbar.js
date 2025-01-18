@@ -128,7 +128,7 @@ const Navbar = () => {
           </Link>
           <div className="w-full md:w-auto">
             {isLoggedIn ? 
-              <span onClick={() => setActiveLink('')} className="text-black px-4 py-3 rounded-md block w-full text-left md:text-center md:whitespace-nowrap">Log Out</span>
+              <Link href="/classroom" onClick={() => {closeMenu(); setActiveLink('classroom');}} className={`${activeLink === 'classroom' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>Classroom</Link>
             : 
               <Link href="/login" onClick={() => { closeMenu(); setActiveLink('login'); }} className={`${activeLink === 'login' ? 'text-[#e96030] font-bold' : 'text-black'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100 block w-full text-left md:text-center md:whitespace-nowrap`}>
                 Log In

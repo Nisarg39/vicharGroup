@@ -10,4 +10,13 @@ export function makeStore() {
   });
 }
 
+export function studentDetails(state) {
+  return configureStore({
+    reducer: {
+      studentDetails: state,
+    },
+    devTools: process.env.NODE_ENV !== "production",
+  })
+}
+
 export const store = makeStore();

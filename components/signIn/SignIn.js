@@ -1,30 +1,84 @@
 "use client"
 import { useState } from "react"
+import { sendOtp, verifyOtp, } from "../../server_actions/actions/studentActions"
+import Modal from "../common/Modal"
+import { useRouter } from "next/navigation"
+
 const SignIn = () => {
     const [mobile, setMobile] = useState('')
     const [mobileError, setMobileError] = useState('')
+    const [showModal, setShowModal] = useState(false)
+    const [modalMessage, setModalMessage] = useState('')
+    const [isSuccess, setIsSuccess] = useState(false)
+    const [showOtpInput, setShowOtpInput] = useState(false)
+    const [otp, setOtp] = useState('')
+    const [otpError, setOtpError] = useState('')
+
+    const router = useRouter()
 
     const validateMobile = (mobile) => {
         const re = /^[0-9]{10}$/
         return re.test(mobile)
     }
 
+    const validateOtp = (otp) => {
+        const re = /^[0-9]{4}$/
+        return re.test(otp)
+    }
+
     const handleMobileChange = (e) => {
-        setMobile(e.target.value)
-        if (!validateMobile(e.target.value)) {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+        setMobile(value)
+        if (!validateMobile(value)) {
             setMobileError('Please enter a valid 10-digit mobile number')
         } else {
             setMobileError('')
         }
     }
 
-    const handleSubmit = (e) => {
+    const handleOtpChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+        setOtp(value)
+        if (!validateOtp(value)) {
+            setOtpError('Please enter a valid 4-digit OTP')
+        } else {
+            setOtpError('')
+        }
+    }
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
         if (!mobileError && mobile) {
-            // Proceed with login
-            alert('Login submitted')
+            const response = await sendOtp(mobile)
+            if (response.success) {
+                setModalMessage(response.message || 'OTP sent successfully')
+                setIsSuccess(true)
+                setShowModal(true)
+                setShowOtpInput(true)
+            }
         } else {
-            console.log('Form has errors')
+            setModalMessage('Please fix the errors in the form')
+            setIsSuccess(false)
+            setShowModal(true)
+        }
+    }
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault()
+        if (!otpError && otp) {
+            const response = await verifyOtp({otp, mobile})
+            if (response.success){
+                // console.log(response)
+                localStorage.setItem('token', response.student.token)
+                setModalMessage('Login successful')
+                setIsSuccess(true)
+                setShowModal(true)
+                router.push('/classroom')
+            } else {
+                setModalMessage('Invalid OTP')
+                setIsSuccess(false)
+                setShowModal(true)
+            }
         }
     }
 
@@ -42,7 +96,10 @@ const SignIn = () => {
                                 <input
                                     className={`shadow-sm appearance-none border ${mobileError ? 'border-red-500' : 'border-gray-300'} rounded-lg w-full py-2 pl-10 pr-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#106FB7] focus:border-transparent transition-all duration-300`}
                                     id="mobile"
-                                    type="tel"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength="10"
                                     placeholder="Enter your mobile number"
                                     value={mobile}
                                     onChange={handleMobileChange}
@@ -55,13 +112,41 @@ const SignIn = () => {
                             </div>
                             {mobileError && <p className="text-red-500 text-xs italic mt-1">{mobileError}</p>}
                         </div>
+                        {showOtpInput && (
+                            <div className="mb-6">
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">
+                                    Enter OTP
+                                </label>
+                                <input
+                                    className={`shadow-sm appearance-none border ${otpError ? 'border-red-500' : 'border-gray-300'} rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#106FB7] focus:border-transparent transition-all duration-300`}
+                                    id="otp"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength="4"
+                                    placeholder="Enter 4-digit OTP"
+                                    value={otp}
+                                    onChange={handleOtpChange}
+                                />
+                                {otpError && <p className="text-red-500 text-xs italic mt-1">{otpError}</p>}
+                                <button
+                                    onClick={handleVerifyOtp}
+                                    className="mt-4 bg-gradient-to-r from-[#106FB7] to-[#2E8BC0] hover:from-[#2E8BC0] hover:to-[#106FB7] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full"
+                                    type="button"
+                                >
+                                    Verify OTP
+                                </button>
+                            </div>
+                        )}
                         <div className="flex flex-col space-y-6">
-                            <button
-                                className="bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ef5a2a] hover:to-[#fe9852] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto"
-                                type="submit"
-                            >
-                                Sign In
-                            </button>
+                            {!showOtpInput && (
+                                <button
+                                    className="bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ef5a2a] hover:to-[#fe9852] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto"
+                                    type="submit"
+                                >
+                                    Sign In
+                                </button>
+                            )}
                             <div className="flex items-center justify-center">
                                 <div className="flex-grow border-t border-gray-300"></div>
                                 <div className="mx-4 text-gray-500 font-medium">OR</div>
@@ -85,6 +170,14 @@ const SignIn = () => {
                     </form>
                 </div>
             </div>
+            <Modal 
+                showModal={showModal} 
+                setShowModal={setShowModal} 
+                isSuccess={isSuccess} 
+                modalMessage={modalMessage}
+            >
+                <p>{modalMessage}</p>
+            </Modal>
         </div>
     )
 }

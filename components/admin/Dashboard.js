@@ -4,6 +4,7 @@
   import { StudentEnquiryTable } from './StudentEnquiryTable';
   import { ContactUsTable } from './ContactUsTable';
   import ChangePassword from './ChangePassword';
+  import EnrolledStudentsList from './EnrolledStudentsList';
   import { useRouter } from 'next/navigation';
   import Modal from '../common/Modal';
   export default function Dashboard() {
@@ -21,6 +22,10 @@
 
     function handlePasswordTab() {
       setActiveTab('password');
+    }
+
+    function handleEnrolledStudents() {
+      setActiveTab('enrolled');
     }
 
     async function handleLogout() {
@@ -75,6 +80,16 @@
                 >
                   Change Password
                 </button>
+                <button
+                  onClick={() => handleEnrolledStudents()}
+                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                    activeTab === 'enrolled'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Enrolled Students
+                </button>
               </div>
               <div className="mt-4">
                 {activeTab === 'enquiry' && <StudentEnquiryTable />}
@@ -82,6 +97,11 @@
                 {activeTab === 'password' && (
                   <div className="bg-white rounded-lg">
                     <ChangePassword />
+                  </div>
+                )}
+                {activeTab === 'enrolled' && (
+                  <div className="bg-white rounded-lg">
+                    <EnrolledStudentsList />
                   </div>
                 )}
               </div>
