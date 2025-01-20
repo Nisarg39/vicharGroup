@@ -77,6 +77,8 @@ export async function getStudentDetails(token){
     const middleware = await verifyStudentMiddleware(token)
     // console.log(middleware)
     const student = {
+        name: middleware.student.name,
+        email: middleware.student.email,
         id: middleware.student._id.toString(),
         phone: middleware.student.phone,
         otp: middleware.student.otp,

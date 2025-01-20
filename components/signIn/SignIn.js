@@ -3,6 +3,7 @@ import { useState } from "react"
 import { sendOtp, verifyOtp, } from "../../server_actions/actions/studentActions"
 import Modal from "../common/Modal"
 import { useRouter } from "next/navigation"
+import LoadingSpinner from "../common/LoadingSpinner"
 
 const SignIn = () => {
     const [mobile, setMobile] = useState('')
@@ -13,6 +14,7 @@ const SignIn = () => {
     const [showOtpInput, setShowOtpInput] = useState(false)
     const [otp, setOtp] = useState('')
     const [otpError, setOtpError] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
 
     const router = useRouter()
 
@@ -49,7 +51,9 @@ const SignIn = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!mobileError && mobile) {
+            setIsLoading(true)
             const response = await sendOtp(mobile)
+            setIsLoading(false)
             if (response.success) {
                 setModalMessage(response.message || 'OTP sent successfully')
                 setIsSuccess(true)
@@ -66,9 +70,10 @@ const SignIn = () => {
     const handleVerifyOtp = async (e) => {
         e.preventDefault()
         if (!otpError && otp) {
+            setIsLoading(true)
             const response = await verifyOtp({otp, mobile})
+            setIsLoading(false)
             if (response.success){
-                // console.log(response)
                 localStorage.setItem('token', response.student.token)
                 setModalMessage('Login successful')
                 setIsSuccess(true)
@@ -87,6 +92,11 @@ const SignIn = () => {
             <div className="w-full max-w-md">
                 <div className="bg-white shadow-2xl rounded-lg px-6 sm:px-8 py-8 mb-4 transition-all duration-300 perspective-1000 transform hover:scale-105 hover:border-2 hover:border-[#106FB7]">
                     <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Login</h1>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <LoadingSpinner />
+                        </div>
+                    ) : (
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
                             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="mobile">
@@ -168,6 +178,7 @@ const SignIn = () => {
                             </div>
                         </div>
                     </form>
+                    )}
                 </div>
             </div>
             <Modal 
