@@ -7,8 +7,8 @@ const MhtCetTest = (props) => {
   const [selectedClass, setSelectedClass] = useState('11th')
   
   const courses = [
-    { id: 1, title: 'PCM', level: 'PCM', image: '/course-photo/testSeries.jpeg', link: '/vichar-education' },
-    { id: 2, title: 'PCB', level: 'PCB', image: '/course-photo/testSeries.jpeg', link: '/vichar-stock-market' },
+    { id: 1, title: 'PCM', level: 'PCM', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/cet-pcm/12' },
+    { id: 2, title: 'PCB', level: 'PCB', image: '/course-photo/testSeries.jpeg', link: 'test-series/buy-test-series/cet-pcb/12' },
   ]
 
   return (
@@ -40,10 +40,19 @@ const MhtCetTest = (props) => {
               <div className="p-4 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-bold mb-4 text-gray-800 hover:text-[#106fb8] transition-colors duration-300">{`${selectedClass} ${course.title}`}</h3>
                 <p className="text-xs sm:text-sm text-gray-600 mb-6">Comprehensive MHT-CET preparation course for {selectedClass} {course.level} students.</p>
-                <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-xs sm:text-sm">
-                  <span className="group-hover:hidden">Enroll Now</span>
-                  <span className="hidden group-hover:inline-block">Enroll Now →</span>
-                </button>
+                {selectedClass === '12th' ? (
+                  <Link href={course.link}>
+                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-xs sm:text-sm">
+                      <span className="group-hover:hidden">Enroll Now</span>
+                      <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                    </button>
+                  </Link>
+                ) : (
+                  <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-xs sm:text-sm">
+                    <span className="group-hover:hidden">Enroll Now</span>
+                    <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

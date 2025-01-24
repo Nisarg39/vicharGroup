@@ -291,7 +291,7 @@ const Home = () => {
         </>
       )}
 
-      {params.course === "cet" && params.class === "12" && (
+      {params.course === "cet-pcm" && params.class === "12" && (
         <>
           <TestSeriesHero
             title="CET Test Series - 2025"
@@ -299,6 +299,21 @@ const Home = () => {
             duration="1 Year"
             language="English"
             subjects="Physics, Chemistry, Maths"
+            testStartDate="1st March, 2025"
+            price="₹ 15000"
+          />
+          <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
+        </>
+      )}
+
+{params.course === "cet-pcb" && params.class === "12" && (
+        <>
+          <TestSeriesHero
+            title="CET Test Series - 2025"
+            class="12"
+            duration="1 Year"
+            language="English"
+            subjects="Physics, Chemistry, Biology"
             testStartDate="1st March, 2025"
             price="₹ 15000"
           />
