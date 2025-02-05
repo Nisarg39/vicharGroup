@@ -1,7 +1,7 @@
 const TermsAndConditions = () => {
     return (
-        <div className="container mx-auto px-4 py-12 sm:py-20 mt-12 sm:mt-24 max-w-5xl">
-            <h1 className="text-3xl sm:text-4xl font-extrabold mb-10 sm:mb-14 text-center text-gray-800">Terms and Conditions</h1>
+        <div className="container mx-auto px-4 py-12 sm:py-20 mt-6 sm:mt-12 max-w-5xl bg-black">
+            <h1 className="text-3xl sm:text-4xl font-extrabold mb-10 sm:mb-14 text-center text-white">Terms and Conditions</h1>
             <div className="space-y-8 sm:space-y-10">
                 {[
                     { title: "Acceptance of Terms", content: "By using our services, you agree to these terms and conditions. This includes all features, functionalities, and any future updates or modifications to our services. Your continued use of our platform after any changes to these terms constitutes your acceptance of the new terms. We encourage you to review these terms regularly to stay informed about your rights and responsibilities." },
@@ -13,9 +13,9 @@ const TermsAndConditions = () => {
                     { title: "Termination", content: "We may terminate your access to our service at our sole discretion, with or without cause, and with or without notice. This includes the right to remove or disable access to any content or materials at any time. Upon termination, you must cease all use of our service and destroy any copies of our content in your possession. Any provisions of these terms that by their nature should survive termination shall remain in effect after termination." },
                     { title: "Governing Law", content: "These terms are governed by the laws of [Your Jurisdiction], without regard to its conflict of law provisions. Any disputes arising from these terms will be subject to the exclusive jurisdiction of the courts in [Your Jurisdiction]. You agree to submit to the personal jurisdiction of these courts for the purpose of litigating all such claims. This agreement does not affect any rights you may have as a consumer under local law that cannot be waived or changed by contract." }
                 ].map((item, index) => (
-                    <div key={index} className="border-b border-gray-200 pb-6 sm:pb-8 last:border-b-0 last:pb-0 hover:bg-gray-50 transition-colors duration-300 rounded-lg p-4 sm:p-6">
+                    <div key={index} className="border-b border-gray-700 pb-6 sm:pb-8 last:border-b-0 last:pb-0 hover:bg-gray-900 transition-colors duration-300 rounded-lg p-4 sm:p-6">
                         <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-blue-700">{index + 1}. {item.title}</h2>
-                        <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{item.content}</p>
+                        <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{item.content}</p>
                     </div>
                 ))}
             </div>

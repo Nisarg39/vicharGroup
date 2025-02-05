@@ -52,14 +52,14 @@ function WhyChooseUs() {
     const [hoveredIndex, setHoveredIndex] = useState(null)
 
     return (
-        <section className="py-8 bg-gradient-to-b from-gray-100 to-gray-200">
+        <section className="py-4 bg-black">
             <div className="container mx-auto px-4">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 lg:mb-16 text-center">Why Choose Us</h2>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 lg:mb-16 text-center text-white">Why Choose Us</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {whyChooseUsData.map((item, index) => (
                         <div 
                             key={index} 
-                            className={`bg-white p-2 sm:p-4 rounded-xl shadow-lg transform transition duration-500 hover:scale-105 ${hoveredIndex === index ? 'pb-2 sm:pb-4' : 'pb-0 sm:pb-4'}`}
+                            className={`bg-gray-900 p-2 sm:p-4 rounded-xl shadow-lg transform transition duration-500 hover:scale-105 ${hoveredIndex === index ? 'pb-2 sm:pb-4' : 'pb-0 sm:pb-4'}`}
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}
                         >
@@ -68,9 +68,9 @@ function WhyChooseUs() {
                                     <div className="text-blue-500 mr-4">
                                         {item.icon}
                                     </div>
-                                    <h3 className="text-lg md:text-xl font-semibold">{item.title}</h3>
+                                    <h3 className="text-lg md:text-xl font-semibold text-white">{item.title}</h3>
                                 </div>
-                                <p className={`text-gray-600 text-sm md:text-base ${hoveredIndex === index ? 'block' : 'hidden sm:block'}`}>
+                                <p className={`text-gray-300 text-sm md:text-base ${hoveredIndex === index ? 'block' : 'hidden sm:block'}`}>
                                     {item.description}
                                 </p>
                             </div>
