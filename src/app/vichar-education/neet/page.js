@@ -6,12 +6,10 @@ import NeetConclusion from "../../../../components/vicharEducation/neet/NeetConc
 import StudentEnquiryForm from "../../../../components/home/StudentEnquiryForm"
 import NeetTestimonials from "../../../../components/vicharEducation/neet/NeetTestimonials"
 import WhyChooseUs from "../../../../components/home/WhyChooseUs"
-import FullScreenBanner from "../../../../components/common/FullScreenBanner"
 const Contact = () => {
     
     return (
         <>
-            <FullScreenBanner url="/neet-students/neetBanner.gif" />
             <NeetHero title="NEET Preparation Course"/>
             <NeetInfo />
             <NeetAnswerMarking />
