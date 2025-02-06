@@ -49,14 +49,14 @@ function StudentEnquiryForm() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="min-h-screen bg-cover bg-center bg-no-repeat bg-black"
+            className="min-h-screen bg-cover bg-center bg-no-repeat bg-black pt-6"
         >
             <Modal showModal={showModal} setShowModal={setShowModal} isSuccess={isSuccess} modalMessage={modalMessage} />
             <motion.h2 
                 initial={{ y: -20 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-white leading-tight animate-fade-in-down relative"
+                className="text-4xl sm:text-4xl md:text-5xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-white leading-tight animate-fade-in-down relative"
             >
                 Student Enquiry Form
             </motion.h2>

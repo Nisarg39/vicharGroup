@@ -17,7 +17,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20 bg-black">
+    <section className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20 pb-10 bg-black">
       <div 
         className="absolute inset-0 z-0 bg-black"
       />
@@ -47,6 +47,19 @@ const HeroSection = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="absolute bottom-20 md:bottom-4 lg:bottom-4 left-1/2 transform -translate-x-1/2 animate-pulse bg-gray-400 rounded-full p-2">
+        <svg 
+          className="w-6 h-6 text-black"
+          fill="none" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth="2" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path d="M12 5v14m0 0l-6-6m6 6l6-6"></path>
+        </svg>
       </div>
     </section>
   );
