@@ -8,21 +8,21 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="bg-white min-h-screen flex flex-col items-center justify-center text-center px-4 py-8 mt-8">
+    <section className="bg-black min-h-screen flex flex-col items-center justify-center text-center px-4 pt-8 mt-8">
       <div className="w-full max-w-3xl mb-8 sm:mt-0">
         <img
           src="/vicharlogo.png"
           alt="Vichar Education Hero"
-          className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] object-contain border border-gray-300"
+          className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] object-contain border border-gray-700"
         />
       </div>
-      <h1 className="text-5xl font-bold text-center mb-8 md:mb-4 text-gray-800">Vichar Education</h1>
+      <h1 className="text-5xl font-bold text-center mb-8 md:mb-4 text-white">Vichar Education</h1>
       <div className="max-w-2xl">
-        <p className="text-base leading-relaxed mb-4">
+        <p className="text-base leading-relaxed mb-4 text-gray-300">
             Offering comprehensive academic classes for grades 8th-10th, including expert coaching for JEE, NEET, MHT-CET, and 11th-12th boards. It emphasizes building a solid foundation and strategic preparation for competitive exams.
         </p>
         {showFullText && (
-          <p className="text-base leading-relaxed">
+          <p className="text-base leading-relaxed text-gray-300">
             This segment targets around Competitive and Academic Learning for the students from 8th - 12th .We train students for Competitive Exams like JEE, NEET, MHT-CET and Academic Exams for 8th, 9th, 10th Boards, 11th, 12th Boards with Repeater Batches
           </p>
         )}

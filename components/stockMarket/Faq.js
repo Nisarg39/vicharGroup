@@ -23,18 +23,18 @@ export default function Faq() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-6 py-6">
-            <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">
+        <div className="max-w-full mx-auto px-6 py-6 bg-black">
+            <h1 className="text-4xl font-bold mb-8 text-center text-white">
                 Frequently Asked Questions
             </h1>
 
             {faqData.map((item, index) => (
-                <div key={index} className="mb-6 bg-white rounded-lg shadow-md overflow-hidden">
+                <div key={index} className="mb-6 bg-gray-900 rounded-lg shadow-md overflow-hidden">
                     <div 
-                        className="flex justify-between items-center cursor-pointer p-4 hover:bg-gray-100 transition-colors duration-200"
+                        className="flex justify-between items-center cursor-pointer p-4 hover:bg-gray-800 transition-colors duration-200"
                         onClick={() => toggleAnswer(index)}
                     >
-                        <h2 className="text-xl font-semibold text-gray-700">
+                        <h2 className="text-xl font-semibold text-gray-200">
                             {item.question}
                         </h2>
                         <span className={`text-2xl transition-transform duration-200 ease-in-out transform ${activeIndex === index ? 'rotate-180' : ''}`}>
@@ -43,7 +43,7 @@ export default function Faq() {
                     </div>
 
                     {activeIndex === index && (
-                        <div className="p-4 text-gray-600 border-t border-gray-200">
+                        <div className="p-4 text-gray-300 border-t border-gray-700">
                             {item.answer}
                         </div>
                     )}

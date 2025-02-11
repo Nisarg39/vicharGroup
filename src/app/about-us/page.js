@@ -6,7 +6,7 @@ import WhyChooseUs from "../../../components/home/WhyChooseUs"
 const Contact = () => {
     
     return (
-        <section id="about-us" className="pt-24">
+        <section id="about-us" className="pt-24 bg-black">
             <DirectorMessage />
             <WhyChooseUs />
             <AboutUs />

@@ -50,12 +50,12 @@ const ContactUs = () => {
   }
 
   return (
-    <section className="bg-gray-100 py-20 mt-12" id='contact-us-section'>
+    <section className="bg-black py-20 mt-12" id='contact-us-section'>
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-gray-800 leading-tight">Get in Touch</h2>
-        <p className="text-lg md:text-xl text-gray-700 text-center mb-16 max-w-3xl mx-auto leading-relaxed">Thank you for reaching out! Please fill in your details, and our team will connect with you shortly to assist with your academic journey.</p>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-white leading-tight">Get in Touch</h2>
+        <p className="text-lg md:text-xl text-gray-300 text-center mb-16 max-w-3xl mx-auto leading-relaxed">Thank you for reaching out! Please fill in your details, and our team will connect with you shortly to assist with your academic journey.</p>
         
-        <div className="flex flex-col md:flex-row bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row bg-gray-900 rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
           <div className="md:w-1/2 bg-gradient-to-br from-[#106fb8] to-[#0d5a94] p-8 flex flex-col justify-between">
             <div>
               <h3 className="text-2xl font-bold text-white mb-6">Connect With Us</h3>
@@ -70,10 +70,10 @@ const ContactUs = () => {
               </div>
             </div>
             <div className="space-y-4">
-              <a href="tel:+919270189405" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +91 9270189405</a>
-              <a href="tel:+919370954406" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaPhone className="mr-3 text-lg" /> +91 9370954406</a>
-              <a href="mailto:info@vichargroup.com" className="text-base text-gray-600 hover:text-gray-800 transition-all duration-300 ease-in-out flex items-center bg-blue-50 rounded-lg p-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200"><FaEnvelope className="mr-3 text-lg" /> info@vichargroup.com</a>
-              <div className="text-base text-gray-600 flex items-center bg-blue-50 rounded-lg p-3 transition-all duration-300 ease-in-out hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200">
+              <a href="tel:+919270189405" className="text-base text-white hover:text-gray-200 transition-all duration-300 ease-in-out flex items-center bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800"><FaPhone className="mr-3 text-lg" /> +91 9270189405</a>
+              <a href="tel:+919370954406" className="text-base text-white hover:text-gray-200 transition-all duration-300 ease-in-out flex items-center bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800"><FaPhone className="mr-3 text-lg" /> +91 9370954406</a>
+              <a href="mailto:info@vichargroup.com" className="text-base text-white hover:text-gray-200 transition-all duration-300 ease-in-out flex items-center bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800"><FaEnvelope className="mr-3 text-lg" /> info@vichargroup.com</a>
+              <div className="text-base text-white flex items-center bg-gray-800/50 rounded-lg p-3 transition-all duration-300 ease-in-out hover:bg-gray-800">
                 <FaMapMarkerAlt className="mr-3 text-lg" />
                 <address className="not-italic">
                   Office No. 65, Vichar Education, <br />
@@ -83,34 +83,34 @@ const ContactUs = () => {
               </div>
             </div>
           </div>
-          <div className="md:w-1/2 p-8 bg-gray-50">
+          <div className="md:w-1/2 p-8 bg-gray-800">
             <div className="w-full max-w-md">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Send A Message</h3>
+              <h3 className="text-2xl font-bold text-white mb-6">Send A Message</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Name</label>
                   <input
                     type="text"
                     id="name"
                     name="name"
                     required
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
+                    className="mt-1 block w-full rounded-lg border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-gray-700 text-white"
                     placeholder="Your name"
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
                   <input
                     type="email"
                     id="email"
                     name="email"
                     required
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
+                    className="mt-1 block w-full rounded-lg border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-gray-700 text-white"
                     placeholder="your.email@example.com"
                   />
                 </div>
                 <div>
-                  <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                  <label htmlFor="mobile" className="block text-sm font-medium text-gray-300 mb-1">Mobile Number</label>
                   <input
                     type="text"
                     id="mobile"
@@ -123,17 +123,17 @@ const ContactUs = () => {
                         e.preventDefault()
                       }
                     }}
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
+                    className="mt-1 block w-full rounded-lg border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-gray-700 text-white"
                     placeholder="Your mobile number"
                   />
                 </div>
                 <div>
-                  <label htmlFor="interestArea" className="block text-sm font-medium text-gray-700 mb-1">Interest Area</label>
+                  <label htmlFor="interestArea" className="block text-sm font-medium text-gray-300 mb-1">Interest Area</label>
                   <select
                     id="interestArea"
                     name="interest_area"
                     required
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white"
+                    className="mt-1 block w-full rounded-lg border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-gray-700 text-white"
                   >
                     <option value="">Select an option</option>
                     <option value="Education">Education</option>
@@ -143,12 +143,12 @@ const ContactUs = () => {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-1">Message</label>
                   <textarea
                     id="message"
                     name="message"
                     rows="4"
-                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-white resize-none"
+                    className="mt-1 block w-full rounded-lg border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out px-3 py-2 bg-gray-700 text-white resize-none"
                     placeholder="Your message here..."
                   ></textarea>
                 </div>

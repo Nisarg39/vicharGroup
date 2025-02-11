@@ -36,9 +36,9 @@
       }
 
       return (
-          <section className="bg-gray-100 py-10 sm:py-20">
+          <section className="bg-black py-10 sm:py-20">
               <div className="container mx-auto px-4">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-gray-800 relative">
+                  <h2 className="text-5xl sm:text-5xl font-bold text-center mb-8 sm:mb-12 text-white relative">
                       What Our Students Say
                   </h2>
 
@@ -47,7 +47,7 @@
                           {testimonials.map((testimonial, index) => (
                               <motion.div 
                                   key={index} 
-                                  className="bg-white p-6 sm:p-8 rounded-lg shadow-lg flex-shrink-0 w-80 sm:w-96"
+                                  className="bg-gray-900 p-6 sm:p-8 rounded-lg shadow-lg flex-shrink-0 w-80 sm:w-96"
                                   initial={{ opacity: 0, y: 50 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -57,7 +57,7 @@
                                           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                                       </svg>
                                   </div>
-                                  <p className="text-gray-700 mb-4 sm:mb-6 italic text-sm sm:text-base leading-relaxed">
+                                  <p className="text-gray-300 mb-4 sm:mb-6 italic text-sm sm:text-base leading-relaxed">
                                       {expandedTestimonials[index] 
                                           ? testimonial.text 
                                           : `${testimonial.text.split(' ').slice(0, 30).join(' ')}...`}
@@ -72,7 +72,7 @@
                                   )}
                                   <div className="flex items-center justify-end">
                                       <div>
-                                          <h4 className="font-semibold text-gray-800 text-xs sm:text-sm text-right">{testimonial.name}</h4>
+                                          <h4 className="font-semibold text-gray-200 text-xs sm:text-sm text-right">{testimonial.name}</h4>
                                       </div>
                                       <div className="w-10 h-10 sm:w-12 sm:h-12 ml-3 sm:ml-4">
                                           <img 

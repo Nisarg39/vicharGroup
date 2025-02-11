@@ -23,12 +23,12 @@ export default function Activities() {
   ];
 
   return (
-    <section className="mt-8 sm:mt-16 ">
-      <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-8 sm:mb-12 md:mb-16 text-center text-gray-800 tracking-tight">Daily Activities</h2>
+    <section className="pt-8 sm:pt-16 bg-black">
+      <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-8 sm:mb-12 md:mb-16 text-center text-white tracking-tight">Daily Activities</h2>
       <div className="flex overflow-x-auto sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-4">
         {activities.map((activity, index) => (
-          <div key={index} className="relative overflow-hidden bg-white transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-blue-300 flex-shrink-0 w-[280px] sm:w-auto group">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div key={index} className="relative overflow-hidden bg-gray-900 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-blue-300 flex-shrink-0 w-[280px] sm:w-auto group">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <img
               src={activity.image}
               alt={activity.alt}
