@@ -14,9 +14,9 @@ export default function Whatyoulearn(){
     ]
 
     return(
-        <section className="py-12 bg-black">
+        <section className="py-12 bg-gradient-to-b">
             <div className="container mx-auto px-4">
-                <h2 className="text-4xl font-bold mb-8 text-center text-white">What You'll Learn:</h2>
+                <h2 className="text-4xl font-bold mb-8 text-center text-gray-900">What You'll Learn</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
                     onMouseEnter={() => setHoveredIndex(true)}
                     onMouseLeave={() => setHoveredIndex(null)}
@@ -24,7 +24,7 @@ export default function Whatyoulearn(){
                     {learningPoints.map((point, index) => (
                         <div 
                             key={index} 
-                            className="bg-gray-900 rounded-lg shadow-md overflow-hidden"
+                            className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
                         >
                             <div className="bg-[#106FB7] text-white p-4 flex items-center">
                                 <point.icon className="text-3xl mr-3" />
@@ -32,7 +32,7 @@ export default function Whatyoulearn(){
                             </div>
                             {hoveredIndex && (
                                 <div className="p-6">
-                                    <p className="text-gray-300">{point.text}</p>
+                                    <p className="text-gray-600">{point.text}</p>
                                 </div>
                             )}
                         </div>

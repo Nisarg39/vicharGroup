@@ -2,8 +2,8 @@
 import { motion } from "framer-motion"
 export default function TravelStories(){
     return(
-        <div className="bg-black py-8">
-            <h2 className="text-5xl md:text-5xl lg:text-5xl font-bold text-center mt-8 mb-8 text-white">Travel Diaries</h2>
+        <div className="bg-white py-8">
+            <h2 className="text-5xl md:text-5xl lg:text-5xl font-bold text-center mt-8 mb-8 text-black">Travel Diaries</h2>
             <div className="overflow-x-auto md:overflow-x-visible">
                 <motion.div className="flex flex-row md:flex-row gap-4 p-4 min-h-[300px] md:min-h-[400px] xl:min-h-[500px] min-w-max md:min-w-0">
                     <motion.div 

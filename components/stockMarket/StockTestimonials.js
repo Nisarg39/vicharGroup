@@ -33,9 +33,9 @@ export default function StockTestimonials() {
     }
 
     return (
-        <section className="bg-black py-4 sm:py-10">
+        <section className="bg-white py-4 sm:py-10">
             <div className="container mx-auto px-4">
-                <h2 className="text-5xl sm:text-5xl font-bold text-center mb-8 sm:mb-12 text-white relative">
+                <h2 className="text-5xl sm:text-5xl font-bold text-center mb-8 sm:mb-12 text-black relative">
                     What Our Students Say
                 </h2>
 
@@ -44,7 +44,7 @@ export default function StockTestimonials() {
                         {testimonials.map((testimonial, index) => (
                             <motion.div 
                                 key={index} 
-                                className="bg-gray-900 p-6 sm:p-8 rounded-lg shadow-lg flex-shrink-0 w-80 sm:w-96"
+                                className="bg-gray-200 p-6 sm:p-8 rounded-lg shadow-lg flex-shrink-0 w-80 sm:w-96"
                                 initial={{ opacity: 0, y: 50 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -55,7 +55,7 @@ export default function StockTestimonials() {
                                     </svg>
                                 </div>
                                 <div className="min-h-[200px]">
-                                    <p className="text-gray-300 mb-4 sm:mb-6 italic text-sm sm:text-base leading-relaxed">
+                                    <p className="text-gray-700 mb-4 sm:mb-6 italic text-sm sm:text-base leading-relaxed">
                                         {expandedTestimonials[index] 
                                             ? testimonial.text 
                                             : `${testimonial.text.split(' ').slice(0, 30).join(' ')}...`}
@@ -69,10 +69,10 @@ export default function StockTestimonials() {
                                         </button>
                                     )}
                                 </div>
-                                <div className="pt-4 border-t border-gray-700">
+                                <div className="pt-4 border-t border-gray-300">
                                     <div className="flex items-center justify-center">
                                         <div>
-                                            <h4 className="font-semibold text-gray-300 text-xs sm:text-sm mr-3 sm:mr-4">{testimonial.name}</h4>
+                                            <h4 className="font-semibold text-gray-700 text-xs sm:text-sm mr-3 sm:mr-4">{testimonial.name}</h4>
                                         </div>
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#1d77bc] rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md border-2 border-[#1d77bc]">
                                             <img 

@@ -27,17 +27,17 @@ const AboutUs = () => {
   ]
 
   return (
-    <section className="pt-8 bg-black" id='about-us-section'>
+    <section className="pt-8 bg-white" id='about-us-section'>
       <div className="container mx-auto px-4">
-        <div className="bg-gray-900 rounded-xl shadow-lg p-2 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:border-2 hover:border-[#106fb8] hover:-translate-y-2">
-          <div className="bg-gray-900 rounded-lg p-2 sm:p-5 w-full sm:w-auto">
-            <ul className="space-y-4 text-gray-300">
+        <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:border-2 hover:border-[#106fb8] hover:-translate-y-2">
+          <div className="bg-white rounded-lg p-2 sm:p-5 w-full sm:w-auto">
+            <ul className="space-y-4 text-gray-700">
               {content.map((item, index) => (
                 <li key={index}>
-                  <h4 className="text-xl font-semibold mb-2 flex items-center text-white">
+                  <h4 className="text-xl font-semibold mb-2 flex items-center text-gray-900">
                     <item.icon className="mr-2 text-blue-500 text-2xl" /> {item.title}
                   </h4>
-                  <p className="bg-gray-800 rounded-lg p-3 transition-all duration-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-800">
+                  <p className="bg-gray-50 rounded-lg p-3 transition-all duration-300 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50">
                     {item.text.length > 150 ? (
                       <>
                         <span className="lg:hidden">

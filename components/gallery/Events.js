@@ -34,11 +34,11 @@ export default function Events(){
     }
 
     return(
-        <div className="events-section pb-8 sm:pb-12 pt-8 sm:pt-12 bg-black">
+        <div className="events-section pb-8 sm:pb-12 pt-8 sm:pt-12 bg-white">
             <div className="max-w-6xl mx-auto px-2 sm:px-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-8">
                     <div className="w-full md:w-1/3">
-                        <h1 className="text-5xl sm:text-5xl md:text-5xl font-extrabold text-left text-white tracking-tight hover:text-gray-200 transition-colors duration-300">
+                        <h1 className="text-5xl sm:text-5xl md:text-5xl font-extrabold text-left text-gray-800 tracking-tight hover:text-gray-600 transition-colors duration-300">
                             Science Talk Show
                         </h1>
                     </div>
@@ -50,7 +50,7 @@ export default function Events(){
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.5 }}
-                                className="rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 sm:border-4 border-gray-800"
+                                className="rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 sm:border-4 border-gray-200"
                             >
                                 <img
                                     src={images[currentIndex]}
@@ -60,17 +60,17 @@ export default function Events(){
                             </motion.div>
                             <button
                                 onClick={prevSlide}
-                                className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 bg-gray-800/80 text-white p-2 sm:p-3 rounded-full hover:bg-gray-700 hover:text-white transition-all duration-300 shadow-lg text-sm sm:text-base"
+                                className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 bg-gray-100/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-gray-200 hover:text-gray-900 transition-all duration-300 shadow-lg text-sm sm:text-base"
                             >
                                 ❮
                             </button>
                             <button
                                 onClick={nextSlide}
-                                className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-gray-800/80 text-white p-2 sm:p-3 rounded-full hover:bg-gray-700 hover:text-white transition-all duration-300 shadow-lg text-sm sm:text-base"
+                                className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-gray-100/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-gray-200 hover:text-gray-900 transition-all duration-300 shadow-lg text-sm sm:text-base"
                             >
                                 ❯
                             </button>
-                            <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-3 bg-gray-800/30 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
+                            <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-3 bg-gray-100/30 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
                                 {images.map((_, index) => (
                                     <button
                                         key={index}
@@ -78,7 +78,7 @@ export default function Events(){
                                         className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                                             currentIndex === index 
                                                 ? 'bg-[#1d77bc] scale-125' 
-                                                : 'bg-gray-600 hover:bg-[#1d77bc]/60'
+                                                : 'bg-gray-400 hover:bg-[#1d77bc]/60'
                                         }`}
                                     />
                                 ))}

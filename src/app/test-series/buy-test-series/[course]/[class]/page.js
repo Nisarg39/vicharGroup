@@ -260,7 +260,7 @@ const Home = () => {
   ];
 
   return (
-    <section>
+    <section className="bg-black">
       {params.course === "jee" && params.class === "12" && (
         <>
           <TestSeriesHero
@@ -270,7 +270,7 @@ const Home = () => {
             language="English"
             subjects="Physics, Chemistry, Maths"
             testStartDate="3rd March, 2025"
-            price="₹ 15000"
+            price="₹ 4000"
           />
           <TestSchedule testSchedule={testScheduleJee} title="Test Schedule - JEE Mains (2025)" />
         </>
@@ -285,7 +285,7 @@ const Home = () => {
             language="English"
             subjects="Physics, Chemistry, Biology"
             testStartDate="5th March, 2025"
-            price="₹ 15000"
+            price="₹ 4000"
           />
           <TestSchedule testSchedule={testScheduleNeet} title="Test Schedule – NEET (2025)" />
         </>
@@ -300,7 +300,7 @@ const Home = () => {
             language="English"
             subjects="Physics, Chemistry, Maths"
             testStartDate="1st March, 2025"
-            price="₹ 15000"
+            price="₹ 4000"
           />
           <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
         </>
@@ -315,7 +315,7 @@ const Home = () => {
             language="English"
             subjects="Physics, Chemistry, Biology"
             testStartDate="1st March, 2025"
-            price="₹ 15000"
+            price="₹ 4000"
           />
           <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
         </>

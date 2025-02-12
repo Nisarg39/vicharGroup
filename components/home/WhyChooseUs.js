@@ -52,27 +52,36 @@ function WhyChooseUs() {
     const [hoveredIndex, setHoveredIndex] = useState(null)
 
     return (
-        <section className="py-4 bg-black">
+        <section className="py-20 bg-gradient-to-b from-white to-gray-200 ">
             <div className="container mx-auto px-4">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 lg:mb-16 text-center text-white">Why Choose Us</h2>
+                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Why Choose Us 🤔</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {whyChooseUsData.map((item, index) => (
                         <div 
                             key={index} 
-                            className={`bg-gray-900 p-2 sm:p-4 rounded-xl shadow-lg transform transition duration-500 hover:scale-105 ${hoveredIndex === index ? 'pb-2 sm:pb-4' : 'pb-0 sm:pb-4'}`}
+                            className={`bg-white p-2 sm:p-4 rounded-xl shadow-lg transform transition duration-500 hover:scale-105 hover:rotate-1 cursor-pointer ${hoveredIndex === index ? 'pb-2 sm:pb-4 ring-4 ring-blue-500 ring-opacity-50' : 'pb-0 sm:pb-4'}`}
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}
+                            style={{
+                                animation: hoveredIndex === index ? 'pulse 2s infinite' : 'none',
+                                backdropFilter: 'blur(8px)',
+                            }}
                         >
-                            <div className="flex flex-col items-center sm:items-start">
+                            <div className="flex flex-col items-center sm:items-start relative">
                                 <div className="flex flex-row items-center mb-4 w-full">
-                                    <div className="text-blue-500 mr-4">
+                                    <div className={`text-blue-500 mr-4 transform transition-all duration-300 ${hoveredIndex === index ? 'scale-110 rotate-12' : ''}`}>
                                         {item.icon}
                                     </div>
-                                    <h3 className="text-lg md:text-xl font-semibold text-white">{item.title}</h3>
+                                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 transform transition-all duration-300">{item.title}</h3>
                                 </div>
-                                <p className={`text-gray-300 text-sm md:text-base ${hoveredIndex === index ? 'block' : 'hidden sm:block'}`}>
+                                <p className={`text-gray-600 text-sm md:text-base transition-all duration-300 ${hoveredIndex === index ? 'block scale-100 opacity-100' : 'hidden sm:block sm:opacity-90'}`}>
                                     {item.description}
                                 </p>
+                                {hoveredIndex === index && (
+                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center animate-ping">
+                                        ✨
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

@@ -9,7 +9,7 @@ import WhyChooseUs from "../../../components/stockMarket/WhyChooseUs"
 import Instructor from "../../../components/stockMarket/Instructor"
 export default function StockMarketHome(){
     return(
-        <div className="bg-black">
+        <>
             <HeroSection />
             <StockCourses />
             <Instructor />
@@ -18,6 +18,6 @@ export default function StockMarketHome(){
             <Faq />
             <StockTestimonials />
             <ContactUs />
-        </div>
+        </>
     )
 }

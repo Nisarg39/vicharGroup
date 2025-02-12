@@ -17,10 +17,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20 bg-black">
-      <div 
-        className="absolute inset-0 z-0 bg-black"
-      />
+    <section className="min-h-screen flex items-center justify-center relative overflow-hidden pt-20 bg-gradient-to-b from-white to-gray-200">
       <div className="w-full relative z-10">
         <div className="flex flex-col items-center justify-center">
           <div className="w-full px-4 lg:px-0 lg:w-3/4 mx-auto">

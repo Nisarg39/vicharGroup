@@ -49,14 +49,14 @@ function StudentEnquiryForm() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="min-h-screen bg-cover bg-center bg-no-repeat bg-black"
+            className="min-h-95 bg-cover bg-center bg-no-repeat py-8"
         >
             <Modal showModal={showModal} setShowModal={setShowModal} isSuccess={isSuccess} modalMessage={modalMessage} />
             <motion.h2 
                 initial={{ y: -20 }}
                 animate={{ y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-extrabold text-center mb-4 sm:mb-6 md:mb-10 text-white leading-tight animate-fade-in-down relative"
+                className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight"
             >
                 Student Enquiry Form
             </motion.h2>
@@ -64,24 +64,24 @@ function StudentEnquiryForm() {
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="p-4 sm:p-6 md:p-10 rounded-xl shadow-2xl max-w-3xl mx-auto my-4 sm:my-8 md:my-16 bg-gray-900 border-t-4 border-[#106fb8] transition-all duration-300 hover:shadow-3xl backdrop-filter backdrop-blur-lg bg-opacity-90"
+                className="p-4 sm:p-6 md:p-10 rounded-xl shadow-2xl max-w-3xl mx-auto my-4 sm:my-8 md:my-16 bg-white border-t-4 border-[#106fb8] transition-all duration-300 hover:shadow-3xl"
             >
                 <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 md:space-y-8">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <div className="group relative">
-                            <label htmlFor="fullName" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                            <label htmlFor="fullName" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaUser className="inline mr-2" />Full Name
                             </label>
-                            <input type="text" id="fullName" name="fullName" required className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" />
+                            <input type="text" id="fullName" name="fullName" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" />
                         </div>
                         <div className="group relative">
-                            <label htmlFor="email" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                            <label htmlFor="email" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaEnvelope className="inline mr-2" />Email
                             </label>
-                            <input type="email" id="email" name="email" required className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" />
+                            <input type="email" id="email" name="email" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" />
                         </div>
                         <div className="group relative">
-                            <label htmlFor="mobile" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                            <label htmlFor="mobile" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaPhone className="inline mr-2 transform scale-x-[-1]" />Mobile Number
                             </label>
                             <input 
@@ -92,14 +92,14 @@ function StudentEnquiryForm() {
                                 pattern="[0-9]{10}"
                                 maxLength="10"
                                 onInput={handleMobileInput}
-                                className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" 
+                                className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" 
                             />
                         </div>
                         <div className="group relative">
-                            <label htmlFor="stream" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                            <label htmlFor="stream" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaBook className="inline mr-2" />Stream
                             </label>
-                            <select id="stream" name="stream" required className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" onChange={(e) => setSelectedStream(e.target.value)}>
+                            <select id="stream" name="stream" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md" onChange={(e) => setSelectedStream(e.target.value)}>
                                 <option value="">Select a stream</option>
                                 <option value="Engineering">Engineering</option>
                                 <option value="Medical">Medical</option>
@@ -108,10 +108,10 @@ function StudentEnquiryForm() {
                             </select>
                         </div>
                         <div className="group relative">
-                            <label htmlFor="class" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                            <label htmlFor="class" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaGraduationCap className="inline mr-2" />Class
                             </label>
-                            <select id="class" name="class" required className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md">
+                            <select id="class" name="class" required className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 appearance-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md">
                                 <option value="">Select a class</option>
                                 {selectedStream === 'Foundation' ? (
                                     <>
@@ -130,10 +130,10 @@ function StudentEnquiryForm() {
                         </div>
                     </div>
                     <div className="group relative">
-                        <label htmlFor="message" className="block text-sm font-semibold text-gray-300 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
+                        <label htmlFor="message" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                             <FaComment className="inline mr-2" />Message
                         </label>
-                        <textarea id="message" name="message" rows="4" className="mt-1 block w-full rounded-lg border border-gray-600 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-gray-800 text-white hover:bg-gray-700 resize-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md"></textarea>
+                        <textarea id="message" name="message" rows="4" className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-[#106fb8] focus:ring-2 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-200 ease-in-out text-sm py-2 sm:py-3 px-3 sm:px-4 bg-white text-gray-800 hover:bg-gray-50 resize-none group-hover:border-[#106fb8] transform hover:scale-105 hover:shadow-md"></textarea>
                     </div>
                     <div className="flex justify-center">
                         <motion.button 

@@ -22,7 +22,7 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-black">
+    <>
       <HeroSection />
       <Courses />
       <DirectorMessage />
@@ -30,6 +30,6 @@ export default function Home() {
       <AllTestimonials />
       <StudentEnquiryForm />
       {/* <VicharApp /> */}
-    </div>
+    </>
   );
 }
