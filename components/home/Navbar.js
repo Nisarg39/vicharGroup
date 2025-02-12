@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from'react-redux'
 import { loggedIn, loggedOut } from '../../features/login/LoginSlice'
-import { FaGraduationCap, FaHeartbeat, FaChartLine, FaBook, FaChartBar, FaExchangeAlt, FaClipboardCheck, FaFlask, FaCalculator, FaUserTie, FaInfoCircle, FaBookOpen, FaImages, FaEnvelope, FaChalkboardTeacher, FaSignInAlt } from 'react-icons/fa'
+import { FaGraduationCap, FaHeartbeat, FaChartLine, FaBook, FaChartBar, FaExchangeAlt, FaClipboardCheck, FaFlask, FaCalculator, FaUserTie } from 'react-icons/fa'
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -89,12 +89,12 @@ const Navbar = () => {
           </button>
         </div>
         <div className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto items-start md:items-center bg-black md:bg-transparent shadow-lg md:shadow-none rounded-lg md:rounded-none p-4 md:p-0 absolute md:static left-0 right-0 top-full z-20 transition-all duration-300 ease-in-out`}>
-        <Link href="/about-us" onClick={() => { closeMenu(); setActiveLink('about-us'); }} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-                <FaInfoCircle className="mr-2" /> About Us
+        <Link href="/about-us" onClick={() => { closeMenu(); setActiveLink('about-us'); }} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>
+                About Us
         </Link>
           <div className="relative group w-full md:w-auto">
             <a href="#" onClick={toggleCoursesDropdown} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)} className={`${activeLink === 'courses' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
-              <span className="flex items-center"><FaBookOpen className="mr-2" /> Courses</span>
+              Courses
               <svg className={`w-4 h-4 ml-1 transform ${isCoursesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -117,23 +117,21 @@ const Navbar = () => {
               ))}
             </ul>
           </div>
-          <Link href="/test-series" onClick={() => { closeMenu(); setActiveLink('test-series'); }} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-            <FaClipboardCheck className="mr-2" /> Test Series
+          <Link href="/test-series" onClick={() => { closeMenu(); setActiveLink('test-series'); }} className={`${activeLink === 'test-series' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>
+            Test Series
           </Link>
-          <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-            <FaImages className="mr-2" /> Gallery
+          <Link href="/gallery" onClick={() => { closeMenu(); setActiveLink('gallery'); }} className={`${activeLink === 'gallery' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>
+            Gallery
           </Link>
-          <Link href="/contact-us" onClick={() => { closeMenu(); setActiveLink('contact-us'); }} className={`${activeLink === 'contact-us' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-            <FaEnvelope className="mr-2" /> Contact Us
+          <Link href="/contact-us" onClick={() => { closeMenu(); setActiveLink('contact-us'); }} className={`${activeLink === 'contact-us' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>
+            Contact Us
           </Link>
           <div className="w-full md:w-auto">
             {isLoggedIn ? 
-              <Link href="/classroom" onClick={() => {closeMenu(); setActiveLink('classroom');}} className={`${activeLink === 'classroom' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-                <FaChalkboardTeacher className="mr-2" /> Classroom
-              </Link>
+              <Link href="/classroom" onClick={() => {closeMenu(); setActiveLink('classroom');}} className={`${activeLink === 'classroom' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>Classroom</Link>
             : 
-              <Link href="/login" onClick={() => { closeMenu(); setActiveLink('login'); }} className={`${activeLink === 'login' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
-                <FaSignInAlt className="mr-2" /> Log In
+              <Link href="/login" onClick={() => { closeMenu(); setActiveLink('login'); }} className={`${activeLink === 'login' ? 'text-[#e96030] font-bold' : 'text-white'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-900 block w-full text-left md:text-center md:whitespace-nowrap`}>
+                Log In
               </Link>
             }
           </div>

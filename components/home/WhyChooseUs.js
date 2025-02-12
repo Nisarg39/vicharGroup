@@ -52,9 +52,9 @@ function WhyChooseUs() {
     const [hoveredIndex, setHoveredIndex] = useState(null)
 
     return (
-        <section className="pb-8 pt-8 bg-black">
+        <section className="py-4 bg-black">
             <div className="container mx-auto px-4">
-                <h2 className="text-4xl sm:text-4xl md:text-5xl lg:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 lg:mb-16 text-center text-white">Why Choose Us</h2>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-8 md:mb-12 lg:mb-16 text-center text-white">Why Choose Us</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {whyChooseUsData.map((item, index) => (
                         <div 
