@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-
+import { signInGoogle } from "../../../../../server_actions/actions/serverActions";
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -11,17 +11,23 @@ const handler = NextAuth({
   secret: process.env.JWT_SECRET,
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
-        console.log("user", user);
-      return true;
+        try {
+            const userData = await signInGoogle(user);
+            return true; // Allow sign in
+        } catch (error) {
+            console.error("Error storing user data:", error);
+            return true; // Still allow sign in even if storage fails
+        }
     },
     async redirect({ url, baseUrl }) {
-      return baseUrl;
+      return `${baseUrl}/login`;
     },
     async session({ session, token, user }) {
+      
       return session;
     },
     async jwt({ token, user, account, profile, isNewUser }) {
-      return token;
+        return token;
     },
   }
 });

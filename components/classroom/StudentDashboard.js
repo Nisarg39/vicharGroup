@@ -4,6 +4,7 @@ import { loggedOut } from "../../features/login/LoginSlice"
 import FirstDashboard  from "./FirstDashboard"
 import StudentProfile from "./StudentProfile"
 import { useState, useEffect } from "react"
+import { signOut } from "next-auth/react"
 
 export default function StudentDashboard() {
     const dispatch = useDispatch()
@@ -13,6 +14,8 @@ export default function StudentDashboard() {
 
     const handleLogout = () => {
         localStorage.removeItem('token')
+        // signOut is a function from next-auth/react that deletes the session from the server of google and the client side of our website
+        signOut({ callbackUrl: '/login' })
         dispatch(loggedOut())
         router.push('/login')
     }
