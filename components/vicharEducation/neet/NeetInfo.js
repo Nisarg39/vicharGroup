@@ -28,26 +28,15 @@ export default function NeetInfo(){
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Duration of Exam</td>
-                            <td className="border border-gray-300 px-4 py-3 text-gray-700">3 hours and 20 minutes</td>
+                            <td className="border border-gray-300 px-4 py-3 text-gray-700">3 hours</td>
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Sections A (MCQ)</td>
-                            <td className="border border-gray-300 px-4 py-3 text-gray-700">Physics: 35<br/>Chemistry: 35<br/>Botany: 35<br/>Zoology: 35</td>
-                        </tr>
-                        <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                            <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Sections B (MCQ)</td>
-                            <td className="border border-gray-300 px-4 py-3 text-gray-700">Physics: 15 out of 10 questions will have to be answered
-                                <br/>
-                                    Chemistry: 15 out of 10 questions will have to be answered
-                                <br/>
-                                    Botany: 15 out of 10 questions will have to be answered
-                                <br/>
-                                    Zoology: 15 out of 10 questions will have to be answered
-                            </td>
+                            <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">MCQ</td>
+                            <td className="border border-gray-300 px-4 py-3 text-gray-700">Physics: 45<br/>Chemistry: 45<br/>Biology: 90</td>
                         </tr>
                         <tr className="bg-white hover:bg-gray-100 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Number of Questions:</td>
-                            <td className="border border-gray-300 px-4 py-3 text-gray-700">200 out of which 180 questions will have to be answered</td>
+                            <td className="border border-gray-300 px-4 py-3 text-gray-700">Total 180 Questions</td>
                         </tr>
                         <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                             <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Total Marks</td>
@@ -74,35 +63,25 @@ export default function NeetInfo(){
                         <thead>
                             <tr className="bg-[#1d77bc] text-white">
                                 <th className="border border-gray-300 px-4 py-3 text-left">Subject</th>
-                                <th className="border border-gray-300 px-4 py-3 text-left">Section A - 35</th>
-                                <th className="border border-gray-300 px-4 py-3 text-left">Section B - 15</th>
+                                <th className="border border-gray-300 px-4 py-3 text-left">Total Questions</th>
                                 <th className="border border-gray-300 px-4 py-3 text-left">Total Marks</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
                                 <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Physics</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">35</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">15</td>
+                                <td className="border border-gray-300 px-4 py-3 text-gray-700">45</td>
                                 <td className="border border-gray-300 px-4 py-3 text-gray-700">180</td>
                             </tr>
                             <tr className="bg-white hover:bg-gray-100 transition-colors duration-200">
                                 <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Chemistry</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">35</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">15</td>
+                                <td className="border border-gray-300 px-4 py-3 text-gray-700">45</td>
                                 <td className="border border-gray-300 px-4 py-3 text-gray-700">180</td>
                             </tr>
                             <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                                <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Botany</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">35</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">15</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">180</td>
-                            </tr>
-                            <tr className="bg-gray-100 hover:bg-gray-200 transition-colors duration-200">
-                                <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Zoology</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">35</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">15</td>
-                                <td className="border border-gray-300 px-4 py-3 text-gray-700">180</td>
+                                <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-700">Biology</td>
+                                <td className="border border-gray-300 px-4 py-3 text-gray-700">90</td>
+                                <td className="border border-gray-300 px-4 py-3 text-gray-700">360</td>
                             </tr>
                         </tbody>
                     </table>

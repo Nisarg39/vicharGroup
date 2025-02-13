@@ -41,7 +41,7 @@
       }
 
       return (
-        <section className="bg-white py-6 sm:py-10">
+        <section className="bg-gradient-to-b from-gray-200 to-white py-6 sm:py-10">
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-gray-900 relative">
                     What Our Students Say

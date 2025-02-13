@@ -21,12 +21,11 @@ const FoundationCourses = (props) => {
   const coursesGroup3 = courses.slice(6, 9)
 
   return (
-    <div className="bg-white flex items-center" id='courses-section'>
-      <div className="container mx-auto px-4 sm:py-8 md:py-8">
+    <div className="bg-gradient-to-b from-gray-200 to-white flex items-center" id='courses-section'>
+      <div className="container mx-auto px-4 sm:pt-8 md:pt-8">
         <h2 className="text-5xl md:text-5xl font-bold text-gray-900 text-center mb-8">Courses</h2>
         {[coursesGroup1, coursesGroup2, coursesGroup3].map((group, groupIndex) => (
           <div key={groupIndex} className="mb-8 overflow-x-auto">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-gray-800">{group[0].level} Standard - SSC, CBSE, and ICSE</h3>
             <div className="flex justify-center gap-6 min-w-max pb-8 px-8">
               {group.map((course) => (
                 <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transition duration-300 hover:shadow-xl border border-gray-200 hover:border-[#106fb8] flex-shrink-0 w-80 sm:w-72 md:w-96">
