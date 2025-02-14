@@ -25,6 +25,11 @@ const studentsSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    interestedInProduct: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Products"
+    }],
+
 }, {
     timestamps: true
 })

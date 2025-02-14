@@ -48,11 +48,11 @@ const HeroSection = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col lg:flex-row lg:gap- items-center">
           <div className="order-2 lg:order-1 lg:w-1/3 mt-8 lg:mt-0">
-            <h1 className="text-xl md:text-6xl lg:text-8xl font-extrabold mb-4 lg:mb-8">
-              <span className="text-[#e96030]">V</span>
+            <h1 className="text-7xl md:text-7xl lg:text-8xl font-extrabold mb-4 lg:mb-8">
+              <span className={currentSlide === 0 ? "text-[#e96030]" : "text-[#1d77bc]"}>V</span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-700 to-gray-900">ICHAR</span>
               <br />
-              <span className="text-[#1d77bc]">G</span>
+              <span className={currentSlide === 0 ? "text-[#1d77bc]" : "text-[#e96030]"}>G</span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-700 to-gray-900">ROUP</span>
             </h1>
             <p className="text-gray-600 text-lg lg:text-xl mb-4 lg:mb-8">

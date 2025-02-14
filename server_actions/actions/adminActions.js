@@ -4,6 +4,7 @@ import ContactUs from "../models/contactUs"
 import { connectDB } from "../config/mongoose"
 import Admin from "../models/admin"
 import Student from "../models/student"
+import Products from "../models/products"
 import jwt from "jsonwebtoken"
 
 
@@ -251,6 +252,57 @@ export async function fetchAllStudents(page) {
         return {
             success: false,
             message: "Error fetching students"
+        }
+    }
+}
+
+export async function addProduct(details){
+    const productObject = {
+        name: details.name,
+        price: details.price,
+        discountPrice: details.discountPrice,
+        type: details.type,
+    }
+    try{
+        await connectDB()
+        if(!details.originalName){
+            const product = await Products.create(productObject)
+            return {
+                success: true,
+                message: "Product added successfully",
+                product: product
+            }
+        }else{
+            const product = await Products.findOneAndUpdate({name: details.originalName}, productObject, {new: true})
+            return {
+                success: true,
+                message: "Product updated successfully",
+                product: product
+            }
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding product"
+        }
+    }
+}
+
+export async function showProducts(){
+    try{
+        await connectDB()
+        const products = await Products.find({})
+        .sort({createdAt: -1})
+        return {
+            success: true,
+            products: products
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching products"
         }
     }
 }

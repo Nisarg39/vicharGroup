@@ -5,8 +5,11 @@
   import { ContactUsTable } from './ContactUsTable';
   import ChangePassword from './ChangePassword';
   import EnrolledStudentsList from './EnrolledStudentsList';
+  import AddProduct from './AddProduct';
   import { useRouter } from 'next/navigation';
   import Modal from '../common/Modal';
+
+
   export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('enquiry');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -26,6 +29,10 @@
 
     function handleEnrolledStudents() {
       setActiveTab('enrolled');
+    }
+
+    function handleAddProduct() {
+      setActiveTab('addProduct');
     }
 
     async function handleLogout() {
@@ -54,7 +61,7 @@
                   onClick={() => fetchStudentEnquiries()}
                   className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'enquiry'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -64,7 +71,7 @@
                   onClick={() => fetchContactMessages()}
                   className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'contact'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -74,7 +81,7 @@
                   onClick={() => handlePasswordTab()}
                   className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'password'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -84,11 +91,21 @@
                   onClick={() => handleEnrolledStudents()}
                   className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'enrolled'
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   Enrolled Students
+                </button>
+                <button
+                  onClick={() => handleAddProduct()}
+                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                    activeTab === 'addProduct'
+                      ? 'bg-[#1d77bc] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Add Product
                 </button>
               </div>
               <div className="mt-4">
@@ -102,6 +119,11 @@
                 {activeTab === 'enrolled' && (
                   <div className="bg-white rounded-lg">
                     <EnrolledStudentsList />
+                  </div>
+                )}
+                {activeTab === 'addProduct' && (
+                  <div className="bg-white rounded-lg">
+                    <AddProduct />
                   </div>
                 )}
               </div>

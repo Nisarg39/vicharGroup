@@ -1,6 +1,7 @@
 "use server" 
 import { connectDB } from "../config/mongoose"
 import Student from "../models/student";
+import Products from "../models/products";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
 
@@ -131,6 +132,26 @@ export async function mandatoryDetails(data){
     }else{
         return {
             message: "Mandatory details updating failed",
+            success: false,
+        }
+    }
+}
+
+export async function clickedOnBuy(data){
+    await connectDB()
+    const middleware = await verifyStudentMiddleware(data.token)
+    if(middleware.success){
+        const product = await Products.findById(data.productId)
+        const student = await Student.findById(middleware.student._id)
+        student.interestedInProduct.push(product._id)
+        await student.save()
+        return {
+            message: "Product added to cart successfully",
+            success: true,
+        }
+    }else{
+        return {
+            message: "Product adding to cart failed",
             success: false,
         }
     }
