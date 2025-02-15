@@ -29,7 +29,28 @@ const studentsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Products"
     }],
-
+    gender: {
+        type: String,
+        enum: ["male", "female", "other"]
+    },
+    dob: {
+        type: Date,
+    },
+    address: {
+        type: String,
+    },
+    area: {
+        type: String,
+    },
+    city: {
+        type: String,
+    },
+    state: {
+        type: String,
+    },
+    referralCode: {
+        type: String,
+    },
 }, {
     timestamps: true
 })

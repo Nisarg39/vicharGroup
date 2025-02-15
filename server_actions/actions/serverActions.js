@@ -25,6 +25,7 @@ export async function signInGoogle(details){
             })
             const token = jwt.sign({ id: newStudent._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             newStudent.token = token
+            newStudent.referralCode = `${newStudent.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
             await newStudent.save()
             if(newStudent){
                 console.log("New Student Created")

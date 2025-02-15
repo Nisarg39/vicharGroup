@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 function DirectorMessage() {
     const [activeIndex, setActiveIndex] = useState(0);
@@ -55,14 +56,39 @@ function DirectorMessage() {
                                 <div className="w-full md:w-1/3 text-center border-b-2 md:border-b-0 border-[#106fb8] pb-2 md:pb-0">
                                     <div className="relative w-32 h-40 sm:w-40 sm:h-48 md:w-48 md:h-56 lg:w-64 lg:h-72 mx-auto group">
                                         <div className="absolute inset-0 bg-gray-100 rounded-2xl transform rotate-6 group-hover:rotate-12 transition-transform duration-300"></div>
-                                        <img src="/vivekSir2.png" alt="Director" className="w-full h-full object-contain rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-[#106fb8]" />
+                                        <Image src="/vivekSir2.png" alt="Director" fill className="object-contain rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-[#106fb8]" />
                                     </div>
                                     <p className="font-bold text-4xl sm:text-4xl md:text-4xl lg:text-4xl text-gray-800">
                                         Vivek Gupta
                                     </p>
-                                    <p className="text-gray-600 text-base md:text-lg font-medium">
-                                        Director and Founder
-                                    </p>
+                                    <div className="flex items-center justify-center">
+                                        <p className="text-gray-600 text-sm md:text-base font-medium">
+                                            Director and Founder
+                                        </p>
+                                        <div className="flex items-center ml-2 space-x-2">
+                                            <Link href="https://www.takalkarjeeneet.com" target="_blank">
+                                                <Image 
+                                                    src="/takalkarLogo.ico" 
+                                                    alt="Takalkar Academy Logo" 
+                                                    width={24} 
+                                                    height={24} 
+                                                    className="rounded-full border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
+                                                />
+                                            </Link>
+                                            <Link href="#" >
+                                                <Image 
+                                                    src="/Vichar_Navbar_Logo-removebg-preview.png" 
+                                                    alt="Vichar Group Logo" 
+                                                    width={24} 
+                                                    height={24} 
+                                                    className=" object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
+                                                    style={{
+                                                        borderRadius: '100%',
+                                                    }}
+                                                />
+                                            </Link>
+                                        </div>
+                                    </div>
                                     <p className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-100 inline-block rounded-full">( BTech IIT Madras )</p>
                                 </div>
                                 <div className="w-full md:w-2/2">

@@ -3,7 +3,7 @@ import Modal from '../common/Modal'
 import { addProduct, showProducts } from '../../server_actions/actions/adminActions'
 import LoadingSpinner from '../common/LoadingSpinner'
 
-
+// Add and Update of product is both done with addProduct function
 function AddProductForm({ handleSubmit, details, handleChange, errors, message }) {
   return (
     <div className="w-full min-h-screen py-2 xs:py-6 md:py-8 rounded-lg">
@@ -48,6 +48,29 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
           {errors.discountPrice && <p className="text-red-500 text-sm">{errors.discountPrice}</p>}
         </div>
         <div className="mb-4">
+          <label className="block text-gray-700 text-sm mb-1">Class</label>
+          <input
+            type="text"
+            name="class"
+            value={details.class}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+          />
+          {errors.class && <p className="text-red-500 text-sm">{errors.class}</p>}
+        </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm mb-1">Duration (in months)</label>
+          <input
+            type="number"
+            name="duration"
+            value={details.duration}
+            onChange={handleChange}
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+          />
+          {errors.duration && <p className="text-red-500 text-sm">{errors.duration}</p>}
+        </div>
+        <div className="mb-4">
           <label className="block text-gray-700 text-sm mb-1">Product Type</label>
           <select
             name="type"
@@ -61,6 +84,17 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
           </select>
           {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
         </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm mb-1">Page Parameters</label>
+          <input
+            type="text"
+            name="pageParameters"
+            value={details.pageParameters}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+          />
+          {errors.pageParameters && <p className="text-red-500 text-sm">{errors.pageParameters}</p>}
+        </div>
         <button type="submit" className="mt-4 px-4 py-2 bg-[#1d77bc] text-white rounded-md shadow-sm hover:bg-[#1a6aa8] focus:outline-none focus:ring-2 focus:ring-[#1d77bc]">
           Submit
         </button>
@@ -68,7 +102,6 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
     </div>
   )
 }
-
 
 function ProductList({ productsAvailable, handleChange, handleSubmit, errors, message }) {
   const [filteredProducts, setFilteredProducts] = useState(productsAvailable)
@@ -79,6 +112,9 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
   const [editPrice, setEditPrice] = useState('')
   const [editDiscountPrice, setEditDiscountPrice] = useState('')
   const [editType, setEditType] = useState('')
+  const [editClass, setEditClass] = useState('')
+  const [editDuration, setEditDuration] = useState('')
+  const [editPageParameters, setEditPageParameters] = useState('')
   const [originalProductName, setOriginalProductName] = useState('')
   const [updateMessage, setUpdateMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -91,6 +127,9 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
       price: editPrice,
       discountPrice: editDiscountPrice,
       type: editType,
+      class: editClass,
+      duration: editDuration,
+      pageParameters: editPageParameters,
       originalName: originalProductName
     }
     try{
@@ -129,6 +168,9 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
     setEditPrice(product.price)
     setEditDiscountPrice(product.discountPrice)
     setEditType(product.type)
+    setEditClass(product.class)
+    setEditDuration(product.duration)
+    setEditPageParameters(product.pageParameters)
     setIsModalOpen(true)
   }
 
@@ -139,6 +181,9 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
     setEditPrice('')
     setEditDiscountPrice('')
     setEditType('')
+    setEditClass('')
+    setEditDuration('')
+    setEditPageParameters('')
     setUpdateMessage(null)
   }
 
@@ -175,7 +220,7 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
                 Edit
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-2">
               <p className="text-gray-700 flex items-center">
                 <span className="font-medium mr-2">Price:</span>
                 <span className="text-green-600">₹{product.price}</span>
@@ -190,13 +235,21 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
                   {product.type}
                 </span>
               </p>
+              <p className="text-gray-700 flex items-center">
+                <span className="font-medium mr-2">Class:</span>
+                <span className="text-gray-600">{product.class}</span>
+              </p>
+              <p className="text-gray-700 flex items-center">
+                <span className="font-medium mr-2">Duration:</span>
+                <span className="text-gray-600">{product.duration} months</span>
+              </p>
             </div>
           </div>
         ))}
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
           <div className="bg-white p-6 rounded-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Edit Product</h2>
             {updateMessage && (
@@ -236,6 +289,27 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
                 />
               </div>
               <div>
+                <label className="block text-gray-700 text-sm mb-1">Class</label>
+                <input
+                  type="text"
+                  name="class"
+                  value={editClass}
+                  onChange={(e) => setEditClass(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm mb-1">Duration (in months)</label>
+                <input
+                  type="number"
+                  name="duration"
+                  value={editDuration}
+                  onChange={(e) => setEditDuration(e.target.value)}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
+              </div>
+              <div>
                 <label className="block text-gray-700 text-sm mb-1">Product Type</label>
                 <select
                   name="type"
@@ -247,6 +321,16 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
                   <option value="course">Course</option>
                   <option value="test-series">Test Series</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm mb-1">Page Parameters</label>
+                <input
+                  type="text"
+                  name="pageParameters"
+                  value={editPageParameters}
+                  onChange={(e) => setEditPageParameters(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
@@ -279,16 +363,17 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
       </form>
     </div>
   )
-}
-
-// main function
+}// main function
 export default function AddProduct() {
   const [activeComponent, setActiveComponent] = useState('addProduct')
   const [details, setDetails] = useState({
     name: '',
     price: '',
     discountPrice: '',
-    type: ''
+    type: '',
+    class: '',
+    duration: '',
+    pageParameters: '',
   })
 
   const [productsAvailable, setProductsAvailable] = useState([])
@@ -300,6 +385,9 @@ export default function AddProduct() {
     price: details.price,
     discountPrice: details.discountPrice,
     type: details.type,
+    class: details.class,
+    duration: details.duration,
+    pageParameters: details.pageParameters
   }
 
   const validate = () => {
@@ -330,7 +418,7 @@ export default function AddProduct() {
         const response = await addProduct(productObject)
         if (response.success) {
           setMessage({ type: 'success', text: 'Product added successfully!' })
-          setDetails({ name: '', price: '', discountPrice: '', type: '' })
+          setDetails({ name: '', price: '', discountPrice: '', type: '', class: '', duration: '', pageParameters: '' })
         } else {
           setMessage({ type: 'error', text: response.message || 'Failed to add product' })
         }

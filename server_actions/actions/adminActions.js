@@ -262,6 +262,9 @@ export async function addProduct(details){
         price: details.price,
         discountPrice: details.discountPrice,
         type: details.type,
+        class: details.class,
+        duration: details.duration,
+        pageParameters: details.pageParameters
     }
     try{
         await connectDB()

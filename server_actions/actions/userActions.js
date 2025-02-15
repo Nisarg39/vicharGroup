@@ -2,6 +2,7 @@
 import {connectDB} from "../config/mongoose"
 import EnquiryForm from "../models/enquiryForm"
 import ContactUs from "../models/contactUs"
+import Products from "../models/products"
 export  async function studentEnq(formData) {
     try {
         await connectDB()
@@ -53,3 +54,27 @@ export async function contactUs(formdata) {
         }
 }
 
+export async function getProductDetail(pageParameters){
+    try{
+        await connectDB()
+        const product = await Products.findOne({pageParameters: pageParameters})
+        if (!product) {
+            return {
+                success: false,
+                message: "Product Not Found"
+            }
+        }
+        else{
+            return {
+                success: true,
+                product: product
+            }
+        }
+    }catch(error){
+        // console.log(error)
+        return {
+            success: false,
+            message: "Error fetching product"
+        }
+    }
+}

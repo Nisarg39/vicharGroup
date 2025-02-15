@@ -77,18 +77,25 @@ export async function getStudentDetails(token){
     await connectDB()
     const middleware = await verifyStudentMiddleware(token)
     // console.log(middleware)
-    const student = {
-        name: middleware.student.name,
-        email: middleware.student.email,
-        id: middleware.student._id.toString(),
-        phone: middleware.student.phone,
-        otp: middleware.student.otp,
-        isVerified: middleware.student.isVerified,
-        token: middleware.student.token,
-        createdAt: middleware.student.createdAt.toString(),
-        updatedAt: middleware.student.updatedAt.toString()
-    }
     if(middleware.success){
+        const student = {
+            name: middleware.student.name || null,
+            email: middleware.student.email || null,
+            id: middleware.student._id.toString(),
+            phone: middleware.student.phone || null,
+            otp: middleware.student.otp || null,
+            isVerified: middleware.student.isVerified || false,
+            token: middleware.student.token || null,
+            interestedInProduct: middleware.student.interestedInProduct || [],
+            address: middleware.student.address || null,
+            area: middleware.student.area || null,
+            city: middleware.student.city || null,
+            state: middleware.student.state || null,
+            gender: middleware.student.gender || null,
+            dob: middleware.student.dob || null,
+            createdAt: middleware.student.createdAt.toString(),
+            updatedAt: middleware.student.updatedAt.toString()
+        }
         return {
             message: "Student details fetched successfully",
             success: true,
@@ -102,7 +109,6 @@ export async function getStudentDetails(token){
         }
     }
 }
-
 export async function mandatoryDetails(data){
     // console.log(data)
     await connectDB()
@@ -112,6 +118,7 @@ export async function mandatoryDetails(data){
         student.name = data.name
         student.email = data.email
         student.isVerified = true
+        student.referralCode = `${student.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
         await student.save()
 
         // made a different object because there was an error saying cannot pass plain object
@@ -155,4 +162,72 @@ export async function clickedOnBuy(data){
             success: false,
         }
     }
+}
+
+export async function updateStudentDetails(data){
+    await connectDB()
+    const middleware = await verifyStudentMiddleware(data.token)
+    if(middleware.success){
+        const student = await Student.findById(middleware.student._id)
+        
+        if(data.name) student.name = data.name
+        if(data.email) student.email = data.email
+        if(data.address) student.address = data.address
+        if(data.area) student.area = data.area
+        if(data.city) student.city = data.city
+        if(data.state) student.state = data.state
+        if(data.gender) student.gender = data.gender
+        if(data.dob) student.dob = data.dob
+        if(data.phone) student.phone = data.phone
+        student.isVerified = true
+
+        await student.save()
+        return {
+            message: "Student details updated successfully",
+            success: true,
+        }
+    }else{
+        return {
+            message: "Student details updating failed",
+            success: false,
+        }
+    }
+}
+
+export async function verifyCouponCode(data) {
+  try {
+    await connectDB();
+    const middleware = await verifyStudentMiddleware(data.token);
+    if (middleware.success) {
+      const student = await Student.findOne({ referralCode: data.couponCode });
+      if (student) {
+        if (middleware.student.referralCode !== data.couponCode) {
+          return {
+            message: "Coupon code verified successfully",
+            success: true,
+          };
+        } else {
+          return {
+            message: "You cannot use your own referral code",
+            success: false,
+          };
+        }
+      } else {
+        return {
+          message: "Coupon code not valid",
+          success: false,
+        };
+      }
+    } else {
+      return {
+        message: "Coupon code verification failed",
+        success: false,
+      };
+    }
+  } catch (error) {
+    return {
+      message: "Error verifying coupon code",
+      success: false,
+    };
+  }
 }

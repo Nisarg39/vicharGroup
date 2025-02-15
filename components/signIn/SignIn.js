@@ -17,24 +17,25 @@ const SignIn = () => {
     const [otp, setOtp] = useState('')
     const [otpError, setOtpError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [isSessionLoading, setIsSessionLoading] = useState(true)
 
     const router = useRouter()
     
     async function checkSession(){
-        // we get this session from api/auth/[...nextauth]/route.js which handles callbacks from google
-        // this is a way to check if the user is logged in or not google auth
-        // watch the youtube video . link is in instructions.txt
-        const session = await getSession()
-        if (session) {
-            const response = await validateGoogleSignIn(session)
-            if (response.success) {
-                console.log(response)
-                localStorage.setItem('token', response.student.token)
-                router.push('/classroom')
-            }else{
-                setModalMessage(response.message)
-                setShowModal(true)
+        try {
+            const session = await getSession()
+            if (session) {
+                const response = await validateGoogleSignIn(session)
+                if (response.success) {
+                    localStorage.setItem('token', response.student.token)
+                    router.push('/classroom')
+                }else{
+                    setModalMessage(response.message)
+                    setShowModal(true)
+                }
             }
+        } finally {
+            setIsSessionLoading(false)
         }
     }
     useEffect(() => {
@@ -118,6 +119,15 @@ const SignIn = () => {
     async function signInWithGoogle() {
         await signIn('google', { callbackUrl: '/login' })
     }
+
+    if (isSessionLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <LoadingSpinner />
+            </div>
+        )
+    }
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
             <div className="w-full max-w-md">

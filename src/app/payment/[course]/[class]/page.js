@@ -1,9 +1,8 @@
 "use client";
-import TestSeriesHero from "../../../../../../components/testSeries/testSeriesPayout/TestSeriesHero";
-import TestSchedule from "../../../../../../components/testSeries/testSeriesPayout/TestSchedule";
+import Payment from "../../../../../components/payment/Payment";
 import { useParams, useRouter } from "next/navigation";
-import { getProductDetail } from "../../../../../../server_actions/actions/userActions";
-import Modal from "../../../../../../components/common/Modal";
+import { getProductDetail } from "../../../../../server_actions/actions/userActions";
+import Modal from "../../../../../components/common/Modal";
 import { useEffect, useState } from "react";
 
 const Home = () => {
@@ -305,7 +304,7 @@ const Home = () => {
       
       {params.course === "jee" && params.class === "12" && (
         <>
-          <TestSeriesHero
+          <Payment
             title={product.name}
             class={product.class}
             duration={`${product.duration} Months`}
@@ -314,16 +313,13 @@ const Home = () => {
             testStartDate="3rd March, 2025"
             price={`${product.price}`}
             discountPrice={`${product.discountPrice}`}
-            course={`${params.course}`}
-            params={`${params.class}`}
           />
-          <TestSchedule testSchedule={testScheduleJee} title="Test Schedule - JEE Mains (2025)" />
         </>
       )}
 
       {params.course === "neet" && params.class === "12" && (
         <>
-          <TestSeriesHero
+          <Payment
             title={product.name}
             class={product.class}
             duration={`${product.duration} Months`}
@@ -332,16 +328,13 @@ const Home = () => {
             testStartDate="5th March, 2025"
             price={`${product.price}`}
             discountPrice={`${product.discountPrice}`}
-            course={`${params.course}`}
-            params={`${params.class}`}
           />
-          <TestSchedule testSchedule={testScheduleNeet} title="Test Schedule – NEET (2025)" />
         </>
       )}
 
       {params.course === "cet-pcm" && params.class === "12" && (
         <>
-          <TestSeriesHero
+          <Payment
             title={product.name}
             class={product.class}
             duration={`${product.duration} Months`}
@@ -350,16 +343,13 @@ const Home = () => {
             testStartDate="1st March, 2025"
             price={`${product.price}`}
             discountPrice={`${product.discountPrice}`}
-            course={`${params.course}`}
-            params={`${params.class}`}
           />
-          <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
         </>
       )}
 
 {params.course === "cet-pcb" && params.class === "12" && (
         <>
-          <TestSeriesHero
+          <Payment
             title={product.name}
             class={product.class}
             duration={`${product.duration} Months`}
@@ -368,10 +358,7 @@ const Home = () => {
             testStartDate="1st March, 2025"
             price={`${product.price}`}
             discountPrice={`${product.discountPrice}`}
-            course={`${params.course}`}
-            params={`${params.class}`}
           />
-          <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
         </>
       )}
     </section>

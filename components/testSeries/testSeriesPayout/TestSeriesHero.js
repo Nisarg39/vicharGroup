@@ -1,10 +1,22 @@
+import { useRouter } from "next/navigation";
 export default function TestSeriesHero(props) {
+
+    const router = useRouter();
+
+    async function buyNow(){
+        localStorage.setItem("courseInterest", props.title);
+        if(localStorage.getItem("token")){
+            router.push(`/payment/${props.course}/${props.class}`)
+        }else{
+            router.push("/login")
+        }
+    }
     return(
         <section className="min-h-screen bg-gray-200 pt-32 pb-20 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-3 gap-8">
                     <MainCard props={props} />
-                    <EnrollmentCard price={props.price} discountPrice={props.discountPrice} />
+                    <EnrollmentCard price={props.price} discountPrice={props.discountPrice} duration={props.duration} buyNow={buyNow}/>
                 </div>
             </div>
         </section>
@@ -21,7 +33,7 @@ function MainCard({props}) {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-1.5 h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 leading-tight">{props.title}</h2>
+                            <h2 className="text-2xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">{props.title}</h2>
                         </div>
                         <div className="sm:absolute sm:right-0 bg-gradient-to-r from-[#22863a] to-[#2ea043] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg backdrop-blur-sm">
                             Online Test Series
@@ -94,12 +106,14 @@ function MainCard({props}) {
             </div>
         </div>
     )
-}// EnrollmentCard.js
+}
+
+// EnrollmentCard.js
 function EnrollmentCard(props) {
     return (
         <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 sticky top-24 w-full sm:w-[288px] md:w-full lg:w-[252px] xl:w-[288px] mx-auto overflow-hidden md:flex md:flex-row lg:flex-col">
-                <div className="relative w-full h-[216px] sm:h-[198px] md:h-[252px] md:w-1/2 lg:w-full">
+                <div className="relative w-full h-[180px] sm:h-[160px] md:h-[200px] md:w-1/2 lg:w-full">
                     <img 
                         src="/course-photo/testSeries.jpeg" 
                         alt="Course Preview" 
@@ -107,31 +121,27 @@ function EnrollmentCard(props) {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 </div>
-                <div className="p-5 sm:p-6 space-y-4 md:w-1/2 lg:w-full md:flex md:flex-col md:justify-center">
-                    <div className="bg-gray-50 rounded-2xl p-4 shadow-sm">
+                <div className="p-4 sm:p-5 space-y-3 md:w-1/2 lg:w-full md:flex md:flex-col md:justify-center">
+                    <div className="bg-gray-50 rounded-2xl p-3 shadow-sm">
                         <div className="flex items-center justify-center">
                             <div className="flex flex-col items-center">
-                                <div className="flex items-center gap-4">
-                                    <span className="text-2xl font-bold text-gray-900">₹{props.discountPrice}</span>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-base text-red-500 line-through font-medium">₹{props.price}</span>
-                                        <span className="text-sm text-green-600 font-semibold">
-                                            {Math.round(((props.price.replace(/,/g, '') - props.discountPrice.replace(/,/g, '')) / props.price.replace(/,/g, '')) * 100)}% OFF
-                                        </span>
-                                    </div>
-                                </div>
-                                <span className="text-gray-600 text-sm font-semibold mt-3 bg-gray-100 px-4 py-1.5 rounded-full shadow-inner">Annual Access</span>
+                                <span className="text-sm text-gray-600 font-medium">Price: <span className="text-base text-red-600 line-through font-medium font-poppins">₹{props.price}</span></span>
+                                <span className="text-sm text-gray-600 font-medium mt-1">Offer: <span className="text-sm text-green-600 font-semibold">{Math.round(((props.price.replace(/,/g, '') - props.discountPrice.replace(/,/g, '')) / props.price.replace(/,/g, '')) * 100)}% OFF</span></span>
+                                <span className="text-sm text-gray-600 font-medium mt-1">Final Price: <span className="text-2xl font-extrabold text-gray-900 font-poppins">₹{props.discountPrice}</span></span>
+                                <span className="text-gray-600 text-sm font-semibold mt-2 bg-gray-100 px-4 py-1 rounded-full shadow-inner">{props.duration}</span>
                             </div>
                         </div>
                     </div>
-                    <button className="w-full bg-[#e96030] text-white px-5 py-3 rounded-xl font-semibold hover:bg-[#d54e22] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center text-lg">
+                    <button className="w-full bg-[#e96030] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#d54e22] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center text-lg"
+                        onClick={props.buyNow}
+                    >
                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         Buy Now
                     </button>
-                    <div className="pt-4 border-t border-gray-200">
-                        <div className="flex flex-col items-center space-y-3">
+                    <div className="pt-3 border-t border-gray-200">
+                        <div className="flex flex-col items-center space-y-2">
                             <div className="flex items-center space-x-2">
                                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

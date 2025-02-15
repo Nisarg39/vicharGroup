@@ -14,6 +14,7 @@ export default function StudentDashboard() {
 
     const handleLogout = () => {
         localStorage.removeItem('token')
+        localStorage.removeItem('nextauth.message')
         // signOut is a function from next-auth/react that deletes the session from the server of google and the client side of our website
         signOut({ callbackUrl: '/login' })
         dispatch(loggedOut())
