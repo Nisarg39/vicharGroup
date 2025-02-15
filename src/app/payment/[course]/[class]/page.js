@@ -15,7 +15,7 @@ const Home = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function fetchDetails() {
-    const page = params.course + "" + params.class;
+    const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
 
     if (details.success) {
