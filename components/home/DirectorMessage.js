@@ -75,18 +75,15 @@ function DirectorMessage() {
                                                     className="rounded-full border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
                                                 />
                                             </Link>
-                                            <Link href="#" >
+                                            {/* <Link href="#" >
                                                 <Image 
                                                     src="/Vichar_Navbar_Logo-removebg-preview.png" 
                                                     alt="Vichar Group Logo" 
                                                     width={24} 
-                                                    height={24} 
-                                                    className=" object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
-                                                    style={{
-                                                        borderRadius: '100%',
-                                                    }}
+                                                    height={26} 
+                                                    className="border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
                                                 />
-                                            </Link>
+                                            </Link> */}
                                         </div>
                                     </div>
                                     <p className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-100 inline-block rounded-full">( BTech IIT Madras )</p>
