@@ -17,22 +17,19 @@ export default function ClassroomHome() {
 
     async function getDetails(token){
         const studentDetail = await getStudentDetails(token)
+        if(!studentDetail.success){
+            localStorage.removeItem('token')
+            router.push('/login')
+        }else{
         dispatch(studentDetails(studentDetail.student))
         setLoading(false)
+        }
     }
     
     useEffect(() => {
         const token =  localStorage.getItem('token')
         if(token){
-            const reponse = getDetails(token)
-            if(!response.success){
-                localStorage.removeItem('token')
-                router.push('/login')
-            }else{
-                router.push('login')
-            }
-        }else{
-            router.push('/login')
+            getDetails(token)
         }
     }, [])
 

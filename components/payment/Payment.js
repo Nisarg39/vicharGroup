@@ -26,6 +26,9 @@ export default function Payment(props) {
             // console.log(student);
             setStudent(student.student);
             dispatch(studentDetails(student.student));
+        }else{
+          localStorage.removeItem("token")
+          router.push("/login")
         }
     }
 
