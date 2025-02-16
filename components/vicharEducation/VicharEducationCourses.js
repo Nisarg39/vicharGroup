@@ -40,43 +40,38 @@ export default function VicharEducationCourses() {
     ]
 
     return (
-        <div className="max-w-full mx-auto px-8 pb-10 pt-10 bg-gradient-to-b from-gray-200 to-white">
-            <h1 className="text-4xl sm:text-4xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Courses</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {courses.map((course) => (
-                    <div key={course.id} className="bg-gray-50 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:shadow-[#106FB7]/20 border-b-4 border-[#106FB7] flex flex-col max-w-[300px] mx-auto">
-                        <div className="relative w-full aspect-square">
-                            <Image 
-                                src={course.image}
-                                alt={course.title}
-                                fill
-                                className="object-contain"
-                            />
-                        </div>
-                        <div className="p-5 pb-2 flex-grow">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-gray-800">{course.title}</h2>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                    course.id == 1 ? "bg-green-100 text-green-700" :
-                                    course.id == 2 ? "bg-yellow-100 text-yellow-700" :
-                                    course.id == 3 ? "bg-red-100 text-red-700" :
-                                    "bg-purple-100 text-purple-700"
-                                }`}>
-                                    {course.difficulty}
-                                </span>
+        <div className="relative bg-transparent to-white" id='courses-section'>
+            <div className="container mx-auto px-4 pb-8">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6 md:mb-8 text-center text-gray-800 tracking-tight">Courses</h2>
+                <div className="flex overflow-x-auto gap-8 pb-4 hide-scrollbar pt-8">
+                    {courses.map((course) => (
+                        <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transform transition duration-500 hover:scale-105 border-b-4 border-b-[#106fb8] w-[300px] flex-shrink-0 relative hover:shadow-2xl hover:rotate-1">
+                            <div className="relative h-40 sm:h-48 overflow-hidden">
+                                <Image 
+                                    src={course.image} 
+                                    alt={course.title} 
+                                    fill 
+                                    style={{objectFit: 'cover'}} 
+                                    className="transition-transform duration-300 hover:scale-110"
+                                />
+                                <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-2 sm:px-3 py-1 rounded-bl-lg text-xs sm:text-sm font-semibold">{course.difficulty}</div>
                             </div>
-                            <p className="text-gray-600 text-sm mb-4">{course.description}</p>
+                            <div className="p-4 sm:p-5 md:p-6 relative">
+                                <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-gray-800 hover:text-[#106fb8] transition-colors duration-300 text-center">{course.title}</h3>
+                                <p className="text-sm sm:text-base text-gray-600 mb-2 sm:mb-2 leading-relaxed line-clamp-3">{course.description}</p>
+                                <Link href={course.link}>
+                                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base relative overflow-hidden">
+                                        <span className="group-hover:hidden flex items-center justify-center gap-2">
+                                            <FaBolt className="text-sm animate-pulse" /> Learn More
+                                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-yellow-300 rounded-full animate-ping"></span>
+                                        </span>
+                                        <span className="hidden group-hover:inline-block animate-pulse">Explore Now →</span>
+                                    </button>
+                                </Link>
+                            </div>
                         </div>
-                        <div className="px-5 pb-5 mt-2">
-                            <Link href={course.link}>
-                                <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-2.5 px-4 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-[#f47f33] focus:ring-opacity-50 flex items-center justify-center text-lg">
-                                    <FaBolt className="w-4 h-4 mr-2" />
-                                    Explore Courses
-                                </button>
-                            </Link>
-                        </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     )

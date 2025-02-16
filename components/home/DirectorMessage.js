@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 function DirectorMessage() {
     const [activeIndex, setActiveIndex] = useState(0);
@@ -45,8 +46,94 @@ function DirectorMessage() {
     }, [activeIndex]);
 
     return (
-        <section className="bg-white py-14 sm:py-12 md:py-12 lg:py-16 relative overflow-hidden">
-            <div className="absolute inset-0 bg-opacity-10 backdrop-blur-sm"></div>
+        <section className="w-full pb-16 flex items-center bg-transparent pt-12 md:pt-20 overflow-hidden relative">
+            <div className="absolute inset-0 pointer-events-none">
+                <motion.div
+                    className="absolute top-20 left-10 hidden md:block"
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 180, 360],
+                    }}
+                    transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                >
+                    <div className="w-12 h-12 flex items-center justify-center bg-yellow-300 rounded-full opacity-50 shadow-lg">
+                        <span className="text-black text-lg font-bold">π</span>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="absolute bottom-20 right-10 hidden md:block"
+                    animate={{
+                        y: [0, -20, 0],
+                        x: [0, 20, 0],
+                    }}
+                    transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                >
+                    <div className="w-16 h-16 flex items-center justify-center bg-blue-400 rounded-lg opacity-40 shadow-lg">
+                        <span className="text-black text-xl font-bold">∑</span>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="absolute top-1/3 right-1/4"
+                    animate={{
+                        scale: [1, 0.8, 1],
+                        rotate: [0, -90, 0],
+                    }}
+                    transition={{
+                        duration: 6,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                >
+                    <div className="w-10 h-10 flex items-center justify-center bg-orange-400 rounded-full opacity-45 shadow-lg">
+                        <span className="text-black text-lg font-bold">∫</span>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="absolute bottom-1/4 left-1/4"
+                    animate={{
+                        x: [0, 30, 0],
+                        y: [0, -30, 0],
+                    }}
+                    transition={{
+                        duration: 7,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                >
+                    <div className="w-14 h-14 flex items-center justify-center bg-gray-400 rounded-lg opacity-40 rotate-45 shadow-lg">
+                        <span className="text-black text-xl font-bold -rotate-45">√</span>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="absolute top-1/2 left-10"
+                    animate={{
+                        rotate: [0, 360],
+                        scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                        duration: 8,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                >
+                    <div className="w-8 h-8 flex items-center justify-center bg-green-400 rounded-full opacity-50 shadow-lg">
+                        <span className="text-black text-sm font-bold">∞</span>
+                    </div>
+                </motion.div>
+            </div>
+
             <div className="container mx-auto px-4 relative z-10">
                 <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Director's Message</h2>
                 <div className="max-w-6xl mx-auto">
@@ -55,7 +142,6 @@ function DirectorMessage() {
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 md:gap-8">
                                 <div className="w-full md:w-1/3 text-center border-b-2 md:border-b-0 border-[#106fb8] pb-2 md:pb-0">
                                     <div className="relative w-32 h-40 sm:w-40 sm:h-48 md:w-48 md:h-56 lg:w-64 lg:h-72 mx-auto group">
-                                        <div className="absolute inset-0 bg-gray-100 rounded-2xl transform rotate-6 group-hover:rotate-12 transition-transform duration-300"></div>
                                         <Image src="/vivekSir2.png" alt="Director" fill className="object-contain rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-[#106fb8]" />
                                     </div>
                                     <p className="font-bold text-4xl sm:text-4xl md:text-4xl lg:text-4xl text-gray-800">
@@ -75,15 +161,6 @@ function DirectorMessage() {
                                                     className="rounded-full border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
                                                 />
                                             </Link>
-                                            {/* <Link href="#" >
-                                                <Image 
-                                                    src="/Vichar_Navbar_Logo-removebg-preview.png" 
-                                                    alt="Vichar Group Logo" 
-                                                    width={24} 
-                                                    height={26} 
-                                                    className="border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
-                                                />
-                                            </Link> */}
                                         </div>
                                     </div>
                                     <p className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-100 inline-block rounded-full">( BTech IIT Madras )</p>

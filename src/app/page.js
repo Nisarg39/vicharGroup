@@ -22,14 +22,32 @@ export default function Home() {
   };
 
   return (
-    <>
-      <HeroSection />
-      <Courses />
-      <DirectorMessage />
-      <WhyChooseUs />
-      <AllTestimonials />
-      <StudentEnquiryForm />
+    <div>
+
+      <div className="bg-gradient-to-b from-white to-gray-200 transition-colors duration-500 ease-in-out">
+        <HeroSection />
+      </div>
+
+      <div className="bg-gradient-to-b from-gray-200 to-gray-50 transition-colors duration-500 ease-in-out">
+        <Courses />
+      </div>
+
+      <div className="bg-gradient-to-b from-gray-50 to-gray-200 transition-colors duration-500 ease-in-out">
+        <DirectorMessage />
+      </div>
+
+      <div className="bg-gradient-to-b from-gray-200 to-white transition-colors duration-500 ease-in-out">
+        <WhyChooseUs />
+      </div>
+
+      <div className="bg-gradient-to-b from-white to-gray-200 transition-colors duration-500 ease-in-out">
+        <AllTestimonials />
+      </div>
+
+      <div className="bg-gradient-to-b from-gray-200 to-white transition-colors duration-500 ease-in-out">
+        <StudentEnquiryForm />
+      </div>
       {/* <VicharApp /> */}
-    </>
+    </div>
   );
 }

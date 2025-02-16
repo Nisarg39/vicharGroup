@@ -36,7 +36,7 @@
       }
 
       return (
-          <section className="bg-gradient-to-b from-gray-200 to-white py-4">
+          <section className="bg-transparent py-4">
               <div className="container mx-auto px-4">
                   <motion.h2 
                       className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight"

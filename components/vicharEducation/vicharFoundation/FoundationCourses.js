@@ -37,9 +37,8 @@ const FoundationCourses = (props) => {
                     <div className="w-1/2 p-5">
                       <h3 className="text-xl font-bold mb-3 text-gray-900 hover:text-[#106fb8] transition-colors duration-300">{course.title}</h3>
                       <p className="text-gray-600 mb-4 text-sm">Comprehensive preparation course for {course.level} students.</p>
-                      <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-4 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm shadow-[0_0_15px_rgba(239,90,42,0.5)] hover:shadow-[0_0_25px_rgba(239,90,42,0.8)]">
-                        <span className="group-hover:hidden">Enroll Now</span>
-                        <span className="hidden group-hover:inline-block">Enroll Now →</span>
+                      <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-3 px-4 rounded-xl transition duration-300 ease-in-out cursor-not-allowed text-sm shadow-md">
+                        Coming Soon
                       </button>
                     </div>
                   </div>

@@ -1,16 +1,22 @@
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "../../common/LoadingSpinner"
 export default function TestSeriesHero(props) {
 
     const router = useRouter();
 
     async function buyNow(){
-        localStorage.setItem("courseInterest", props.title);
+        localStorage.setItem("cart", `/payment/${props.course}/${props.class}`);
         if(localStorage.getItem("token")){
             router.push(`/payment/${props.course}/${props.class}`)
         }else{
             router.push("/login")
         }
     }
+
+    if (!props) {
+        return <LoadingSpinner />
+    }
+
     return(
         <section className="min-h-screen bg-gray-200 pt-32 pb-20 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
@@ -22,7 +28,6 @@ export default function TestSeriesHero(props) {
         </section>
     )
 }
-
 // MainCard.js
 function MainCard({props}) {
     return (

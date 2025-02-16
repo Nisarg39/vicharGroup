@@ -10,8 +10,8 @@ const Courses = () => {
   ]
 
   return (
-    <div className="relative bg-gradient-to-b from-gray-200 to-white" id='courses-section'>
-      <div className="container mx-auto px-4 py-8">
+    <div className="relative bg-transparent to-white" id='courses-section'>
+      <div className="container mx-auto px-4 pb-8">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6 md:mb-8 text-center text-gray-800 tracking-tight">Dynamic Segments</h2>
         <div className="flex flex-wrap justify-center gap-8 sm:gap-10 md:gap-18">
           {courses.map((course) => (

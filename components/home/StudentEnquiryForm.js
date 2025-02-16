@@ -49,7 +49,7 @@ function StudentEnquiryForm() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="min-h-95 bg-cover bg-center bg-no-repeat py-8"
+            className="min-h-95 bg-transparent to-white py-8"
         >
             <Modal showModal={showModal} setShowModal={setShowModal} isSuccess={isSuccess} modalMessage={modalMessage} />
             <motion.h2 
@@ -64,10 +64,10 @@ function StudentEnquiryForm() {
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="p-4 sm:p-6 md:p-10 rounded-xl shadow-2xl max-w-3xl mx-auto my-4 sm:my-8 md:my-16 bg-white border-t-4 border-[#106fb8] transition-all duration-300 hover:shadow-3xl"
+                className="p-4 sm:p-6 md:p-10 rounded-xl shadow-2xl max-w-5xl mx-auto my-4 sm:my-8 md:my-16 bg-white border-t-4 border-[#106fb8] transition-all duration-300 hover:shadow-3xl"
             >
                 <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 md:space-y-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         <div className="group relative">
                             <label htmlFor="fullName" className="block text-sm font-semibold text-gray-600 mb-1 sm:mb-2 group-hover:text-[#106fb8] transition-colors duration-200">
                                 <FaUser className="inline mr-2" />Full Name
@@ -140,7 +140,7 @@ function StudentEnquiryForm() {
                             type="submit" 
                             disabled={isLoading}
                             whileTap={{ scale: 0.95 }}
-                            className="w-full sm:w-1/2 bg-[#106fb8] text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-[#0e5d9e] focus:outline-none focus:ring-4 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out text-sm sm:text-base font-bold shadow-md hover:shadow-lg transform hover:scale-105 relative overflow-hidden group disabled:opacity-70"
+                            className="w-full sm:w-1/3 bg-[#106fb8] text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-[#0e5d9e] focus:outline-none focus:ring-4 focus:ring-[#106fb8] focus:ring-opacity-50 transition duration-300 ease-in-out text-sm sm:text-base font-bold shadow-md hover:shadow-lg transform hover:scale-105 relative overflow-hidden group disabled:opacity-70"
                         >
                             <span className="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300 ease-in-out"></span>
                             {isLoading ? (

@@ -5,6 +5,14 @@ import LoadingSpinner from '../common/LoadingSpinner'
 
 // Add and Update of product is both done with addProduct function
 function AddProductForm({ handleSubmit, details, handleChange, errors, message }) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const onSubmit = async (e) => {
+    setIsSubmitting(true)
+    await handleSubmit(e)
+    setIsSubmitting(false)
+  }
+
   return (
     <div className="w-full min-h-screen py-2 xs:py-6 md:py-8 rounded-lg">
       <h1 className="text-2xl font-bold mb-4 text-gray-800 px-4">Add Product</h1>
@@ -13,7 +21,7 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
           {message.text}
         </div>
       )}
-      <form className="px-4" onSubmit={handleSubmit}>
+      <form className="px-4" onSubmit={onSubmit}>
         <div className="mb-4">
           <label className="block text-gray-700 text-sm mb-1">Product Name</label>
           <input
@@ -95,14 +103,17 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
           />
           {errors.pageParameters && <p className="text-red-500 text-sm">{errors.pageParameters}</p>}
         </div>
-        <button type="submit" className="mt-4 px-4 py-2 bg-[#1d77bc] text-white rounded-md shadow-sm hover:bg-[#1a6aa8] focus:outline-none focus:ring-2 focus:ring-[#1d77bc]">
-          Submit
+        <button 
+          type="submit" 
+          disabled={isSubmitting}
+          className={`mt-4 px-4 py-2 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1d77bc] hover:bg-[#1a6aa8]'} text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </button>
       </form>
     </div>
   )
 }
-
 function ProductList({ productsAvailable, handleChange, handleSubmit, errors, message }) {
   const [filteredProducts, setFilteredProducts] = useState(productsAvailable)
   const [filterType, setFilterType] = useState('')
@@ -363,7 +374,9 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
       </form>
     </div>
   )
-}// main function
+}
+
+// main function
 export default function AddProduct() {
   const [activeComponent, setActiveComponent] = useState('addProduct')
   const [details, setDetails] = useState({

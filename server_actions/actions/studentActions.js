@@ -93,6 +93,7 @@ export async function getStudentDetails(token){
             state: middleware.student.state || null,
             gender: middleware.student.gender || null,
             dob: middleware.student.dob || null,
+            referralCode: middleware.student.referralCode || null,
             createdAt: middleware.student.createdAt.toString(),
             updatedAt: middleware.student.updatedAt.toString()
         }
@@ -118,7 +119,7 @@ export async function mandatoryDetails(data){
         student.name = data.name
         student.email = data.email
         student.isVerified = true
-        student.referralCode = `${student.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
+        student.referralCode = `${data.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
         await student.save()
 
         // made a different object because there was an error saying cannot pass plain object
@@ -169,7 +170,17 @@ export async function updateStudentDetails(data){
     const middleware = await verifyStudentMiddleware(data.token)
     if(middleware.success){
         const student = await Student.findById(middleware.student._id)
-        
+        // checking duplicate key error on phone and sending response
+        if(data.phone && !student.phone){
+            const studentWithSamePhone = await Student.findOne({phone: data.phone})
+            if(studentWithSamePhone){
+                return {
+                    message: "Phone number already exists",
+                    success: false,
+                }
+            }
+        }
+        if(data.referralCode) student.referralCode =  `${student.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
         if(data.name) student.name = data.name
         if(data.email) student.email = data.email
         if(data.address) student.address = data.address

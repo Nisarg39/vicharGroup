@@ -156,10 +156,11 @@ export default function StockCourses() {
                             <motion.button 
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-[#f47f33] focus:ring-opacity-50 flex items-center justify-center text-lg"
+                                disabled
+                                className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-3 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-gray-400 focus:ring-opacity-50 flex items-center justify-center text-lg cursor-not-allowed"
                             >
                                 <FaBolt className="w-4 h-4 mr-2" />
-                                Enroll Now
+                                Coming Soon
                             </motion.button>
                         </div>
                     </motion.div>

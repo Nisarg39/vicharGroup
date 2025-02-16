@@ -3,7 +3,16 @@ import { useRouter } from "next/navigation";
 import { getStudentDetails, updateStudentDetails, verifyCouponCode } from "../../server_actions/actions/studentActions";
 import { useEffect, useState } from "react";
 import Modal from "../common/Modal";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { useSelector, useDispatch } from "react-redux";
+import { studentDetails } from "../../features/login/LoginSlice";
+
 export default function Payment(props) {
+    const dispatch = useDispatch();
+
+    if (!props) {
+        return <LoadingSpinner />
+    }
 
     const router = useRouter();
     const [student, setStudent] = useState({});
@@ -17,8 +26,9 @@ export default function Payment(props) {
         const token = localStorage.getItem("token");
         const student = await getStudentDetails(token);
         if(student.success){
-            console.log(student);
+            // console.log(student);
             setStudent(student.student);
+            dispatch(studentDetails(student.student));
         }
     }
 
@@ -102,6 +112,7 @@ function MainCard({props, student, setValidatedDetails}) {
                 setSuccess(true);
                 setShowModal(true);
                 setValidatedDetails(true);
+                // disable input fields
             }else{
                 setModalMessage(response.message);
                 setSuccess(false);

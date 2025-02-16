@@ -1,1 +1,5 @@
 for setting up google sign in auth - https://www.youtube.com/watch?v=XmmMQfpQh40
+
+Query - apply Neobrutalism design . let the elements have the current border radius and do change any colors of any element in ui . do nto change style of text. apply hover animations according to the design style and make the images inside the cards blend well with the design style
+
+add a lot of floating and animating elements to ui using neobrutal style. but dont add borders to those elements and keep the border radius same as the cards have. make them spread equally in the whole section and keep opacity to 50

@@ -24,7 +24,13 @@ export default function ClassroomHome() {
     useEffect(() => {
         const token =  localStorage.getItem('token')
         if(token){
-            getDetails(token)
+            const reponse = getDetails(token)
+            if(!response.success){
+                localStorage.removeItem('token')
+                router.push('/login')
+            }else{
+                router.push('login')
+            }
         }else{
             router.push('/login')
         }

@@ -52,7 +52,7 @@ function WhyChooseUs() {
     const [hoveredIndex, setHoveredIndex] = useState(null)
 
     return (
-        <section className="py-20 bg-gradient-to-b from-white to-gray-200 ">
+        <section className="py-20 bg-transparent">
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Why Choose Us 🤔</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -63,7 +63,6 @@ function WhyChooseUs() {
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}
                             style={{
-                                animation: hoveredIndex === index ? 'pulse 2s infinite' : 'none',
                                 backdropFilter: 'blur(8px)',
                             }}
                         >
@@ -78,7 +77,7 @@ function WhyChooseUs() {
                                     {item.description}
                                 </p>
                                 {hoveredIndex === index && (
-                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center animate-ping">
+                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full text-white text-xs flex items-center justify-center">
                                         ✨
                                     </div>
                                 )}
