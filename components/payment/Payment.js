@@ -10,11 +10,8 @@ import { studentDetails } from "../../features/login/LoginSlice";
 export default function Payment(props) {
     const dispatch = useDispatch();
 
-    if (!props) {
-        return <LoadingSpinner />
-    }
-
     const router = useRouter();
+
     const [student, setStudent] = useState({});
     const [validatedDetails, setValidatedDetails] = useState(false);
 
@@ -40,6 +37,11 @@ export default function Payment(props) {
             router.push("/login")
         }
     }
+
+    if (!props) {
+      return <LoadingSpinner />
+    }
+
     return(
         <section className="min-h-screen pt-32 pb-20 px-4 md:px-8 bg-gradient-to-b from-white via-gray-300 to-white">
             <div className="max-w-7xl mx-auto">
