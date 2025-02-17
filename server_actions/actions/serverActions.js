@@ -27,9 +27,6 @@ export async function signInGoogle(details){
             newStudent.token = token
             newStudent.referralCode = `${newStudent.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
             await newStudent.save()
-            if(newStudent){
-                console.log("New Student Created")
-            }
             return {
                 success: true,
                 message: "Student Verified",

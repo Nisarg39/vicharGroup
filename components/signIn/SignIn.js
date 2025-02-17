@@ -30,6 +30,8 @@ const SignIn = () => {
                     localStorage.setItem('token', response.student.token)
                     router.push('/classroom')
                 }else{
+                    localStorage.removeItem('token')
+                    setIsSessionLoading(false)
                     setModalMessage(response.message)
                     setShowModal(true)
                 }
@@ -41,9 +43,8 @@ const SignIn = () => {
     useEffect(() => {
         if(localStorage.getItem('token')){
             router.push('/classroom')
-        }else{
-            checkSession()
         }
+        checkSession()
     }, [])
 
 
@@ -117,7 +118,7 @@ const SignIn = () => {
     }
 
     async function signInWithGoogle() {
-        await signIn('google', { callbackUrl: '/login' })
+        const response = await signIn('google', { callbackUrl: '/login' })
     }
 
     if (isSessionLoading) {

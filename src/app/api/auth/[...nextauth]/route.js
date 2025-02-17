@@ -12,11 +12,13 @@ const handler = NextAuth({
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
         try {
+            console.log("SignIn callback triggered", user);
             const userData = await signInGoogle(user);
-            return true; // Allow sign in
+            console.log("SignIn response:", userData);
+            return true;
         } catch (error) {
             console.error("Error storing user data:", error);
-            return true; // Still allow sign in even if storage fails
+            return false;
         }
     },
     async redirect({ url, baseUrl }) {
