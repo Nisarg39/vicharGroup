@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import Modal from "../common/Modal";
 import Sidebar from './Sidebar'
 import AdminStats from "./AdminStats";
+import AdminControls from "./AdminControls";
+
 export default function AdminHome() {
 
       const [isAdmin, setIsAdmin] = useState(false);
@@ -36,6 +38,7 @@ export default function AdminHome() {
             <Sidebar setDashBoardName={setDashBoardName} />
             {dashBoardName === "dashboard" && <Dashboard />}
             {dashBoardName === "statistics" && <AdminStats />}
+            {dashBoardName === "adminControls" && <AdminControls />}
 
           </>
         ) : (

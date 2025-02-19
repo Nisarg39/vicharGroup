@@ -2,6 +2,7 @@
 import { connectDB } from "../config/mongoose"
 import Student from "../models/student";
 import Products from "../models/products";
+import CouponCode from "../models/couponCode";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
 
@@ -145,24 +146,31 @@ export async function mandatoryDetails(data){
     }
 }
 
-export async function clickedOnBuy(data){
-    await connectDB()
-    const middleware = await verifyStudentMiddleware(data.token)
-    if(middleware.success){
-        const product = await Products.findById(data.productId)
-        const student = await Student.findById(middleware.student._id)
-        student.interestedInProduct.push(product._id)
-        await student.save()
-        return {
-            message: "Product added to cart successfully",
-            success: true,
-        }
-    }else{
-        return {
-            message: "Product adding to cart failed",
-            success: false,
-        }
+export async function addToCart(data) {
+  await connectDB();
+  const middleware = await verifyStudentMiddleware(data.token);
+  if (middleware.success) {
+    const product = await Products.findById(data.productId);
+    const student = await Student.findById(middleware.student._id);
+    if (student.cart.includes(product._id)) {
+      return {
+        message: "Product already in cart",
+        success: false,
+      };
+    } else {
+      student.cart.push(product._id);
+      await student.save();
+      return {
+        message: "Product added to cart successfully",
+        success: true,
+      };
     }
+  } else {
+    return {
+      message: "Product adding to cart failed",
+      success: false,
+    };
+  }
 }
 
 export async function updateStudentDetails(data){
@@ -213,8 +221,17 @@ export async function verifyCouponCode(data) {
       const student = await Student.findOne({ referralCode: data.couponCode });
       if (student) {
         if (middleware.student.referralCode !== data.couponCode) {
+          const coupon = {
+            couponCode: student.referralCode,
+            discountAmount: 500,
+            expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            status: "active",
+            usedCount: 0,
+            description: `${student.name} has referred you`,
+          };
           return {
             message: "Coupon code verified successfully",
+            coupon: coupon,
             success: true,
           };
         } else {
@@ -224,10 +241,19 @@ export async function verifyCouponCode(data) {
           };
         }
       } else {
-        return {
-          message: "Coupon code not valid",
-          success: false,
-        };
+        const coupon = await CouponCode.findOne({couponCode: data.couponCode})
+        if(coupon){
+            return({
+                message: "Coupon code verified successfully",
+                coupon: coupon,
+                success: true,
+            })
+        }else{
+            return({
+                message: "No Referral or Coupon Code Found",
+                success: false,
+            })
+        }
       }
     } else {
       return {

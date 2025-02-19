@@ -6,6 +6,8 @@ const studentsSchema = new mongoose.Schema({
     },
     email: {
         type: String,
+        unique: true,
+        sparse: true,
     },
     phone: {
         type: String,
@@ -26,7 +28,7 @@ const studentsSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    interestedInProduct: [{
+    cart: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Products"
     }],

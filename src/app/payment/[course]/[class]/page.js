@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getProductDetail } from "../../../../../server_actions/actions/userActions";
 import Modal from "../../../../../components/common/Modal";
 import { useEffect, useState } from "react";
+import LoadingSpinner from "../../../../../components/common/LoadingSpinner";
 
 const Home = () => {
   
@@ -13,6 +14,7 @@ const Home = () => {
   const [product, setProduct] = useState({});
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function fetchDetails() {
     const page = params.course + "/" + params.class;
@@ -33,6 +35,7 @@ const Home = () => {
         router.push("/test-series");
       }, 5000);
     }
+    setLoading(false);
   }
   useEffect(() => {
     const page = params.course + "" + params.class;
@@ -295,70 +298,78 @@ const Home = () => {
 
   return (
     <section>
-      <Modal
-        showModal={showErrorModal}
-        setShowModal={setShowErrorModal}
-        isSuccess={false}
-        modalMessage={errorMessage}
-      />
-      
-      {params.course === "jee" && params.class === "12" && (
+      {loading ? (
+        <div className="min-h-screen flex align-center justify-center">
+          <LoadingSpinner />
+        </div>
+      ) : (
         <>
-          <Payment
-            title={product.name}
-            class={product.class}
-            duration={`${product.duration} Months`}
-            language="English"
-            subjects="Physics, Chemistry, Maths"
-            testStartDate="3rd March, 2025"
-            price={`${product.price}`}
-            discountPrice={`${product.discountPrice}`}
+          <Modal
+            showModal={showErrorModal}
+            setShowModal={setShowErrorModal}
+            isSuccess={false}
+            modalMessage={errorMessage}
           />
-        </>
-      )}
+          
+          {params.course === "jee" && params.class === "12" && (
+            <>
+              <Payment
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="3rd March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+              />
+            </>
+          )}
 
-      {params.course === "neet" && params.class === "12" && (
-        <>
-          <Payment
-            title={product.name}
-            class={product.class}
-            duration={`${product.duration} Months`}
-            language="English"
-            subjects="Physics, Chemistry, Biology"
-            testStartDate="5th March, 2025"
-            price={`${product.price}`}
-            discountPrice={`${product.discountPrice}`}
-          />
-        </>
-      )}
+          {params.course === "neet" && params.class === "12" && (
+            <>
+              <Payment
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="5th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+              />
+            </>
+          )}
 
-      {params.course === "cet-pcm" && params.class === "12" && (
-        <>
-          <Payment
-            title={product.name}
-            class={product.class}
-            duration={`${product.duration} Months`}
-            language="English"
-            subjects="Physics, Chemistry, Maths"
-            testStartDate="1st March, 2025"
-            price={`${product.price}`}
-            discountPrice={`${product.discountPrice}`}
-          />
-        </>
-      )}
+          {params.course === "cet-pcm" && params.class === "12" && (
+            <>
+              <Payment
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="1st March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+              />
+            </>
+          )}
 
-{params.course === "cet-pcb" && params.class === "12" && (
-        <>
-          <Payment
-            title={product.name}
-            class={product.class}
-            duration={`${product.duration} Months`}
-            language="English"
-            subjects="Physics, Chemistry, Biology"
-            testStartDate="1st March, 2025"
-            price={`${product.price}`}
-            discountPrice={`${product.discountPrice}`}
-          />
+          {params.course === "cet-pcb" && params.class === "12" && (
+            <>
+              <Payment
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="1st March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+              />
+            </>
+          )}
         </>
       )}
     </section>

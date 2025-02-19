@@ -1,30 +1,55 @@
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "../../common/LoadingSpinner"
-export default function TestSeriesHero(props) {
+import { useState } from "react";
+import { addToCart } from "../../../server_actions/actions/studentActions";
 
+export default function TestSeriesHero(props) {
     const router = useRouter();
+    const [showModal, setShowModal] = useState(false);
 
     async function buyNow(){
-        localStorage.setItem("cart", `/payment/${props.course}/${props.class}`);
-        if(localStorage.getItem("token")){
+        const token = localStorage.getItem("token")
+        const data = {
+            productId: props.productId,
+            token: token,
+        }
+        if(token){
+            await addToCart(data)
             router.push(`/payment/${props.course}/${props.class}`)
         }else{
-            router.push("/login")
+            localStorage.setItem("cart", `payment/${props.course}/${props.class}`);
+            const cart = localStorage.getItem("cart")
+            setShowModal(true);
+            setTimeout(() => {
+                setShowModal(false);
+                router.push("/login")
+            }, 5000);
         }
     }
-
-    if (!props) {
-        return <LoadingSpinner />
-    }
-
     return(
-        <section className="min-h-screen bg-gray-200 pt-32 pb-20 px-4 md:px-8">
+        <section className="min-h-screen bg-gradient-to-b from-white via-gray-200 to-white pt-32 pb-20 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-3 gap-8">
                     <MainCard props={props} />
                     <EnrollmentCard price={props.price} discountPrice={props.discountPrice} duration={props.duration} buyNow={buyNow}/>
                 </div>
             </div>
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-1.5 h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
+                                <p className="text-xl font-bold text-gray-800">Authentication Required</p>
+                            </div>
+                            <p className="text-gray-600">Please login first to proceed with the payment. You will be redirected to the login page shortly.</p>
+                            <div className="flex justify-center">
+                                <LoadingSpinner />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}        
         </section>
     )
 }
@@ -141,9 +166,9 @@ function EnrollmentCard(props) {
                         onClick={props.buyNow}
                     >
                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        Buy Now
+                        Add to Cart
                     </button>
                     <div className="pt-3 border-t border-gray-200">
                         <div className="flex flex-col items-center space-y-2">

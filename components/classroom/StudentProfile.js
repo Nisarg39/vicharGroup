@@ -97,7 +97,7 @@ export default function StudentProfile(){
             <div className="w-full">
                 <div className="bg-white shadow-xl overflow-hidden">
                     <div className="bg-[#1d77bc] p-4">
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white">
                                 <img 
                                     src={gender === 'female' ? "https://cdn-icons-gif.flaticon.com/13372/13372960.gif" : "https://cdn-icons-gif.flaticon.com/12146/12146129.gif"} 
@@ -105,16 +105,16 @@ export default function StudentProfile(){
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <div className="flex-1">
-                                <h1 className="text-3xl font-bold text-white">
+                            <div className="flex-1 text-center sm:text-left">
+                                <h1 className="text-2xl sm:text-3xl font-bold text-white">
                                     {name || "Not provided"}
                                 </h1>
-                                <div className="flex items-center gap-4 mt-2">
-                                    <p className="text-blue-100 text-lg">
+                                <div className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+                                    <p className="text-blue-100 text-base sm:text-lg">
                                         <span className="mr-2">Email:</span>
-                                        <span className="bg-white bg-opacity-20 px-3 py-1 rounded">{email || "Not provided"}</span>
+                                        <span className="bg-white bg-opacity-20 px-3 py-1 rounded break-all">{email || "Not provided"}</span>
                                     </p>
-                                    <p className="text-blue-100 text-lg">
+                                    <p className="text-blue-100 text-base sm:text-lg">
                                         <span className="mr-2">Referral Code:</span>
                                         <span className="bg-white bg-opacity-20 px-3 py-1 rounded">{referralCode || "No referral code"}</span>
                                     </p>
@@ -122,11 +122,11 @@ export default function StudentProfile(){
                             </div>
                         </div>
                     </div>
-                    <div className="p-12">
+                    <div className="p-4 sm:p-8 md:p-12">
                         <div className="max-w-6xl mx-auto">
-                            <div className="bg-gray-50 rounded-xl p-8 hover:shadow-md transition-shadow">
-                                <h2 className="text-3xl font-bold text-gray-800 mb-8">Personal Information</h2>
-                                <div className="grid md:grid-cols-2 gap-8">
+                            <div className="bg-gray-50 rounded-xl p-4 sm:p-8 hover:shadow-md transition-shadow">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">Personal Information</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                                         {isEditing.phone ? 
@@ -162,7 +162,7 @@ export default function StudentProfile(){
                                             <p onClick={() => setIsEditing({...isEditing, dob: true})} className="p-3 bg-white rounded-lg border border-gray-200 cursor-pointer">{dob ? new Date(dob).toLocaleDateString() : "Select date"}</p>
                                         }
                                     </div>
-                                    <div className="space-y-2 md:col-span-2">
+                                    <div className="space-y-2 col-span-1 md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-700">Address</label>
                                         {isEditing.address ?
                                             <div>
@@ -192,7 +192,7 @@ export default function StudentProfile(){
                                             <p onClick={() => setIsEditing({...isEditing, area: true})} className="p-3 bg-white rounded-lg border border-gray-200 cursor-pointer">{area || "Enter area"}</p>
                                         }
                                     </div>
-                                    <div className="space-y-2 md:col-span-2">
+                                    <div className="space-y-2 col-span-1 md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-700">State</label>
                                         {isEditing.state ?
                                             <div>
@@ -204,7 +204,7 @@ export default function StudentProfile(){
                                     </div>
                                 </div>
                                 <button 
-                                    className="mt-10 w-full bg-[#1d77bc] text-white py-4 px-6 rounded-lg hover:bg-[#1a6aa8] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-[#1d77bc] text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="mt-6 sm:mt-10 w-full bg-[#1d77bc] text-white py-3 sm:py-4 px-6 rounded-lg hover:bg-[#1a6aa8] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-[#1d77bc] text-base sm:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handleUpdateDetails}
                                     disabled={isUpdating}
                                 >

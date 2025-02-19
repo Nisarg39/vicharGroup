@@ -4,7 +4,7 @@ function WhyChooseUs() {
     const whyChooseUsData = [
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/16675/16675766.gif" alt="Expert Faculty" className="h-8 w-8 md:h-10 md:w-10" />,
-            title: "Expert Faculty",
+            title: "Expert Fac",
             description: "Learn from our top-notch faculty who simplify tough concepts, sharpen problem-solving skills, and boost exam confidence."
         },
         {
@@ -57,8 +57,8 @@ function WhyChooseUs() {
                 <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Why Choose Us 🤔</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {whyChooseUsData.map((item, index) => (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             className={`bg-white p-2 sm:p-4 rounded-xl shadow-lg transform transition duration-500 hover:scale-105 hover:rotate-1 cursor-pointer ${hoveredIndex === index ? 'pb-2 sm:pb-4 ring-4 ring-blue-500 ring-opacity-50' : 'pb-0 sm:pb-4'}`}
                             onMouseEnter={() => setHoveredIndex(index)}
                             onMouseLeave={() => setHoveredIndex(null)}

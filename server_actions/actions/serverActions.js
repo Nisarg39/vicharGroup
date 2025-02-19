@@ -50,6 +50,7 @@ export async function signInGoogle(details) {
         }
     }
 }
+
 // This function is called to verify that user's detail stored by above function by useEffect in the client side when session is given by google callback
 export async function validateGoogleSignIn(data) {
   try {

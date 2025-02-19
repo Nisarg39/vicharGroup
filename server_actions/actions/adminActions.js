@@ -5,6 +5,7 @@ import { connectDB } from "../config/mongoose"
 import Admin from "../models/admin"
 import Student from "../models/student"
 import Products from "../models/products"
+import CouponCode from "../models/couponCode"
 import jwt from "jsonwebtoken"
 
 
@@ -306,6 +307,70 @@ export async function showProducts(){
         return {
             success: false,
             message: "Error fetching products"
+        }
+    }
+}
+
+export async function addCouponCode(details){
+    const couponCodeObject = {
+        couponCode: details.couponCode,
+        discountAmount: details.discountAmount,
+        expiryDate: details.expiryDate,
+        status: details.status,
+        description: details.description,
+        password: details.password
+    }
+    try{
+        await connectDB()
+        const existingCoupon = await CouponCode.findOne({ couponCode: details.couponCode })
+        if(existingCoupon){
+            return {
+                success: false,
+                message: "Coupon Code already exists"
+            }
+        }
+        const couponCode = await CouponCode.create(couponCodeObject)
+        return {
+            success: true,
+            message: "Coupon Code added successfully",
+            couponCode: couponCode
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding coupon code"
+        }
+    }
+}
+
+export async function getAllCouponCodes(page = 1, limit = 10){
+    try{
+        await connectDB()
+        const skip = (page - 1) * limit
+        const couponCodes = await CouponCode.find({})
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        
+        const totalCoupons = await CouponCode.countDocuments({})
+        const totalPages = Math.ceil(totalCoupons / limit)
+
+        return {
+            success: true,
+            couponCodes: couponCodes,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalCoupons,
+                itemsPerPage: limit
+            }
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching coupon codes"
         }
     }
 }

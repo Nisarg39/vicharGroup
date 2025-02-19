@@ -12,9 +12,7 @@ const handler = NextAuth({
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
         try {
-            console.log("SignIn callback triggered", user);
             const userData = await signInGoogle(user);
-            console.log("SignIn response:", userData);
             return true;
         } catch (error) {
             console.error("Error storing user data:", error);

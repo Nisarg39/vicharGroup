@@ -39,7 +39,7 @@ export default function Sidebar(props) {
 											<span>Admin Dashboard</span>
 										</a>
 										<a
-											onClick={() => props.setDashBoardName("statistics")}
+											onClick={() => props.setDashBoardName("adminControls")}
 											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
                     transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
 										>
@@ -59,7 +59,7 @@ export default function Sidebar(props) {
 													/>
 												</svg>
 											</span>
-											<span>Statistics</span>
+											<span>Admin Controls</span>
 										</a>
 										<a
 											onClick={() => props.setDashBoardName("settings")}

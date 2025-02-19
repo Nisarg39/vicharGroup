@@ -26,6 +26,9 @@ export default function Payment(props) {
             // console.log(student);
             setStudent(student.student);
             dispatch(studentDetails(student.student));
+            if(student.student.name && student.student.email && student.student.phone && student.student.gender && student.student.dob && student.student.address && student.student.area && student.student.city && student.student.state){
+                setValidatedDetails(true);
+            }
         }else{
           localStorage.removeItem("token")
           router.push("/login")
@@ -46,10 +49,10 @@ export default function Payment(props) {
     }
 
     return(
-        <section className="min-h-screen pt-32 pb-20 px-4 md:px-8 bg-gradient-to-b from-white via-gray-300 to-white">
+        <section className="min-h-screen pt-32 pb-20 px-4 md:px-8 bg-gradient-to-b from-white via-gray-200 to-white">
             <div className="max-w-7xl mx-auto">
                 <div className="grid lg:grid-cols-3 gap-8">
-                    <MainCard props={props} student={student} setValidatedDetails={setValidatedDetails}/>
+                    <MainCard props={props} student={student} setValidatedDetails={setValidatedDetails} validatedDetails={validatedDetails} />
                     <EnrollmentCard 
                         price={props.price} 
                         discountPrice={props.discountPrice} 
@@ -65,7 +68,7 @@ export default function Payment(props) {
 
 
 // MainCard.js
-function MainCard({props, student, setValidatedDetails}) {
+function MainCard({props, student, setValidatedDetails, validatedDetails}) {
     const [name, setName] = useState(student.name || "");
     const [email, setEmail] = useState(student.email || "");
     const [phone, setPhone] = useState(student.phone || "");
@@ -117,7 +120,8 @@ function MainCard({props, student, setValidatedDetails}) {
                 setSuccess(true);
                 setShowModal(true);
                 setValidatedDetails(true);
-                // disable input fields
+                // disable input fields 
+                
             }else{
                 setModalMessage(response.message);
                 setSuccess(false);
@@ -252,7 +256,11 @@ function MainCard({props, student, setValidatedDetails}) {
                         type="tel"
                         placeholder="Enter your phone number"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => {
+                          if(e.target.value.length <= 10) {
+                            setPhone(e.target.value.replace(/\D/g, ''))
+                          }
+                        }}
                         className="mt-1 w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e96030]"
                       />
                     )}
@@ -290,7 +298,13 @@ function MainCard({props, student, setValidatedDetails}) {
                       <input
                         type="date"
                         value={dob}
-                        onChange={(e) => setDob(e.target.value)}
+                        onChange={(e) => {
+                          if(e.target.value >= new Date().toISOString().split('T')[0]) {
+                            setDob(new Date().toISOString().split('T')[0]);
+                          } else {
+                            setDob(e.target.value);
+                          }
+                        }}
                         className="mt-1 w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e96030]"
                       />
                     )}
@@ -370,8 +384,9 @@ function MainCard({props, student, setValidatedDetails}) {
                 </div>
                 <div className="mt-6 flex justify-end">
                   <button
+                    disabled={validatedDetails}
                     onClick={updateStudent}
-                    className="bg-[#1d77bc] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#1a69a7] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
+                    className={`${!validatedDetails ? 'bg-[#1d77bc] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#1a69a7] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg' : 'bg-[#1d77bc] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#1a69a7] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg opacity-50 cursor-not-allowed'}`}
                   >
                     Update Details
                   </button>
@@ -389,6 +404,9 @@ function MainCard({props, student, setValidatedDetails}) {
 // EnrollmentCard.js
 function EnrollmentCard(props) {
     const [couponCode, setCouponCode] = useState("");
+    const [isCouponApplied, setIsCouponApplied] = useState(false);
+    const [finalPrice, setFinalPrice] = useState(props.discountPrice);
+    const [couponDiscount, setCouponDiscount] = useState(0);
 
     async function verifyCoupon(){
         const token =localStorage.getItem("token")
@@ -398,7 +416,9 @@ function EnrollmentCard(props) {
         }
         const response = await verifyCouponCode(data)
         if(response.success){
-            alert("Coupon Verified")
+            setIsCouponApplied(true);
+            setCouponDiscount(response.coupon.discountAmount);
+            setFinalPrice(props.discountPrice.replace(/,/g, '') - response.coupon.discountAmount);
         }else{
             alert(response.message)
         }
@@ -420,7 +440,10 @@ function EnrollmentCard(props) {
                             <div className="flex flex-col items-center">
                                 <span className="text-sm text-gray-600 font-medium">Price: <span className="text-base text-red-600 line-through font-medium font-poppins">₹{props.price}</span></span>
                                 <span className="text-sm text-gray-600 font-medium mt-1">Offer: <span className="text-sm text-green-600 font-semibold">{Math.round(((props.price.replace(/,/g, '') - props.discountPrice.replace(/,/g, '')) / props.price.replace(/,/g, '')) * 100)}% OFF</span></span>
-                                <span className="text-sm text-gray-600 font-medium mt-1">Final Price: <span className="text-2xl font-extrabold text-gray-900 font-poppins">₹{props.discountPrice}</span></span>
+                                {isCouponApplied && (
+                                    <span className="text-sm text-gray-600 font-medium mt-1">Coupon Discount: <span className="text-sm text-green-600 font-semibold">- ₹{couponDiscount}</span></span>
+                                )}
+                                <span className="text-sm text-gray-600 font-medium mt-1">Final Price: <span className="text-2xl font-extrabold text-gray-900 font-poppins">₹{finalPrice}</span></span>
                                 <span className="text-gray-600 text-sm font-semibold mt-2 bg-gray-100 px-4 py-1 rounded-full shadow-inner">{props.duration}</span>
                             </div>
                         </div>
@@ -428,18 +451,21 @@ function EnrollmentCard(props) {
                     <div className="flex items-center space-x-2">
                         <input
                             type="text"
-                            placeholder="Enter coupon code"
+                            placeholder="Coupon or Referral Code"
                             value={couponCode}
                             onChange={(e) => setCouponCode(e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e96030] focus:border-transparent"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#e96030] focus:border-transparent"
+                            disabled={isCouponApplied}
                         />
-                        <button className="px-4 py-2 bg-[#1d77bc] text-white rounded-lg text-sm font-medium hover:bg-[#1a69a7] transition-colors"
+                        <button 
+                            className={`px-4 py-2 ${isCouponApplied ? 'bg-green-500 cursor-not-allowed' : 'bg-[#1d77bc] hover:bg-[#1a69a7]'} text-white rounded-lg text-sm font-medium transition-colors`}
                             onClick={verifyCoupon}
+                            disabled={isCouponApplied}
                         >
-                            Apply
+                            {isCouponApplied ? 'Applied' : 'Apply'}
                         </button>
                     </div>
-                    <button className="w-full bg-[#e96030] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#d54e22] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center text-lg"
+                    <button className="w-full bg-[#e96030] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#d54e22] hover:shadow-lg flex items-center justify-center text-lg"
                         onClick={props.buyNow}
                         disabled={!props.validatedDetails}
                         style={{ opacity: props.validatedDetails ? 1 : 0.5, cursor: props.validatedDetails ? 'pointer' : 'not-allowed' }}
