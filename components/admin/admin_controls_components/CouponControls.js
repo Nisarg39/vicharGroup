@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { addCouponCode, getAllCouponCodes } from "../../../server_actions/actions/adminActions";
 
+
 function CouponList({ refreshTrigger }) {
     const [coupons, setCoupons] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -100,10 +101,14 @@ export default function CouponControls() {
     const [password, setPassword] = useState("");
     const [codeError, setCodeError] = useState("");
     const [refreshList, setRefreshList] = useState(0);
+    const [showModal, setShowModal] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function handleSubmit(){
         if (!couponCode || !discountAmount || !expiryDate || !status || !description || !password) {
-            alert("All fields are mandatory");
+            setModalMessage("All fields are mandatory");
+            setShowModal(true);
             return;
         }
         if (!couponCode.match(/^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{5,}$/)) {
@@ -111,6 +116,7 @@ export default function CouponControls() {
             return;
         }
         setCodeError("");
+        setIsSubmitting(true);
         const couponDetails = await addCouponCode({
             couponCode,
             discountAmount,
@@ -127,10 +133,12 @@ export default function CouponControls() {
             setDescription("");
             setPassword("");
             setRefreshList(prev => prev + 1);
-            alert("Coupon added successfully");
+            setModalMessage("Coupon added successfully");
         }else{
-            alert(couponDetails.message);
+            setModalMessage(couponDetails.message);
         }
+        setIsSubmitting(false);
+        setShowModal(true);
     }
 
     return(
@@ -225,12 +233,27 @@ export default function CouponControls() {
                 </div>
                 <button 
                     onClick={() => handleSubmit()}
-                    className="mt-6 px-6 py-2 bg-[#1d77bc] text-white font-medium rounded-md hover:bg-[#0056b3] transition-colors duration-200">
-                    Add Coupon
+                    disabled={isSubmitting}
+                    className="mt-6 px-6 py-2 bg-[#1d77bc] text-white font-medium rounded-md hover:bg-[#0056b3] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isSubmitting ? 'Adding Coupon...' : 'Add Coupon'}
                 </button>
             </div>
             
             <CouponList refreshTrigger={refreshList} />
+
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg shadow-xl">
+                        <p className="text-lg">{modalMessage}</p>
+                        <button 
+                            onClick={() => setShowModal(false)}
+                            className="mt-4 px-4 py-2 bg-[#1d77bc] text-white rounded-md hover:bg-[#0056b3]"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

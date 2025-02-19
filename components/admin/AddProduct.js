@@ -114,6 +114,7 @@ function AddProductForm({ handleSubmit, details, handleChange, errors, message }
     </div>
   )
 }
+
 function ProductList({ productsAvailable, handleChange, handleSubmit, errors, message }) {
   const [filteredProducts, setFilteredProducts] = useState(productsAvailable)
   const [filterType, setFilterType] = useState('')
@@ -201,7 +202,6 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
 
   return (
     <div className="w-full min-h-screen py-2 xs:py-4 md:py-6 rounded-lg bg-gray-50">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800 px-3 border-b pb-3">Product List</h1>
       {updateMessage && (
         <div className={`px-3 py-2 mb-4 rounded ${updateMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {updateMessage.text}
@@ -495,6 +495,7 @@ export default function AddProduct() {
           )}
           
           {activeComponent === 'productList' && (
+            productsAvailable ? 
             <ProductList 
               productsAvailable={productsAvailable}
               handleChange={handleChange}
@@ -502,6 +503,10 @@ export default function AddProduct() {
               errors={errors}
               message={message}
             />
+            :
+            <div className="flex justify-center items-center h-screen">
+              <LoadingSpinner size="large" />
+            </div>
           )}
         </div>
       </div>
