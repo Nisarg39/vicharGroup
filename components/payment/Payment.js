@@ -14,6 +14,9 @@ export default function Payment(props) {
 
     const [student, setStudent] = useState({});
     const [validatedDetails, setValidatedDetails] = useState(false);
+    const [finalcouponCode, setFinalCouponCode] = useState("")
+    const [finalBuyPrice, setFinalBuyPrice] = useState(props.discountPrice.replace(/,/g, ''))
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         fetchStudentDetails();
@@ -36,11 +39,54 @@ export default function Payment(props) {
     }
 
     async function buyNow(){
-        localStorage.setItem("courseInterest", props.title);
-        if(localStorage.getItem("token")){
-            // redirect to payment gateway
-        }else{
-            router.push("/login")
+        setIsProcessing(true);
+        try{
+            const response = await fetch("/api/create-order", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("token")}`,
+              },
+              body: JSON.stringify({
+                amount: finalBuyPrice,
+                couponCode: finalcouponCode,
+              }),
+            })
+            const data = await response.json();
+            const options = {
+              key: data.key || process.env.RAZORPAY_KEY_ID,
+              amount: finalBuyPrice * 100,
+              currency: "INR",
+              name: "Vichar Group",
+              description: props.title,
+              image: "/vicharlogo.png",
+              order_id: data.id,
+              handler: function (response) {
+                // handle succesfull payment (update in ui and backend)
+                console.log(response);
+
+              },
+              prefill: {
+                name: student.name,
+                email: student.email,
+                contact: student.phone,
+              },
+              notes: {
+                address: student.address,
+              },
+              theme: {
+                color: "#1d77bc",
+              },
+            }
+
+            const razorpay = new window.Razorpay(options);
+            razorpay.open();
+            setIsProcessing(false);
+        }catch(error){
+            console.log("Payment Failed", error);
+            setIsProcessing(false);
+        }finally{
+            setIsProcessing(false);
         }
     }
 
@@ -59,6 +105,8 @@ export default function Payment(props) {
                         duration={props.duration} 
                         buyNow={buyNow} 
                         validatedDetails={validatedDetails} 
+                        setFinalCouponCode={setFinalCouponCode}
+                        setFinalBuyPrice={setFinalBuyPrice}
                     />
                 </div>
             </div>
@@ -81,9 +129,10 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
     const [showModal, setShowModal] = useState(false);
     const [success, setSuccess] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
-
+    const [updateDetails, setUpdateDetails] = useState("Update Details");
     async function updateStudent(){
 
+        setUpdateDetails("Updating Details...");
         const finalName = student.name || name;
         const finalEmail = student.email || email;
         const finalPhone = student.phone || phone;
@@ -121,11 +170,12 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
                 setShowModal(true);
                 setValidatedDetails(true);
                 // disable input fields 
-                
+                setUpdateDetails("Details Updated");
             }else{
                 setModalMessage(response.message);
                 setSuccess(false);
                 setShowModal(true);
+                setUpdateDetails("Update Details");
             }
         }catch(error){
             setModalMessage("Error in updating student details");
@@ -388,7 +438,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
                     onClick={updateStudent}
                     className={`${!validatedDetails ? 'bg-[#1d77bc] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#1a69a7] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg' : 'bg-[#1d77bc] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#1a69a7] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg opacity-50 cursor-not-allowed'}`}
                   >
-                    Update Details
+                    {updateDetails}
                   </button>
                 </div>
               </div>
@@ -407,8 +457,10 @@ function EnrollmentCard(props) {
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [finalPrice, setFinalPrice] = useState(props.discountPrice);
     const [couponDiscount, setCouponDiscount] = useState(0);
+    const [applyButtonText, setApplyButtonText] = useState("Apply");
 
     async function verifyCoupon(){
+      setApplyButtonText("Applying...");
         const token =localStorage.getItem("token")
         const data = {
             token,
@@ -419,10 +471,23 @@ function EnrollmentCard(props) {
             setIsCouponApplied(true);
             setCouponDiscount(response.coupon.discountAmount);
             setFinalPrice(props.discountPrice.replace(/,/g, '') - response.coupon.discountAmount);
+            setApplyButtonText("Applied");
         }else{
+            setApplyButtonText("Apply");
             alert(response.message)
         }
     }
+
+    async function buyNow(){
+      props.setFinalCouponCode(couponCode)
+      // logic for if condition if final price is greater than 999 then remove commas from the price
+      console.log(finalPrice) 
+      // let finalPriceNumber = finalPrice.replace(/,/g, '')
+
+      props.setFinalBuyPrice(finalPrice)
+      // props.buyNow()
+    }
+
     return (
         <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 sticky top-24 w-full sm:w-[288px] md:w-full lg:w-[252px] xl:w-[288px] mx-auto overflow-hidden md:flex md:flex-row lg:flex-col">
@@ -462,11 +527,11 @@ function EnrollmentCard(props) {
                             onClick={verifyCoupon}
                             disabled={isCouponApplied}
                         >
-                            {isCouponApplied ? 'Applied' : 'Apply'}
+                            {applyButtonText}
                         </button>
                     </div>
                     <button className="w-full bg-[#e96030] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#d54e22] hover:shadow-lg flex items-center justify-center text-lg"
-                        onClick={props.buyNow}
+                        onClick={() => buyNow()}
                         disabled={!props.validatedDetails}
                         style={{ opacity: props.validatedDetails ? 1 : 0.5, cursor: props.validatedDetails ? 'pointer' : 'not-allowed' }}
                     >

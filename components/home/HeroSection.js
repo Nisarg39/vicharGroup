@@ -8,7 +8,7 @@ const HeroSection = () => {
   const [touchEnd, setTouchEnd] = useState(null);
   
   const slides = [
-    { src: "/vivekSirBanner.png", alt: "Director & Founder " },
+    { src: "/vivekSirBanner.png", alt: "Director & Founder: ER. Vivek Gupta" },
     { src: "https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png", alt: "Stock Market" },
   ];
 
@@ -265,7 +265,7 @@ const HeroSection = () => {
                     priority={index === 0}
                     className="hover:scale-105 transition-transform duration-300 group-hover:scale-110"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 ">
                     <h3 className="text-white text-2xl font-bold tracking-wider">{slide.alt}</h3>
                   </div>
                 </div>

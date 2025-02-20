@@ -162,13 +162,15 @@ function EnrollmentCard(props) {
                             </div>
                         </div>
                     </div>
-                    <button className="w-full bg-[#e96030] text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-[#d54e22] transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center text-lg"
+                    <button 
+                        className={`w-full px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg flex items-center justify-center text-lg text-white ${props.isAddingToCart ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#e96030] hover:bg-[#d54e22]'}`}
                         onClick={props.buyNow}
+                        disabled={props.isAddingToCart}
                     >
                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        Add to Cart
+                        {props.isAddingToCart ? 'Adding to Cart...' : 'Add to Cart'}
                     </button>
                     <div className="pt-3 border-t border-gray-200">
                         <div className="flex flex-col items-center space-y-2">

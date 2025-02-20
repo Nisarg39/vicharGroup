@@ -17,14 +17,15 @@ const paymentSchema = new mongoose.Schema({
         type:Number,
         required:true
     },
-    transactionId:{
-        type:String,
-        required:true
-    },
     referral:{
         type: mongoose.Schema.Types.ObjectId,
         ref:'Referral',
     },
+    coupon:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CouponCode'
+    },
+
 }, { timestamps: true })
 
 const Payment = mongoose.models.Payment || mongoose.model("Payment",paymentSchema)
