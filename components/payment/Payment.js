@@ -482,9 +482,9 @@ function EnrollmentCard(props) {
       props.setFinalCouponCode(couponCode)
       // logic for if condition if final price is greater than 999 then remove commas from the price
       console.log(finalPrice) 
-      // let finalPriceNumber = finalPrice.replace(/,/g, '')
+      let finalPriceNumber = finalPrice.replace(/,/g, '')
 
-      props.setFinalBuyPrice(finalPrice)
+      props.setFinalBuyPrice(finalPriceNumber)
       // props.buyNow()
     }
 
