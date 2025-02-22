@@ -10,6 +10,7 @@ const HeroSection = () => {
   const slides = [
     { src: "/vivekSirBanner.png", alt: "Director & Founder: ER. Vivek Gupta" },
     { src: "https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png", alt: "Stock Market" },
+    { src: "/testSeriesLanding.png", alt: "Test Series" },
   ];
 
   useEffect(() => {
@@ -241,7 +242,7 @@ const HeroSection = () => {
           
           <div className="order-1 lg:order-2 lg:w-2/3 w-full">
             <div 
-              className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-3xl border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden transform transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-[1.02] group"
+              className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-3xl border-4 border-black bg-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden transform transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:scale-[1.02] group"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -261,12 +262,19 @@ const HeroSection = () => {
                     src={slide.src}
                     alt={slide.alt}
                     fill
-                    style={{ objectFit: "cover" }}
+                    style={{ objectFit: "contain" }}
                     priority={index === 0}
                     className="hover:scale-105 transition-transform duration-300 group-hover:scale-110"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 ">
-                    <h3 className="text-white text-2xl font-bold tracking-wider">{slide.alt}</h3>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                    <motion.h3 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="text-white text-md sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-wider drop-shadow-lg transform hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-yellow-200 to-yellow-500 bg-clip-text text-transparent border-b-2 border-yellow-400 pb-2"
+                    >
+                      {slide.alt}
+                    </motion.h3>
                   </div>
                 </div>
               ))}

@@ -13,5 +13,13 @@ const razorpay_info_Schema = mongoose.Schema({
     razorpay_signature :{
         type:String,
         required: true
+    },
+    payment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Payment",
     }
 }, {timeStamp: true})
+
+const Razorpay_Info = mongoose.models.Razorpay_Info || mongoose.model("Razorpay_Info", razorpay_info_Schema);
+
+export default Razorpay_Info;

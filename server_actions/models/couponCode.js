@@ -29,7 +29,11 @@ const couponCodeSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-    }
+    },
+    referral: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Referral",
+    }],
 }, { timestamps: true });
 
 const CouponCode = mongoose.models.CouponCode || mongoose.model("CouponCode", couponCodeSchema);

@@ -3,8 +3,12 @@ import { connectDB } from "../config/mongoose"
 import Student from "../models/student";
 import Products from "../models/products";
 import CouponCode from "../models/couponCode";
+import Payment from "../models/payment";
+import Referral from "../models/referral";
+import Razorpay_Info from "../models/razorpay_info";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
+import { model } from "mongoose";
 
 export async function sendOtp(phone){
     // console.log(phone)  
@@ -76,28 +80,24 @@ export async function verifyOtp(data) {
 }
 export async function getStudentDetails(token){
     await connectDB()
-    const middleware = await verifyStudentMiddleware(token)
-    // console.log(middleware)
-    if(middleware.success){
-        const student = {
-            name: middleware.student.name || null,
-            email: middleware.student.email || null,
-            id: middleware.student._id.toString(),
-            phone: middleware.student.phone || null,
-            otp: middleware.student.otp || null,
-            isVerified: middleware.student.isVerified || false,
-            token: middleware.student.token || null,
-            interestedInProduct: middleware.student.interestedInProduct || [],
-            address: middleware.student.address || null,
-            area: middleware.student.area || null,
-            city: middleware.student.city || null,
-            state: middleware.student.state || null,
-            gender: middleware.student.gender || null,
-            dob: middleware.student.dob || null,
-            referralCode: middleware.student.referralCode || null,
-            createdAt: middleware.student.createdAt.toString(),
-            updatedAt: middleware.student.updatedAt.toString()
+    const student = await Student.findOne({token: token}).populate([
+        {
+            path: "purchases",
+            populate: {
+                path: "product",
+                model: "Products",
+                select: "name price discountPrice duration pageParameters class type"
+            }
+        },
+        {
+            path: "cart",
+            model: "Products",
+            select: "name price discountPrice duration pageParameters class type"
         }
+    ])
+    .lean()
+    
+    if(student){
         return {
             message: "Student details fetched successfully",
             success: true,
@@ -105,7 +105,7 @@ export async function getStudentDetails(token){
         }
     }else{
         return {
-            message: "Student details fetching failed",
+            message: "Student details fetching failed", 
             success: false,
             student: null
         }
@@ -232,6 +232,7 @@ export async function verifyCouponCode(data) {
           return {
             message: "Coupon code verified successfully",
             coupon: coupon,
+            couponType: "referral",
             success: true,
           };
         } else {
@@ -241,18 +242,16 @@ export async function verifyCouponCode(data) {
           };
         }
       } else {
-        const coupon = await CouponCode.findOne({couponCode: data.couponCode})
+        const coupon = await CouponCode.findOne({couponCode: data.couponCode, status: "active"})
         if(coupon){
             return({
                 message: "Coupon code verified successfully",
                 coupon: coupon,
+                couponType: "coupon",
                 success: true,
             })
         }else{
-            return({
-                message: "No Referral or Coupon Code Found",
-                success: false,
-            })
+            
         }
       }
     } else {
@@ -267,5 +266,105 @@ export async function verifyCouponCode(data) {
       success: false,
     };
   }
+}
+
+export async function productPurchase(data){
+    try {
+        await connectDB()
+        const middleware = await verifyStudentMiddleware(data.token)
+        if(middleware.success){
+            const student = await Student.findById(middleware.student._id)
+            const product = await Products.findById(data.productId)
+            // razorpay info logic
+            const razorpay_info = await Razorpay_Info.create({
+                razorpay_order_id: data.razorpay_order_id,
+                razorpay_payment_id: data.razorpay_payment_id,
+                razorpay_signature: data.razorpay_signature,
+            })
+
+            // referral and coupon code logic
+            let referral;
+            if(data.couponType === "referral" ){
+                const refferedByStudent = await Student.findOne({referralCode: data.couponCode})
+                referral = await Referral.create({
+                    studentRefferal: refferedByStudent._id,
+                    referralCode: refferedByStudent.referralCode,
+                    referralType: "student",
+                    status: "approved",
+                })
+                refferedByStudent.referral.push(referral._id)
+                await refferedByStudent.save()
+                await referral.save()
+            }
+
+            if(data.couponType === "coupon" ){
+                const coupon = await CouponCode.findOne({couponCode: data.couponCode, status: "active"})
+                referral = await Referral.create({
+                    couponReferral: coupon._id,
+                    referralCode: coupon.couponCode,
+                    referralType: "coupon",
+                    status: "approved",
+                })
+                coupon.usedCount++
+                coupon.referral.push(referral._id)
+                await coupon.save()
+                await referral.save()
+            }
+
+            // payment logic
+            let payment;
+
+            if(data.couponType === "referral" || data.couponType === "coupon"){
+                    payment = await Payment.create({
+                    student: student._id,
+                    product: product._id,
+                    paymentStatus: "success",
+                    amountPaid: data.amountPaid,
+                    couponDiscount: data.couponDiscount,
+                    referral: referral._id,
+                    razorpay_info: razorpay_info._id,
+                    initialDiscountAmount: data.initialDiscountAmount,
+                    price: product.price,
+                })
+            }else{
+                    payment = await Payment.create({
+                    student: student._id,
+                    product: product._id,
+                    paymentStatus: "success",
+                    amountPaid: data.amountPaid,
+                    couponDiscount: 0,
+                    razorpay_info: razorpay_info._id,
+                    initialDiscountAmount: data.initialDiscountAmount,
+                    price: product.price,
+                })
+            }
+
+            razorpay_info.payment = payment._id
+            await razorpay_info.save()
+            student.purchases.push(payment._id)
+            student.cart = student.cart.filter((item) => item.toString() !== product._id.toString());
+            await student.save();
+
+            return {
+                message: "To see your purchased products go to your Dashboard",
+                success: true,
+                payment: payment,
+                modalTitle: "Payment Successful",
+            }
+        }else{
+            return {
+                message: "Product purchase failed, authentication failed",
+                success: false,
+                modalTitle: "Payment Failed",
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error purchasing product",
+            success: false,
+            modalTitle: "Payment Failed",
+        }
+    }
 }
 

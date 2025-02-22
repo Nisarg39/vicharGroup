@@ -20,7 +20,6 @@ const Home = () => {
   async function fetchDetails() {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
-
     if (details.success) {
       // add comma after 3 digits of the number
       details.product.price = details.product.price.toLocaleString('en-IN')
@@ -105,16 +104,16 @@ const Home = () => {
     },
   ];
   const testScheduleNeet = [
-    { id: 1, date: "27-Mar-25", day: "Thursday", testType: "Test 2" },
-    { id: 2, date: "31-Mar-25", day: "Monday", testType: "Test 4" },
-    { id: 3, date: "4-Apr-25", day: "Friday", testType: "Test 5" },
-    { id: 4, date: "8-Apr-25", day: "Tuesday", testType: "Test 7" },
-    { id: 5, date: "12-Apr-25", day: "Saturday", testType: "Test 9" },
-    { id: 6, date: "15-Apr-25", day: "Tuesday", testType: "Test 10" },
-    { id: 7, date: "19-Apr-25", day: "Saturday", testType: "Test 11" },
-    { id: 8, date: "23-Apr-25", day: "Wednesday", testType: "Test 13" },
-    { id: 9, date: "27-Apr-25", day: "Sunday", testType: "Test 14" },
-    { id: 10, date: "1-May-25", day: "Thursday", testType: "Test 15" },
+    { id: 1, date: "27-Mar-25", day: "Thursday", testType: "Test 1" },
+    { id: 2, date: "31-Mar-25", day: "Monday", testType: "Test 2" },
+    { id: 3, date: "4-Apr-25", day: "Friday", testType: "Test 3" },
+    { id: 4, date: "8-Apr-25", day: "Tuesday", testType: "Test 4" },
+    { id: 5, date: "12-Apr-25", day: "Saturday", testType: "Test 5" },
+    { id: 6, date: "15-Apr-25", day: "Tuesday", testType: "Test 6" },
+    { id: 7, date: "19-Apr-25", day: "Saturday", testType: "Test 7" },
+    { id: 8, date: "23-Apr-25", day: "Wednesday", testType: "Test 8" },
+    { id: 9, date: "27-Apr-25", day: "Sunday", testType: "Test 9" },
+    { id: 10, date: "1-May-25", day: "Thursday", testType: "Test 10" },
   ];
 
   const testScheduleNeetPart2 = [

@@ -1,19 +1,20 @@
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "../../common/LoadingSpinner"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { addToCart } from "../../../server_actions/actions/studentActions";
+import { getStudentDetails } from "../../../server_actions/actions/studentActions";
 
 export default function TestSeriesHero(props) {
     const router = useRouter();
     const [showModal, setShowModal] = useState(false);
-
+    
     async function buyNow(){
         const token = localStorage.getItem("token")
         const data = {
             productId: props.productId,
             token: token,
         }
-        if(token){
+        if(token ){
             await addToCart(data)
             router.push(`/payment/${props.course}/${props.class}`)
         }else{

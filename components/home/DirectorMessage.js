@@ -60,7 +60,7 @@ function DirectorMessage() {
                         ease: "linear"
                     }}
                 >
-                    <div className="w-12 h-12 flex items-center justify-center bg-yellow-300 rounded-full opacity-50 shadow-lg">
+                    <div className="w-12 h-12 flex items-center justify-center bg-yellow-300 backdrop-blur-sm rounded-full opacity-50 shadow-lg">
                         <span className="text-black text-lg font-bold">π</span>
                     </div>
                 </motion.div>
@@ -77,7 +77,7 @@ function DirectorMessage() {
                         ease: "easeInOut"
                     }}
                 >
-                    <div className="w-16 h-16 flex items-center justify-center bg-blue-400 rounded-lg opacity-40 shadow-lg">
+                    <div className="w-16 h-16 flex items-center justify-center bg-blue-400 backdrop-blur-sm rounded-lg opacity-40 shadow-lg">
                         <span className="text-black text-xl font-bold">∑</span>
                     </div>
                 </motion.div>
@@ -94,7 +94,7 @@ function DirectorMessage() {
                         ease: "easeInOut"
                     }}
                 >
-                    <div className="w-10 h-10 flex items-center justify-center bg-orange-400 rounded-full opacity-45 shadow-lg">
+                    <div className="w-10 h-10 flex items-center justify-center bg-orange-400 backdrop-blur-sm rounded-full opacity-45 shadow-lg">
                         <span className="text-black text-lg font-bold">∫</span>
                     </div>
                 </motion.div>
@@ -111,7 +111,7 @@ function DirectorMessage() {
                         ease: "linear"
                     }}
                 >
-                    <div className="w-14 h-14 flex items-center justify-center bg-gray-400 rounded-lg opacity-40 rotate-45 shadow-lg">
+                    <div className="w-14 h-14 flex items-center justify-center bg-gray-400 backdrop-blur-sm rounded-lg opacity-40 rotate-45 shadow-lg">
                         <span className="text-black text-xl font-bold -rotate-45">√</span>
                     </div>
                 </motion.div>
@@ -128,26 +128,27 @@ function DirectorMessage() {
                         ease: "linear"
                     }}
                 >
-                    <div className="w-8 h-8 flex items-center justify-center bg-green-400 rounded-full opacity-50 shadow-lg">
+                    <div className="w-8 h-8 flex items-center justify-center bg-green-400 backdrop-blur-sm rounded-full opacity-50 shadow-lg">
                         <span className="text-black text-sm font-bold">∞</span>
                     </div>
                 </motion.div>
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight">Director's Message</h2>
+                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight tracking-tight">Director's Message</h2>
                 <div className="max-w-6xl mx-auto">
-                    <div className="bg-gradient-to-b from-gray-200 via-white to-gray-200 p-4 sm:p-6 md:p-8 rounded-3xl shadow-2xl">
-                        <div className="bg-gray-50 p-4 sm:p-6 md:p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,_0,_0,_0.1)] hover:shadow-[0_20px_60px_rgba(0,_0,_0,_0.2)] transition-all duration-300 border-2 border-gray-200">
+                    <div className="bg-gradient-to-b from-gray-200 via-white to-gray-200 p-4 sm:p-6 md:p-8 rounded-3xl shadow-2xl backdrop-blur-lg">
+                        <div className="bg-gray-50/90 p-4 sm:p-6 md:p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,_0,_0,_0.1)] hover:shadow-[0_20px_60px_rgba(0,_0,_0,_0.2)] transition-all duration-300 border-2 border-gray-200/80 backdrop-filter">
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 md:gap-8">
                                 <div className="w-full md:w-1/3 text-center border-b-2 md:border-b-0 border-[#106fb8] pb-2 md:pb-0">
-                                    <div className="relative w-32 h-40 sm:w-40 sm:h-48 md:w-48 md:h-56 lg:w-64 lg:h-72 mx-auto group">
-                                        <Image src="/vivekSir2.png" alt="Director" fill className="object-contain rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-[#106fb8]" />
+                                    <div className="relative w-56 h-64 sm:w-40 sm:h-56 md:w-48 md:h-56 lg:w-64 lg:h-72 mx-auto group">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#106fb8]/20 rounded-xl z-20"></div>
+                                        <Image src="/vivekSir2.png" alt="Director" fill className="object-cover rounded-xl relative z-10 transform group-hover:scale-105 transition-transform duration-300 border-b-1 border-[#106fb8] shadow-lg" />
                                     </div>
-                                    <p className="font-bold text-4xl sm:text-4xl md:text-4xl lg:text-4xl text-gray-800">
-                                        Vivek Gupta
+                                    <p className="font-bold text-3xl sm:text-3xl md:text-3xl lg:text-3xl text-gray-800 mt-4">
+                                        ER. Vivek Gupta
                                     </p>
-                                    <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center mt-2">
                                         <p className="text-gray-600 text-sm md:text-base font-medium">
                                             Director and Founder
                                         </p>
@@ -158,17 +159,17 @@ function DirectorMessage() {
                                                     alt="Takalkar Academy Logo" 
                                                     width={24} 
                                                     height={24} 
-                                                    className="rounded-full border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer" 
+                                                    className="rounded-full border-2 border-[#106fb8] object-cover transform hover:scale-125 transition-transform duration-300 cursor-pointer shadow-md" 
                                                 />
                                             </Link>
                                         </div>
                                     </div>
-                                    <p className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-100 inline-block rounded-full">( BTech IIT Madras )</p>
+                                    <p className="text-gray-500 text-xs sm:text-sm font-medium bg-gray-100/80 inline-block rounded-full px-4 py-1 mt-2 backdrop-blur-sm">( BTech IIT Madras )</p>
                                 </div>
                                 <div className="w-full md:w-2/2">
                                     <div 
                                         ref={scrollRef} 
-                                        className="h-54 sm:h-40 md:h-48 overflow-y-auto mb-4 pr-4 flex items-center justify-center pt-2 md:pt-4 scrollbar-thin scrollbar-thumb-[#106fb8] scrollbar-track-gray-200" 
+                                        className="h-54 sm:h-40 md:h-48 overflow-y-auto mb-4 pr-4 flex items-center justify-center pt-2 md:pt-4 scrollbar-thin scrollbar-thumb-[#106fb8] scrollbar-track-gray-200 bg-white/50 rounded-xl p-4" 
                                         style={{ scrollbarWidth: 'thin', scrollbarColor: '#106fb8 #e5e7eb' }}
                                         onTouchStart={handleTouchStart}
                                         onTouchEnd={handleTouchEnd}
@@ -194,8 +195,8 @@ function DirectorMessage() {
                                             </p>
                                         )}
                                     </div>
-                                    <div className="flex justify-between items-center mt-4 sm:mt-6">
-                                        <button onClick={handlePrev} className="bg-[#106fb8] text-white px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg hover:bg-white hover:text-[#106fb8] transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl text-sm sm:text-base">←</button>
+                                    <div className="flex justify-between items-center mt-4 sm:mt-6 bg-white/50 p-4 rounded-xl">
+                                        <button onClick={handlePrev} className="bg-[#106fb8] text-white px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg hover:bg-white hover:text-[#106fb8] transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl text-sm sm:text-base backdrop-blur-sm">←</button>
                                         <div className="flex space-x-1 sm:space-x-2">
                                             {[...Array(totalPoints)].map((_, index) => (
                                                 <div
@@ -205,7 +206,7 @@ function DirectorMessage() {
                                                 ></div>
                                             ))}
                                         </div>
-                                        <button onClick={handleNext} className="bg-[#106fb8] text-white px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg hover:bg-white hover:text-[#106fb8] transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl text-sm sm:text-base">→</button>
+                                        <button onClick={handleNext} className="bg-[#106fb8] text-white px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg hover:bg-white hover:text-[#106fb8] transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl text-sm sm:text-base backdrop-blur-sm">→</button>
                                     </div>
                                 </div>
                             </div>

@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
 
 const referralSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
   referralType: {
     type: String,
     enum: ["student", "teacher", "coupon"],
@@ -14,6 +10,14 @@ const referralSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  studentRefferal: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Student",
+  },
+  couponReferral: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CouponCode",
+  },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
@@ -21,6 +25,6 @@ const referralSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-const Referral = mongoose.model("referral", referralSchema);
+const Referral = mongoose.models.Referral || mongoose.model("Referral", referralSchema);
 
 export default Referral;

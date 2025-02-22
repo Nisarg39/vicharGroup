@@ -1,31 +1,52 @@
 import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema({
-    studentId: {
+    student: {
         type: mongoose.Schema.Types.ObjectId,
         ref:'Student',
     },
     product: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:'Product',
+        ref:'Products',
     },
     paymentStatus:{
         type:String,
+        enum: ["pending","success","failed"],
         default:"pending"
     },
-    amount:{
+    amountPaid:{
         type:Number,
         required:true
+    },
+    price: {
+        type: String,
+        required: true,
+    },
+    initialDiscountAmount: {
+        type: String,
+        default:0
+    },
+    couponDiscount:{
+        type:Number,
+        default:0
     },
     referral:{
         type: mongoose.Schema.Types.ObjectId,
         ref:'Referral',
     },
-    coupon:{
+    razorpay_info: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CouponCode'
+        ref: 'Razorpay_Info'
     },
-
+    paymentType:{
+        type:String,
+        default:"online"
+    },
+    paymentMode:{
+        type:String,
+        enum: ["razorpay","cash"],
+        default: "razorpay"
+    },
 }, { timestamps: true })
 
 const Payment = mongoose.models.Payment || mongoose.model("Payment",paymentSchema)

@@ -1,3 +1,4 @@
+import { strict } from "assert";
 import mongoose from "mongoose";
 
 const studentsSchema = new mongoose.Schema({
@@ -30,7 +31,7 @@ const studentsSchema = new mongoose.Schema({
     },
     cart: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Products"
+        ref: "Products",
     }],
     gender: {
         type: String,
@@ -54,8 +55,16 @@ const studentsSchema = new mongoose.Schema({
     referralCode: {
         type: String,
     },
+    referral: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Referral",
+    }],
+    purchases: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Payment",
+    }],
 }, {
-    timestamps: true
+    timestamps: true,
 })
 
 const Student = mongoose.models.Student || mongoose.model("Student", studentsSchema);

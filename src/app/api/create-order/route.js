@@ -12,7 +12,6 @@ const razorpay = new Razorpay({
 
 export async function POST(request) {
     const { amount, couponCode } = await request.json();
-    console.log(amount, couponCode);
     try {
         const options = {
             amount: Number(amount * 100),
@@ -21,7 +20,6 @@ export async function POST(request) {
         };
 
         const order = await razorpay.orders.create(options);
-        console.log(order)
         return NextResponse.json({
             id: order.id,
             amount: order.amount / 100,

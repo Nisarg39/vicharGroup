@@ -314,6 +314,7 @@ const Home = () => {
           {params.course === "jee" && params.class === "12" && (
             <>
               <Payment
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -329,6 +330,7 @@ const Home = () => {
           {params.course === "neet" && params.class === "12" && (
             <>
               <Payment
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -344,6 +346,7 @@ const Home = () => {
           {params.course === "cet-pcm" && params.class === "12" && (
             <>
               <Payment
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -359,6 +362,7 @@ const Home = () => {
           {params.course === "cet-pcb" && params.class === "12" && (
             <>
               <Payment
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
