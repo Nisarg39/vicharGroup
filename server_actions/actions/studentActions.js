@@ -21,6 +21,19 @@ export async function sendOtp(phone){
                 phone: phone, 
                 otp: studentOtp,
             })
+
+            // sending otp to student using fast2sms api
+            await fetch('https://www.fast2sms.com/dev/bulkV2', {
+                method: 'POST',
+                headers: {
+                    'authorization': process.env.FAST2SMS_API_KEY
+                },
+                body: new URLSearchParams({
+                    'variables_values': studentOtp.toString(),
+                    'route': 'otp',
+                    'numbers': newStudent.phone
+                })
+            })
             const token = jwt.sign({ id: newStudent._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             newStudent.token = token
             newStudent.save()
@@ -33,6 +46,17 @@ export async function sendOtp(phone){
             student.otp = Math.floor(1000 + Math.random() * 9000)
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             student.token = token
+            await fetch('https://www.fast2sms.com/dev/bulkV2', {
+                method: 'POST',
+                headers: {
+                    'authorization': process.env.FAST2SMS_API_KEY
+                },
+                body: new URLSearchParams({
+                    'variables_values': student.otp.toString(),
+                    'route': 'otp',
+                    'numbers': phone
+                })
+            })
             await student.save()
             return{
                 message: "OTP sent successfully",
@@ -47,7 +71,6 @@ export async function sendOtp(phone){
         }
     }
 }
-
 export async function verifyOtp(data) {
     await connectDB()
     // console.log(data)

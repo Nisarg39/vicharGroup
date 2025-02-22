@@ -77,7 +77,7 @@ const CartCard = () => {
 
 const ProductsCard = () => {
     const student = useSelector(state => state.login.studentDetails)
-    console.log(student.purchases[0].product.type)
+    // console.log(student.purchases[0].product.type)
     return (
         <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-xl border border-gray-200 h-full">
             <h2 className="text-lg sm:text-xl mb-3 sm:mb-4 text-gray-800 border-b pb-2 sm:pb-3 font-semibold flex items-center gap-2">

@@ -39,7 +39,7 @@ export async function adminLogin(details) {
             }
         }
         const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || 'fallback_secret_key', { expiresIn: '30d' })
-        console.log(token)
+        // console.log(token)
         return {
             success: true,
             message: "Login Successful",
