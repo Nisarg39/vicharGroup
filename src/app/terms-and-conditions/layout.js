@@ -9,8 +9,8 @@ export const metadata = {
 
 export default function Root({ children }) {
   return (
-    <div className="bg-black">
-    {children}
+    <div>
+      {children}
     </div>
   );
 }
