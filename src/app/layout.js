@@ -9,6 +9,9 @@ import VicharApp from "../../components/home/VicharApp";
 export const metadata = {
   title: "Vichar Group - Official Homepage",
   description: "Best Online Learning Platform for competitive exams like JEE, NEET,MHT-CET and Foundation.",
+  other: {
+    'fast2sms': 'qVKm62QLJgPIrbtC6IHWatGyxCZwX5pM'
+  }
 };
 
 export default function RootLayout({ children }) {
