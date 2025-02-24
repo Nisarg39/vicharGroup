@@ -6,6 +6,7 @@ import Admin from "../models/admin"
 import Student from "../models/student"
 import Products from "../models/products"
 import CouponCode from "../models/couponCode"
+import Payment from "../models/payment"
 import jwt from "jsonwebtoken"
 
 
@@ -371,6 +372,50 @@ export async function getAllCouponCodes(page = 1, limit = 10){
         return {
             success: false,
             message: "Error fetching coupon codes"
+        }
+    }
+}
+
+export async function paymentDetails(page = 1, limit = 10){
+    try {
+        await connectDB()
+        const skip = (page - 1) * limit
+        const payments = await Payment.find({})
+        .populate({
+            path: 'student',
+            model: 'Student',
+            select: 'name email phone _id'
+        })
+        .populate({
+            path: 'product',
+            model: 'Products',
+            select: 'name price discountPrice _id type'
+        })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        const totalCount = await Payment.countDocuments({})
+        const serializedPayments = payments.map(payment => {
+            const plainPayment = payment.toObject()
+            return {
+                _id: plainPayment._id.toString(),
+                ...plainPayment,
+                createdAt: plainPayment.createdAt?.toISOString(),
+                updatedAt: plainPayment.updatedAt?.toISOString()
+            }
+        })
+        return {
+            success: true,
+            payments: serializedPayments,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching payments"
         }
     }
 }

@@ -262,8 +262,10 @@ const HeroSection = () => {
                     src={slide.src}
                     alt={slide.alt}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 75vw, 66vw"
+                    priority={true}
+                    quality={90}
                     style={{ objectFit: "contain" }}
-                    priority={index === 0}
                     className="hover:scale-105 transition-transform duration-300 group-hover:scale-110"
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
@@ -271,7 +273,7 @@ const HeroSection = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5 }}
-                      className="text-white text-md sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-wider drop-shadow-lg transform hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-yellow-200 to-yellow-500 bg-clip-text text-transparent border-b-2 border-yellow-400 pb-2"
+                      className="text-white text-md sm:text-xl md:text-2xl lg:text-3xl font-serif italic tracking-wider drop-shadow-lg transform hover:scale-105 transition-transform duration-300 bg-gradient-to-r from-yellow-200 to-yellow-500 bg-clip-text text-transparent border-b-2 border-yellow-400 pb-2"
                     >
                       {slide.alt}
                     </motion.h3>

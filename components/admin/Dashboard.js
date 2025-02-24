@@ -8,6 +8,7 @@
   import AddProduct from './AddProduct';
   import { useRouter } from 'next/navigation';
   import Modal from '../common/Modal';
+  import PaymentsHome from './payments/PaymentsHome';
 
 
   export default function Dashboard() {
@@ -35,6 +36,10 @@
       setActiveTab('addProduct');
     }
 
+    function handlePayments() {
+      setActiveTab('payments');
+    }
+
     async function handleLogout() {
       localStorage.removeItem('isAdmin');
       setShowLogoutModal(true);
@@ -44,22 +49,22 @@
     }
 
     return (
-        <div className="ml-64 min-h-screen w-[calc(100%-16rem)]">
+        <div className="md:ml-64 min-h-screen w-full md:w-[calc(100%-16rem)] px-4 md:px-0">
           <div className="pt-8">
             <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-4xl font-semibold text-gray-900">Admin Dashboard</h1>
+              <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h1 className="text-2xl md:text-4xl font-semibold text-gray-900 text-center md:text-left">Admin Dashboard</h1>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
+                  className="w-full md:w-auto px-4 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
                 >
                   Logout
                 </button>
               </div>
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-col md:flex-row flex-wrap gap-2 mb-6">
                 <button
                   onClick={() => fetchStudentEnquiries()}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'enquiry'
                       ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -69,7 +74,7 @@
                 </button>
                 <button
                   onClick={() => fetchContactMessages()}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'contact'
                       ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -79,7 +84,7 @@
                 </button>
                 <button
                   onClick={() => handlePasswordTab()}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'password'
                       ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -89,7 +94,7 @@
                 </button>
                 <button
                   onClick={() => handleEnrolledStudents()}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'enrolled'
                       ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -99,7 +104,7 @@
                 </button>
                 <button
                   onClick={() => handleAddProduct()}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
                     activeTab === 'addProduct'
                       ? 'bg-[#1d77bc] text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -107,8 +112,18 @@
                 >
                   Add Product
                 </button>
+                <button
+                  onClick={() => handlePayments()}
+                  className={`w-full md:w-auto px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
+                    activeTab === 'payments'
+                      ? 'bg-[#1d77bc] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Payments
+                </button>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 overflow-x-auto">
                 {activeTab === 'enquiry' && <StudentEnquiryTable />}
                 {activeTab === 'contact' && <ContactUsTable />}
                 {activeTab === 'password' && (
@@ -124,6 +139,11 @@
                 {activeTab === 'addProduct' && (
                   <div className="bg-white rounded-lg">
                     <AddProduct />
+                  </div>
+                )}
+                {activeTab === 'payments' && (
+                  <div className="bg-white rounded-lg">
+                    <PaymentsHome />
                   </div>
                 )}
               </div>
