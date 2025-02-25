@@ -77,7 +77,7 @@ const CartCard = () => {
 
 const ProductsCard = () => {
     const student = useSelector(state => state.login.studentDetails)
-    // console.log(student.purchases[0].product.type)
+    console.log(student.purchases)
     return (
         <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-xl border border-gray-200 h-full">
             <h2 className="text-lg sm:text-xl mb-3 sm:mb-4 text-gray-800 border-b pb-2 sm:pb-3 font-semibold flex items-center gap-2">
@@ -101,7 +101,7 @@ const ProductsCard = () => {
                                     />
                                     <div className="space-y-1">
                                         <p className="text-gray-800 font-semibold text-sm sm:text-base">{purchase.product.name}</p>
-                                        <span className="text-xs sm:text-sm text-gray-500">Purchase Date: {new Date().toLocaleDateString()}</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">Purchase Date: {new Date(purchase.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                                 {purchase.product.type === "test-series" && (

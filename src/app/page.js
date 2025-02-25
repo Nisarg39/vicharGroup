@@ -8,6 +8,7 @@ import StudentEnquiryForm from '../../components/home/StudentEnquiryForm'
 import VicharApp  from '../../components/home/VicharApp'
 import WhyChooseUs from '../../components/home/WhyChooseUs'
 import AllTestimonials from "../../components/home/AllTestimonials"
+import { Analytics } from "@vercel/analytics/react"
 
 export default function Home() {
   const isLoggedIn = useSelector(state => state.login.loginStatus);
