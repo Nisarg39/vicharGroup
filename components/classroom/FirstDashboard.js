@@ -16,7 +16,7 @@ const CartCard = () => {
                 Your Shopping Cart
             </h2>
             <ul className="space-y-3">
-                {student.cart.length > 0 ? (
+                {student && student.cart && student.cart.length > 0 ? (
                     <>
                         {student.cart.map((item, index) => (
                             <li key={index} className="p-3 sm:p-3.5 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all duration-300 font-medium border border-blue-100">
@@ -77,7 +77,7 @@ const CartCard = () => {
 
 const ProductsCard = () => {
     const student = useSelector(state => state.login.studentDetails)
-    console.log(student.purchases)
+    // console.log(student.purchases)
     return (
         <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-xl border border-gray-200 h-full">
             <h2 className="text-lg sm:text-xl mb-3 sm:mb-4 text-gray-800 border-b pb-2 sm:pb-3 font-semibold flex items-center gap-2">
@@ -87,7 +87,7 @@ const ProductsCard = () => {
                 Your Purchases
             </h2>
             <ul className="space-y-3">
-                {student.purchases.length > 0 ? (
+                {student && student.purchases && student.purchases.length > 0 ? (
                     student.purchases.map((purchase, index) => (
                         <li key={index} className="p-3 sm:p-3.5 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all duration-300 font-medium border border-blue-100">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">

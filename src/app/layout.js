@@ -6,6 +6,7 @@ import Script from "next/script";
 const inter = Inter({ subsets: ["latin"] });
 import Footer from "../../components/home/Footer";
 import VicharApp from "../../components/home/VicharApp";
+import { Analytics } from "@vercel/analytics/react"
 export const metadata = {
   title: "Vichar Group - Official Homepage",
   description: "Best Online Learning Platform for competitive exams like JEE, NEET,MHT-CET and Foundation.",
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
           </div>
           <div style={{ paddingTop: 'navbarHeight', marginTop: 'navbarHeight' }}>
             {children}
+            <Analytics />
           </div>
           <VicharApp />
           <Footer />

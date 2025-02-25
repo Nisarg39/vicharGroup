@@ -34,6 +34,7 @@ export async function sendOtp(phone){
                     'numbers': newStudent.phone
                 })
             })
+
             const token = jwt.sign({ id: newStudent._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             newStudent.token = token
             newStudent.save()
