@@ -320,7 +320,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="3rd March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
               />
@@ -336,7 +336,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Biology"
-                testStartDate="5th March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
               />
@@ -352,7 +352,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="1st March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
               />
@@ -368,7 +368,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Biology"
-                testStartDate="1st March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
               />

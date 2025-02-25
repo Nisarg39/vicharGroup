@@ -494,7 +494,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
 
 // EnrollmentCard.js
 function EnrollmentCard(props) {
-    const [couponCode, setCouponCode] = useState("");
+    const [couponCode, setCouponCode] = useState("FAST200");
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [finalPrice, setFinalPrice] = useState(props.discountPrice.replace(/,/g, ''));
     const [couponDiscount, setCouponDiscount] = useState(0);

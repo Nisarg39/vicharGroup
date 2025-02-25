@@ -46,7 +46,7 @@ const Home = () => {
       id: 1,
       date: "11-Mar-25",
       day: "Tuesday",
-      testType: "Test 3",
+      testType: "Test 1",
     },
     {
       id: 2,
@@ -236,7 +236,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="3rd March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
@@ -255,7 +255,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Biology"
-                testStartDate="5th March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
@@ -275,7 +275,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="1st March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
@@ -294,7 +294,7 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Biology"
-                testStartDate="1st March, 2025"
+                testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}

@@ -10,7 +10,7 @@ export const metadata = {
   title: "Vichar Group - Official Homepage",
   description: "Best Online Learning Platform for competitive exams like JEE, NEET,MHT-CET and Foundation.",
   other: {
-    'fast2sms': 'qVKm62QLJgPIrbtC6IHWatGyxCZwX5pM'
+    // 'fast2sms': 'qVKm62QLJgPIrbtC6IHWatGyxCZwX5pM'
   }
 };
 
