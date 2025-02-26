@@ -241,6 +241,7 @@ const Home = () => {
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
+                examMode="Online Test Series"
               />
               <TestSchedule testSchedule={testScheduleJee} title="Test Schedule - JEE Mains (2025) [Full Length]" />
             </>
@@ -260,6 +261,7 @@ const Home = () => {
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
+                examMode="Online Test Series"
               />
               <TestSchedule testSchedule={testScheduleNeet} title="Test Schedule – NEET (2025)[Full Length]" />
               <TestSchedule testSchedule={testScheduleNeetPart2} title="Test Schedule – NEET (2025)[Part 2]" />
@@ -280,6 +282,7 @@ const Home = () => {
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
+                examMode="Online Test Series"
               />
               <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – MHT-CET (2025) [Full Length]" />
             </>
@@ -299,6 +302,7 @@ const Home = () => {
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
+                examMode="Offline Test Series"
               />
               <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
             </>

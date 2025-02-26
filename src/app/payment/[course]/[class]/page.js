@@ -323,6 +323,7 @@ const Home = () => {
                 testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
               />
             </>
           )}
@@ -339,6 +340,7 @@ const Home = () => {
                 testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
               />
             </>
           )}
@@ -355,6 +357,7 @@ const Home = () => {
                 testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
               />
             </>
           )}
@@ -371,6 +374,7 @@ const Home = () => {
                 testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
+                examMode="Offline Test Series"
               />
             </>
           )}

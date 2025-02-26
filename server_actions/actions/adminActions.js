@@ -7,6 +7,7 @@ import Student from "../models/student"
 import Products from "../models/products"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
+import Razorpay_Info from "../models/razorpay_info"
 import jwt from "jsonwebtoken"
 
 
@@ -233,10 +234,25 @@ export async function fetchAllStudents(page) {
         const limit = 10
         const skip = (page - 1) * limit
         const students = await Student.find({})
-            .skip(skip)
-            .limit(limit)
-            .lean()
-            .sort({ createdAt: -1 })
+        .populate({
+            path: 'cart',
+            model: 'Products',
+            select: 'name price discountPrice _id type'
+        })
+        // perform a nested populate where there is reference to product model inside payment model
+        .populate({
+            path: 'purchases',
+            model: 'Payment',
+            populate: {
+                path: 'product',
+                model: 'Products',
+                select: 'name price discountPrice _id type'
+            }
+        })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .sort({ createdAt: -1 })
         const totalCount = await Student.countDocuments({})
         const serializedStudents = students.map(student => ({
             _id: student._id.toString(),
@@ -391,9 +407,15 @@ export async function paymentDetails(page = 1, limit = 10){
             model: 'Products',
             select: 'name price discountPrice _id type'
         })
+        .populate({
+            path: 'razorpay_info',
+            model: 'Razorpay_Info',
+            select: 'razorpay_order_id razorpay_payment_id razorpay_signature'
+        })
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })
+
         const totalCount = await Payment.countDocuments({})
         const serializedPayments = payments.map(payment => {
             const plainPayment = payment.toObject()

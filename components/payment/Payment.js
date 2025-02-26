@@ -238,7 +238,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
                 </h2>
               </div>
               <div className="sm:absolute sm:right-0 bg-gradient-to-r from-[#22863a] to-[#2ea043] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg backdrop-blur-sm">
-                Online Test Series
+                {props.examMode}
               </div>
             </div>
             <div className="flex flex-wrap gap-3 sm:gap-4">
@@ -494,7 +494,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
 
 // EnrollmentCard.js
 function EnrollmentCard(props) {
-    const [couponCode, setCouponCode] = useState("FAST200");
+    const [couponCode, setCouponCode] = useState("FIRST200");
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [finalPrice, setFinalPrice] = useState(props.discountPrice.replace(/,/g, ''));
     const [couponDiscount, setCouponDiscount] = useState(0);
@@ -523,6 +523,10 @@ function EnrollmentCard(props) {
     }
 
     async function buyNow(){
+
+      if(!isCouponApplied){
+        setCouponCode("")
+      }
 
       const purchaseData = {
         couponCode,

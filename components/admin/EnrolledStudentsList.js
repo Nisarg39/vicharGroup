@@ -1,14 +1,104 @@
-"use client"
-import { useState, useEffect } from "react";
-import { fetchAllStudents } from "../../server_actions/actions/adminActions";
-import LoadingSpinner from "../common/LoadingSpinner";
-export default function EnrolledStudentsList() {
+import { useEffect, useState } from 'react';
+import { fetchAllStudents } from '../../server_actions/actions/adminActions';
+import LoadingSpinner from '../common/LoadingSpinner';
 
+function StudentDetails({ student, onClose }) {
+    console.log(student);
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[9999] p-4">
+            <div className="bg-white p-8 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 py-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Student Details</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Name</p>
+                            <p className="text-gray-800 font-medium">{student.name}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Email</p>
+                            <p className="text-gray-800 font-medium break-all">{student.email}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Phone</p>
+                            <p className="text-gray-800 font-medium">+91 {student.phone}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Status</p>
+                            <span className={`px-4 py-2 text-sm font-medium rounded-full ${student.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {student.isVerified ? 'Verified' : 'Not Verified'}
+                            </span>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Address</p>
+                            <p className="text-gray-800 font-medium">{student.address || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Area</p>
+                            <p className="text-gray-800 font-medium">{student.area || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">City</p>
+                            <p className="text-gray-800 font-medium">{student.city || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">State</p>
+                            <p className="text-gray-800 font-medium">{student.state || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Gender</p>
+                            <p className="text-gray-800 font-medium">{student.gender || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Date of Birth</p>
+                            <p className="text-gray-800 font-medium">{new Date(student.dob).toLocaleDateString() || 'Not Available'}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg col-span-1 md:col-span-2">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Cart Items</p>
+                            <div className="max-h-32 overflow-y-auto">
+                                {student.cart && student.cart.length > 0 ? 
+                                    student.cart.map((item, index) => (
+                                        <span key={index} className="block py-1 text-gray-800">{index+1}. {item.name}</span>
+                                    ))
+                                    : 
+                                    <p className="text-gray-500 italic">No items in cart</p>
+                                }
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg col-span-1 md:col-span-2">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">Purchase History</p>
+                            <div className="max-h-32 overflow-y-auto">
+                                {student.purchases && student.purchases.length > 0 ? 
+                                    student.purchases.map((item, index) => (
+                                        <span key={index} className="block py-1 text-gray-800">
+                                            {index+1}. {item.product.name} - {new Date(item.createdAt).toLocaleDateString()}
+                                        </span>
+                                    ))
+                                    : 
+                                    <p className="text-gray-500 italic">No purchase history</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+export default function EnrolledStudentsList() {
     const [students, setStudents] = useState({});
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
-
+    const [selectedStudent, setSelectedStudent] = useState(null);
 
     async function fetchAllStudentsDetails(page) {
         setLoading(true);
@@ -45,6 +135,7 @@ export default function EnrolledStudentsList() {
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Phone Number</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Email</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -58,6 +149,14 @@ export default function EnrolledStudentsList() {
                                             <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${student.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                                 {student.isVerified ? 'Verified' : 'Not Verified'}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-5 whitespace-nowrap">
+                                            <button
+                                                onClick={() => setSelectedStudent(student)}
+                                                className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 focus:outline-none"
+                                            >
+                                                More Details
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -100,6 +199,12 @@ export default function EnrolledStudentsList() {
                         </nav>
                     </div>
                 </>
+            )}
+            {selectedStudent && (
+                <StudentDetails 
+                    student={selectedStudent} 
+                    onClose={() => setSelectedStudent(null)} 
+                />
             )}
         </div>
     )
