@@ -9,7 +9,7 @@ const JeeTest = (props) => {
   ]
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-100 flex items-center pt-24" id='courses-section'>
+    <div className="bg-gradient-to-b from-white to-gray-100 flex items-center" id='courses-section'>
       <div className="container mx-auto px-14 py-8 sm:py-16 md:py-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-center text-gray-900 mb-12 pb-4">JEE Test Series</h1>
         <div className="grid md:grid-cols-2 gap-8">

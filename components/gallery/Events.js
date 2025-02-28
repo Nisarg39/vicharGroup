@@ -1,7 +1,7 @@
 "use client"
 import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
-import { FaFlask } from 'react-icons/fa'
+import { FaFlask, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 
 export default function Events(){
     const images = [
@@ -17,7 +17,7 @@ export default function Events(){
             setCurrentIndex((prevIndex) => 
                 prevIndex === images.length - 1 ? 0 : prevIndex + 1
             )
-        }, 3000)
+        }, 5000)
         return () => clearInterval(timer)
     }, [])
 
@@ -34,54 +34,71 @@ export default function Events(){
     }
 
     return(
-        <div className="events-section pb-8 sm:pb-12 pt-8 sm:pt-12 bg-white">
-            <div className="max-w-6xl mx-auto px-2 sm:px-4">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-8">
+        <div className="events-section pb-16 sm:pb-24 pt-16 sm:pt-24 bg-gradient-to-b from-white to-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-12">
                     <div className="w-full md:w-1/3">
-                        <h1 className="text-5xl sm:text-5xl md:text-5xl font-extrabold text-left text-gray-800 tracking-tight hover:text-gray-600 transition-colors duration-300">
-                            Science Talk Show
-                        </h1>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <FaFlask className="text-[#1d77bc] text-2xl" />
+                                <h2 className="text-[#1d77bc] font-semibold tracking-wide uppercase">Events</h2>
+                            </div>
+                            <h1 className="text-5xl sm:text-6xl font-extrabold text-left text-gray-900 tracking-tight">
+                                Science Talk Show
+                            </h1>
+                            <p className="text-gray-600 text-lg leading-relaxed">
+                                Join us for an engaging discussion on the latest scientific discoveries and innovations.
+                            </p>
+                        </div>
                     </div>
                     <div className="w-full md:w-2/3">
-                        <div className="relative w-full bg-gradient-to-r from-[#1d77bc]/20 to-[#1d77bc]/10 p-3 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl">
+                        <div className="relative w-full bg-white rounded-xl shadow-2xl overflow-hidden">
                             <motion.div
                                 key={currentIndex}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.5 }}
-                                className="rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 sm:border-4 border-gray-200"
+                                initial={{ opacity: 0, x: 100 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -100 }}
+                                transition={{ duration: 0.5, ease: "easeInOut" }}
+                                className="relative"
                             >
                                 <img
                                     src={images[currentIndex]}
                                     alt={`Event ${currentIndex + 1}`}
-                                    className="w-full h-[200px] sm:h-[300px] md:h-[400px] object-cover transform hover:scale-105 transition-transform duration-500"
+                                    className="w-full h-[300px] sm:h-[450px] md:h-[550px] object-cover"
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                             </motion.div>
-                            <button
-                                onClick={prevSlide}
-                                className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 bg-gray-100/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-gray-200 hover:text-gray-900 transition-all duration-300 shadow-lg text-sm sm:text-base"
-                            >
-                                ❮
-                            </button>
-                            <button
-                                onClick={nextSlide}
-                                className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-gray-100/80 text-gray-800 p-2 sm:p-3 rounded-full hover:bg-gray-200 hover:text-gray-900 transition-all duration-300 shadow-lg text-sm sm:text-base"
-                            >
-                                ❯
-                            </button>
-                            <div className="absolute -bottom-3 sm:-bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 sm:gap-3 bg-gray-100/30 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
-                                {images.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentIndex(index)}
-                                        className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                                            currentIndex === index 
-                                                ? 'bg-[#1d77bc] scale-125' 
-                                                : 'bg-gray-400 hover:bg-[#1d77bc]/60'
-                                        }`}
-                                    />
-                                ))}
+                            
+                            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex space-x-2">
+                                        {images.map((_, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setCurrentIndex(index)}
+                                                className={`w-12 h-1 rounded-full transition-all duration-300 ${
+                                                    currentIndex === index 
+                                                        ? 'bg-white' 
+                                                        : 'bg-white/40 hover:bg-white/60'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex space-x-3">
+                                        <button
+                                            onClick={prevSlide}
+                                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm"
+                                        >
+                                            <FaChevronLeft className="w-5 h-5 text-white" />
+                                        </button>
+                                        <button
+                                            onClick={nextSlide}
+                                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300 backdrop-blur-sm"
+                                        >
+                                            <FaChevronRight className="w-5 h-5 text-white" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
