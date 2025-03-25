@@ -69,11 +69,11 @@ export default function StockCourses() {
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.6 }}
-                className="text-5xl font-bold text-center mb-16 text-black glow-text"
+                className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-black leading-tight"
             >
                 Courses
             </motion.h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-[95%] mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-[95%] md:w-[85%] mx-auto">
                 {courses.map((course, index) => (
                     <motion.div 
                         initial={{ y: 50, opacity: 0 }}

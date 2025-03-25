@@ -4,7 +4,7 @@ function WhyChooseUs() {
     const whyChooseUsData = [
         {
             icon: <img src="https://cdn-icons-gif.flaticon.com/16675/16675766.gif" alt="Expert Faculty" className="h-8 w-8 md:h-10 md:w-10" />,
-            title: "Expert Fac",
+            title: "Expert Faculty",
             description: "Learn from our top-notch faculty who simplify tough concepts, sharpen problem-solving skills, and boost exam confidence."
         },
         {

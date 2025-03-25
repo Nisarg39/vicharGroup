@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.0.3",
+    "@react-three/fiber": "^9.0.4",
     "@reduxjs/toolkit": "^2.2.7",
     "@vercel/analytics": "^1.5.0",
     "framer-motion": "^11.9.0",
@@ -24,7 +26,8 @@
     "react-leaflet": "^4.2.1",
     "react-redux": "^9.1.2",
     "sharp": "^0.33.5",
-    "styled-components": "^6.1.13"
+    "styled-components": "^6.1.13",
+    "three": "^0.174.0"
   },
   "devDependencies": {
     "@types/node": "22.3.0",

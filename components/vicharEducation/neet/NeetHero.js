@@ -120,7 +120,7 @@ const NeetHero = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <h1 className="text-5xl font-bold text-gray-800 text-center mb-12">NEET Preparation Course</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6 md:mb-8 text-center text-gray-800 tracking-tight">NEET Preparation Course</h1>
         <div className="flex flex-wrap justify-center gap-8">
           {courses.map((course) => (
             <div key={course.id} className="bg-white rounded-2xl shadow-lg overflow-hidden transform transition duration-500 hover:scale-105 border-b-4 border-b-[#106fb8] w-[85%] sm:w-[calc(15%-1.25rem)] lg:w-[calc(26.666%-1.5rem)] relative hover:shadow-2xl hover:rotate-1">

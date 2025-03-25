@@ -1,0 +1,249 @@
+import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import * as THREE from 'three';
+import { StereoEffect } from 'three/addons/effects/StereoEffect.js';
+
+const HeroSection = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const containerRef = useRef(null);
+  
+  const slides = [
+    { src: "/vivekSirBanner.png", alt: "Director & Founder Of Vichar Group: ER. Vivek Gupta" },
+    { src: "https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png", alt: "Stock Market" },
+    { src: "/testSeriesLanding.png", alt: "Test Series" },
+  ];
+
+  useEffect(() => {
+    let camera, scene, renderer, effect;
+    const particles = [];
+    let mouseX = 0, mouseY = 0;
+    let windowHalfX = window.innerWidth / 2;
+    let windowHalfY = window.innerHeight / 2;
+    let mouseVector = new THREE.Vector3();
+
+    const init = () => {
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100000);
+      camera.position.z = 6000;
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x000000, 0.00010);
+
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+      const colors = [];
+      const originalPositions = [];
+      const color1 = new THREE.Color(0xe96030); // Orange color from VICHAR
+      const color2 = new THREE.Color(0x1d77bc); // Blue color from GROUP
+      const color3 = new THREE.Color(0xffd700); // Gold color for accent
+
+      for (let i = 0; i < 15000; i++) {
+        let x, y, z;
+        // Create a single unified particle distribution
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * 8000;
+        x = Math.cos(angle) * radius;
+        y = Math.sin(angle) * radius;
+        z = (Math.random() - 0.5) * 5000;
+        
+        positions.push(x, y, z);
+        originalPositions.push(x, y, z);
+
+        // Distribute colors based on position
+        const colorRand = Math.random();
+        const color = colorRand < 0.33 ? color1 : colorRand < 0.66 ? color2 : color3;
+        colors.push(color.r, color.g, color.b);
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geometry.userData.originalPositions = originalPositions;
+
+      const material = new THREE.PointsMaterial({
+        size: 15,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending
+      });
+
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+      particles.push(points);
+
+      renderer = new THREE.WebGLRenderer({ 
+        alpha: true,
+        antialias: true
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000, 0);
+      containerRef.current.appendChild(renderer.domElement);
+
+      effect = new StereoEffect(renderer);
+      effect.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    const onDocumentMouseMove = (event) => {
+      mouseX = (event.clientX - windowHalfX) * 5;
+      mouseY = (event.clientY - windowHalfY) * 5;
+      
+      mouseVector.set(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1,
+        0.5
+      );
+      mouseVector.unproject(camera);
+    };
+
+    const animate = () => {
+      const timer = 0.00005 * Date.now();
+
+      camera.position.x += (mouseX - camera.position.x) * .02;
+      camera.position.y += (-mouseY - camera.position.y) * .02;
+      camera.lookAt(scene.position);
+
+      const positions = particles[0].geometry.attributes.position.array;
+      const originalPositions = particles[0].geometry.userData.originalPositions;
+      const repulsionRadius = 2000;
+      const repulsionStrength = 500;
+
+      for (let i = 0; i < positions.length; i += 3) {
+        const particleVector = new THREE.Vector3(positions[i], positions[i + 1], positions[i + 2]);
+        const distance = particleVector.distanceTo(mouseVector);
+
+        if (distance < repulsionRadius) {
+          const direction = particleVector.sub(mouseVector).normalize();
+          const force = (1 - distance / repulsionRadius) * repulsionStrength;
+          
+          positions[i] = originalPositions[i] + direction.x * force;
+          positions[i + 1] = originalPositions[i + 1] + direction.y * force;
+          positions[i + 2] = originalPositions[i + 2] + direction.z * force;
+        } else {
+          positions[i] = originalPositions[i] + (positions[i] - originalPositions[i]) * 0.95;
+          positions[i + 1] = originalPositions[i + 1] + (positions[i + 1] - originalPositions[i + 1]) * 0.95;
+          positions[i + 2] = originalPositions[i + 2] + (positions[i + 2] - originalPositions[i + 2]) * 0.95;
+        }
+      }
+
+      particles[0].geometry.attributes.position.needsUpdate = true;
+      particles[0].rotation.x = timer * 0.5;
+      particles[0].rotation.y = timer * 0.3;
+
+      effect.render(scene, camera);
+      requestAnimationFrame(animate);
+    };
+
+    init();
+    animate();
+    document.addEventListener('mousemove', onDocumentMouseMove);
+
+    return () => {
+      document.removeEventListener('mousemove', onDocumentMouseMove);
+      if (containerRef.current) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleTouchStart = (e) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }
+    if (isRightSwipe) {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  return (
+    <section className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-gray-200 pt-12 md:pt-20 overflow-hidden relative">
+      <div ref={containerRef} className="absolute inset-0 z-0" style={{ transform: 'translateZ(-50px)' }} />
+      <div className="container mx-auto px-4 relative z-10" style={{ transform: 'translateZ(0)' }}>
+        <div className="flex flex-col lg:flex-row lg:gap-8 items-center">
+          <div className="order-2 lg:order-1 lg:w-1/3 mt-8 lg:mt-0 p-6 rounded-xl">
+            <h1 className="text-7xl md:text-7xl lg:text-8xl font-extrabold mb-4 lg:mb-8 animate-fade-in drop-shadow-[3px_3px_rgba(0,0,0,0.15)]">
+              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#e96030] to-[#ff8a65]" : "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>V</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-800 hover:from-gray-800 hover:to-black transition-colors duration-300 hover:scale-105">ICHAR</span>
+              <br />
+              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]" : "bg-gradient-to-r from-[#e96030] to-[#ff8a65]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>G</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-800 hover:from-gray-800 hover:to-black transition-colors duration-300 hover:scale-105">ROUP</span>
+            </h1>
+            <p className="text-gray-600 text-lg lg:text-xl mb-4 lg:mb-8 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 bg-clip-text text-transparent animate-slide-up drop-shadow-md font-medium">
+              Welcome to VICHAR GROUP, where innovation meets excellence.
+            </p>
+            <div className="flex items-center space-x-4 mb-4 lg:mb-8 animate-bounce-slow">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`h-4 transition-all duration-300 rounded-full border-4 border-black ${
+                    currentSlide === index ? 'w-16 bg-yellow-300 translate-y-1 translate-x-1 scale-110 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]' : 'w-8 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                  }`}
+                  onClick={() => setCurrentSlide(index)}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="order-1 lg:order-2 lg:w-2/3 w-full p-4 rounded-xl">
+            <div 
+              className="relative w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-3xl border-4 border-black bg-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-all duration-300 overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {slides.map((slide, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 transform transition-all duration-500 ${
+                    index === currentSlide 
+                      ? 'translate-x-0 opacity-100 scale-100' 
+                      : index < currentSlide 
+                        ? '-translate-x-full opacity-0 scale-95' 
+                        : 'translate-x-full opacity-0 scale-95'
+                  }`}
+                >
+                  <Image
+                    src={slide.src}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 75vw, 66vw"
+                    priority={true}
+                    quality={95}
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default HeroSection;
