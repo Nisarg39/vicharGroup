@@ -1,7 +1,7 @@
 "use client"
 import { useSelector, useDispatch } from "react-redux";
 import { loggedIn, loggedOut } from "../../features/login/LoginSlice";
-import HeroSection from "../../components/home/HeroSection";
+import HeroSection from "../../components/home/heroSection";
 import Courses from "../../components/home/Courses";
 import DirectorMessage from "../../components/home/DirectorMessage";
 import StudentEnquiryForm from '../../components/home/StudentEnquiryForm'

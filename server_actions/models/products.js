@@ -20,9 +20,6 @@ const productsSchema = new mongoose.Schema({
         enum: ["course", "test-series"],
         required: true
     },
-    segment:{
-        type: String,
-    },
     class:{
         type: String,
     },
@@ -31,7 +28,21 @@ const productsSchema = new mongoose.Schema({
     },
     pageParameters:{
         type: String,
-    }
+    },
+    courseId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+    },
+    segment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Segment'
+    },
+    subjects: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Subject'
+        }
+    ]
 },{ timestamps: true });
 
 const Products = mongoose.models.Products || mongoose.model('Products', productsSchema);

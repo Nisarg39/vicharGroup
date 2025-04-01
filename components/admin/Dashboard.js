@@ -5,7 +5,7 @@
   import { ContactUsTable } from './ContactUsTable';
   import ChangePassword from './ChangePassword';
   import EnrolledStudentsList from './EnrolledStudentsList';
-  import AddProduct from './AddProduct';
+  import AddProduct from './product-controls/AddProduct';
   import { useRouter } from 'next/navigation';
   import Modal from '../common/Modal';
   import PaymentsHome from './payments/PaymentsHome';

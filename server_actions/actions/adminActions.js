@@ -5,9 +5,12 @@ import { connectDB } from "../config/mongoose"
 import Admin from "../models/admin"
 import Student from "../models/student"
 import Products from "../models/products"
+import Subject from "../../server_actions/models/subject"
+import Chapter from "../../server_actions/models/chapter"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
 import Razorpay_Info from "../models/razorpay_info"
+import Segment from "../models/segment"
 import jwt from "jsonwebtoken"
 
 
@@ -274,6 +277,96 @@ export async function fetchAllStudents(page) {
     }
 }
 
+
+// segment functions
+
+export async function addSegment(details){
+    try{
+        await connectDB()
+        const segment = await Segment.create({name: details.name})
+        return {
+            success: true,
+            message: "Segment added successfully",
+            segment: segment
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding segment"
+        }
+    }
+}
+
+export async function segmentDetails(){
+    try{
+        await connectDB()
+        const segments = await Segment.find({})
+        .populate({
+            path: 'products',
+            model: 'Products',
+            select: 'name price discountPrice _id type'
+        })
+        .lean()
+        const products = await Products.find({})
+        return {
+            success: true,
+            segments: segments,
+            products: products,
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching segments"
+        }
+    }
+}
+export async function updateSegment(details) {
+    try {
+        await connectDB();
+        const segment = await Segment.findById(details.segmentId);
+        
+        // Use Promise.all to wait for all updates to complete
+        await Promise.all(details.productIds.map(async (productId) => {
+            // Find if product exists in any other segment
+            const existingSegment = await Segment.findOne({ products: productId });
+            if (existingSegment && existingSegment._id.toString() !== segment._id.toString()) {
+                // Remove product from existing segment
+                existingSegment.products = existingSegment.products.filter(
+                    id => id.toString() !== productId.toString()
+                );
+                await existingSegment.save();
+            }
+
+            await Products.updateOne(
+                { _id: productId }, 
+                { $set: { segment: segment._id } }
+            );
+            
+            // Check if product ID is already in the array to avoid duplicates
+            if (!segment.products.includes(productId)) {
+                segment.products.push(productId);
+            }
+        }));
+        
+        // Save the segment after all products have been added
+        await segment.save();
+        
+        return {
+            success: true,
+            message: "Segment updated successfully"
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error updating segment"
+        };
+    }
+}
+
+// product controls
 export async function addProduct(details){
     const productObject = {
         name: details.name,
@@ -328,35 +421,178 @@ export async function showProducts(){
     }
 }
 
-export async function addCouponCode(details){
-    const couponCodeObject = {
-        couponCode: details.couponCode,
-        discountAmount: details.discountAmount,
-        expiryDate: details.expiryDate,
-        status: details.status,
-        description: details.description,
-        password: details.password
-    }
-    try{
+// course controls
+
+export async function showCourses(){
+    try {
         await connectDB()
-        const existingCoupon = await CouponCode.findOne({ couponCode: details.couponCode })
-        if(existingCoupon){
-            return {
-                success: false,
-                message: "Coupon Code already exists"
-            }
-        }
-        const couponCode = await CouponCode.create(couponCodeObject)
+        const courseProducts = await Products.find({type: 'course'})
         return {
             success: true,
-            message: "Coupon Code added successfully",
-            couponCode: couponCode
+            products: courseProducts
         }
-    }catch(error){
+    } catch (error) {
         console.log(error)
         return {
             success: false,
-            message: "Error adding coupon code"
+            message: "Error fetching courses"
+        }
+    }
+}
+
+export async function updateCourse(details) {
+    try {
+        await connectDB()
+        const product = await Products.findById(details.id)
+        product.name = details.name
+        await product.save()
+        return {
+            success: true,
+            message: "Course updated successfully",
+            product: product
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating course"
+        }
+    }
+}
+
+// subject controls
+export async function addSubject(details){
+    // console.log(details)
+    try {
+        await connectDB()
+        
+        const addSubject = await Subject.create({
+            subjectCode: details.subjectCode,
+            name: details.name,
+            image: details.image,
+            description: details.description,
+            productId: details.productId
+        })
+
+        const product = await Products.findByIdAndUpdate(details.productId, {
+            $push: {
+                subjects: addSubject._id
+            }
+        }, {new: true})
+
+        if(!product){
+            return {
+                success: false,
+                message: "Product not found"
+            }
+        }
+
+        return {
+            success: true,
+            message: "Subject added successfully",
+            subject: addSubject
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding subject"
+        }
+    }
+}
+
+export async function showSubjects(productId){
+    try {
+        await connectDB()
+        const subjects = await Subject.find({productId: productId})
+        .populate({
+            path: 'chapters',
+            model: Chapter,
+            select: 'serialNumber chapterName image'
+        }).lean()
+        return {
+            success: true,
+            subjects: subjects
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching subjects"
+        }
+    }
+}
+
+export async function updateSubject(details){
+    try {
+        await connectDB()
+        const updatedSubject = await Subject.findByIdAndUpdate(details.id, {
+            subjectCode: details.subjectCode,
+            name: details.name,
+            image: details.image,
+            description: details.description,
+        }, {new: true})
+        return {
+            success: true,
+            message: "Subject updated successfully",
+            subject: updatedSubject
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating subject"
+        }
+    }
+}
+
+// chapter controls
+export async function addChapter(details){
+    try {
+        await connectDB()
+        const chapter = await Chapter.create(details)
+        if(chapter){
+            const subject = await Subject.findByIdAndUpdate(details.subjectId, {
+                $push: {
+                    chapters: chapter._id
+                }
+            }, {new: true})
+            if(subject){
+                return {
+                    success: true,
+                    message: "Chapter added successfully",
+                    chapter: chapter,
+                    subject: subject
+                }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding chapter"
+        }
+    }
+}
+
+export async function updateChapter(details){
+    try {
+        await connectDB()
+        const updatedChapter = await Chapter.findByIdAndUpdate(details.id, {
+            serialNumber: details.serialNumber,
+            chapterName: details.chapterName,
+            image: details.image,
+        }, {new: true})
+        return {
+            success: true,
+            message: "Chapter updated successfully",
+            chapter: updatedChapter
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating chapter"
         }
     }
 }
