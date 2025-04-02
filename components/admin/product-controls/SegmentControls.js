@@ -69,6 +69,8 @@ export default function SegmentControls() {
                 segments={segments}
                 products={products}
                 setProductUpdated={setProductUpdated}
+                setSegments={setSegments}
+                setProducts={setProducts}
             />
             </div>
         </div>

@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { addChapter, updateChapter } from "../../../../server_actions/actions/adminActions"
-
+import VideoLectures from "./chapterPanel/VideoLectures"
+import Dpp from "./chapterPanel/Dpp"
+import ChapterExercise from "./chapterPanel/ChapterExercise"
+import Notes from "./chapterPanel/Notes"
 
 export default function SubjectDetiails({subject}){
     const [serialNumber, setSerialNumber] = useState('')
@@ -12,6 +15,8 @@ export default function SubjectDetiails({subject}){
     const [editImageUrl, setEditImageUrl] = useState('')
     const [isSaving, setIsSaving] = useState(false)
     const [isAddingChapter, setIsAddingChapter] = useState(false)
+    const [expandedChapter, setExpandedChapter] = useState(null)
+    const [selectedComponent, setSelectedComponent] = useState(null)
 
     const handleAddChapter = async() => {
         if (!serialNumber || !chapterName || !imageUrl) {
@@ -75,17 +80,19 @@ export default function SubjectDetiails({subject}){
         setEditingChapter(null)
     }
 
+    const toggleExpand = (chapterId) => {
+        if (expandedChapter === chapterId) {
+            setExpandedChapter(null)
+            setSelectedComponent(null)
+        } else {
+            setExpandedChapter(chapterId)
+            setSelectedComponent(null)
+        }
+    }
+
     return(
         <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex items-center gap-4 border-b pb-4">
-                <h1 className="text-3xl font-bold text-gray-800">Subject Details : {subject.name}</h1>
-                <img 
-                    src={subject.image} 
-                    alt={subject.name} 
-                    className="h-8 w-8 object-cover rounded-lg shadow-sm border border-gray-200"
-                />
-            </div>
-            <div className="flex gap-4 mt-6">
+            <div className="flex gap-4">
                 <input
                     type="number"
                     placeholder="Serial Number"
@@ -119,7 +126,7 @@ export default function SubjectDetiails({subject}){
                 </button>
             </div>
             <div className="mt-8">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Chapters</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">{subject.chapters.length} Chapters</h2>
                 {subject.chapters && subject.chapters.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
                         {subject.chapters.map((chapter) => (
@@ -160,20 +167,62 @@ export default function SubjectDetiails({subject}){
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-4 p-4">
-                                        <span className="font-medium text-gray-600">#{chapter.serialNumber}</span>
-                                        <img 
-                                            src={chapter.image} 
-                                            alt={chapter.chapterName} 
-                                            className="h-12 w-12 object-cover rounded-lg"
-                                        />
-                                        <span className="font-medium">{chapter.chapterName}</span>
-                                        <button
-                                            onClick={() => handleEdit(chapter)}
-                                            className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 ml-auto"
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-4 p-4">
+                                            <span className="font-medium text-gray-600">#{chapter.serialNumber}</span>
+                                            <img 
+                                                src={chapter.image} 
+                                                alt={chapter.chapterName} 
+                                                className="h-12 w-12 object-cover rounded-lg"
+                                            />
+                                            <span className="font-medium">{chapter.chapterName}</span>
+                                            <button
+                                                onClick={() => handleEdit(chapter)}
+                                                className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 ml-auto"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                        <button 
+                                            onClick={() => toggleExpand(chapter._id)}
+                                            className="text-sm text-blue-500 hover:text-blue-600 pb-2 px-4 text-left"
                                         >
-                                            Edit
+                                            Click here to know more
                                         </button>
+                                        {expandedChapter === chapter._id && (
+                                            <div className="p-4 border-t">
+                                                <div className="flex gap-4 mb-4">
+                                                    <button 
+                                                        onClick={() => setSelectedComponent('video')}
+                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'video' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                    >
+                                                        Video Lectures
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setSelectedComponent('dpp')}
+                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'dpp' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                    >
+                                                        DPP
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setSelectedComponent('exercise')}
+                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'exercise' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                    >
+                                                        Exercise
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setSelectedComponent('notes')}
+                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'notes' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                    >
+                                                        Notes
+                                                    </button>
+                                                </div>
+                                                {selectedComponent === 'video' && <VideoLectures chapter={chapter} />}
+                                                {selectedComponent === 'dpp' && <Dpp chapter={chapter} />}
+                                                {selectedComponent === 'exercise' && <ChapterExercise chapter={chapter} />}
+                                                {selectedComponent === 'notes' && <Notes chapter={chapter} />}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

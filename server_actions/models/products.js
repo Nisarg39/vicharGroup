@@ -33,6 +33,9 @@ const productsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     },
+    image: {
+        type: String,
+    },
     segment: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Segment'

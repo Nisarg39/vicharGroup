@@ -19,6 +19,7 @@ export default function AddProduct() {
     class: '',
     duration: '',
     pageParameters: '',
+    image: '',
   })
 
   const [productsAvailable, setProductsAvailable] = useState([])
@@ -32,7 +33,8 @@ export default function AddProduct() {
     type: details.type,
     class: details.class,
     duration: details.duration,
-    pageParameters: details.pageParameters
+    pageParameters: details.pageParameters,
+    image: details.image,
   }
 
   const validate = () => {
@@ -60,6 +62,7 @@ export default function AddProduct() {
     } else {
       setErrors({})
       try {
+        console.log(productObject)
         const response = await addProduct(productObject)
         if (response.success) {
           setMessage({ type: 'success', text: 'Product added successfully!' })

@@ -74,8 +74,10 @@ export default function CourseDetails({product}){
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold">Course Details</h2>
                 </div>
-                <h3 className="text-lg font-semibold">{product.name}</h3>
-                <p>{product._id}</p>
+                <div className="flex items-center gap-2">
+                    <img src={product.image} alt={product.name} className="w-24 h-24 object-cover rounded"/>
+                    <h3 className="text-2xl font-semibold">{product.name}</h3>
+                </div>
                 <h4 className="text-md font-medium mt-4 mb-2">Fill this form to add subject</h4>
                 <div className="flex items-center gap-2 mt-4">
                     <input 
@@ -130,6 +132,8 @@ export default function CourseDetails({product}){
                                             <h3 className="text-lg font-semibold">{subject.name}</h3>
                                             <p className="text-gray-600">{subject.description}</p>
                                             <p className="text-sm text-gray-500">Code: {subject.subjectCode}</p>
+                                            <p className="text-sm text-gray-500">Chapters: {subject.chapters.length}</p>
+                                            <p className="text-xs text-blue-500 italic mt-1">Click here to see more details</p>
                                         </div>
                                     </div>
                                     <button 

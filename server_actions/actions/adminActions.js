@@ -7,6 +7,7 @@ import Student from "../models/student"
 import Products from "../models/products"
 import Subject from "../../server_actions/models/subject"
 import Chapter from "../../server_actions/models/chapter"
+import Lecture from "../../server_actions/models/lecture"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
 import Razorpay_Info from "../models/razorpay_info"
@@ -305,7 +306,7 @@ export async function segmentDetails(){
         .populate({
             path: 'products',
             model: 'Products',
-            select: 'name price discountPrice _id type'
+            select: 'name price discountPrice _id type image'
         })
         .lean()
         const products = await Products.find({})
@@ -322,6 +323,36 @@ export async function segmentDetails(){
         }
     }
 }
+
+export async function editSegment(details){
+    try{
+        await connectDB()
+        const segment = await Segment.findById(details.segmentId)
+        segment.name = details.name
+        await segment.save()
+        const updatedSegment = await Segment.find({})
+        .populate({
+            path: 'products',
+            model: 'Products',
+            select: 'name price discountPrice _id type image'
+        })
+        .lean()
+        const products = await Products.find({})
+        return {
+            success: true,
+            message: "Segment fetched successfully",
+            segment: updatedSegment,
+            products: products
+        }
+    }catch(error){
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching segment"
+        }
+    }
+}
+
 export async function updateSegment(details) {
     try {
         await connectDB();
@@ -375,7 +406,8 @@ export async function addProduct(details){
         type: details.type,
         class: details.class,
         duration: details.duration,
-        pageParameters: details.pageParameters
+        pageParameters: details.pageParameters,
+        image: details.image
     }
     try{
         await connectDB()
@@ -445,6 +477,7 @@ export async function updateCourse(details) {
         await connectDB()
         const product = await Products.findById(details.id)
         product.name = details.name
+        product.image = details.image
         await product.save()
         return {
             success: true,
@@ -593,6 +626,96 @@ export async function updateChapter(details){
         return {
             success: false,
             message: "Error updating chapter"
+        }
+    }
+}
+
+// lecture controls
+
+export async function addLecture(details){
+    try {
+        await connectDB()
+        const lecture = await Lecture.create(details)
+        if(lecture){
+            const chapter = await Chapter.findByIdAndUpdate(details.chapterId, {
+                $push: {
+                    lectures: lecture._id
+                }
+            }, {new: true})
+            if(chapter){
+                return {
+                    success: true,
+                    message: "Lecture added successfully",
+                    lecture: lecture,
+                    chapter: chapter
+                }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding lecture"
+        }
+    }
+}
+
+export async function showLectures(details) {
+    try {
+        await connectDB()
+        const chapter = await Chapter.findById(details.chapterId)
+        .populate({
+            path: 'lectures',
+            model: 'Lecture',
+            select: 'serialNumber title description videoUrl'
+        })
+        .lean()
+        return {
+            success: true,
+            message: "Lectures fetched successfully",
+            chapter: chapter
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching lectures"
+        }
+    }
+}
+
+export async function updateLecture(details) {
+    try {
+        await connectDB()
+        const lecture = await Lecture.findByIdAndUpdate(details.lectureId, details, {new: true})
+        return {
+            success: true,
+            message: "Lecture updated successfully",
+            lecture: lecture
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating lecture"
+        }
+    }
+}
+
+export async function addCouponCode(details){
+    try {
+        await connectDB()
+        const couponCode = await CouponCode.create(details)
+        return {
+            success: true,
+            message: "Coupon code added successfully",
+            couponCode: couponCode
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding coupon code"
         }
     }
 }

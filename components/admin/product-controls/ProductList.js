@@ -14,6 +14,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
   const [editClass, setEditClass] = useState('')
   const [editDuration, setEditDuration] = useState('')
   const [editPageParameters, setEditPageParameters] = useState('')
+  const [editImage, setEditImage] = useState('')
   const [originalProductName, setOriginalProductName] = useState('')
   const [updateMessage, setUpdateMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +30,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
       class: editClass,
       duration: editDuration,
       pageParameters: editPageParameters,
+      image: editImage,
       originalName: originalProductName
     }
     try{
@@ -70,6 +72,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
     setEditClass(product.class)
     setEditDuration(product.duration)
     setEditPageParameters(product.pageParameters)
+    setEditImage(product.image || '')
     setIsModalOpen(true)
   }
 
@@ -83,6 +86,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
     setEditClass('')
     setEditDuration('')
     setEditPageParameters('')
+    setEditImage('')
     setUpdateMessage(null)
   }
 
@@ -110,7 +114,12 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
         {filteredProducts.map((product, index) => (
           <div key={index} className="mb-3 p-4 border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white">
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
+              <div className="flex items-center gap-4">
+                {product.image && (
+                  <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg" />
+                )}
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
+              </div>
               <button
                 onClick={() => handleEditClick(product)}
                 className="px-3 py-1 bg-[#1d77bc] text-white rounded-md hover:bg-[#1a6aa8] focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
@@ -163,6 +172,16 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
                   name="name"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm mb-1">Image URL</label>
+                <input
+                  type="text"
+                  name="image"
+                  value={editImage}
+                  onChange={(e) => setEditImage(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
                 />
               </div>
