@@ -16,7 +16,7 @@ export default function SubjectDetiails({subject}){
     const [isSaving, setIsSaving] = useState(false)
     const [isAddingChapter, setIsAddingChapter] = useState(false)
     const [expandedChapter, setExpandedChapter] = useState(null)
-    const [selectedComponent, setSelectedComponent] = useState(null)
+    const [selectedComponent, setSelectedComponent] = useState('video')
 
     const handleAddChapter = async() => {
         if (!serialNumber || !chapterName || !imageUrl) {
@@ -83,10 +83,10 @@ export default function SubjectDetiails({subject}){
     const toggleExpand = (chapterId) => {
         if (expandedChapter === chapterId) {
             setExpandedChapter(null)
-            setSelectedComponent(null)
+            setSelectedComponent('video')
         } else {
             setExpandedChapter(chapterId)
-            setSelectedComponent(null)
+            setSelectedComponent('video')
         }
     }
 
@@ -194,26 +194,40 @@ export default function SubjectDetiails({subject}){
                                                 <div className="flex gap-4 mb-4">
                                                     <button 
                                                         onClick={() => setSelectedComponent('video')}
-                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'video' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                        className={`px-4 py-2 rounded-full flex items-center gap-2 ${selectedComponent === 'video' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                                                     >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                                        </svg>
                                                         Video Lectures
                                                     </button>
                                                     <button 
                                                         onClick={() => setSelectedComponent('dpp')}
-                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'dpp' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                        className={`px-4 py-2 rounded-full flex items-center gap-2 ${selectedComponent === 'dpp' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                                                     >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                                                        </svg>
                                                         DPP
                                                     </button>
                                                     <button 
                                                         onClick={() => setSelectedComponent('exercise')}
-                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'exercise' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                        className={`px-4 py-2 rounded-full flex items-center gap-2 ${selectedComponent === 'exercise' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                                                     >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                                                            <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+                                                        </svg>
                                                         Exercise
                                                     </button>
                                                     <button 
                                                         onClick={() => setSelectedComponent('notes')}
-                                                        className={`px-4 py-2 rounded-full ${selectedComponent === 'notes' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                                        className={`px-4 py-2 rounded-full flex items-center gap-2 ${selectedComponent === 'notes' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                                                     >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                                        </svg>
                                                         Notes
                                                     </button>
                                                 </div>

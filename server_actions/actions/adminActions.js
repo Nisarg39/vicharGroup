@@ -8,6 +8,7 @@ import Products from "../models/products"
 import Subject from "../../server_actions/models/subject"
 import Chapter from "../../server_actions/models/chapter"
 import Lecture from "../../server_actions/models/lecture"
+import Dpp from "../../server_actions/models/dpp"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
 import Razorpay_Info from "../models/razorpay_info"
@@ -541,7 +542,11 @@ export async function showSubjects(productId){
         .populate({
             path: 'chapters',
             model: Chapter,
-            select: 'serialNumber chapterName image'
+            select: 'serialNumber chapterName image dpps',
+            populate: {
+                path: 'dpps',
+                model: "Dpp"
+            }
         }).lean()
         return {
             success: true,
@@ -555,7 +560,6 @@ export async function showSubjects(productId){
         }
     }
 }
-
 export async function updateSubject(details){
     try {
         await connectDB()
@@ -702,6 +706,55 @@ export async function updateLecture(details) {
     }
 }
 
+// dpp controls
+export async function addDpp(details) {
+    try {
+        await connectDB()
+        const dpp = await Dpp.create(details)
+        console.log(dpp)
+        if(dpp){
+            const chapter = await Chapter.findByIdAndUpdate(details.chapterId, {
+                $push: {
+                    dpps: dpp._id
+                }
+            }, {new: true})
+
+            console.log(chapter)
+            if(chapter){
+                return {
+                    success: true,
+                    message: "Dpp added successfully",
+                    dpp: dpp,
+                    chapter: chapter
+                }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding dpp"
+        }
+    }
+}
+
+export async function updateDpp(details){
+    try {
+        await connectDB()
+        const dpp = await Dpp.findByIdAndUpdate(details.dppId, details, {new: true})
+        return {
+            success: true,
+            message: "Dpp updated successfully",
+            dpp: dpp
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating dpp"
+        }
+    }
+}
 export async function addCouponCode(details){
     try {
         await connectDB()
