@@ -1,25 +1,40 @@
 import {useState, useEffect} from 'react'
-import { addDppQuestion } from '../../../../../server_actions/actions/adminActions'
+import { updateDppQuestion } from '../../../../../server_actions/actions/adminActions'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
 
-export default function DppQuestion({dpp, addedQuestion}){
-    const [showOptions, setShowOptions] = useState(false)
-    const [selectedType, setSelectedType] = useState(dpp?.type || '')
-    const [serialNumber, setSerialNumber] = useState('')
-    const [questionText, setQuestionText] = useState('')
-    const [options, setOptions] = useState({A: '', B: '', C: '', D: ''})
-    const [numericAnswer, setNumericAnswer] = useState('')
-    const [imageUrls, setImageUrls] = useState({A: false, B: false, C: false, D: false})
-    const [answer, setAnswer] = useState('')
-    const [isQuestionImage, setIsQuestionImage] = useState(false)
+export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
+
+    // console.log(question)
+
+    const [showOptions, setShowOptions] = useState(question?.answerMultiple?.length > 0 ? true : question?.answerObjective ? true : false)
+    const [selectedType, setSelectedType] = useState(question?.answerObjective ? 'objective' : question?.answerNumeric ? 'numeric' : question?.answerMultiple?.length > 0 ? 'multiple' : '')
+    const [serialNumber, setSerialNumber] = useState(question?.serialNumber || '')
+    const [questionText, setQuestionText] = useState(question?.question || '')
+    const [options, setOptions] = useState({
+        A: question?.objectiveoptions?.[0]?.text || question?.multipleObjective?.[0]?.text || '',
+        B: question?.objectiveoptions?.[1]?.text || question?.multipleObjective?.[1]?.text || '',
+        C: question?.objectiveoptions?.[2]?.text || question?.multipleObjective?.[2]?.text || '',
+        D: question?.objectiveoptions?.[3]?.text || question?.multipleObjective?.[3]?.text || ''
+    })
+    const [numericAnswer, setNumericAnswer] = useState(question?.answerNumeric || '')
+    const [imageUrls, setImageUrls] = useState({
+        A: question?.objectiveoptions?.[0]?.isImage || question?.multipleObjective?.[0]?.isImage || false,
+        B: question?.objectiveoptions?.[1]?.isImage || question?.multipleObjective?.[1]?.isImage || false,
+        C: question?.objectiveoptions?.[2]?.isImage || question?.multipleObjective?.[2]?.isImage || false,
+        D: question?.objectiveoptions?.[3]?.isImage || question?.multipleObjective?.[3]?.isImage || false 
+    })
+    const [answer, setAnswer] = useState(
+        question?.answerObjective || (question?.answerMultiple?.length > 0 ? question.answerMultiple.join(',') : '')
+    )
+    const [isQuestionImage, setIsQuestionImage] = useState(question?.questionType === 'image')
     const [responseMessage, setResponseMessage] = useState('')
     const [responseStatus, setResponseStatus] = useState('')
     const [previewError, setPreviewError] = useState('')
-
     const handleTypeChange = (e) => {
-        setSelectedType(e.target.value)
-        setShowOptions(e.target.value === 'objective' || e.target.value === 'multiple')
+        alert('you cannot change the type of existing question')
+        // setSelectedType(e.target.value)
+        // setShowOptions(e.target.value === 'objective' || e.target.value === 'multiple')
     }
 
     const validateInputs = () => {
@@ -51,7 +66,7 @@ export default function DppQuestion({dpp, addedQuestion}){
         }
     }
 
-    const handleAddQuestion = async() => {
+    const handleUpdateQuestion = async() => {
         try {
             validateInputs()
 
@@ -62,7 +77,7 @@ export default function DppQuestion({dpp, addedQuestion}){
             }))
 
             const questionData = {
-                dppId: dpp._id,
+                questionId: question._id,
                 serialNumber: Number(serialNumber),
                 question: questionText,
                 questionType: isQuestionImage ? 'image' : 'text',
@@ -73,15 +88,15 @@ export default function DppQuestion({dpp, addedQuestion}){
                 answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
             }
 
-            const response = await addDppQuestion(questionData)
+            const response = await updateDppQuestion(questionData)
             setResponseMessage(response?.message || 'Operation completed')
             setResponseStatus('success')
-            alert('Question added successfully')
-            addedQuestion(response?.dppQuestion)
+            alert('Question updated successfully')
+            updateQuestion(response?.dppQuestion)
         } catch (error) {
             setResponseMessage(error?.message || 'An error occurred')
             setResponseStatus('error')
-            alert('Failed to add question')
+            alert(error?.message || 'An error occurred')
         }
 
         setTimeout(() => {
@@ -316,13 +331,14 @@ export default function DppQuestion({dpp, addedQuestion}){
                     </div>
                 )}
                 <button 
-                    onClick={handleAddQuestion}
+                    onClick={handleUpdateQuestion}
+                    disabled={!serialNumber || !questionText || !selectedType}
                     className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors w-full md:w-auto"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
-                    Add Question
+                    Update Question
                 </button>
             </div>
         </div>

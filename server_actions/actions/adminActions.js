@@ -9,6 +9,7 @@ import Subject from "../../server_actions/models/subject"
 import Chapter from "../../server_actions/models/chapter"
 import Lecture from "../../server_actions/models/lecture"
 import Dpp from "../../server_actions/models/dpp"
+import DppQuestion from "../models/dppQuestion"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
 import Razorpay_Info from "../models/razorpay_info"
@@ -545,7 +546,11 @@ export async function showSubjects(productId){
             select: 'serialNumber chapterName image dpps',
             populate: {
                 path: 'dpps',
-                model: "Dpp"
+                model: "Dpp",
+                populate: {
+                    path: 'dppQuestions',
+                    model: "DppQuestion",
+                },
             }
         }).lean()
         return {
@@ -755,6 +760,54 @@ export async function updateDpp(details){
         }
     }
 }
+
+// dpp question control
+
+export async function addDppQuestion(details){
+    try {
+        await connectDB()
+        const dppQuestion = await DppQuestion.create(details)
+        await Dpp.findByIdAndUpdate(details.dppId, {
+            $push: {
+                dppQuestions: dppQuestion._id
+            }
+        })
+        return {
+            success: true,
+            message: "Question added successfully",
+            dppQuestion: JSON.parse(JSON.stringify(dppQuestion))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding question"
+        }
+    }
+}
+
+export async function updateDppQuestion(details){
+    try {
+        await connectDB()
+        const updatedQuestion = await DppQuestion.findByIdAndUpdate(details.questionId, details, {new: true})
+        return {
+            success: true,
+            message: "Question updated successfully",
+            dppQuestion: JSON.parse(JSON.stringify(updatedQuestion))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating question"
+        }
+        
+    }
+}
+
+
+// coupon code control
+
 export async function addCouponCode(details){
     try {
         await connectDB()
@@ -772,7 +825,6 @@ export async function addCouponCode(details){
         }
     }
 }
-
 export async function getAllCouponCodes(page = 1, limit = 10){
     try{
         await connectDB()

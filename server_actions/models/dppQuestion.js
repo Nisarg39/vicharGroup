@@ -11,37 +11,40 @@ const dppQuestionSchema = new mongoose.Schema({
     },
     questionType: {
         type: String,
-        enum: ['objective', 'multiple', 'numeric'],
-        required: true,
+        enum: ['image', 'video', 'audio', 'text'],
     },
-    options: [{
+    objectiveoptions: [{
         option: {
             type: String,
-            required: true
         },
         text: {
             type: String,
-            required: true
+        },
+        isImage: {
+            type: Boolean,
+            default: false,
+        }
+    }],
+    multipleObjective: [{
+        option: {
+            type: String,
+        },
+        text: {
+            type: String,
+        },
+        isImage: {
+            type: Boolean,
+            default: false,
         }
     }],
     answerObjective: {
         type: String,
-        required: true,
     },
     answerMultiple: {
         type: [String],
-        required: true,
     },
     answerNumeric: {
         type: Number,
-        required: true,
-    },
-    attachmentType: {
-        type: String,
-        enum: ['image', 'video', 'audio', 'text'],
-    },
-    attachmentUrl: {
-        type: String,   
     },
 }, {timestamps: true})
 

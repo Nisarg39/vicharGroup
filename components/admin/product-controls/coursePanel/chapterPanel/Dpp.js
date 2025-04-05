@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { addDpp, updateDpp } from "../../../../../server_actions/actions/adminActions";
 import DppQuestion from "./DppQuestion";
-export default function Dpp({chapter}){
+import DppQuestionsList from "./DppQuestionsList";
+import { set } from "mongoose";
 
-    // console.log(chapter.dpps)
+export default function Dpp({chapter}){
 
     const [serialNumber, setSerialNumber] = useState('')
     const [name, setName] = useState('')
@@ -15,8 +16,22 @@ export default function Dpp({chapter}){
     const [editDppCode, setEditDppCode] = useState('')
     const [dpps, setDpps] = useState(chapter.dpps)
     const [selectedDpp, setSelectedDpp] = useState(null)
+    const [expandedDpp, setExpandedDpp] = useState(null)
 
     const handleAddDpp = async() => {
+        if (!serialNumber.trim()) {
+            alert('Serial Number is required')
+            return
+        }
+        if (!name.trim()) {
+            alert('Name is required')
+            return
+        }
+        if (!dppCode.trim()) {
+            alert('DPP Code is required')
+            return
+        }
+
         const details = {
             serialNumber,
             name,
@@ -26,6 +41,10 @@ export default function Dpp({chapter}){
         const response = await addDpp(details)
         if(response.success){
             alert(response.message)
+            setSerialNumber('')
+            setName('')
+            setDppCode('')
+            setDpps([...dpps, response.dpp])
         } else {
             alert(response.message)
         }
@@ -40,10 +59,7 @@ export default function Dpp({chapter}){
     }
 
     const handleSave = async() => {
-        console.log('Edited Serial Number:', editSerialNumber)
-        console.log('Edited Name:', editName)
-        console.log('Edited DPP Code:', editDppCode)
-        console.log('DPP ID:', editingDpp._id)
+
         const details = {
             serialNumber: editSerialNumber,
             name: editName,
@@ -65,6 +81,33 @@ export default function Dpp({chapter}){
         setEditingDpp(null)
     }
 
+    const toggleDppQuestions = (dpp) => {
+        setExpandedDpp(expandedDpp === dpp._id ? null : dpp._id)
+        setActiveDropdown(null)
+    }
+
+    const handleAddQuestions = (dpp) => {
+        setSelectedDpp(dpp)
+        setActiveDropdown(null)
+    }
+
+    const addedQuestion = (dppQuestion) => {
+        console.log('Added Question:', dppQuestion)
+        // Here you can update the dpp with the new question
+        setDpps((prevDpps) => {
+            return prevDpps.map((dpp) => {
+                if (dpp._id === selectedDpp._id) {
+                    return {
+                        ...dpp,
+                        dppQuestions: [...dpp.dppQuestions, dppQuestion],
+                    };
+                }
+                return dpp;
+            });
+        }
+        );
+        setSelectedDpp(null)
+    }
     return(
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Add Daily Practice Problems</h1>
@@ -118,91 +161,110 @@ export default function Dpp({chapter}){
                             <th className="py-2 px-4 border-b text-left">Serial Number</th>
                             <th className="py-2 px-4 border-b text-left">Name</th>
                             <th className="py-2 px-4 border-b text-left">DPP Code</th>
+                            <th className="py-2 px-4 border-b text-left">Questions</th>
                             <th className="py-2 px-4 border-b text-left">Options</th>
                         </tr>
                     </thead>
                     <tbody>
                         {dpps.map((dpp, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                                <td className="py-2 px-4 border-b">
-                                    {editingDpp === dpp ? (
-                                        <input
-                                            type="text"
-                                            value={editSerialNumber}
-                                            onChange={(e) => setEditSerialNumber(e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : dpp.serialNumber}
-                                </td>
-                                <td className="py-2 px-4 border-b">
-                                    {editingDpp === dpp ? (
-                                        <input
-                                            type="text"
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : dpp.name}
-                                </td>
-                                <td className="py-2 px-4 border-b">
-                                    {editingDpp === dpp ? (
-                                        <input
-                                            type="text"
-                                            value={editDppCode}
-                                            onChange={(e) => setEditDppCode(e.target.value)}
-                                            className="w-full px-2 py-1 border rounded"
-                                        />
-                                    ) : dpp.dppCode}
-                                </td>
-                                <td className="py-2 px-4 border-b relative">
-                                    {editingDpp === dpp ? (
-                                        <button
-                                            onClick={handleSave}
-                                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                                        >
-                                            Save
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button 
-                                                onClick={() => setActiveDropdown(activeDropdown === index ? null : index)}
-                                                className="p-1 hover:bg-gray-100 rounded-full"
+                            <>
+                                <tr key={index} className="hover:bg-gray-50">
+                                    <td className="py-2 px-4 border-b">
+                                        {editingDpp === dpp ? (
+                                            <input
+                                                type="text"
+                                                value={editSerialNumber}
+                                                onChange={(e) => setEditSerialNumber(e.target.value)}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : dpp.serialNumber}
+                                    </td>
+                                    <td className="py-2 px-4 border-b">
+                                        {editingDpp === dpp ? (
+                                            <input
+                                                type="text"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value)}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : dpp.name}
+                                    </td>
+                                    <td className="py-2 px-4 border-b">
+                                        {editingDpp === dpp ? (
+                                            <input
+                                                type="text"
+                                                value={editDppCode}
+                                                onChange={(e) => setEditDppCode(e.target.value)}
+                                                className="w-full px-2 py-1 border rounded"
+                                            />
+                                        ) : dpp.dppCode}
+                                    </td>
+                                    <td className="py-2 px-4 border-b">
+                                        {dpp.dppQuestions?.length || 0} Questions
+                                    </td>
+                                    <td className="py-2 px-4 border-b relative">
+                                        {editingDpp === dpp ? (
+                                            <button
+                                                onClick={handleSave}
+                                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                                </svg>
+                                                Save
                                             </button>
-                                            {activeDropdown === index && (
-                                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                                                    <div className="py-1">
-                                                        <button 
-                                                            onClick={() => handleEdit(dpp)}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setSelectedDpp(dpp)}
-                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                                        >
-                                                            Add Questions
-                                                        </button>
+                                        ) : (
+                                            <>
+                                                <button 
+                                                    onClick={() => setActiveDropdown(activeDropdown === index ? null : index)}
+                                                    className="p-1 hover:bg-gray-100 rounded-full"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                    </svg>
+                                                </button>
+                                                {activeDropdown === index && (
+                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                                        <div className="py-1">
+                                                            <button 
+                                                                onClick={() => handleEdit(dpp)}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleAddQuestions(dpp)}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                            >
+                                                                Add Questions
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => toggleDppQuestions(dpp)}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                            >
+                                                                {expandedDpp === dpp._id ? 'Hide Questions' : 'View Questions'}
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </td>
-                            </tr>
+                                                )}
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                                {expandedDpp === dpp._id && (
+                                    <tr>
+                                        <td colSpan="5" className="p-4 border-b">
+                                            <DppQuestionsList dpp={dpp}/>
+                                        </td>
+                                    </tr>
+                                )}
+                            </>
                         ))}
                     </tbody>
                 </table>
             </div>
             {selectedDpp && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-11/12 max-h-[90vh] overflow-y-auto">
+                <div className="mt-16 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-4 w-11/12 max-h-[90%] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Add Questions to DPP</h2>
+                            <h2 className="text-xl font-bold">Add Question to {selectedDpp.name}</h2>
                             <button 
                                 onClick={() => setSelectedDpp(null)}
                                 className="text-gray-500 hover:text-gray-700"
@@ -212,7 +274,7 @@ export default function Dpp({chapter}){
                                 </svg>
                             </button>
                         </div>
-                        <DppQuestion dpp={selectedDpp} />
+                        <DppQuestion dpp={selectedDpp} addedQuestion={addedQuestion}/>
                     </div>
                 </div>
             )}

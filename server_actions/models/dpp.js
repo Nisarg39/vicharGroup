@@ -18,6 +18,10 @@ const dppSchema = new mongoose.Schema({
         ref: "Chapter",
         required: true
     },
+    dppQuestions: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DppQuestion",
+    }],
 }, {timestamps: true})
 
 const Dpp = mongoose.models.Dpp || mongoose.model("Dpp", dppSchema)
