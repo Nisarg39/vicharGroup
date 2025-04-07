@@ -15,6 +15,16 @@ export default function SegmentControls() {
             name: segmentName
         }
 
+        if(segmentName === ""){
+            alert("Please enter a segment name")
+            return
+        }
+        if(segmentName.length < 3){
+            alert("Segment name should be at least 3 characters long")
+            return
+        }
+        
+
         if(localStorage.getItem("isAdmin")){
             setIsLoading(true)
             const segment = await addSegment(details)

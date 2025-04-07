@@ -44,7 +44,12 @@ export default function Dpp({chapter}){
             setSerialNumber('')
             setName('')
             setDppCode('')
-            setDpps([...dpps, response.dpp])
+            if(!dpps) {
+                setDpps([response.dpp])
+            }
+            else{
+                setDpps([...dpps, response.dpp])
+            }
         } else {
             alert(response.message)
         }
@@ -166,7 +171,7 @@ export default function Dpp({chapter}){
                         </tr>
                     </thead>
                     <tbody>
-                        {dpps.map((dpp, index) => (
+                        {dpps?.map((dpp, index) => (
                             <>
                                 <tr key={index} className="hover:bg-gray-50">
                                     <td className="py-2 px-4 border-b">

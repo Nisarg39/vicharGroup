@@ -11,7 +11,6 @@ export default function SegmentEditor({segments, products, setProductUpdated, se
     const [isEditingSegment, setIsEditingSegment] = useState(false)
 
     const handleProductSelection = (segmentId, productId, checked) => {
-        // console.log(`Segment ${segmentId} product ${productId} selected:`, checked)
         setSelectedProducts(prev => {
             const newState = {
                 ...prev,
@@ -31,18 +30,15 @@ export default function SegmentEditor({segments, products, setProductUpdated, se
                     return newMap;
                 });
             }
-            // console.log('Selected products:', newState)
             return newState
         })
         if (checked) {
-            // console.log('Selected product ID:', productId)
         }
     }
 
     const handleUpdate = async (segmentId) => {
         setIsUpdating(prev => ({ ...prev, [segmentId]: true }));
         try {
-            // console.log('Updating segment:', segmentId, 'with products:', selectedProducts[segmentId] || []);
             const details = {
                 segmentId: segmentId,
                 productIds: selectedProducts[segmentId] || []
@@ -154,30 +150,33 @@ export default function SegmentEditor({segments, products, setProductUpdated, se
                         </div>
                         <div className="mt-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Products</label>
-                            <details className="w-full">
-                                <summary className="px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm cursor-pointer">
-                                    Click to select products
+                            <details className="w-full group">
+                                <summary className="px-4 py-3 text-base border border-gray-300 rounded-t-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                                    <span>Click to select products</span>
+                                    <svg className="w-5 h-5 transform group-open:rotate-180 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                 </summary>
-                                <div className="mt-1 border border-gray-300 rounded-lg p-3 bg-white">
+                                <div className="mt-0 border-x border-b border-gray-300 rounded-b-lg bg-white divide-y divide-gray-200 max-h-96 overflow-y-auto">
                                     {products.map((product) => (
-                                        <label key={`${product._id}`} className="flex items-center py-2 px-3 hover:bg-blue-50 cursor-pointer">
+                                        <label key={`${product._id}`} className="flex items-center py-3 px-4 hover:bg-blue-50 cursor-pointer transition-colors duration-150">
                                             <input
                                                 type="checkbox"
                                                 value={product.id}
                                                 checked={selectedProducts[segment._id]?.includes(product._id) || false}
                                                 disabled={productSegmentMap[product._id] && productSegmentMap[product._id] !== segment._id}
                                                 onChange={(e) => handleProductSelection(segment._id, product._id, e.target.checked)}
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors duration-150"
                                             />
-                                            {product.image && <img src={product.image} alt={product.name} className="w-8 h-8 object-cover rounded mx-2" />}
-                                            <span className="ml-2">{product.name}</span>
+                                            {product.image && <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded mx-3" />}
+                                            <span className="ml-2 text-gray-700 font-medium">{product.name} - <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{product.type}</span></span>
                                         </label>
                                     ))}
-                                    <div className="mt-4 flex justify-end">
+                                    <div className="sticky bottom-0 p-4 bg-white border-t border-gray-200 shadow-md">
                                         <button 
                                             onClick={() => handleUpdate(segment._id)}
                                             disabled={!selectedProducts[segment._id]?.length || isUpdating[segment._id]}
-                                            className={`px-4 py-2 text-white rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${!selectedProducts[segment._id]?.length || isUpdating[segment._id] ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>
+                                            className={`w-full px-4 py-2 text-white rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${!selectedProducts[segment._id]?.length || isUpdating[segment._id] ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 transform hover:-translate-y-0.5'}`}>
                                             {isUpdating[segment._id] ? 'Updating...' : 'Update'}
                                         </button>
                                     </div>

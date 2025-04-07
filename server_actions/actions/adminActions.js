@@ -460,7 +460,7 @@ export async function showProducts(){
 export async function showCourses(){
     try {
         await connectDB()
-        const courseProducts = await Products.find({type: 'course'})
+        const courseProducts = await Products.find({type: {$in: ['course', 'mtc']}})
         return {
             success: true,
             products: courseProducts
@@ -473,7 +473,6 @@ export async function showCourses(){
         }
     }
 }
-
 export async function updateCourse(details) {
     try {
         await connectDB()

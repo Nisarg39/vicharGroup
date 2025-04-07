@@ -3,9 +3,8 @@ import { addChapter, updateChapter } from "../../../../server_actions/actions/ad
 import VideoLectures from "./chapterPanel/VideoLectures"
 import Dpp from "./chapterPanel/Dpp"
 import ChapterExercise from "./chapterPanel/ChapterExercise"
-import Notes from "./chapterPanel/Notes"
 
-export default function SubjectDetiails({subject}){
+export default function SubjectDetiails({subject, productType}){
     const [serialNumber, setSerialNumber] = useState('')
     const [chapterName, setChapterName] = useState('')
     const [imageUrl, setImageUrl] = useState('')
@@ -189,7 +188,9 @@ export default function SubjectDetiails({subject}){
                                         >
                                             Click here to know more
                                         </button>
-                                        {expandedChapter === chapter._id && (
+
+                                        {/* show video lectures , dpp , exercise if productType is course */}
+                                        {expandedChapter === chapter._id && productType === 'course' && (
                                             <div className="p-4 border-t">
                                                 <div className="flex gap-4 mb-4">
                                                     <button 
@@ -221,20 +222,17 @@ export default function SubjectDetiails({subject}){
                                                         </svg>
                                                         Exercise
                                                     </button>
-                                                    <button 
-                                                        onClick={() => setSelectedComponent('notes')}
-                                                        className={`px-4 py-2 rounded-full flex items-center gap-2 ${selectedComponent === 'notes' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                                                        </svg>
-                                                        Notes
-                                                    </button>
                                                 </div>
                                                 {selectedComponent === 'video' && <VideoLectures chapter={chapter} />}
                                                 {selectedComponent === 'dpp' && <Dpp chapter={chapter} />}
                                                 {selectedComponent === 'exercise' && <ChapterExercise chapter={chapter} />}
-                                                {selectedComponent === 'notes' && <Notes chapter={chapter} />}
+                                            </div>
+                                        )}
+
+                                        {/* show only dpp if productType is mtc */}
+                                        {expandedChapter === chapter._id && productType === 'mtc' && (
+                                            <div className="p-4 border-t">
+                                                <Dpp chapter={chapter} />
                                             </div>
                                         )}
                                     </div>

@@ -62,7 +62,7 @@ export default function AddProduct() {
     } else {
       setErrors({})
       try {
-        console.log(productObject)
+        // console.log(productObject)
         const response = await addProduct(productObject)
         if (response.success) {
           setMessage({ type: 'success', text: 'Product added successfully!' })

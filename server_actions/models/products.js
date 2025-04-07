@@ -17,7 +17,7 @@ const productsSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ["course", "test-series"],
+        enum: ["course", "test-series", "mtc"],
         required: true
     },
     class:{

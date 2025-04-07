@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { addSubject, showSubjects, updateSubject } from "../../../../server_actions/actions/adminActions"
 import SubjectDetails from "./SubjectDetails"
 
-export default function CourseDetails({product}){
+export default function CourseDetails({product, setProductSelected}){
     const [subjectName, setSubjectName] = useState("")
     const [subjectDescription, setSubjectDescription] = useState("")
     const [imageUrl, setImageUrl] = useState("")
@@ -26,6 +26,23 @@ export default function CourseDetails({product}){
     }
     
     const handleAddSubject = async() => {
+        if (!subjectCode.trim()) {
+            alert("Subject code is required")
+            return
+        }
+        if (!subjectName.trim()) {
+            alert("Subject name is required")
+            return
+        }
+        if (!subjectDescription.trim()) {
+            alert("Subject description is required")
+            return
+        }
+        if (!imageUrl.trim()) {
+            alert("Image URL is required")
+            return
+        }
+
         const details={
             name: subjectName,
             description: subjectDescription,
@@ -36,6 +53,10 @@ export default function CourseDetails({product}){
         const addSubjectDetails = await addSubject(details)
         if(addSubjectDetails.success){
             alert("subject added")
+            setSubjectName("")
+            setSubjectDescription("")
+            setImageUrl("")
+            setSubjectCode("")
             fetchSubjects()
         }else{
             alert("There was a problem - subject not added")
@@ -73,6 +94,15 @@ export default function CourseDetails({product}){
             <div className="p-4 border rounded-lg shadow">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold">Course Details</h2>
+                    <button 
+                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-2"
+                        onClick={() => setProductSelected({})}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                        </svg>
+                        Back
+                    </button>
                 </div>
                 <div className="flex items-center gap-2">
                     <img src={product.image} alt={product.name} className="w-24 h-24 object-cover rounded"/>
@@ -196,7 +226,7 @@ export default function CourseDetails({product}){
                             </div>
                             {selectedSubject && selectedSubject._id === subject._id && (
                                 <div className="mt-2">
-                                    <SubjectDetails subject={selectedSubject} />
+                                    <SubjectDetails subject={selectedSubject} productType={product.type} />
                                 </div>
                             )}
                         </div>
