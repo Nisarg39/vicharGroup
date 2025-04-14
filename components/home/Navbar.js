@@ -56,9 +56,9 @@ const Navbar = () => {
   ]
 
   return (
-    <nav className="bg-white p-4 md:p-5 lg:p-6 relative">
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
-        <div className="flex justify-between items-center w-full md:w-auto">
+    <nav className="bg-white w-full">
+      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center bg-white w-full p-2">
+        <div className="flex justify-between items-center w-full md:w-auto bg-white px-4 py-2">
           <div className="text-gray-800 font-semibold text-xl hover:text-[#22a1d7] transition duration-300 mr-4 flex items-center">
             <Link href="/" onClick={() => setActiveLink('')}>
             <Image
@@ -88,12 +88,12 @@ const Navbar = () => {
             </svg>
           </button>
         </div>
-        <div className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto items-start md:items-center absolute md:static left-0 right-0 top-full z-20 transition-all duration-300 ease-in-out bg-white`}>
+        <div className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row space-y-2 pb-2 md:space-y-0 md:space-x-4 w-full md:w-auto items-start md:items-center absolute md:static left-0 right-0 top-full z-20 transition-all duration-300 ease-in-out bg-white`}>
         <Link href="/about-us" onClick={() => { closeMenu(); setActiveLink('about-us'); }} className={`${activeLink === 'about-us' ? 'text-[#e96030] font-bold' : 'text-gray-800'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100/50 block w-full text-left md:text-center md:whitespace-nowrap flex items-center`}>
                 <FaInfoCircle className="mr-2" /> About Us
         </Link>
           <div className="relative group w-full md:w-auto">
-            <a href="#" onClick={toggleCoursesDropdown} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)} className={`${activeLink === 'courses' ? 'text-[#e96030] font-bold' : 'text-gray-800'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100/50 flex items-center justify-between w-full text-left md:text-center md:whitespace-nowrap`}>
+            <a href="#" onClick={toggleCoursesDropdown} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)} className={`${activeLink === 'courses' ? 'text-[#e96030] font-bold' : 'text-gray-800'} hover:text-[#22a1d7] transition duration-300 px-4 py-3 rounded-md hover:bg-gray-100/50 flex items-center w-full text-left md:text-center md:whitespace-nowrap`}>
               <span className="flex items-center"><FaBook className="mr-2" /> Courses</span>
               <svg className={`w-4 h-4 ml-1 transform ${isCoursesDropdownOpen ? 'rotate-180' : ''} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -102,7 +102,7 @@ const Navbar = () => {
             <ul className={`${isMobile ? 'static' : 'absolute'} left-0 mt-0 w-full md:w-72 bg-white rounded-md shadow-lg ${isCoursesDropdownOpen ? 'block' : 'hidden'} transition duration-300 z-10`} onMouseEnter={() => !isMobile && setIsCoursesDropdownOpen(true)} onMouseLeave={() => !isMobile && setIsCoursesDropdownOpen(false)}>
               {coursesData.map((category, index) => (
                 <li key={index} className="last:border-b-0">
-                  <div className="font-bold px-4 py-3 text-sm text-gray-600 bg-gray-50/50 uppercase">{category.category}</div>
+                  <div className="font-bold px-4 py-3 text-sm text-gray-600 bg-gray-50/50 uppercase text-center">{category.category}</div>
                   <ul className="py-2">
                     {category.courses.map((course, courseIndex) => (
                       <li key={courseIndex}>

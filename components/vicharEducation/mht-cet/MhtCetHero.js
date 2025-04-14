@@ -10,7 +10,7 @@ const MhtCetHero = (props) => {
     { id: 3, title: 'PCM + PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '' },
   ]
   return (
-    <section className="w-full min-h-screen flex items-center bg-transparent pt-24 md:pt-20 overflow-hidden relative">
+    <section className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-gray-200 pt-24 md:pt-20 overflow-hidden relative">
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
           className="absolute top-20 left-10 hidden md:block"

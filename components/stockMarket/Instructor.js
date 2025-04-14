@@ -1,7 +1,7 @@
 export default function Instructor() {
   return (
     <div className="bg-gradient-to-b from-gray-200 to-white pb-20 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-5xl sm:text-4xl lg:text-5xl font-bold text-center text-gray-900 pt-6 pb-2 sm:mb-12 hover:text-gray-600 transition-colors">Meet Your Instructor</h1>
+      <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-4 text-black leading-tight pt-20">Meet Your Instructor</h1>
       <div className="p-8 max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl transform hover:scale-[1.02] transition-transform duration-300 backdrop-blur-sm">
         <div className="flex flex-col items-center mb-8 sm:mb-10">
           <div className="relative overflow-hidden group rounded-2xl">

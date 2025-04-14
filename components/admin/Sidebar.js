@@ -62,6 +62,29 @@ export default function Sidebar(props) {
 											<span>Admin Controls</span>
 										</a>
 										<a
+											onClick={() => props.setDashBoardName("appControl")}
+											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
+                    transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+										>
+											<span className="justify-center items-center flex">
+												<svg
+													className="flex-shrink-0 w-5 h-5 mr-4"
+													xmlns="http://www.w3.org/2000/svg"
+													fill="none"
+													viewbox="0 0 24 24"
+													stroke="currentColor"
+													stroke-width="2"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+													/>
+												</svg>
+											</span>
+											<span>App Control</span>
+										</a>
+										<a
 											onClick={() => props.setDashBoardName("settings")}
 											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
                     transition-all duration-200 hover:bg-gray-200 group cursor-pointer"

@@ -171,6 +171,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
     const [success, setSuccess] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
     const [updateDetails, setUpdateDetails] = useState("Update Details");
+
     async function updateStudent(){
 
         setUpdateDetails("Updating Details...");
@@ -282,14 +283,16 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                <h3 className="text-md text-gray-600">Test Start Date:</h3>
+              {props.testStartDate && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <h3 className="text-md text-gray-600">Test Start Date:</h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-sm text-white bg-[#e96030] px-4 py-1.5 rounded-full">
                     {props.testStartDate}
                   </span>
                 </div>
               </div>
+              )}
               <div className="pt-4 border-t border-gray-200">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-1 h-8 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>

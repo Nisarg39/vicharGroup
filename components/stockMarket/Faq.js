@@ -24,7 +24,7 @@ export default function Faq() {
 
     return (
         <div className="max-w-3xl mx-auto px-6 py-6 bg-white">
-            <h1 className="text-4xl font-bold mb-8 text-center text-gray-900">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-10 text-black leading-tight">
                 Frequently Asked Questions
             </h1>
 

@@ -6,6 +6,7 @@ import Modal from "../common/Modal";
 import Sidebar from './Sidebar'
 import AdminStats from "./AdminStats";
 import AdminControls from "./AdminControls";
+import AppControlHome from "./app-control/AppControlHome";
 
 export default function AdminHome() {
 
@@ -39,7 +40,7 @@ export default function AdminHome() {
             {dashBoardName === "dashboard" && <Dashboard />}
             {dashBoardName === "statistics" && <AdminStats />}
             {dashBoardName === "adminControls" && <AdminControls />}
-
+            {dashBoardName === "appControl" && <AppControlHome />}
           </>
         ) : (
           <SignIn adminStatus={adminStatus} successHandler={successHandler} />

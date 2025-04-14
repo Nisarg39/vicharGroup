@@ -310,7 +310,25 @@ const Home = () => {
             isSuccess={false}
             modalMessage={errorMessage}
           />
-          
+
+          {params.course === "jeecourse" && params.class === "11" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
           {params.course === "jee" && params.class === "12" && (
             <>
               <Payment

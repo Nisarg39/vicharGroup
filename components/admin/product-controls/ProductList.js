@@ -1,121 +1,8 @@
-import { useState } from 'react'
-import Modal from '../common/Modal'
-import { addProduct, showProducts } from '../../server_actions/actions/adminActions'
-import LoadingSpinner from '../common/LoadingSpinner'
+import { useState } from "react";
+import { addProduct } from "../../../server_actions/actions/adminActions";
+import LoadingSpinner from "../../common/LoadingSpinner";
 
-// Add and Update of product is both done with addProduct function
-function AddProductForm({ handleSubmit, details, handleChange, errors, message }) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const onSubmit = async (e) => {
-    setIsSubmitting(true)
-    await handleSubmit(e)
-    setIsSubmitting(false)
-  }
-
-  return (
-    <div className="w-full min-h-screen py-2 xs:py-6 md:py-8 rounded-lg">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800 px-4">Add Product</h1>
-      {message && (
-        <div className={`px-4 py-2 mb-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-          {message.text}
-        </div>
-      )}
-      <form className="px-4" onSubmit={onSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Product Name</label>
-          <input
-            type="text"
-            name="name"
-            value={details.name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Price</label>
-          <input
-            type="text"
-            name="price"
-            value={details.price}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.price && <p className="text-red-500 text-sm">{errors.price}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Discount Price</label>
-          <input
-            type="text"
-            name="discountPrice"
-            value={details.discountPrice}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.discountPrice && <p className="text-red-500 text-sm">{errors.discountPrice}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Class</label>
-          <input
-            type="text"
-            name="class"
-            value={details.class}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.class && <p className="text-red-500 text-sm">{errors.class}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Duration (in months)</label>
-          <input
-            type="number"
-            name="duration"
-            value={details.duration}
-            onChange={handleChange}
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.duration && <p className="text-red-500 text-sm">{errors.duration}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Product Type</label>
-          <select
-            name="type"
-            value={details.type}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          >
-            <option value="">Select Type</option>
-            <option value="course">Course</option>
-            <option value="test-series">Test Series</option>
-          </select>
-          {errors.type && <p className="text-red-500 text-sm">{errors.type}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm mb-1">Page Parameters</label>
-          <input
-            type="text"
-            name="pageParameters"
-            value={details.pageParameters}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
-          />
-          {errors.pageParameters && <p className="text-red-500 text-sm">{errors.pageParameters}</p>}
-        </div>
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          className={`mt-4 px-4 py-2 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1d77bc] hover:bg-[#1a6aa8]'} text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]`}
-        >
-          {isSubmitting ? 'Submitting...' : 'Submit'}
-        </button>
-      </form>
-    </div>
-  )
-}
-
-function ProductList({ productsAvailable, handleChange, handleSubmit, errors, message }) {
+export default function ProductList({ productsAvailable, handleChange, handleSubmit, errors, message }) {
   const [filteredProducts, setFilteredProducts] = useState(productsAvailable)
   const [filterType, setFilterType] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -127,6 +14,7 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
   const [editClass, setEditClass] = useState('')
   const [editDuration, setEditDuration] = useState('')
   const [editPageParameters, setEditPageParameters] = useState('')
+  const [editImage, setEditImage] = useState('')
   const [originalProductName, setOriginalProductName] = useState('')
   const [updateMessage, setUpdateMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -142,6 +30,7 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
       class: editClass,
       duration: editDuration,
       pageParameters: editPageParameters,
+      image: editImage,
       originalName: originalProductName
     }
     try{
@@ -183,6 +72,7 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
     setEditClass(product.class)
     setEditDuration(product.duration)
     setEditPageParameters(product.pageParameters)
+    setEditImage(product.image || '')
     setIsModalOpen(true)
   }
 
@@ -196,6 +86,7 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
     setEditClass('')
     setEditDuration('')
     setEditPageParameters('')
+    setEditImage('')
     setUpdateMessage(null)
   }
 
@@ -223,7 +114,12 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
         {filteredProducts.map((product, index) => (
           <div key={index} className="mb-3 p-4 border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 bg-white">
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
+              <div className="flex items-center gap-4">
+                {product.image && (
+                  <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg" />
+                )}
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
+              </div>
               <button
                 onClick={() => handleEditClick(product)}
                 className="px-3 py-1 bg-[#1d77bc] text-white rounded-md hover:bg-[#1a6aa8] focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
@@ -276,6 +172,16 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
                   name="name"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm mb-1">Image URL</label>
+                <input
+                  type="text"
+                  name="image"
+                  value={editImage}
+                  onChange={(e) => setEditImage(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
                 />
               </div>
@@ -372,144 +278,6 @@ function ProductList({ productsAvailable, handleChange, handleSubmit, errors, me
 
       <form className="px-3 mt-6" onSubmit={handleSubmit}>
       </form>
-    </div>
-  )
-}
-
-// main function
-export default function AddProduct() {
-  const [activeComponent, setActiveComponent] = useState('addProduct')
-  const [details, setDetails] = useState({
-    name: '',
-    price: '',
-    discountPrice: '',
-    type: '',
-    class: '',
-    duration: '',
-    pageParameters: '',
-  })
-
-  const [productsAvailable, setProductsAvailable] = useState([])
-  const [errors, setErrors] = useState({})
-  const [message, setMessage] = useState(null)
-
-  const productObject = {
-    name: details.name,
-    price: details.price,
-    discountPrice: details.discountPrice,
-    type: details.type,
-    class: details.class,
-    duration: details.duration,
-    pageParameters: details.pageParameters
-  }
-
-  const validate = () => {
-    const newErrors = {}
-    if (!details.name) newErrors.name = 'Product name is required'
-    if (!details.price || isNaN(details.price)) newErrors.price = 'Valid price is required'
-    if (!details.discountPrice || isNaN(details.discountPrice)) newErrors.discountPrice = 'Valid discount price is required'
-    if (!details.type) newErrors.type = 'Product type is required'
-    return newErrors
-  }
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setDetails((prevDetails) => ({
-      ...prevDetails,
-      [name]: value
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-    } else {
-      setErrors({})
-      try {
-        const response = await addProduct(productObject)
-        if (response.success) {
-          setMessage({ type: 'success', text: 'Product added successfully!' })
-          setDetails({ name: '', price: '', discountPrice: '', type: '', class: '', duration: '', pageParameters: '' })
-        } else {
-          setMessage({ type: 'error', text: response.message || 'Failed to add product' })
-        }
-      } catch (error) {
-        setMessage({ type: 'error', text: 'An error occurred while adding the product' })
-      }
-    }
-  }
-
-  async function productList() {
-    try {
-      const response = await showProducts()
-      if (response.success) {
-        setProductsAvailable(response.products)
-        setActiveComponent('productList')
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to fetch products' })
-        setActiveComponent('productList')
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'An error occurred while fetching products' })
-      setActiveComponent('productList')
-    }
-  }
-
-  return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="flex justify-center space-x-4 mb-6">
-          <button 
-            onClick={() => setActiveComponent('addProduct')}
-            className={`px-6 py-2 rounded-lg shadow-md transition-all duration-300 ${
-              activeComponent === 'addProduct' 
-                ? 'bg-[#1d77bc] text-white transform scale-105' 
-                : 'bg-white text-[#1d77bc] hover:bg-[#e8f3fa] border border-[#1d77bc]'
-            }`}
-          >
-            Add Product
-          </button>
-          <button 
-            onClick={() => productList()}
-            className={`px-6 py-2 rounded-lg shadow-md transition-all duration-300 ${
-              activeComponent === 'productList' 
-                ? 'bg-[#1d77bc] text-white transform scale-105' 
-                : 'bg-white text-[#1d77bc] hover:bg-[#e8f3fa] border border-[#1d77bc]'
-            }`}
-          >
-            Product List
-          </button>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {activeComponent === 'addProduct' && (
-            <AddProductForm 
-              handleSubmit={handleSubmit}
-              details={details}
-              handleChange={handleChange}
-              errors={errors}
-              message={message}
-            />
-          )}
-          
-          {activeComponent === 'productList' && (
-            productsAvailable ? 
-            <ProductList 
-              productsAvailable={productsAvailable}
-              handleChange={handleChange}
-              handleSubmit={handleSubmit}
-              errors={errors}
-              message={message}
-            />
-            :
-            <div className="flex justify-center items-center h-screen">
-              <LoadingSpinner size="large" />
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

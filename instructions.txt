@@ -1,6 +1,10 @@
 for setting up google sign in auth - https://www.youtube.com/watch?v=XmmMQfpQh40
+next auth - https://authjs.dev/getting-started/installation?framework=next-js
+next auth reference - https://www.telerik.com/blogs/how-to-implement-google-authentication-nextjs-app-using-nextauth
 
 razorpay setup - https://www.youtube.com/watch?v=RRUE2tLYC_w
+website for reference - https://medium.com/@yadavpiyush222/how-to-integrate-razorpay-payment-gateway-in-next-js-14-app-router-02653384659a
+
 
 Query - apply Neobrutalism design . let the elements have the current border radius and do change any colors of any element in ui . do nto change style of text. apply hover animations according to the design style and make the images inside the cards blend well with the design style
 
