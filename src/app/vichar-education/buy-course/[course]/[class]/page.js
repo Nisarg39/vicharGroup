@@ -1,5 +1,5 @@
 "use client";
-import CoursePayoutHero from "../../../../../../components/vicharEducation/vicharEducationPayout/coursePayoutHero";
+import CoursePayoutHero from "../../../../../../components/vicharEducation/vicharEducationPayout/CoursePayoutHero";
 import { useParams, useRouter } from "next/navigation";
 import { getProductDetail } from "../../../../../../server_actions/actions/userActions";
 import Modal from "../../../../../../components/common/Modal";
