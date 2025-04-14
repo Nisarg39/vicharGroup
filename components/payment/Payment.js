@@ -285,7 +285,7 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
               </div>
               {props.testStartDate && (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <h3 className="text-md text-gray-600">Test Start Date:</h3>
+                  <h3 className="text-md text-gray-600">Test Start Date : </h3>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-sm text-white bg-[#e96030] px-4 py-1.5 rounded-full">
                     {props.testStartDate}
