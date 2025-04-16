@@ -9,7 +9,8 @@ export default function VicharEducationCourses() {
             id: 1,
             title: "JEE",
             description: "Comprehensive preparation for IIT-JEE Main and Advanced with expert faculty guidance.",
-            image: "/course-photo/jeeIcon.jpeg",
+            // image: "/course-photo/jeeIcon.jpeg",
+            image: "/jeeCourseNew12.jpeg",
             difficulty: "11th - 12th",
             link: "/vichar-education/jee"
         },
@@ -52,9 +53,9 @@ export default function VicharEducationCourses() {
                                     alt={course.title} 
                                     fill 
                                     style={{objectFit: 'cover'}} 
-                                    className="transition-transform duration-300 hover:scale-110"
+                                    className=""
                                 />
-                                <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-2 sm:px-3 py-1 rounded-bl-lg text-xs sm:text-sm font-semibold">{course.difficulty}</div>
+                                {/* <div className="absolute top-0 right-0 bg-[#106fb8] text-white px-2 sm:px-3 py-1 rounded-bl-lg text-xs sm:text-sm font-semibold">{course.difficulty}</div> */}
                             </div>
                             <div className="p-4 sm:p-5 md:p-6 relative">
                                 <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-gray-800 hover:text-[#106fb8] transition-colors duration-300 text-center">{course.title}</h3>

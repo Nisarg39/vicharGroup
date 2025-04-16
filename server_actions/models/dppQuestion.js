@@ -9,9 +9,8 @@ const dppQuestionSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    questionType: {
+    questionImage: {
         type: String,
-        enum: ['image', 'video', 'audio', 'text'],
     },
     objectiveoptions: [{
         option: {

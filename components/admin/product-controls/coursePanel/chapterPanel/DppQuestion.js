@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react'
 import { addDppQuestion } from '../../../../../server_actions/actions/adminActions'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
+import ImageUpload from '../../../../common/ImageUpload'
 
 export default function DppQuestion({dpp, addedQuestion}){
     const [showOptions, setShowOptions] = useState(false)
@@ -12,14 +13,24 @@ export default function DppQuestion({dpp, addedQuestion}){
     const [numericAnswer, setNumericAnswer] = useState('')
     const [imageUrls, setImageUrls] = useState({A: false, B: false, C: false, D: false})
     const [answer, setAnswer] = useState('')
-    const [isQuestionImage, setIsQuestionImage] = useState(false)
     const [responseMessage, setResponseMessage] = useState('')
     const [responseStatus, setResponseStatus] = useState('')
     const [previewError, setPreviewError] = useState('')
+    const [questionImage, setQuestionImage] = useState('');
+    const [showQuestionImageUpload, setShowQuestionImageUpload] = useState(false);
 
     const handleTypeChange = (e) => {
         setSelectedType(e.target.value)
         setShowOptions(e.target.value === 'objective' || e.target.value === 'multiple')
+    }
+
+    const handleImageUploaded = (url, target) => {
+        if (target === 'question') {
+            setQuestionImage(url);
+        } else if (['A', 'B', 'C', 'D'].includes(target)) {
+            handleOptionChange(target, url);
+            handleImageUrlChange(target);
+        }
     }
 
     const validateInputs = () => {
@@ -65,7 +76,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 dppId: dpp._id,
                 serialNumber: Number(serialNumber),
                 question: questionText,
-                questionType: isQuestionImage ? 'image' : 'text',
+                questionImage: questionImage,
                 objectiveoptions: selectedType === 'objective' ? formattedOptions : undefined,
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
@@ -169,15 +180,22 @@ export default function DppQuestion({dpp, addedQuestion}){
                             onChange={(e) => setQuestionText(e.target.value)}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                         />
-                        <label className="flex items-center gap-2 mt-2">
-                            <input 
-                                type="checkbox" 
-                                checked={isQuestionImage}
-                                onChange={() => setIsQuestionImage(!isQuestionImage)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                            />
-                            <span>Image Url</span>
-                        </label>
+                        
+                        <div className="mt-2">
+                            <button 
+                                type="button"
+                                onClick={() => setShowQuestionImageUpload(!showQuestionImageUpload)}
+                                className="text-blue-500 hover:text-blue-700 text-sm flex items-center"
+                            >
+                                {showQuestionImageUpload ? 'Hide Image Upload' : 'Add Image to Question'}
+                            </button>
+                        </div>
+                        
+                        {showQuestionImageUpload && (
+                            <div className="mt-2">
+                                <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, 'question')} />
+                            </div>
+                        )}
                     </div>
                 </div>
                 
@@ -190,12 +208,15 @@ export default function DppQuestion({dpp, addedQuestion}){
                     
                     <div className="mb-4">
                         <span className="font-bold mr-2">{serialNumber || 'Q.'})</span>
-                        {isQuestionImage ? (
-                            <img src={questionText} alt="Question" className="max-w-full h-auto" />
-                        ) : (
-                            renderWithLatex(questionText)
-                        )}
+                        {renderWithLatex(questionText)}
                     </div>
+                    
+                    {/* Display question image if available */}
+                    {questionImage && (
+                        <div className="mb-4">
+                            <img src={questionImage} alt="Question" className="max-w-full h-auto border rounded" />
+                        </div>
+                    )}
                     
                     {(selectedType === 'objective' || selectedType === 'multiple') && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -248,25 +269,33 @@ export default function DppQuestion({dpp, addedQuestion}){
                 {showOptions && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {['A', 'B', 'C', 'D'].map((option) => (
-                            <div key={option} className="flex items-center gap-4 bg-gray-50 p-4 rounded-md">
-                                <span className="font-semibold w-8">{option}.</span>
-                                <input 
-                                    type="text" 
-                                    placeholder={`Option ${option} (Use $ for LaTeX)`}
-                                    required
-                                    value={options[option]}
-                                    onChange={(e) => handleOptionChange(option, e.target.value)}
-                                    className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <label className="flex items-center gap-2 whitespace-nowrap">
+                            <div key={option} className="flex flex-col bg-gray-50 p-4 rounded-md">
+                                <div className="flex items-center gap-4">
+                                    <span className="font-semibold w-8">{option}.</span>
                                     <input 
-                                        type="checkbox" 
-                                        checked={imageUrls[option]}
-                                        onChange={() => handleImageUrlChange(option)}
-                                        className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                                        type="text" 
+                                        placeholder={`Option ${option} (Use $ for LaTeX)`}
+                                        required
+                                        value={options[option]}
+                                        onChange={(e) => handleOptionChange(option, e.target.value)}
+                                        className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
-                                    <span>Image Url</span>
-                                </label>
+                                    <label className="flex items-center gap-2 whitespace-nowrap">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={imageUrls[option]}
+                                            onChange={() => handleImageUrlChange(option)}
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                                        />
+                                        <span>Image Url</span>
+                                    </label>
+                                </div>
+                                
+                                {imageUrls[option] && (
+                                    <div className="mt-2">
+                                        <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, option)} />
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

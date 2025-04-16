@@ -19,7 +19,6 @@ const Home = () => {
   async function fetchDetails() {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
-    console.log(details);
     if (details.success) {
       // add comma after 3 digits of the number
       details.product.price = details.product.price.toLocaleString('en-IN')

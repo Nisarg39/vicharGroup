@@ -715,7 +715,7 @@ export async function addDpp(details) {
     try {
         await connectDB()
         const dpp = await Dpp.create(details)
-        console.log(dpp)
+        // console.log(dpp)
         if(dpp){
             const chapter = await Chapter.findByIdAndUpdate(details.chapterId, {
                 $push: {
