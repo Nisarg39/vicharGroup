@@ -58,6 +58,13 @@ export async function getProductDetail(pageParameters){
     try{
         await connectDB()
         const product = await Products.findOne({pageParameters: pageParameters})
+        .populate({
+            path: 'subjects',
+            populate: {
+                path: 'chapters',
+            }
+        })
+        
         if (!product) {
             return {
                 success: false,
@@ -67,7 +74,7 @@ export async function getProductDetail(pageParameters){
         else{
             return {
                 success: true,
-                product: product
+                product: JSON.parse(JSON.stringify(product))
             }
         }
     }catch(error){

@@ -3,6 +3,7 @@ import LoadingSpinner from "../../common/LoadingSpinner"
 import { useState, useEffect } from "react";
 import { addToCart } from "../../../server_actions/actions/studentActions";
 import { getStudentDetails } from "../../../server_actions/actions/studentActions";
+import CourseSyllabus from "./CourseSyllabus";
 
 export default function CoursePayoutHero(props) {
     const router = useRouter();
@@ -96,6 +97,9 @@ function MainCard({props}) {
                             <div className="flex flex-wrap gap-1.5">
                                 <span className="text-md font-bold text-gray-800">{props.subjects}</span>
                             </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <CourseSyllabus subjectsArray={props.subjectsArray} />
                         </div>
                         <div className="border-t border-gray-200 pt-8 bg-gray-100 -mx-8 -mb-8 p-8">
                             <div className="flex items-center gap-4 mb-8">

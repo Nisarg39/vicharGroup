@@ -6,7 +6,7 @@ import ImageUpload from '../../../../common/ImageUpload'
 
 export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
 
-    console.log(question.questionImage)
+    // console.log(question.questionImage)
 
     const [showOptions, setShowOptions] = useState(question?.answerMultiple?.length > 0 ? true : question?.answerObjective ? true : false)
     const [selectedType, setSelectedType] = useState(question?.answerObjective ? 'objective' : question?.answerNumeric ? 'numeric' : question?.answerMultiple?.length > 0 ? 'multiple' : '')
