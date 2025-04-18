@@ -7,7 +7,7 @@ const segmentSchema = new mongoose.Schema({
     },
     products: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product'
+        ref: 'Products'
     }],
 }, { timestamps: true })
 

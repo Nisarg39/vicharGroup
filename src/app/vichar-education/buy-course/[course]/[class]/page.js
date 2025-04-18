@@ -32,7 +32,7 @@ const Home = () => {
       setTimeout(() => {
         setErrorMessage();
         setShowErrorModal(false);
-        router.push("/test-series");
+        router.push("/vichar-education");
       }, 5000);
     }
     setLoading(false);

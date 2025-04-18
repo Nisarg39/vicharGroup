@@ -3,6 +3,8 @@ import {connectDB} from "../config/mongoose"
 import EnquiryForm from "../models/enquiryForm"
 import ContactUs from "../models/contactUs"
 import Products from "../models/products"
+import Subject from "../models/subject"
+import Chapter from "../models/chapter"
 export  async function studentEnq(formData) {
     try {
         await connectDB()
@@ -64,7 +66,7 @@ export async function getProductDetail(pageParameters){
                 path: 'chapters',
             }
         })
-        
+
         if (!product) {
             return {
                 success: false,
@@ -78,7 +80,7 @@ export async function getProductDetail(pageParameters){
             }
         }
     }catch(error){
-        // console.log(error)
+        console.log(error)
         return {
             success: false,
             message: "Error fetching product"

@@ -23,7 +23,7 @@ const subjectSchema = new mongoose.Schema({
     }],
     productId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
+        ref: 'Products',
         required: true
     }
 }, { timestamps: true })
