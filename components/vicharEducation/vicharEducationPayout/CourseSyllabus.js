@@ -11,7 +11,7 @@ export default function CourseSyllabus({ subjectsArray }) {
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 text-start">Course Syllabus</h1>
             
             <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-6 md:mb-8">
-                <div className="w-full max-w-3xl bg-gray-50 rounded-xl p-2 md:p-3">
+                <div className="w-full max-w-3xl bg-gray-100 rounded-xl p-2 md:p-3">
                     <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
                         {subjectsArray.map((subject, index) => (
                             <button

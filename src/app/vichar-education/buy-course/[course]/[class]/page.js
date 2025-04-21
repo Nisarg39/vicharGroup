@@ -75,6 +75,25 @@ const Home = () => {
               />
             </>
           )}  
+
+          {params.course === "neetcourse" && params.class === "11" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
           
           {params.course === "jee" && params.class === "11" && (
             <>
@@ -85,25 +104,6 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="11th March, 2025"
-                price={`${product.price}`}
-                discountPrice={`${product.discountPrice}`}
-                course={`${params.course}`}
-                params={`${params.class}`}
-                examMode="Online Course"
-              />
-            </>
-          )}
-
-          {params.course === "neet" && params.class === "12" && (
-            <>
-              <CoursePayoutHero
-                productId={product._id}
-                title={product.name}
-                class={product.class}
-                duration={`${product.duration} Months`}
-                language="English"
-                subjects="Physics, Chemistry, Biology"
                 testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}

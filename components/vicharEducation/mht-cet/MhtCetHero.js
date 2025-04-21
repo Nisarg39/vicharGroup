@@ -1,13 +1,12 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 
 const MhtCetHero = (props) => {
   const courses = [
-    { id: 1, title: 'PCM + PCB Course', level: '11th', image: '/course-photo/cetIcon.jpeg', link: '' },
-    { id: 2, title: 'PCM + PCB Course', level: '12th', image: '/course-photo/cetIcon.jpeg', link: '' },
-    { id: 3, title: 'PCM + PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '' },
+    { id: 1, title: 'PCM + PCB Course', level: '11th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/mht-cet/11' },
+    { id: 2, title: 'PCM + PCB Course', level: '12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/mht-cet/12' },
+    { id: 3, title: 'PCM + PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/mht-cet/11+12' },
   ]
   return (
     <section className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-gray-200 pt-24 md:pt-20 overflow-hidden relative">
@@ -23,10 +22,10 @@ const MhtCetHero = (props) => {
               <div className="p-4 sm:p-5 md:p-6 relative">
                 <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-gray-800 hover:text-[#106fb8] transition-colors duration-300 text-center">{course.title}</h3>
                 <p className="text-sm sm:text-base text-gray-600 mb-2 sm:mb-2 leading-relaxed line-clamp-3">Comprehensive MHT-CET preparation course for {course.level} students.</p>
-                <Link href={course.link} passHref>
-                  <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out cursor-not-allowed opacity-75 text-sm sm:text-base relative overflow-hidden">
-                    Coming Soon
-                  </button>
+                <Link href={course.link} className="block w-full">
+                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base relative overflow-hidden">
+                      <span className="flex items-center justify-center gap-2">Enroll Now →</span>
+                    </button>
                 </Link>
               </div>
             </div>
