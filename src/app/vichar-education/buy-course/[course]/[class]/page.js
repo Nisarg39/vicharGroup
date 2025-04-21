@@ -56,6 +56,8 @@ const Home = () => {
         </div>
       ) : (
         <>
+
+          {/* Jee Course */}
           {params.course === "jeecourse" && params.class === "11" && (
             <>
               <CoursePayoutHero
@@ -76,6 +78,47 @@ const Home = () => {
             </>
           )}  
 
+          {params.course === "jeecourse" && params.class === "12" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "jeecourse" && params.class === "11+12" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}    
+
+          {/* Neet Course */}
           {params.course === "neetcourse" && params.class === "11" && (
             <>
               <CoursePayoutHero
@@ -91,11 +134,12 @@ const Home = () => {
                 course={`${params.course}`}
                 params={`${params.class}`}
                 examMode="Online Course"
+                subjectsArray={product.subjects}
               />
             </>
           )}
           
-          {params.course === "jee" && params.class === "11" && (
+          {params.course === "neetcourse" && params.class === "12" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -104,15 +148,58 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="11th March, 2025"
+                // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
                 examMode="Online Course"
+                subjectsArray={product.subjects}
               />
             </>
-          )}
+          )}  
+
+          {params.course === "neetcourse" && params.class === "11+12" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}  
+
+          {/* MHT CET Course */}
+
+          {params.course === "cet-pcm" && params.class === "11" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}  
 
           {params.course === "cet-pcm" && params.class === "12" && (
             <>
@@ -123,16 +210,56 @@ const Home = () => {
                 duration={`${product.duration} Months`}
                 language="English"
                 subjects="Physics, Chemistry, Maths"
-                testStartDate="11th March, 2025"
+                // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
                 examMode="Online Course"
+                subjectsArray={product.subjects}
               />
             </>
-          )}
+          )}   
 
+          {params.course === "cet-pcm" && params.class === "11+12" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )} 
+
+          {params.course === "cet-pcb" && params.class === "11" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )} 
           {params.course === "cet-pcb" && params.class === "12" && (
             <>
               <CoursePayoutHero
@@ -141,16 +268,37 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
-                testStartDate="11th March, 2025"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Offline Test Series"
+                examMode="Online Course"
+                subjectsArray={product.subjects}
               />
             </>
-          )}
+          )} 
+
+          {params.course === "cet-pcb" && params.class === "11+12" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )} 
         </>
       )}
     </section>
