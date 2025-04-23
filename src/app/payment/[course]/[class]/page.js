@@ -311,7 +311,8 @@ const Home = () => {
             modalMessage={errorMessage}
           />
 
-          {params.course === "jeecourse" && params.class === "11" && (
+          {/* courses */}
+          {params.course === "jeecourse" && params.class === "integrated" && (
             <>
               <Payment
                 productId={product._id}
@@ -329,6 +330,206 @@ const Home = () => {
             </>
           )}
 
+          {params.course === "jeecourse" && params.class === "12" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "jeecourse" && params.class === "integrated" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "neetcourse" && params.class === "11" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "neetcourse" && params.class === "12" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "neetcourse" && params.class === "integrated" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcm-course" && params.class === "11" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcm-course" && params.class === "12" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcm-course" && params.class === "integrated" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcb-course" && params.class === "11" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcb-course" && params.class === "12" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cet-pcb-course" && params.class === "integrated" && (
+            <>
+              <Payment
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+
+          {/* test-series */}
           {params.course === "jee" && params.class === "12" && (
             <>
               <Payment

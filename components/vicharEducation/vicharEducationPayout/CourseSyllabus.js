@@ -4,7 +4,7 @@ import { useState } from "react"
 export default function CourseSyllabus({ subjectsArray }) {
     const [activeTab, setActiveTab] = useState(0)
 
-    console.log(subjectsArray);
+    // console.log(subjectsArray);
 
     return (
         <div className="w-full bg-white p-2">

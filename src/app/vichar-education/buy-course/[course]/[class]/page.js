@@ -19,7 +19,8 @@ const Home = () => {
   async function fetchDetails() {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
-    // console.log(details);
+
+
     if (details.success) {
       // add comma after 3 digits of the number
       details.product.price = details.product.price.toLocaleString('en-IN')
@@ -98,7 +99,7 @@ const Home = () => {
             </>
           )}
 
-          {params.course === "jeecourse" && params.class === "11+12" && (
+          {params.course === "jeecourse" && params.class === "integrated" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -159,7 +160,7 @@ const Home = () => {
             </>
           )}  
 
-          {params.course === "neetcourse" && params.class === "11+12" && (
+          {params.course === "neetcourse" && params.class === "integrated" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -221,7 +222,7 @@ const Home = () => {
             </>
           )}   
 
-          {params.course === "cet-pcm-course" && params.class === "11+12" && (
+          {params.course === "cet-pcm-course" && params.class === "integrated" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -280,7 +281,7 @@ const Home = () => {
             </>
           )} 
 
-          {params.course === "cet-pcb-course" && params.class === "11+12" && (
+          {params.course === "cet-pcb-course" && params.class === "integrated" && (
             <>
               <CoursePayoutHero
                 productId={product._id}

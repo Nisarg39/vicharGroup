@@ -6,7 +6,7 @@ const NeetHero = () => {
   const courses = [
     { id: 1, title: '11th Standard', level: '11th', image: '/course-photo/neetIcon.jpeg', link: '/vichar-education/buy-course/neetcourse/11' },
     { id: 2, title: '12th Standard', level: '12th', image: '/course-photo/neetIcon.jpeg', link: '/vichar-education/buy-course/neetcourse/12' },
-    { id: 3, title: '11th + 12th Integrated', level: '11th & 12th', image: '/course-photo/neetIcon.jpeg', link: '/vichar-education/buy-course/neetcourse/11+12' },
+    { id: 3, title: '11th + 12th Integrated', level: '11th & 12th', image: '/course-photo/neetIcon.jpeg', link: '/vichar-education/buy-course/neetcourse/integrated' },
   ]
 
   return (

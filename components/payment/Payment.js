@@ -147,6 +147,7 @@ export default function Payment(props) {
                         buyNow={buyNow} 
                         validatedDetails={validatedDetails} 
                         purchaseStatus={purchaseStatus}
+                        examMode={props.examMode}
                     />
                 </div>
             </div>
@@ -497,13 +498,12 @@ function MainCard({props, student, setValidatedDetails, validatedDetails}) {
 
 // EnrollmentCard.js
 function EnrollmentCard(props) {
-    const [couponCode, setCouponCode] = useState("FIRST200");
+    const [couponCode, setCouponCode] = useState(props.examMode === "Online Course" ? "" : "FIRST100");
     const [isCouponApplied, setIsCouponApplied] = useState(false);
     const [finalPrice, setFinalPrice] = useState(props.discountPrice.replace(/,/g, ''));
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [applyButtonText, setApplyButtonText] = useState("Apply");
     const [couponType, setCouponType] = useState("");
-
     async function verifyCoupon(){
       setApplyButtonText("Applying...");
         const token =localStorage.getItem("token")

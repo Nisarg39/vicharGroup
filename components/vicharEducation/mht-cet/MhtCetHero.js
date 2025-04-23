@@ -6,10 +6,10 @@ const MhtCetHero = (props) => {
   const courses = [
     { id: 1, title: '11TH PCM Course', level: '11th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcm-course/11' },
     { id: 2, title: '12TH PCM Course', level: '12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcm-course/12' },
-    { id: 3, title: 'Integrated PCM Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcm-course/11+12' },
+    { id: 3, title: 'Integrated PCM Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcm-course/integrated' },
     { id: 4, title: '11TH PCB Course', level: '11th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcb-course/11' },
     { id: 5, title: '12TH PCB Course', level: '12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcb-course/12' },
-    { id: 6, title: 'Integrated PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcb-course/11+12' },
+    { id: 6, title: 'Integrated PCB Course', level: '11th + 12th', image: '/course-photo/cetIcon.jpeg', link: '/vichar-education/buy-course/cet-pcb-course/integrated' },
   ]
   return (
     <section className="w-full min-h-screen flex items-center bg-gradient-to-b from-white to-gray-200 pt-24 md:pt-20 overflow-hidden relative">

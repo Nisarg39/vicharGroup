@@ -6,7 +6,7 @@ const JeeHero = (props) => {
   const courses = [
     { id: 1, title: '11th Standard', level: '11th', image: '/course-photo/jeeIcon.jpeg', link: '/vichar-education/buy-course/jeecourse/11', description: 'Comprehensive JEE preparation course for 11th students.' },
     { id: 2, title: '12th Standard', level: '12th', image: '/course-photo/jeeIcon.jpeg', link: '/vichar-education/buy-course/jeecourse/12', description: 'Comprehensive JEE preparation course for 12th students.' },
-    { id: 3, title: '11th + 12th Integrated', level: '11th & 12th', image: '/course-photo/jeeIcon.jpeg', link: '/vichar-education/buy-course/jeecourse/11+12', description: 'Comprehensive JEE preparation course for 11th & 12th students.' },
+    { id: 3, title: '11th + 12th Integrated', level: '11th & 12th', image: '/course-photo/jeeIcon.jpeg', link: '/vichar-education/buy-course/jeecourse/integrated', description: 'Comprehensive JEE preparation course for 11th & 12th students.' },
   ]
 
   return (
