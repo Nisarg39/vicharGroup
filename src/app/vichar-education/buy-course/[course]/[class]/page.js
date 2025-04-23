@@ -19,7 +19,7 @@ const Home = () => {
   async function fetchDetails() {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
-    console.log(details);
+    // console.log(details);
     if (details.success) {
       // add comma after 3 digits of the number
       details.product.price = details.product.price.toLocaleString('en-IN')
@@ -147,7 +147,7 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Physics, Chemistry, Biology"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
@@ -167,7 +167,7 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Physics, Chemistry, Biology"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
@@ -181,7 +181,7 @@ const Home = () => {
 
           {/* MHT CET Course */}
 
-          {params.course === "cet-pcm" && params.class === "11" && (
+          {params.course === "cet-pcm-course" && params.class === "11" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -201,7 +201,7 @@ const Home = () => {
             </>
           )}  
 
-          {params.course === "cet-pcm" && params.class === "12" && (
+          {params.course === "cet-pcm-course" && params.class === "12" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -221,7 +221,7 @@ const Home = () => {
             </>
           )}   
 
-          {params.course === "cet-pcm" && params.class === "11+12" && (
+          {params.course === "cet-pcm-course" && params.class === "11+12" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -241,7 +241,7 @@ const Home = () => {
             </>
           )} 
 
-          {params.course === "cet-pcb" && params.class === "11" && (
+          {params.course === "cet-pcb-course" && params.class === "11" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -249,7 +249,7 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Physics, Chemistry, Biology"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
@@ -260,7 +260,7 @@ const Home = () => {
               />
             </>
           )} 
-          {params.course === "cet-pcb" && params.class === "12" && (
+          {params.course === "cet-pcb-course" && params.class === "12" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -268,7 +268,7 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Physics, Chemistry, Biology"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
@@ -280,7 +280,7 @@ const Home = () => {
             </>
           )} 
 
-          {params.course === "cet-pcb" && params.class === "11+12" && (
+          {params.course === "cet-pcb-course" && params.class === "11+12" && (
             <>
               <CoursePayoutHero
                 productId={product._id}
@@ -288,7 +288,7 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Physics, Chemistry, Biology"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
