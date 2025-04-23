@@ -20,7 +20,7 @@ const Home = () => {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
 
-    console.log(details);
+    // console.log(details);
 
     if (details.success) {
       // add comma after 3 digits of the number
@@ -317,7 +317,7 @@ const Home = () => {
           {params.course === "jeecourse" && params.class === "11" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -335,7 +335,7 @@ const Home = () => {
           {params.course === "jeecourse" && params.class === "12" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -353,7 +353,7 @@ const Home = () => {
           {params.course === "jeecourse" && params.class === "integrated" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -371,7 +371,7 @@ const Home = () => {
           {params.course === "neetcourse" && params.class === "11" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -389,7 +389,7 @@ const Home = () => {
           {params.course === "neetcourse" && params.class === "12" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -407,7 +407,7 @@ const Home = () => {
           {params.course === "neetcourse" && params.class === "integrated" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -425,7 +425,7 @@ const Home = () => {
           {params.course === "cet-pcm-course" && params.class === "11" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -443,7 +443,7 @@ const Home = () => {
           {params.course === "cet-pcm-course" && params.class === "12" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -461,7 +461,7 @@ const Home = () => {
           {params.course === "cet-pcm-course" && params.class === "integrated" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -479,7 +479,7 @@ const Home = () => {
           {params.course === "cet-pcb-course" && params.class === "11" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -497,7 +497,7 @@ const Home = () => {
           {params.course === "cet-pcb-course" && params.class === "12" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}
@@ -515,7 +515,7 @@ const Home = () => {
           {params.course === "cet-pcb-course" && params.class === "integrated" && (
             <>
               <Payment
-                productId={product._id}
+                _id={product._id}
                 title={product.name}
                 class={product.class}
                 duration={`${product.duration} Months`}

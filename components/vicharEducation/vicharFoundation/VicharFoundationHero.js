@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 const VicharFoundationHero = () => {
   const slides = [
-    { src: '/vicharLogo.png', alt: 'Vichar Foundation' },
+    { src: '/vicharlogo.png', alt: 'Vichar Foundation' },
   ]
 
   const [currentSlide, setCurrentSlide] = useState(0);

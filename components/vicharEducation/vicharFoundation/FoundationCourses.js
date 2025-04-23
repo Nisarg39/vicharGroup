@@ -37,7 +37,7 @@ const FoundationCourses = (props) => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-gray-200 to-white min-h-screen pt-16" id='courses-section'>
+    <div className="mt-12 bg-gradient-to-b from-gray-200 to-white min-h-screen pt-16" id='courses-section'>
       <div className="container mx-auto px-4">
         <motion.h2 
           initial={{ y: -50, opacity: 0 }}
@@ -46,8 +46,7 @@ const FoundationCourses = (props) => {
           className="text-5xl md:text-6xl font-bold text-gray-900 text-center mb-12 relative"
         >
           <span className="relative inline-block">
-            Courses
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#106fb8]"></div>
+            Foundation Courses
           </span>
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-[95%] md:w-[85%] mx-auto">

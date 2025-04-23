@@ -7,7 +7,7 @@ const Contact = () => {
     
     return (
         <>
-            <VicharFoundationHero />
+            {/* <VicharFoundationHero /> */}
             <FoundationCourses title="Foundation Course"/>
             <WhyChooseUs />
             <FoundationTestimonials />
