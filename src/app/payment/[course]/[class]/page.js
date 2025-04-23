@@ -20,6 +20,8 @@ const Home = () => {
     const page = params.course + "/" + params.class;
     const details = await getProductDetail(page);
 
+    console.log(details);
+
     if (details.success) {
       // add comma after 3 digits of the number
       details.product.price = details.product.price.toLocaleString('en-IN')
@@ -312,7 +314,7 @@ const Home = () => {
           />
 
           {/* courses */}
-          {params.course === "jeecourse" && params.class === "integrated" && (
+          {params.course === "jeecourse" && params.class === "11" && (
             <>
               <Payment
                 productId={product._id}
@@ -527,6 +529,8 @@ const Home = () => {
               />
             </>
           )}
+
+
 
 
           {/* test-series */}
