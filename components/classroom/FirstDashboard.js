@@ -23,7 +23,7 @@ const CartCard = () => {
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                                     <div className="flex gap-3 sm:gap-4 items-center w-full sm:w-auto">
                                         <Image 
-                                            src={item.type === "test-series" ? "/course-photo/testSeries.jpeg" : "/video-course-icon.png"}
+                                            src={item.image? item.image : "/course-photo/testSeries.jpeg"}
                                             alt={item.type}
                                             width={50}
                                             height={50}
@@ -77,7 +77,7 @@ const CartCard = () => {
 
 const ProductsCard = () => {
     const student = useSelector(state => state.login.studentDetails)
-    // console.log(student.purchases)
+    console.log(student.purchases)
     return (
         <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-5 rounded-2xl shadow-xl border border-gray-200 h-full">
             <h2 className="text-lg sm:text-xl mb-3 sm:mb-4 text-gray-800 border-b pb-2 sm:pb-3 font-semibold flex items-center gap-2">
@@ -93,7 +93,7 @@ const ProductsCard = () => {
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
                                 <div className="flex gap-3 sm:gap-4 items-center">
                                     <Image 
-                                        src={purchase.product.type === "test-series" ? "/course-photo/testSeries.jpeg" : "/video-course-icon.png"}
+                                        src={purchase.product.image ? purchase.product.image : "/course-photo/testSeries.jpeg"}
                                         alt={purchase.product.type}
                                         width={50}
                                         height={50}
@@ -108,6 +108,17 @@ const ProductsCard = () => {
                                     <button 
                                         className="w-full sm:w-auto bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] hover:from-[#1a6cad] hover:to-[#2884cc] text-white font-bold py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1d77bc] focus:ring-opacity-50 group flex items-center justify-center sm:justify-start gap-2"
                                         onClick={() => window.location.href = 'https://drcexam.in/'}
+                                    >
+                                        View {purchase.product.type}
+                                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {purchase.product.type === "course" && (
+                                    <button 
+                                        className="w-full sm:w-auto bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] hover:from-[#1a6cad] hover:to-[#2884cc] text-white font-bold py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1d77bc] focus:ring-opacity-50 group flex items-center justify-center sm:justify-start gap-2"
+                                        onClick={() => window.location.href = 'https://play.google.com/store/apps/details?id=com.vichareducation.jee_neet'}
                                     >
                                         View {purchase.product.type}
                                         <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

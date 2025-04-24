@@ -39,9 +39,8 @@ export default function Payment(props) {
             if(student.student.name && student.student.email && student.student.phone && student.student.gender && student.student.dob && student.student.address && student.student.area && student.student.city && student.student.state){
                 setValidatedDetails(true);
             }
-            console.log(student.student.purchases)
+            
             student.student.purchases.forEach(async (purchase) => {
-              
                 if(purchase.product._id.toString() === props._id.toString()){
                     setPurchaseStatus(true);
                 }

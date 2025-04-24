@@ -261,6 +261,7 @@ const Home = () => {
               />
             </>
           )} 
+
           {params.course === "cet-pcb-course" && params.class === "12" && (
             <>
               <CoursePayoutHero
@@ -300,6 +301,189 @@ const Home = () => {
               />
             </>
           )} 
+
+          {/* Foundation Courses */}
+
+          {params.course === "ssccourse" && params.class === "10" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "ssccourse" && params.class === "9" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "ssccourse" && params.class === "8" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "10" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "9" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "8" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "10" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "9" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "8" && (
+            <>
+              <CoursePayoutHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                // testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+                subjectsArray={product.subjects}
+              />
+            </>
+          )}
+
         </>
       )}
     </section>

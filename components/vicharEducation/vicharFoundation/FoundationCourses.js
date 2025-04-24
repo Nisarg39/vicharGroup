@@ -1,22 +1,22 @@
 "use client"
 import React, { useState } from 'react'
-import Link from 'next/link'
 import { FaCalendarAlt, FaBolt, FaInfoCircle, FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 const FoundationCourses = (props) => {
   const [showAllDetails, setShowAllDetails] = useState(false)
 
   const courses = [
-    { id: 1, title: '8th SSC', level: '8th', description: 'Comprehensive preparation course for 8th students.', moreInfo: ['Complete SSC syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 2, title: '8th CBSE', level: '8th', description: 'Comprehensive preparation course for 8th students.', moreInfo: ['Complete CBSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 3, title: '8th ICSE', level: '8th', description: 'Comprehensive preparation course for 8th students.', moreInfo: ['Complete ICSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 4, title: '9th SSC', level: '9th', description: 'Comprehensive preparation course for 9th students.', moreInfo: ['Complete SSC syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 5, title: '9th CBSE', level: '9th', description: 'Comprehensive preparation course for 9th students.', moreInfo: ['Complete CBSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 6, title: '9th ICSE', level: '9th', description: 'Comprehensive preparation course for 9th students.', moreInfo: ['Complete ICSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 7, title: '10th SSC', level: '10th', description: 'Comprehensive preparation course for 10th students.', moreInfo: ['Complete SSC syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 8, title: '10th CBSE', level: '10th', description: 'Comprehensive preparation course for 10th students.', moreInfo: ['Complete CBSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
-    { id: 9, title: '10th ICSE', level: '10th', description: 'Comprehensive preparation course for 10th students.', moreInfo: ['Complete ICSE syllabus coverage', 'Interactive learning sessions', 'Regular assessments', 'Doubt clearing sessions', 'Practice materials', 'Mock tests'] },
+    { id: 1, title: '8th SSC', level: '8th', description: 'Comprehensive preparation course for 8th students.', link: '/vichar-education/buy-course/ssccourse/8' },
+    { id: 2, title: '8th CBSE', level: '8th', description: 'Comprehensive preparation course for 8th students.', link: '/vichar-education/buy-course/cbsecourse/8' },
+    { id: 3, title: '8th ICSE', level: '8th', description: 'Comprehensive preparation course for 8th students.', link: '/vichar-education/buy-course/icsecourse/8' },
+    { id: 4, title: '9th SSC', level: '9th', description: 'Comprehensive preparation course for 9th students.', link: '/vichar-education/buy-course/ssccourse/9' },
+    { id: 5, title: '9th CBSE', level: '9th', description: 'Comprehensive preparation course for 9th students.', link: '/vichar-education/buy-course/cbsecourse/9' },
+    { id: 6, title: '9th ICSE', level: '9th', description: 'Comprehensive preparation course for 9th students.', link: '/vichar-education/buy-course/icsecourse/9' },
+    { id: 7, title: '10th SSC', level: '10th', description: 'Comprehensive preparation course for 10th students.', link: '/vichar-education/buy-course/ssccourse/10' },
+    { id: 8, title: '10th CBSE', level: '10th', description: 'Comprehensive preparation course for 10th students.', link: '/vichar-education/buy-course/cbsecourse/10' },
+    { id: 9, title: '10th ICSE', level: '10th', description: 'Comprehensive preparation course for 10th students.', link: '/vichar-education/buy-course/icsecourse/10' },
   ]
 
   const getBadgeColor = (level) => {
@@ -89,40 +89,13 @@ const FoundationCourses = (props) => {
                     </motion.div>
                   </motion.button>
                 </div>
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: showAllDetails ? "auto" : 0, opacity: showAllDetails ? 1 : 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {showAllDetails && (
-                    <div className="bg-gradient-to-r from-gray-100 to-gray-200 p-4 rounded-lg mb-4">
-                      <ul className="list-disc pl-5">
-                        {course.moreInfo.map((info, index) => (
-                          <motion.li
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                            key={index}
-                            className="text-gray-600"
-                          >
-                            {info}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </motion.div>
               </div>
               <div className="px-8 pb-8">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  disabled
-                  className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-3 px-5 rounded-xl transition duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-gray-400 focus:ring-opacity-50 flex items-center justify-center text-lg cursor-not-allowed"
-                >
-                  <FaBolt className="w-4 h-4 mr-2" />
-                  Coming Soon
-                </motion.button>
+                  <Link href={course.link} className="block w-full">
+                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base relative overflow-hidden">
+                      <span className="flex items-center justify-center gap-2">Enroll Now →</span>
+                    </button>
+                  </Link>
               </div>
             </motion.div>
           ))}

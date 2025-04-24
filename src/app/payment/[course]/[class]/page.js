@@ -530,7 +530,169 @@ const Home = () => {
             </>
           )}
 
+          {/* Foundation Courses */}
 
+          {params.course === "ssccourse" && params.class === "10" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "ssccourse" && params.class === "9" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "ssccourse" && params.class === "8" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "10" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "9" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "cbsecourse" && params.class === "8" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "10" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "9" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
+
+          {params.course === "icsecourse" && params.class === "8" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Course"
+              />
+            </>
+          )}
 
 
           {/* test-series */}

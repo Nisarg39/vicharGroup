@@ -11,7 +11,7 @@ export default function CourseSyllabus({ subjectsArray }) {
             <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-4 sm:mb-6 md:mb-8">
                 <div className="w-full max-w-3xl bg-gray-100 rounded-xl p-2 md:p-3">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
-                        {subjectsArray.map((subject, index) => (
+                        {subjectsArray?.map((subject, index) => (
                             <button
                                 key={index}
                                 className={`relative flex flex-col items-center p-1.5 sm:p-2 md:p-3 rounded-lg transition-all duration-300 ${

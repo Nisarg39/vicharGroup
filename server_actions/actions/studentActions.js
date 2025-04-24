@@ -110,13 +110,13 @@ export async function getStudentDetails(token){
             populate: {
                 path: "product",
                 model: "Products",
-                select: "name price discountPrice duration pageParameters class type"
+                select: "name price discountPrice duration pageParameters class type image"
             }
         },
         {
             path: "cart",
             model: "Products",
-            select: "name price discountPrice duration pageParameters class type"
+            select: "name price discountPrice duration pageParameters class type image"
         }
     ])
     .lean()
