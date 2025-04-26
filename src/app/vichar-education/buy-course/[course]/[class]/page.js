@@ -312,13 +312,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -332,13 +332,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -352,13 +352,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -372,13 +372,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -392,13 +392,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -412,13 +412,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -432,13 +432,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -452,13 +452,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>
@@ -472,13 +472,13 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Biology"
+                subjects="Algebra, Geometry"
                 // testStartDate="11th March, 2025"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
                 subjectsArray={product.subjects}
               />
             </>

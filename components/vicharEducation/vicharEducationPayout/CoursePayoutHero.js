@@ -92,12 +92,12 @@ function MainCard({props}) {
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        {/* <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <h3 className="text-md text-gray-600">Subjects (PCM):</h3>
                             <div className="flex flex-wrap gap-1.5">
                                 <span className="text-md font-bold text-gray-800">{props.subjects}</span>
                             </div>
-                        </div>
+                        </div> */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                             <CourseSyllabus subjectsArray={props.subjectsArray} />
                         </div>

@@ -9,8 +9,7 @@ export default function VicharEducationCourses() {
             id: 1,
             title: "JEE",
             description: "Comprehensive preparation for IIT-JEE Main and Advanced with expert faculty guidance.",
-            // image: "/course-photo/jeeIcon.jpeg",
-            image: "/jeeCourseNew12.jpeg",
+            image: "/course-photo/1.png",
             difficulty: "11th - 12th",
             link: "/vichar-education/jee"
         },
@@ -18,7 +17,7 @@ export default function VicharEducationCourses() {
             id: 2,
             title: "NEET",
             description: "Complete medical entrance exam preparation covering Physics, Chemistry, and Biology.",
-            image: "/course-photo/neetIcon.jpeg",
+            image: "/course-photo/2.png",
             difficulty: "11th - 12th",
             link: "/vichar-education/neet"
         },
@@ -26,7 +25,7 @@ export default function VicharEducationCourses() {
             id: 3,
             title: "MHT-CET",
             description: "Specialized coaching for Maharashtra Common Entrance Test with focus on state syllabus.",
-            image: "/course-photo/cetIcon.jpeg",
+            image: "/course-photo/3.png",
             difficulty: "11th - 12th",
             link: "/vichar-education/mht-cet"
         },
@@ -34,7 +33,7 @@ export default function VicharEducationCourses() {
             id: 4,
             title: "Foundation",
             description: "Strong academic foundation for competitive exams with early preparation advantage.",
-            image: "/course-photo/foundationIcon.jpeg",
+            image: "/course-photo/4.png",
             difficulty: "8TH - 10TH",
             link: "/vichar-education/foundation"
         }

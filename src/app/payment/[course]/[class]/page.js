@@ -540,12 +540,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -558,12 +558,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -576,12 +576,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -594,12 +594,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -612,12 +612,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -630,12 +630,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -648,12 +648,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -666,12 +666,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}
@@ -684,12 +684,12 @@ const Home = () => {
                 class={product.class}
                 duration={`${product.duration} Months`}
                 language="English"
-                subjects="Physics, Chemistry, Maths"
+                subjects="Algebra, Geometry"
                 price={`${product.price}`}
                 discountPrice={`${product.discountPrice}`}
                 course={`${params.course}`}
                 params={`${params.class}`}
-                examMode="Online Course"
+                examMode="Offline Course"
               />
             </>
           )}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { showCourses, updateCourse } from "../../../../server_actions/actions/adminActions"
 import CourseDetails from "./CourseDetails"
+import LoadingSpinner from "../../../common/LoadingSpinner"
+
 export default function CourseControl() {
     const [products, setProducts] = useState([])
     const [productSelected, setProductSelected] = useState({})
@@ -8,10 +10,13 @@ export default function CourseControl() {
     const [updatedName, setUpdatedName] = useState("")
     const [updatedImage, setUpdatedImage] = useState("")
     const [activeTab, setActiveTab] = useState("course")
+    const [isLoading, setIsLoading] = useState(true)
 
     async function fetchCourses(){
+        setIsLoading(true)
         const productList = await showCourses()
         setProducts(productList.products)
+        setIsLoading(false)
     }
 
     useEffect(() => {
@@ -50,7 +55,9 @@ export default function CourseControl() {
 
     return(
         <div className="h-full w-full">
-            {Object.keys(productSelected).length === 0 ? (
+            {isLoading ? (
+                <LoadingSpinner />
+            ) : Object.keys(productSelected).length === 0 ? (
                 <>
                     <div className="flex gap-4 mb-4">
                         <button 
