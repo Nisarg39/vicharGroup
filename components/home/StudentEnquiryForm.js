@@ -29,6 +29,12 @@ function StudentEnquiryForm() {
         if (result.success) {
             e.target.reset()
             setSelectedStream('')
+            const link = document.createElement('a')
+            link.href = '/vichar_brochure.pdf'
+            link.download = 'vichar_brochure.pdf'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
         }
         setShowModal(true)
         setIsLoading(false)
