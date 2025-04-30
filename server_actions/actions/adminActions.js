@@ -13,6 +13,7 @@ import DppQuestion from "../models/dppQuestion"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
 import Exercise from "../models/exercise"
+import Teacher from "../models/teacher"
 import Razorpay_Info from "../models/razorpay_info"
 import Segment from "../models/segment"
 import jwt from "jsonwebtoken"
@@ -676,7 +677,12 @@ export async function showLectures(details) {
         .populate({
             path: 'lectures',
             model: 'Lecture',
-            select: 'serialNumber title description videoUrl'
+            select: 'serialNumber title description videoUrl teacher',
+            populate: {
+                path: 'teacher',
+                model: 'Teacher',
+                select: 'name imageUrl'
+            }
         })
         .lean()
         return {
@@ -692,7 +698,6 @@ export async function showLectures(details) {
         }
     }
 }
-
 export async function updateLecture(details) {
     try {
         await connectDB()
@@ -845,6 +850,42 @@ export async function showExercise(chapterId) {
         return {
             success: false,
             message: "Error showing exercise"
+        }
+    }
+}
+
+// teacher control
+export async function addTeacher(details){
+    try {
+        await connectDB()
+        const teacher = await Teacher.create(details)
+        return {
+            success: true,
+            message: "Teacher added successfully",
+            teacher: JSON.parse(JSON.stringify(teacher))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding teacher"
+        }
+    }
+}
+
+export async function showTeachers() {
+    try {
+        await connectDB()
+        const teachers = await Teacher.find({})
+        return {
+            success: true,
+            teachers: JSON.parse(JSON.stringify(teachers))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error showing teachers"
         }
     }
 }

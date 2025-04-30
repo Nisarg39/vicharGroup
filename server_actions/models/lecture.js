@@ -17,6 +17,10 @@ const lectureSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    teacher: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Teacher",
+    }
 }, { timestamps: true });
 
 const Lecture = mongoose.models.Lecture || mongoose.model("Lecture", lectureSchema);

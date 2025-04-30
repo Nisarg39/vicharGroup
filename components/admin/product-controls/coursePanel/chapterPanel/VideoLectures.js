@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react"
 import { addLecture, showLectures, updateLecture } from "../../../../../server_actions/actions/adminActions"
+import { showTeachers } from "../../../../../server_actions/actions/adminActions"
+
+
 export default function VideoLectures({chapter}){
     const [serialNumber, setSerialNumber] = useState('')
     const [title, setTitle] = useState('')
@@ -8,6 +11,8 @@ export default function VideoLectures({chapter}){
     const [lectures, setLectures] = useState([])
     const [editingId, setEditingId] = useState(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [teachers, setTeachers] = useState([])
+    const [selectedTeacher, setSelectedTeacher] = useState('')
 
     useEffect(() => {
         const fetchLectures = async() => {
@@ -18,7 +23,16 @@ export default function VideoLectures({chapter}){
                 alert(response.message)
             }
         }
+        const fetchTeachers = async() => {
+            const response = await showTeachers()
+            if(response.success){
+                setTeachers(response.teachers)
+            }else{
+                alert(response.message)
+            }
+        }
         fetchLectures()
+        fetchTeachers()
     }, [])
 
     const handleAddLecture = async() => {
@@ -27,6 +41,7 @@ export default function VideoLectures({chapter}){
             title,
             description,
             videoUrl,
+            teacher: selectedTeacher,
             chapterId: chapter._id
         }
         const response = await addLecture(details)
@@ -36,6 +51,7 @@ export default function VideoLectures({chapter}){
             setTitle('')
             setDescription('')
             setVideoUrl('')
+            setSelectedTeacher('')
             const lectureResponse = await showLectures({chapterId: chapter._id})
             if(lectureResponse.success){
                 setLectures(lectureResponse.chapter.lectures)
@@ -57,10 +73,15 @@ export default function VideoLectures({chapter}){
             title: lecture.title,
             description: lecture.description,
             videoUrl: lecture.videoUrl,
+            teacher: selectedTeacher,
         }
         const response = await updateLecture(details)
         if(response.success){
             alert(response.message)
+            const lectureResponse = await showLectures({chapterId: chapter._id})
+            if(lectureResponse.success){
+                setLectures(lectureResponse.chapter.lectures)
+            }
         }else{
             alert(response.message)
         }
@@ -77,6 +98,7 @@ export default function VideoLectures({chapter}){
                         <th className="border p-2">Title</th>
                         <th className="border p-2">Description</th>
                         <th className="border p-2">Video URL</th>
+                        <th className="border p-2">Teacher</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -117,6 +139,21 @@ export default function VideoLectures({chapter}){
                                 onChange={(e) => setVideoUrl(e.target.value)}
                             />
                         </td>
+                        <td className="border p-2">
+                            <select
+                                className="w-full p-1 border rounded"
+                                value={selectedTeacher}
+                                onChange={(e) => setSelectedTeacher(e.target.value)}
+                            >
+                                <option value="">Select Teacher</option>
+                                {teachers.map((teacher) => (
+                                    <option key={teacher._id} value={teacher._id} className="flex items-center gap-2">
+                                        {teacher.image && <img src={teacher.image} alt={teacher.name} className="w-6 h-6 rounded-full inline mr-2" />}
+                                        {teacher.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -136,6 +173,7 @@ export default function VideoLectures({chapter}){
                         <th className="border p-2">Title</th>
                         <th className="border p-2">Description</th>
                         <th className="border p-2">Video URL</th>
+                        <th className="border p-2">Teacher</th>
                         <th className="border p-2">Actions</th>
                     </tr>
                 </thead>
@@ -197,6 +235,34 @@ export default function VideoLectures({chapter}){
                                         }}
                                     />
                                 ) : lecture.videoUrl}
+                            </td>
+                            <td className="border p-2">
+                                {editingId === lecture._id ? (
+                                    <select
+                                    className="w-full p-1 border rounded"
+                                    value={selectedTeacher}
+                                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                                >
+                                    <option value="">Select Teacher</option>
+                                    {teachers.map((teacher) => (
+                                        <option key={teacher._id} value={teacher._id} className="flex items-center gap-2">
+                                            {teacher.image && <img src={teacher.image} alt={teacher.name} className="w-6 h-6 rounded-full inline mr-2" />}
+                                            {teacher.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        {lecture.teacher && lecture.teacher.imageUrl && (
+                                            <img 
+                                                src={lecture.teacher.imageUrl} 
+                                                alt={lecture.teacher.name}
+                                                className="w-6 h-6 rounded-full"
+                                            />
+                                        )}
+                                        {lecture.teacher ? lecture.teacher.name : 'No teacher assigned'}
+                                    </div>
+                                )}
                             </td>
                             <td className="border p-2">
                                 {editingId === lecture._id ? (

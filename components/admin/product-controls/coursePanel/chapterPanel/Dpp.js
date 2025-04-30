@@ -2,7 +2,6 @@ import { useState } from "react";
 import { addDpp, updateDpp } from "../../../../../server_actions/actions/adminActions";
 import DppQuestion from "./DppQuestion";
 import DppQuestionsList from "./DppQuestionsList";
-import { set } from "mongoose";
 
 export default function Dpp({chapter}){
 
