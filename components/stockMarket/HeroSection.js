@@ -1,17 +1,29 @@
 "use client"
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function HeroSection(){
     const slides = [
         {
-            src: "https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png",
-            alt: "Stock Market Classes"
+            src: "/stock-market/stock-market-1.png",
+            alt: "vichar stock market"
+        },
+        {
+            src: "/stock-market/stock-market-2.png",
+            alt: "vichar stock market"
         }
     ]
     
     const [currentSlide, setCurrentSlide] = useState(0)
+    
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % slides.length)
+        }, 5000)
+        
+        return () => clearInterval(timer)
+    }, [])
     
     const handleTouchStart = (e) => {
         setTouchStart(e.touches[0].clientX)
@@ -83,7 +95,7 @@ export default function HeroSection(){
                                         fill
                                         style={{ objectFit: "cover" }}
                                         priority={index === 0}
-                                        className="hover:scale-105 transition-transform duration-300 group-hover:scale-110"
+                                        className=""
                                     />
                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                         <h3 className="text-white text-2xl font-bold tracking-wider">{slide.alt}</h3>

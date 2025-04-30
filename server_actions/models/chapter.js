@@ -24,8 +24,11 @@ const chapterSchema = new mongoose.Schema({
     dpps: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Dpp'
-    }]
-
+    }],
+    exercises: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Exercise'
+    }],
 }, { timestamps: true })
 
 const Chapter = mongoose.models.Chapter || mongoose.model("Chapter", chapterSchema)

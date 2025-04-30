@@ -12,6 +12,7 @@ import Dpp from "../../server_actions/models/dpp"
 import DppQuestion from "../models/dppQuestion"
 import CouponCode from "../models/couponCode"
 import Payment from "../models/payment"
+import Exercise from "../models/exercise"
 import Razorpay_Info from "../models/razorpay_info"
 import Segment from "../models/segment"
 import jwt from "jsonwebtoken"
@@ -804,6 +805,49 @@ export async function updateDppQuestion(details){
     }
 }
 
+// exercise control
+
+export async function addExercise(details){
+    try {
+        await connectDB()
+        const exercise = await Exercise.create({
+            exerciseName: details.exerciseName,
+            pdfUrl: details.pdfUrl
+        })
+        await Chapter.findByIdAndUpdate(details.chapterId, {
+            $push: {
+                exercises: exercise._id
+            }
+        })
+        return {
+            success: true,
+            message: "Exercise added successfully",
+            exercise: JSON.parse(JSON.stringify(exercise))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding exercise"
+        }
+    }
+}
+
+export async function showExercise(chapterId) {
+    try {
+        const exercises = await Chapter.findById(chapterId).populate("exercises")
+        return {
+            success: true,
+            exercises: JSON.parse(JSON.stringify(exercises.exercises))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error showing exercise"
+        }
+    }
+}
 
 // coupon code control
 
