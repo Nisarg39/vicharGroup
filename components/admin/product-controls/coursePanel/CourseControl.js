@@ -3,6 +3,7 @@ import { showCourses, updateCourse } from "../../../../server_actions/actions/ad
 import CourseDetails from "./CourseDetails"
 import TeacherDetails from "./TeacherDetails"
 import LoadingSpinner from "../../../common/LoadingSpinner"
+import { FaChalkboardTeacher, FaBook, FaUserGraduate } from 'react-icons/fa'
 
 export default function CourseControl() {
     const [products, setProducts] = useState([])
@@ -58,22 +59,22 @@ export default function CourseControl() {
         <div className="h-full w-full">
             <div className="flex gap-4 mb-4">
                 <button 
-                    className={`px-4 py-2 rounded ${activeTab === 'course' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    className={`px-4 py-2 rounded flex items-center gap-2 ${activeTab === 'course' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                     onClick={() => setActiveTab('course')}
                 >
-                    Courses
+                    <FaBook /> Courses
                 </button>
                 <button 
-                    className={`px-4 py-2 rounded ${activeTab === 'mtc' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    className={`px-4 py-2 rounded flex items-center gap-2 ${activeTab === 'mtc' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                     onClick={() => setActiveTab('mtc')}
                 >
-                    MTC
+                    <FaUserGraduate /> MTC
                 </button>
                 <button 
-                    className={`px-4 py-2 rounded ${activeTab === 'teacher' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    className={`px-4 py-2 rounded flex items-center gap-2 ${activeTab === 'teacher' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
                     onClick={() => setActiveTab('teacher')}
                 >
-                    Teacher Details
+                    <FaChalkboardTeacher /> Teacher Details
                 </button>
             </div>
             {isLoading ? (

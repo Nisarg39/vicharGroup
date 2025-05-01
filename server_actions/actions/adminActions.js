@@ -873,6 +873,25 @@ export async function addTeacher(details){
     }
 }
 
+export async function updateTeacher(details){
+    try {
+        await connectDB()
+        const teacher = await Teacher.findByIdAndUpdate(details.teacherId, details, {new: true})
+        console.log(teacher)
+        return {
+            success: true,
+            message: "Teacher updated successfully",
+            teacher: JSON.parse(JSON.stringify(teacher))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating teacher"
+        }
+    }
+}
+
 export async function showTeachers() {
     try {
         await connectDB()
