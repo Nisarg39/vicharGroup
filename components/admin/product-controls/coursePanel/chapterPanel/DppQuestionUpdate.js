@@ -137,36 +137,6 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
         }
     }
 
-    const renderFormattedText = (text) => {
-        if (!text) return '';
-        
-        try {
-            // First handle LaTeX
-            const latexProcessed = renderWithLatex(text);
-            
-            // Then handle bold text formatting
-            if (typeof latexProcessed === 'string') {
-                // If it's a string (not already React elements from LaTeX processing)
-                const boldPattern = /\*\*(.*?)\*\*/g;
-                const parts = latexProcessed.split(boldPattern);
-                
-                return (
-                    <>
-                        {parts.map((part, index) => {
-                            return index % 2 === 0 ? 
-                                <span key={index}>{part}</span> : 
-                                <strong key={index}>{part}</strong>;
-                        })}
-                    </>
-                );
-            }
-            
-            return latexProcessed;
-        } catch (error) {
-            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
-        }
-    }
-
     const renderWithLatex = (text) => {
         if (!text) return '';
         
@@ -189,6 +159,62 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
             );
         } catch (error) {
             return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
+        }
+    }
+
+    const renderFormattedText = (text) => {
+        if (!text) return '';
+        
+        try {
+            // Process bold text first
+            const boldPattern = /\*\*(.*?)\*\*/g;
+            let processedText = text;
+            const boldParts = [];
+            let lastIndex = 0;
+            let match;
+            
+            while ((match = boldPattern.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                    boldParts.push({
+                        type: 'normal',
+                        text: text.substring(lastIndex, match.index)
+                    });
+                }
+                
+                boldParts.push({
+                    type: 'bold',
+                    text: match[1]
+                });
+                
+                lastIndex = match.index + match[0].length;
+            }
+            
+            if (lastIndex < text.length) {
+                boldParts.push({
+                    type: 'normal',
+                    text: text.substring(lastIndex)
+                });
+            }
+            
+            // If no bold parts found, just process LaTeX
+            if (boldParts.length === 0) {
+                return renderWithLatex(text);
+            }
+            
+            // Process each part for LaTeX
+            return (
+                <>
+                    {boldParts.map((part, index) => {
+                        if (part.type === 'bold') {
+                            return <strong key={index}>{renderWithLatex(part.text)}</strong>;
+                        } else {
+                            return <span key={index}>{renderWithLatex(part.text)}</span>;
+                        }
+                    })}
+                </>
+            );
+        } catch (error) {
+            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
         }
     }
     return(
@@ -221,7 +247,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     />
                     <div className="md:col-span-3">
                         <textarea 
-                            placeholder="Question (Use $ symbols to wrap LaTeX expressions, e.g. $\frac{1}{2}$, and **text** for bold)"
+                            placeholder="Question (Use $ symbols to wrap LaTeX expressions, e.g. $\frac{1}{2}$)"
                             required
                             value={questionText}
                             onChange={(e) => setQuestionText(e.target.value)}

@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import React, {useState, useEffect} from 'react'
 import { addDppQuestion } from '../../../../../server_actions/actions/adminActions'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
@@ -122,7 +122,29 @@ export default function DppQuestion({dpp, addedQuestion}){
         }
     }
 
-    // Add this function to handle bold text rendering
+    const renderWithLatex = (text) => {
+        if (!text) return '';
+        
+        try {
+            // Split by dollar signs to identify LaTeX parts
+            const parts = text.split(/(\$.*?\$)/g);
+            const hasLatex = parts.some(part => part.startsWith(') && part.endsWith('));
+            
+            if (!hasLatex) return text; // Return as string if no LaTeX
+            
+            // Process each part, converting LaTeX and preserving bold markers
+            return parts.map((part, index) => {
+                if (part.startsWith('$') && part.endsWith('$')) {
+                    const latex = part.slice(1, -1);
+                    return <InlineMath key={index} math={latex} />;
+                }
+                return part; // Return text parts as is, with bold markers intact
+            });
+        } catch (error) {
+            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
+        }
+    }
+
     const renderFormattedText = (text) => {
         if (!text) return '';
         
@@ -130,9 +152,8 @@ export default function DppQuestion({dpp, addedQuestion}){
             // First handle LaTeX
             const latexProcessed = renderWithLatex(text);
             
-            // Then handle bold text formatting
+            // If it's just a string (no LaTeX found), process bold formatting
             if (typeof latexProcessed === 'string') {
-                // If it's a string (not already React elements from LaTeX processing)
                 const boldPattern = /\*\*(.*?)\*\*/g;
                 const parts = latexProcessed.split(boldPattern);
                 
@@ -147,34 +168,38 @@ export default function DppQuestion({dpp, addedQuestion}){
                 );
             }
             
-            return latexProcessed;
-        } catch (error) {
-            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
-        }
-    }
-
-    const renderWithLatex = (text) => {
-        if (!text) return '';
-        
-        try {
-            const parts = text.split(/(\$.*?\$)/g);
-            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
-            
-            if (!hasLatex) return text; // Return as string if no LaTeX
-            
+            // If we have an array of elements from LaTeX processing, we need to process each text element for bold
             return (
                 <>
-                    {parts.map((part, index) => {
-                        if (part.startsWith('$') && part.endsWith('$')) {
-                            const latex = part.slice(1, -1);
-                            return <InlineMath key={index} math={latex} />;
+                    {latexProcessed.map((part, index) => {
+                        // If this is a React element (LaTeX), return it as is
+                        if (React.isValidElement(part)) {
+                            return part;
                         }
+                        
+                        // Process text parts for bold formatting
+                        const boldPattern = /\*\*(.*?)\*\*/g;
+                        const boldParts = part.split(boldPattern);
+                        
+                        if (boldParts.length > 1) {
+                            return (
+                                <span key={index}>
+                                    {boldParts.map((boldPart, boldIndex) => {
+                                        return boldIndex % 2 === 0 ? 
+                                            <span key={boldIndex}>{boldPart}</span> : 
+                                            <strong key={boldIndex}>{boldPart}</strong>;
+                                    })}
+                                </span>
+                            );
+                        }
+                        
+                        // If no bold formatting, return the text as is
                         return <span key={index}>{part}</span>;
                     })}
                 </>
             );
         } catch (error) {
-            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
+            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
         }
     }
     return(

@@ -44,38 +44,89 @@ export default function DppQuestionsList({ dpp }) {
         if (!text || typeof text !== 'string') return ''
         
         try {
-            const parts = text.split(/(\$.*?\$)/g)
-            const processedParts = parts.map((part, index) => {
-                if (part.startsWith('$') && part.endsWith('$')) {
-                    const latex = part.slice(1, -1)
-                    return <InlineMath key={`latex-${index}`} math={latex} />
-                }
-                return part
-            })
+            // Create tokens for each formatting element
+            const tokens = []
+            let currentText = ''
+            let inBold = false
+            let inLatex = false
+            let i = 0
             
-            return processedParts.map((part, partIndex) => {
-                if (typeof part !== 'string') {
-                    return part;
+            while (i < text.length) {
+                // Check for bold markers
+                if (i + 1 < text.length && text[i] === '*' && text[i + 1] === '*') {
+                    // Add current text if any
+                    if (currentText) {
+                        tokens.push({
+                            type: inBold ? 'bold' : 'text',
+                            content: currentText
+                        })
+                        currentText = ''
+                    }
+                    
+                    // Toggle bold state
+                    inBold = !inBold
+                    i += 2
+                    continue
                 }
                 
-                const boldParts = part.split(/(\*\*.*?\*\*)/g)
-                if (boldParts.length === 1) {
-                    return <span key={`text-${partIndex}`}>{part}</span>
+                // Check for LaTeX markers
+                if (text[i] === '$' && !inLatex) {
+                    // Add current text if any
+                    if (currentText) {
+                        tokens.push({
+                            type: inBold ? 'bold' : 'text',
+                            content: currentText
+                        })
+                        currentText = ''
+                    }
+                    
+                    // Find the closing $
+                    const startIndex = i + 1
+                    let endIndex = text.indexOf('$', startIndex)
+                    
+                    if (endIndex === -1) {
+                        // No closing $, treat as regular text
+                        currentText += text[i]
+                        i++
+                        continue
+                    }
+                    
+                    // Extract LaTeX content
+                    const latexContent = text.substring(startIndex, endIndex)
+                    tokens.push({
+                        type: 'latex',
+                        content: latexContent
+                    })
+                    
+                    i = endIndex + 1
+                    continue
                 }
                 
-                return (
-                    <React.Fragment key={`fragment-${partIndex}`}>
-                        {boldParts.map((boldPart, boldIndex) => {
-                            if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
-                                const boldText = boldPart.slice(2, -2)
-                                return <strong key={`bold-${partIndex}-${boldIndex}`}>{boldText}</strong>
-                            }
-                            return <span key={`text-${partIndex}-${boldIndex}`}>{boldPart}</span>
-                        })}
-                    </React.Fragment>
-                )
+                // Regular character
+                currentText += text[i]
+                i++
+            }
+            
+            // Add any remaining text
+            if (currentText) {
+                tokens.push({
+                    type: inBold ? 'bold' : 'text',
+                    content: currentText
+                })
+            }
+            
+            // Render tokens
+            return tokens.map((token, index) => {
+                if (token.type === 'latex') {
+                    return <InlineMath key={`latex-${index}`} math={token.content} />
+                } else if (token.type === 'bold') {
+                    return <strong key={`bold-${index}`}>{token.content}</strong>
+                } else {
+                    return <span key={`text-${index}`}>{token.content}</span>
+                }
             })
         } catch (error) {
+            console.error("Rendering error:", error)
             return <span className="text-red-500">Error rendering formatted text: {error.message}</span>
         }
     }
