@@ -7,6 +7,14 @@ const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const [showFullText, setShowFullText] = React.useState(false);
 
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const toggleReadMore = () => {
     setShowFullText(!showFullText);
   };
@@ -16,7 +24,8 @@ const HeroSection = () => {
   const handleTouchEnd = () => {};
 
   const slides = [
-    { src: "/vicharlogo.png", alt: "Vichar Education" },
+    { src: "/course-photo/digital-banner-1.png", alt: "Vichar Education" },
+    { src: "/course-photo/foundation-banner-2.jpeg", alt: "Vichar Education" },
   ];
 
   return (

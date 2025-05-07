@@ -11,7 +11,6 @@ const TestSeriesHero = () => {
   const slides = [
     { src: "/test-series/firstPhoto.png", alt: "Arambh Test Series" },
     { src: "/test-series/secondPhoto.png", alt: "How to apply for Arambh Test Series" },
-    { src: "/test-series/thirdPhoto.png", alt: "Vichar Group Faculties" },
     { src: "/test-series/fourthPhoto.png", alt: "Vichar Test App" },
     { src: "/test-series/fifthPhoto.png", alt: "Vichar Test"},
   ];

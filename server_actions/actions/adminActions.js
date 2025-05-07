@@ -282,6 +282,52 @@ export async function fetchAllStudents(page) {
     }
 }
 
+export async function assignProduct(details){
+    try {
+        await connectDB()
+
+        const student = await Student.findById(details.studentId)
+
+        const product = await Products.findById(details.productId)
+
+        const razorpay_info = await Razorpay_Info.create({
+            razorpay_order_id: details.razorpay_order_id,
+            razorpay_payment_id: details.razorpay_payment_id,
+            razorpay_signature: details.razorpay_signature,
+        })
+
+        const payment = await Payment.create({
+            student: student._id,
+            product: product._id,
+            paymentStatus: "success",
+            amountPaid: details.amountPaid,
+            couponDiscount: 0,
+            razorpay_info: razorpay_info._id,
+            initialDiscountAmount: details.initialDiscountAmount,
+            price: product.price,
+        })
+
+        razorpay_info.payment = payment._id
+        await razorpay_info.save()
+        student.purchases.push(payment._id)
+        student.cart = student.cart.filter((item) => item.toString() !== product._id.toString());
+        await student.save();
+
+        return {
+            success: true,
+            message: "Product assigned successfully",
+            payment: payment,
+        }
+
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error assigning product"
+        }
+    }
+}
+
 
 // segment functions
 
@@ -810,6 +856,22 @@ export async function updateDppQuestion(details){
     }
 }
 
+export async function deleteDppQuestion(questionId){
+    try {
+        await connectDB()
+        await DppQuestion.findByIdAndDelete(questionId)
+        return {
+            success: true,
+            message: "Question deleted successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting question"
+        }
+    }
+}
 // exercise control
 
 export async function addExercise(details){

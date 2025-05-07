@@ -1,9 +1,15 @@
+
+import { useState } from "react"
 import { mandatoryDetails } from "../../server_actions/actions/studentActions"
 import { useDispatch } from "react-redux"
 import { studentDetails } from "../../features/login/LoginSlice"
+import Modal from "../common/Modal"
 export default function VerifyDetails(props) {
 
     const dispatch = useDispatch()
+    const [showModal, setShowModal] = useState(false)
+    const [isSuccess, setIsSuccess] = useState(false)
+    const [modalMessage, setModalMessage] = useState("")
 
     const handleSubmit = async(e) => {
         e.preventDefault()
@@ -11,8 +17,16 @@ export default function VerifyDetails(props) {
         const email = e.target[1].value
         const token = localStorage.getItem('token')
         const response = await mandatoryDetails({name, email, token})
-        localStorage.setItem('token', response.student.token)
-        dispatch(studentDetails(response.student))
+        if(!response.success){
+            setIsSuccess(false)
+            setModalMessage(response.message)
+            setShowModal(true)
+        }else{
+            setIsSuccess(true)
+            setModalMessage("Details updated successfully!")
+            setShowModal(true)
+            dispatch(studentDetails(response.student))
+        }
     }
 
     return (
@@ -51,6 +65,12 @@ export default function VerifyDetails(props) {
                     </button>
                 </form>
             </div>
+            <Modal 
+                showModal={showModal}
+                setShowModal={setShowModal}
+                isSuccess={isSuccess}
+                modalMessage={modalMessage}
+            />
         </section>
     )
 }

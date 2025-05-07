@@ -137,28 +137,60 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
         }
     }
 
-    const renderWithLatex = (text) => {
-        if (!text) return ''
+    const renderFormattedText = (text) => {
+        if (!text) return '';
         
         try {
-            const parts = text.split(/(\$.*?\$)/g)
+            // First handle LaTeX
+            const latexProcessed = renderWithLatex(text);
+            
+            // Then handle bold text formatting
+            if (typeof latexProcessed === 'string') {
+                // If it's a string (not already React elements from LaTeX processing)
+                const boldPattern = /\*\*(.*?)\*\*/g;
+                const parts = latexProcessed.split(boldPattern);
+                
+                return (
+                    <>
+                        {parts.map((part, index) => {
+                            return index % 2 === 0 ? 
+                                <span key={index}>{part}</span> : 
+                                <strong key={index}>{part}</strong>;
+                        })}
+                    </>
+                );
+            }
+            
+            return latexProcessed;
+        } catch (error) {
+            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
+        }
+    }
+
+    const renderWithLatex = (text) => {
+        if (!text) return '';
+        
+        try {
+            const parts = text.split(/(\$.*?\$)/g);
+            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
+            
+            if (!hasLatex) return text; // Return as string if no LaTeX
             
             return (
                 <>
                     {parts.map((part, index) => {
                         if (part.startsWith('$') && part.endsWith('$')) {
                             const latex = part.slice(1, -1);
-                            return <InlineMath key={index} math={latex} />
+                            return <InlineMath key={index} math={latex} />;
                         }
-                        return <span key={index}>{part}</span>
+                        return <span key={index}>{part}</span>;
                     })}
                 </>
-            )
+            );
         } catch (error) {
-            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>
+            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
         }
     }
-
     return(
         <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="space-y-6">
@@ -172,9 +204,9 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     <button 
                         type="button"
                         className="text-blue-500 hover:text-blue-700 text-sm"
-                        onClick={() => alert("Use $ symbols to wrap LaTeX expressions. For example: $\\frac{1}{2}$ will render as a fraction.")}
+                        onClick={() => alert("Use $ symbols to wrap LaTeX expressions. For example: $\\frac{1}{2}$ will render as a fraction.\n\nUse ** to make text bold. For example: **bold text** will appear as bold.")}
                     >
-                        LaTeX Help
+                        Formatting Help
                     </button>
                 </div>
 
@@ -189,7 +221,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     />
                     <div className="md:col-span-3">
                         <textarea 
-                            placeholder="Question (Use $ symbols to wrap LaTeX expressions, e.g. $\frac{1}{2}$)"
+                            placeholder="Question (Use $ symbols to wrap LaTeX expressions, e.g. $\frac{1}{2}$, and **text** for bold)"
                             required
                             value={questionText}
                             onChange={(e) => setQuestionText(e.target.value)}
@@ -242,7 +274,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     
                     <div className="mb-4">
                         <span className="font-bold mr-2">{serialNumber || 'Q.'})</span>
-                        {renderWithLatex(questionText)}
+                        {renderFormattedText(questionText)}
                     </div>
 
                     {/* Updated image preview section */}
@@ -264,13 +296,12 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                                     {imageUrls[option] ? (
                                         <img src={options[option]} alt={`Option ${option}`} className="max-w-full h-auto" />
                                     ) : (
-                                        <div>{renderWithLatex(options[option])}</div>
+                                        <div>{renderFormattedText(options[option])}</div>
                                     )}
                                 </div>
                             ))}
                         </div>
-                    )}
-                    
+                    )}                    
                     {selectedType === 'numeric' && (
                         <div className="mt-4">
                             <span className="font-semibold">Answer: </span>

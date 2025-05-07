@@ -1,26 +1,87 @@
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import DppQuestionUpdate from "./DppQuestionUpdate"
+import { InlineMath, BlockMath } from 'react-katex'
+import 'katex/dist/katex.min.css'
+import { deleteDppQuestion } from "../../../../../server_actions/actions/adminActions"
 
-export default function DppQuestionsList({ dpp}) {
+export default function DppQuestionsList({ dpp }) {
     const [editingIndex, setEditingIndex] = useState(null)
-
+    const [questions, setQuestions] = useState([])
+    
+    useEffect(() => {
+        if (dpp && dpp.dppQuestions) {
+            setQuestions([...dpp.dppQuestions])
+        }
+    }, [dpp])
+    
     const handleEdit = (index) => {
         setEditingIndex(index === editingIndex ? null : index)
     }
 
+    const handleDelete = async(id) => {
+       const response = await deleteDppQuestion(id)
+       if(response.success){
+           setQuestions(prevQuestions => prevQuestions.filter(question => question._id !== id))
+           alert(response.message)
+       } else {
+           alert(response.message)
+       }
+    }
+
     const updateQuestion = (updatedQuestion) => {
-        const updatedDppQuestions = dpp.dppQuestions.map((question, index) => {
-            if (index === editingIndex) {
-                return { ...question, ...updatedQuestion }
-            }
-            return question
-        })
-        dpp.dppQuestions = updatedDppQuestions
+        setQuestions(prevQuestions => 
+            prevQuestions.map((question, index) => {
+                if (index === editingIndex) {
+                    return { ...question, ...updatedQuestion }
+                }
+                return question
+            })
+        )
         setEditingIndex(null)
+    }
+
+    const renderFormattedText = (text) => {
+        if (!text || typeof text !== 'string') return ''
+        
+        try {
+            const parts = text.split(/(\$.*?\$)/g)
+            const processedParts = parts.map((part, index) => {
+                if (part.startsWith('$') && part.endsWith('$')) {
+                    const latex = part.slice(1, -1)
+                    return <InlineMath key={`latex-${index}`} math={latex} />
+                }
+                return part
+            })
+            
+            return processedParts.map((part, partIndex) => {
+                if (typeof part !== 'string') {
+                    return part;
+                }
+                
+                const boldParts = part.split(/(\*\*.*?\*\*)/g)
+                if (boldParts.length === 1) {
+                    return <span key={`text-${partIndex}`}>{part}</span>
+                }
+                
+                return (
+                    <React.Fragment key={`fragment-${partIndex}`}>
+                        {boldParts.map((boldPart, boldIndex) => {
+                            if (boldPart.startsWith('**') && boldPart.endsWith('**')) {
+                                const boldText = boldPart.slice(2, -2)
+                                return <strong key={`bold-${partIndex}-${boldIndex}`}>{boldText}</strong>
+                            }
+                            return <span key={`text-${partIndex}-${boldIndex}`}>{boldPart}</span>
+                        })}
+                    </React.Fragment>
+                )
+            })
+        } catch (error) {
+            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>
+        }
     }
     return(
         <div className="space-y-6 p-6 bg-gray-50">
-            {dpp.dppQuestions.map((question, index) => (
+            {questions.map((question, index) => (
                 <div key={index} className="bg-white shadow-md rounded-lg p-6 transition-all duration-200 hover:shadow-lg">
                     <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
@@ -30,7 +91,7 @@ export default function DppQuestionsList({ dpp}) {
                                     {question.answerMultiple?.length > 0 ? 'Multiple Choice' : question.answerObjective ? 'Objective' : question.answerNumeric ? 'Numeric' : 'Not Specified'}
                                 </span>
                             </div>
-                            <p className="text-gray-800 text-lg mb-4">{question.question}</p>
+                            <p className="text-gray-800 text-lg mb-4">{renderFormattedText(question.question)}</p>
                             
                             {question.answerMultiple?.length > 0 && (
                                 <div className="space-y-4">
@@ -38,7 +99,7 @@ export default function DppQuestionsList({ dpp}) {
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Multiple Choice Answer</h4>
                                         <ul className="space-y-2">
                                             {question.answerMultiple.map((option, i) => (
-                                                <li key={i} className="text-gray-600">{option}</li>
+                                                <li key={i} className="text-gray-600">{renderFormattedText(option)}</li>
                                             ))}
                                         </ul>
                                     </div>
@@ -46,7 +107,7 @@ export default function DppQuestionsList({ dpp}) {
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Options</h4>
                                         <ul className="space-y-2">
                                             {question.multipleObjective?.map((option, i) => (
-                                                <li key={i} className="text-gray-600">{option.text || option.option}</li>
+                                                <li key={i} className="text-gray-600">{renderFormattedText(option.text || option.option)}</li>
                                             ))}
                                         </ul>
                                     </div>
@@ -57,13 +118,13 @@ export default function DppQuestionsList({ dpp}) {
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 p-4 rounded-md">
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Objective Answer</h4>
-                                        <p className="text-gray-600">{question.answerObjective}</p>
+                                        <p className="text-gray-600">{renderFormattedText(question.answerObjective)}</p>
                                     </div>
                                     <div className="bg-gray-50 p-4 rounded-md">
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Options</h4>
                                         <ul className="space-y-2">
                                             {question.objectiveoptions?.map((option, i) => (
-                                                <li key={i} className="text-gray-600">{option.text || option.option}</li>
+                                                <li key={i} className="text-gray-600">{renderFormattedText(option.text || option.option)}</li>
                                             ))}
                                         </ul>
                                     </div>
@@ -73,16 +134,23 @@ export default function DppQuestionsList({ dpp}) {
                             {question.answerNumeric && (
                                 <div className="bg-gray-50 p-4 rounded-md">
                                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Numeric Answer</h4>
-                                    <p className="text-gray-600">{question.answerNumeric}</p>
+                                    <p className="text-gray-600">{renderFormattedText(question.answerNumeric.toString())}</p>
                                 </div>
-                            )}
+                            )}                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                                onClick={() => handleEdit(index)}
+                            >
+                                Edit
+                            </button>
+                            <button 
+                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                                onClick={() => handleDelete(question._id)}
+                            >
+                                Delete
+                            </button>
                         </div>
-                        <button 
-                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                            onClick={() => handleEdit(index)}
-                        >
-                            Edit
-                        </button>
                     </div>
                 </div>
             ))}
@@ -100,7 +168,7 @@ export default function DppQuestionsList({ dpp}) {
                         </button>
                         <DppQuestionUpdate 
                             dpp={dpp}
-                            question={dpp.dppQuestions[editingIndex]} 
+                            question={questions[editingIndex]} 
                             onClose={() => setEditingIndex(null)}
                             updateQuestion={updateQuestion}
                         />

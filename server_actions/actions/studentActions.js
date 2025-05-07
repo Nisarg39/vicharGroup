@@ -4,14 +4,20 @@ import Student from "../models/student";
 import Products from "../models/products";
 import CouponCode from "../models/couponCode";
 import Payment from "../models/payment";
+import Subject from "../models/subject";
+import Chapter from "../models/chapter";
+import Lecture from "../models/lecture";
+import Dpp from "../models/dpp";
+import Exercise from "../models/exercise";
+import Teacher from "../models/teacher";
 import Referral from "../models/referral";
 import Razorpay_Info from "../models/razorpay_info";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
 import { model } from "mongoose";
+import path from "path";
 
-export async function sendOtp(phone){
-    // console.log(phone)  
+export async function sendOtp(phone){  
     try {
         await connectDB()
         const student = await Student.findOne({phone: phone})   
@@ -21,6 +27,7 @@ export async function sendOtp(phone){
                 phone: phone, 
                 otp: studentOtp,
             })
+            // console.log(studentOtp)
 
             // sending otp to student using fast2sms api
             await fetch('https://www.fast2sms.com/dev/bulkV2', {
@@ -47,6 +54,7 @@ export async function sendOtp(phone){
             student.otp = Math.floor(1000 + Math.random() * 9000)
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             student.token = token
+            // console.log(student.otp)
             await fetch('https://www.fast2sms.com/dev/bulkV2', {
                 method: 'POST',
                 headers: {
@@ -74,7 +82,6 @@ export async function sendOtp(phone){
 }
 export async function verifyOtp(data) {
     await connectDB()
-    // console.log(data)
     const middleware = await verifyOtpMiddleware(data)
     
    if(middleware.success){
@@ -110,7 +117,17 @@ export async function getStudentDetails(token){
             populate: {
                 path: "product",
                 model: "Products",
-                select: "name price discountPrice duration pageParameters class type image"
+                select: "name price discountPrice duration pageParameters class type image subjects",
+                populate: {
+                    path: "subjects",
+                    model: "Subject",
+                    select: "name image chapters",
+                    populate: {
+                        path: "chapters",
+                        model: "Chapter",
+                        select: "image chapterName lectures dpps exercises",
+                    }
+                }
             }
         },
         {
@@ -141,6 +158,16 @@ export async function mandatoryDetails(data){
     const middleware = await verifyStudentMiddleware(data.token)
     if(middleware.success){
         const student = await Student.findById(middleware.student._id)
+        
+        // Check for duplicate email
+        const studentWithSameEmail = await Student.findOne({email: data.email})
+        if(studentWithSameEmail){
+            return {
+                message: "Email already exists",
+                success: false,
+            }
+        }
+        
         student.name = data.name
         student.email = data.email
         student.isVerified = true
@@ -169,7 +196,6 @@ export async function mandatoryDetails(data){
         }
     }
 }
-
 export async function addToCart(data) {
   await connectDB();
   const middleware = await verifyStudentMiddleware(data.token);
@@ -392,3 +418,58 @@ export async function productPurchase(data){
     }
 }
 
+// app functions
+
+export async function getChapterDetails(details){
+    try {
+        await connectDB()
+        const middleware = await verifyStudentMiddleware(details.token)
+        if(!middleware.success){
+            return {
+                message: "Student verification failed",
+                success: false,
+                chapter: null
+            }
+        }
+        const chapter = await Chapter.findById(details.chapterId)
+        .populate([
+            {
+                path: "lectures",
+                model: "Lecture",
+                populate: {
+                    path: "teacher",
+                    model: "Teacher",
+                }
+            },
+            {
+                path: "dpps",
+                model: "Dpp",
+            },
+            {
+                path: "exercises",
+                model: "Exercise",
+            }
+        ])
+        .lean()
+        if(chapter){
+            return {
+                message: "Chapter details fetched successfully",
+                success: true,
+                chapter: chapter
+            }
+        }
+        else{
+            return {
+                message: "Chapter details fetching failed",
+                success: false,
+                chapter: null
+            }
+        }
+    } catch (error) {
+        return {
+            message: "Error fetching chapter details",
+            success: false,
+            chapter: null
+        }
+    }
+}
