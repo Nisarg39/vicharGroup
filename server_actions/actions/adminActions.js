@@ -812,6 +812,46 @@ export async function updateDpp(details){
     }
 }
 
+export async function deleteDpp(details){
+    try {
+        await connectDB()
+        const chapter = await Chapter.findById(details.chapterId)
+        if(!chapter){
+            return {
+                success: false,
+                message: "Chapter not found"
+            }
+        }else{
+            chapter.dpps = chapter.dpps.filter((item) => item.toString() !== details.dppId.toString());
+            const dpp = await Dpp.findById(details.dppId)
+            if(!dpp){
+                return {
+                    success: false,
+                    message: "Dpp not found"
+                }
+            }else{
+                dpp.dppQuestions.map(async(item) => {
+                    await DppQuestion.findByIdAndDelete(item._id)
+                })
+                await Dpp.findByIdAndDelete(details.dppId)
+                chapter.dpps = chapter.dpps.filter((item) => item.toString() !== details.dppId.toString());
+                await chapter.save()
+                return {
+                    success: true,
+                    message: "Dpp deleted successfully",
+                    chapter: JSON.parse(JSON.stringify(chapter))
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting dpp"
+        }
+    }
+}
 // dpp question control
 
 export async function addDppQuestion(details){

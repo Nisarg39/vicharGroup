@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addDpp, updateDpp } from "../../../../../server_actions/actions/adminActions";
+import { addDpp, updateDpp, deleteDpp } from "../../../../../server_actions/actions/adminActions";
 import DppQuestion from "./DppQuestion";
 import DppQuestionsList from "./DppQuestionsList";
 
@@ -92,6 +92,22 @@ export default function Dpp({chapter}){
 
     const handleAddQuestions = (dpp) => {
         setSelectedDpp(dpp)
+        setActiveDropdown(null)
+    }
+
+    const handleDelete = async(dppId) => {
+        const details = {
+            dppId: dppId,
+            chapterId: chapter._id
+        }
+        const response = await deleteDpp(details)
+        if(response.success){
+            alert(response.message)
+            const updatedDpps = dpps.filter(dpp => dpp._id !== dppId)
+            setDpps(updatedDpps)
+        } else {
+            alert(response.message)
+        }
         setActiveDropdown(null)
     }
 
@@ -244,6 +260,12 @@ export default function Dpp({chapter}){
                                                                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                                             >
                                                                 {expandedDpp === dpp._id ? 'Hide Questions' : 'View Questions'}
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDelete(dpp._id)}
+                                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                                            >
+                                                                Delete
                                                             </button>
                                                         </div>
                                                     </div>
