@@ -88,6 +88,11 @@ export default function CourseDetails({product, setProductSelected}){
         setIsSaving(false)
         setEditingSubject(null)
     }
+
+    const handleDeleteSubject = (subjectId) => {
+        confirm("Are you sure you want to delete this subject?")
+
+    }
     
     return(
         <div className="h-full w-full">
@@ -166,15 +171,26 @@ export default function CourseDetails({product, setProductSelected}){
                                             <p className="text-xs text-blue-500 italic mt-1">Click here to see more details</p>
                                         </div>
                                     </div>
-                                    <button 
-                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setEditingSubject(subject._id)
-                                        }}
-                                    >
-                                        Edit
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleDeleteSubject(subject._id)
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                        <button 
+                                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setEditingSubject(subject._id)
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
                                 {editingSubject === subject._id && (
                                     <div className="space-y-4 mt-4 border-t pt-4">

@@ -956,6 +956,44 @@ export async function showExercise(chapterId) {
     }
 }
 
+export async function deleteExercise(details) {
+    console.log(details)
+    try {
+        await connectDB()
+        const chapter = await Chapter.findById(details.chapterId)
+        if(!chapter){
+            return {
+                success: false,
+                message: "Chapter not found"
+            }
+        }else{
+            chapter.exercises = chapter.exercises.filter((item) => item.toString() !== details.exerciseId.toString());
+            await chapter.save()
+            const exercise = await Exercise.findById(details.exerciseId)
+            if(!exercise){
+                return {
+                    success: false,
+                    message: "Exercise not found"
+                }
+            }else{
+                await Exercise.findByIdAndDelete(details.exerciseId)
+                return {
+                    success: true,
+                    message: "Exercise deleted successfully",
+                    chapter: JSON.parse(JSON.stringify(chapter))
+                }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting exercise"
+        }
+        
+    }
+}
+
 // teacher control
 export async function addTeacher(details){
     try {

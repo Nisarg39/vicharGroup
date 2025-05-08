@@ -1,7 +1,7 @@
 "use client"
 import { CldUploadButton } from 'next-cloudinary';
 import { useState, useEffect } from 'react';
-import { addExercise, showExercise } from '../../../../../server_actions/actions/adminActions';
+import { addExercise, showExercise, deleteExercise } from '../../../../../server_actions/actions/adminActions';
 
 export default function ChapterExercise({chapter}){
     const [uploadPreset, setUploadPreset] = useState();
@@ -50,6 +50,23 @@ export default function ChapterExercise({chapter}){
        } finally {
            setIsSubmitting(false);
        }
+    }
+
+    const handleDelete = async(exerciseId) => {
+        const confirmDelete = confirm("Are you sure you want to delete this exercise?");
+        if (confirmDelete) {
+            const details = {
+                exerciseId: exerciseId,
+                chapterId: chapter._id
+            }
+            const response = await deleteExercise(details);
+            if(response.success){
+                alert( response.message )
+                fetchExercises();
+            }else{
+                alert( response.message || "Error deleting exercise" )
+            }
+        }
     }
     
     return(
@@ -124,17 +141,25 @@ export default function ChapterExercise({chapter}){
                             {exercises.map((exercise, index) => (
                                 <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200">
                                     <h4 className="font-semibold text-gray-800 mb-3">{exercise.exerciseName}</h4>
-                                    <a 
-                                        href={exercise.pdfUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
-                                        View PDF
-                                    </a>
+                                    <div className="flex items-center justify-between">
+                                        <a 
+                                            href={exercise.pdfUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
+                                            View PDF
+                                        </a>
+                                        <button
+                                            onClick={() => handleDelete(exercise._id)}
+                                            className="text-red-600 hover:text-red-700 font-medium"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

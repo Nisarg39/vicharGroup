@@ -128,7 +128,7 @@ export default function DppQuestion({dpp, addedQuestion}){
         try {
             // Split by dollar signs to identify LaTeX parts
             const parts = text.split(/(\$.*?\$)/g);
-            const hasLatex = parts.some(part => part.startsWith(') && part.endsWith('));
+            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
             
             if (!hasLatex) return text; // Return as string if no LaTeX
             
