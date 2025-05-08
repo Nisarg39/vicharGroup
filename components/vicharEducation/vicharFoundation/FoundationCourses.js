@@ -5,8 +5,6 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 
 const FoundationCourses = (props) => {
-  const [showAllDetails, setShowAllDetails] = useState(false)
-
   const courses = [
     { id: 1, title: '8th SSC', level: '8th', description: 'Comprehensive preparation course for 8th students.', link: '/vichar-education/buy-course/ssccourse/8' },
     { id: 2, title: '8th CBSE', level: '8th', description: 'Comprehensive preparation course for 8th students.', link: '/vichar-education/buy-course/cbsecourse/8' },
@@ -32,12 +30,8 @@ const FoundationCourses = (props) => {
     }
   }
 
-  const toggleMoreInfo = () => {
-    setShowAllDetails(prev => !prev)
-  }
-
   return (
-    <div className="mt-12 bg-gradient-to-b from-gray-200 to-white min-h-screen pt-16" id='courses-section'>
+    <div className="bg-gradient-to-b from-gray-200 to-white min-h-screen" id='courses-section'>
       <div className="container mx-auto px-4">
         <motion.h2 
           initial={{ y: -50, opacity: 0 }}
@@ -70,25 +64,6 @@ const FoundationCourses = (props) => {
                   </motion.span>
                 </div>
                 <p className="text-gray-600 text-base mb-6">{course.description}</p>
-                <div className="flex flex-col text-base mb-4">
-                  <motion.button
-                    onClick={toggleMoreInfo}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center justify-between bg-[#106fb8] px-4 py-3 rounded-lg text-white font-semibold transition-all duration-300 hover:bg-[#0d5a94]"
-                  >
-                    <div className="flex items-center">
-                      <FaInfoCircle className="w-5 h-5 mr-3" />
-                      <div>Course Details</div>
-                    </div>
-                    <motion.div
-                      animate={{ rotate: showAllDetails ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <FaChevronDown className="w-5 h-5" />
-                    </motion.div>
-                  </motion.button>
-                </div>
               </div>
               <div className="px-8 pb-8">
                   <Link href={course.link} className="block w-full">

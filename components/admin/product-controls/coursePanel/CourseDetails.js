@@ -88,11 +88,6 @@ export default function CourseDetails({product, setProductSelected}){
         setIsSaving(false)
         setEditingSubject(null)
     }
-
-    const handleDeleteSubject = (subjectId) => {
-        confirm("Are you sure you want to delete this subject?")
-
-    }
     
     return(
         <div className="h-full w-full">
@@ -173,15 +168,6 @@ export default function CourseDetails({product, setProductSelected}){
                                     </div>
                                     <div className="flex gap-2">
                                         <button 
-                                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleDeleteSubject(subject._id)
-                                            }}
-                                        >
-                                            Delete
-                                        </button>
-                                        <button 
                                             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                             onClick={(e) => {
                                                 e.stopPropagation()
@@ -242,7 +228,7 @@ export default function CourseDetails({product, setProductSelected}){
                             </div>
                             {selectedSubject && selectedSubject._id === subject._id && (
                                 <div className="mt-2">
-                                    <SubjectDetails subject={selectedSubject} productType={product.type} />
+                                    <SubjectDetails subject={selectedSubject} setSubjects={setSubjects} productType={product.type}  />
                                 </div>
                             )}
                         </div>

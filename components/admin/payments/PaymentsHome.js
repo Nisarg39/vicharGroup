@@ -137,7 +137,7 @@ export default function PaymentsHome(){
                         {payments.map((payment, index) => (
                             <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{indexOfFirstPayment + index + 1}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{payment.student.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">{payment.student?.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{payment.product.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                     <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

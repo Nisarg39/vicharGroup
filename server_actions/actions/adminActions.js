@@ -686,6 +686,37 @@ export async function updateChapter(details){
     }
 }
 
+export async function deleteChapter(chapterId){
+    try {
+        await connectDB()
+        const deletedChapter = await Chapter.findByIdAndDelete(chapterId)
+        if(deletedChapter){
+            await Subject.findByIdAndUpdate(deletedChapter.subjectId, {
+                $pull: {
+                    chapters: deletedChapter._id
+                }
+            })
+            return {
+                success: true,
+                message: "Chapter deleted successfully",
+                chapter: deletedChapter
+            }
+        }else{
+            return {
+                success: false,
+                message: "Chapter not found"
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting chapter"
+        }
+        
+    }
+}
+
 // lecture controls
 
 export async function addLecture(details){

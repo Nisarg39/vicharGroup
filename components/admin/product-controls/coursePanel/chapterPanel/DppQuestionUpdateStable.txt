@@ -1,8 +1,10 @@
-import {useState, useEffect} from 'react'
+import React, {useState, useEffect} from 'react'
 import { updateDppQuestion } from '../../../../../server_actions/actions/adminActions'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
 import ImageUpload from '../../../../common/ImageUpload'
+import LatexToolbar from './LatexToolbar'
+import { CldUploadButton } from 'next-cloudinary';
 
 export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
 
@@ -17,6 +19,11 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
     const [questionImage, setQuestionImage] = useState(question?.questionImage || '')
     const [imagePreview, setImagePreview] = useState(question?.questionImage || '')
     const [isUploading, setIsUploading] = useState(false)
+    const [showLatexToolbar, setShowLatexToolbar] = useState(false);
+    const [activeField, setActiveField] = useState('question'); // Tracks which field to insert LaTeX into
+    const [uploadPreset, setUploadPreset] = useState('');
+    const [solutionPdfUrl, setSolutionPdfUrl] = useState(question?.solutionPdf || '');
+    const [showSolutionUpload, setShowSolutionUpload] = useState(false);
 
     const [options, setOptions] = useState({
         A: question?.objectiveoptions?.[0]?.text || question?.multipleObjective?.[0]?.text || '',
@@ -92,12 +99,13 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                 questionId: question._id,
                 serialNumber: Number(serialNumber),
                 question: questionText,
-                questionImage: questionImage, // Add the question image
+                questionImage: questionImage,
                 objectiveoptions: selectedType === 'objective' ? formattedOptions : undefined,
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
                 answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
+                solutionPdf: solutionPdfUrl || undefined,
             }
 
             const response = await updateDppQuestion(questionData)
@@ -137,58 +145,200 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
         }
     }
 
+    const renderWithLatex = (text) => {
+        if (!text) return '';
+        
+        try {
+            // Split by dollar signs to identify LaTeX parts
+            const parts = text.split(/(\$[^$]*\$)/g);
+            
+            // Check if there are any LaTeX parts
+            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
+            
+            if (!hasLatex) return text; // Return as string if no LaTeX
+            
+            // Process each part, converting LaTeX and preserving text
+            return parts.map((part, index) => {
+                if (part.startsWith('$') && part.endsWith('$')) {
+                    const latex = part.slice(1, -1);
+                    return <InlineMath key={index} math={latex} />;
+                }
+                return part; // Return text parts as is
+            });
+        } catch (error) {
+            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
+        }
+    }
+
     const renderFormattedText = (text) => {
         if (!text) return '';
         
         try {
-            // First handle LaTeX
-            const latexProcessed = renderWithLatex(text);
+            // Split the text by new lines first
+            const lines = text.split('\n');
             
-            // Then handle bold text formatting
-            if (typeof latexProcessed === 'string') {
-                // If it's a string (not already React elements from LaTeX processing)
-                const boldPattern = /\*\*(.*?)\*\*/g;
-                const parts = latexProcessed.split(boldPattern);
-                
-                return (
-                    <>
-                        {parts.map((part, index) => {
-                            return index % 2 === 0 ? 
-                                <span key={index}>{part}</span> : 
-                                <strong key={index}>{part}</strong>;
-                        })}
-                    </>
-                );
+            // If there's only one line, process it as before
+            if (lines.length === 1) {
+                return processTextFormatting(text);
             }
             
-            return latexProcessed;
+            // If there are multiple lines, process each line and join with <br /> tags
+            return (
+                <>
+                    {lines.map((line, lineIndex) => (
+                        <React.Fragment key={`line-${lineIndex}`}>
+                            {lineIndex > 0 && <br />}
+                            {processTextFormatting(line)}
+                        </React.Fragment>
+                    ))}
+                </>
+            );
         } catch (error) {
             return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
         }
     }
 
-    const renderWithLatex = (text) => {
+    // Helper function to process formatting (LaTeX, bold, italic) for a single line
+    const processTextFormatting = (text) => {
         if (!text) return '';
         
-        try {
-            const parts = text.split(/(\$.*?\$)/g);
-            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
+        // First handle LaTeX
+        const latexProcessed = renderWithLatex(text);
+        
+        // If it's just a string (no LaTeX found), process bold and italic formatting
+        if (typeof latexProcessed === 'string') {
+            // Process bold formatting
+            const boldPattern = /\*\*(.*?)\*\*/g;
+            let parts = latexProcessed.split(boldPattern);
             
-            if (!hasLatex) return text; // Return as string if no LaTeX
+            // Process italic formatting
+            const italicPattern = /\*(.*?)\*/g;
             
             return (
                 <>
                     {parts.map((part, index) => {
-                        if (part.startsWith('$') && part.endsWith('$')) {
-                            const latex = part.slice(1, -1);
-                            return <InlineMath key={index} math={latex} />;
+                        // If this is a bold part (every odd index in the array)
+                        if (index % 2 === 1) {
+                            return <strong key={index}>{part}</strong>;
                         }
+                        
+                        // For non-bold parts, check for italic formatting
+                        const italicParts = part.split(italicPattern);
+                        if (italicParts.length > 1) {
+                            return (
+                                <span key={index}>
+                                    {italicParts.map((italicPart, italicIndex) => {
+                                        return italicIndex % 2 === 0 ? 
+                                            <span key={`${index}-${italicIndex}`}>{italicPart}</span> : 
+                                            <em key={`${index}-${italicIndex}`}>{italicPart}</em>;
+                                    })}
+                                </span>
+                            );
+                        }
+                        
+                        // If no italic formatting, return the part as is
                         return <span key={index}>{part}</span>;
                     })}
                 </>
             );
-        } catch (error) {
-            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
+        }
+        
+        // If we have an array of elements from LaTeX processing, we need to process each text element for formatting
+        return (
+            <>
+                {latexProcessed.map((part, index) => {
+                    // If this is a React element (LaTeX), return it as is
+                    if (React.isValidElement(part)) {
+                        return part;
+                    }
+                    
+                    // Process text parts for bold formatting
+                    const boldPattern = /\*\*(.*?)\*\*/g;
+                    let boldParts = part.split(boldPattern);
+                    
+                    if (boldParts.length > 1) {
+                        return (
+                            <span key={index}>
+                                {boldParts.map((boldPart, boldIndex) => {
+                                    // If this is a bold part
+                                    if (boldIndex % 2 === 1) {
+                                        return <strong key={`${index}-${boldIndex}`}>{boldPart}</strong>;
+                                    }
+                                    
+                                    // For non-bold parts, check for italic formatting
+                                    const italicPattern = /\*(.*?)\*/g;
+                                    const italicParts = boldPart.split(italicPattern);
+                                    
+                                    if (italicParts.length > 1) {
+                                        return (
+                                            <span key={`${index}-${boldIndex}`}>
+                                                {italicParts.map((italicPart, italicIndex) => {
+                                                    return italicIndex % 2 === 0 ? 
+                                                        <span key={`${index}-${boldIndex}-${italicIndex}`}>{italicPart}</span> : 
+                                                        <em key={`${index}-${boldIndex}-${italicIndex}`}>{italicPart}</em>;
+                                                })}
+                                            </span>
+                                        );
+                                    }
+                                    
+                                    // If no italic formatting, return the part as is
+                                    return <span key={`${index}-${boldIndex}`}>{boldPart}</span>;
+                                })}
+                            </span>
+                        );
+                    }
+                    
+                    // If no bold formatting, check for italic formatting
+                    const italicPattern = /\*(.*?)\*/g;
+                    const italicParts = part.split(italicPattern);
+                    
+                    if (italicParts.length > 1) {
+                        return (
+                            <span key={index}>
+                                {italicParts.map((italicPart, italicIndex) => {
+                                    return italicIndex % 2 === 0 ? 
+                                        <span key={`${index}-${italicIndex}`}>{italicPart}</span> : 
+                                        <em key={`${index}-${italicIndex}`}>{italicPart}</em>;
+                                })}
+                            </span>
+                        );
+                    }
+                    
+                    // If no formatting, return the text as is
+                    return <span key={index}>{part}</span>;
+                })}
+            </>
+        );
+    };
+    // Function to insert LaTeX expression into the active field
+    const handleInsertLatex = (expression, targetField) => {
+        if (targetField === 'question') {
+            setQuestionText(prev => prev + expression);
+        } else if (['A', 'B', 'C', 'D'].includes(targetField)) {
+            handleOptionChange(targetField, options[targetField] + expression);
+        }
+    }
+
+    // Function to set the active field when focusing on an input
+    const handleFieldFocus = (field) => {
+        setActiveField(field);
+    }
+    useEffect(() => {
+        console.log("DppQuestionUpdate component mounted");
+        console.log("LatexToolbar should be imported and available");
+        return () => {
+            console.log("DppQuestionUpdate component unmounted");
+        };
+    }, []);
+    useEffect(() => {
+        setUploadPreset(process.env.NEXT_PUBLIC_CLOUDINARY_PRESET_NAME);
+    }, []);
+    // Add this handler function
+    const handleSolutionPdfUploaded = (result) => {
+        if (result?.info?.secure_url) {
+            setSolutionPdfUrl(result.info.secure_url);
+        } else {
+            console.error("Unexpected result structure:", result);
         }
     }
     return(
@@ -200,15 +350,40 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     </div>
                 )}
                 
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center">
+                    <button 
+                        type="button"
+                        className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
+                        onClick={() => setShowLatexToolbar(!showLatexToolbar)}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        {showLatexToolbar ? 'Hide LaTeX Toolbar' : 'Show LaTeX Toolbar'}
+                    </button>
+                    
                     <button 
                         type="button"
                         className="text-blue-500 hover:text-blue-700 text-sm"
-                        onClick={() => alert("Use $ symbols to wrap LaTeX expressions. For example: $\\frac{1}{2}$ will render as a fraction.\n\nUse ** to make text bold. For example: **bold text** will appear as bold.")}
+                        onClick={() => alert("Use $ symbols to wrap LaTeX expressions. For example: $\\frac{1}{2}$ will render as a fraction.\n\nUse **text** for bold text and *text* for italic text.\n\nPress Enter to create a new line.")}
                     >
                         Formatting Help
                     </button>
                 </div>
+
+                <div className="text-sm text-gray-500 mb-2">
+                    Toolbar visible: {showLatexToolbar ? 'Yes' : 'No'} | Active field: {activeField}
+                </div>
+
+                {/* LaTeX Toolbar - now moved above the question input */}
+                {showLatexToolbar && (
+                    <div className="border border-gray-300 p-2 rounded-md mb-4">
+                        <LatexToolbar 
+                            onSelectExpression={handleInsertLatex} 
+                            targetField={activeField}
+                        />
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <input 
@@ -221,13 +396,13 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     />
                     <div className="md:col-span-3">
                         <textarea 
-                            placeholder="Question (Use $ symbols to wrap LaTeX expressions, e.g. $\frac{1}{2}$)"
+                            placeholder="Question (Use $ for LaTeX, **text** for bold, *text* for italic, press Enter for new line)"
                             required
                             value={questionText}
                             onChange={(e) => setQuestionText(e.target.value)}
+                            onFocus={() => handleFieldFocus('question')}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-                        />
-                        
+                        />                        
                         {/* Add image upload section */}
                         <div className="mt-4">
                             <div className="flex items-center justify-between mb-2">
@@ -340,13 +515,14 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                         {['A', 'B', 'C', 'D'].map((option) => (
                             <div key={option} className="flex items-center gap-4 bg-gray-50 p-4 rounded-md">
                                 <span className="font-semibold w-8">{option}.</span>
-                                <input 
-                                    type="text" 
-                                    placeholder={`Option ${option} (Use $ for LaTeX)`}
+                                <textarea 
+                                    placeholder={`Option ${option} (Use $ for LaTeX, press Enter for new line)`}
                                     required
                                     value={options[option]}
                                     onChange={(e) => handleOptionChange(option, e.target.value)}
-                                    className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onFocus={() => handleFieldFocus(option)}
+                                    className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
+                                    rows={2}
                                 />
                                 <label className="flex items-center gap-2 whitespace-nowrap">
                                     <input 
@@ -405,6 +581,80 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                         )}
                     </div>
                 )}
+                <div className="text-sm text-gray-500">
+                    Toolbar visible: {showLatexToolbar ? 'Yes' : 'No'} | Active field: {activeField}
+                </div>
+                {/* Solution PDF Upload Section - Add this before the final submit button */}
+                <div className="bg-gray-50 p-4 rounded-md mt-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-md font-semibold">Solution PDF</h3>
+                        <button 
+                            type="button"
+                            onClick={() => setShowSolutionUpload(!showSolutionUpload)}
+                            className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            {showSolutionUpload ? 'Hide Upload' : 'Show Upload'}
+                        </button>
+                    </div>
+                    
+                    {solutionPdfUrl && (
+                        <div className="mb-4 bg-blue-50 p-4 rounded-xl">
+                            <p className="text-sm text-blue-600 mb-2">Current Solution PDF:</p>
+                            <div className="flex items-center justify-between">
+                                <a 
+                                    href={solutionPdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                    View Solution PDF
+                                </a>
+                                <button 
+                                    type="button"
+                                    onClick={() => setSolutionPdfUrl('')}
+                                    className="text-sm text-red-500 hover:text-red-700"
+                                >
+                                    Remove PDF
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {showSolutionUpload && (
+                        <div className="space-y-4">
+                            {uploadPreset ? (
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                    <CldUploadButton
+                                        uploadPreset={uploadPreset}
+                                        options={{
+                                            maxFiles: 1,
+                                            resourceType: "raw",
+                                            allowedFormats: ["pdf"]
+                                        }}
+                                        onSuccess={handleSolutionPdfUploaded}
+                                        onError={(error) => console.error("Upload failed:", error)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                        {solutionPdfUrl ? 'Replace Solution PDF' : 'Upload Solution PDF'}
+                                    </CldUploadButton>
+                                </div>
+                            ) : (
+                                <div className="text-gray-600 p-4 bg-gray-50 rounded-xl text-center border border-gray-200">
+                                    <p>Loading upload button... (Check if NEXT_PUBLIC_CLOUDINARY_PRESET_NAME is set)</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <button 
                     onClick={handleUpdateQuestion}
                     disabled={!serialNumber || !questionText || !selectedType || isUploading}

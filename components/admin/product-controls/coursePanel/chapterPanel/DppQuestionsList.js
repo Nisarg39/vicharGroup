@@ -39,59 +39,91 @@ export default function DppQuestionsList({ dpp }) {
         )
         setEditingIndex(null)
     }
-
+    
     const renderFormattedText = (text) => {
         if (!text || typeof text !== 'string') return ''
         
         try {
-            // Create tokens for each formatting element
+            const lines = text.split('\n')
+            
+            if (lines.length === 1) {
+                return processTextFormatting(text)
+            }
+            
+            return (
+                <>
+                    {lines.map((line, lineIndex) => (
+                        <React.Fragment key={`line-${lineIndex}`}>
+                            {lineIndex > 0 && <br />}
+                            {processTextFormatting(line)}
+                        </React.Fragment>
+                    ))}
+                </>
+            )
+        } catch (error) {
+            console.error("Rendering error:", error)
+            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>
+        }
+    }
+
+    const processTextFormatting = (text) => {
+        if (!text) return ''
+        
+        try {
             const tokens = []
             let currentText = ''
             let inBold = false
+            let inItalic = false
             let inLatex = false
             let i = 0
             
             while (i < text.length) {
-                // Check for bold markers
                 if (i + 1 < text.length && text[i] === '*' && text[i + 1] === '*') {
-                    // Add current text if any
                     if (currentText) {
                         tokens.push({
-                            type: inBold ? 'bold' : 'text',
+                            type: inBold ? 'bold' : inItalic ? 'italic' : 'text',
                             content: currentText
                         })
                         currentText = ''
                     }
                     
-                    // Toggle bold state
                     inBold = !inBold
                     i += 2
                     continue
                 }
                 
-                // Check for LaTeX markers
-                if (text[i] === '$' && !inLatex) {
-                    // Add current text if any
+                if (text[i] === '*' && (i + 1 >= text.length || text[i + 1] !== '*')) {
                     if (currentText) {
                         tokens.push({
-                            type: inBold ? 'bold' : 'text',
+                            type: inBold ? 'bold' : inItalic ? 'italic' : 'text',
                             content: currentText
                         })
                         currentText = ''
                     }
                     
-                    // Find the closing $
+                    inItalic = !inItalic
+                    i += 1
+                    continue
+                }
+                
+                if (text[i] === '$' && !inLatex) {
+                    if (currentText) {
+                        tokens.push({
+                            type: inBold ? 'bold' : inItalic ? 'italic' : 'text',
+                            content: currentText
+                        })
+                        currentText = ''
+                    }
+                    
                     const startIndex = i + 1
                     let endIndex = text.indexOf('$', startIndex)
                     
                     if (endIndex === -1) {
-                        // No closing $, treat as regular text
                         currentText += text[i]
                         i++
                         continue
                     }
                     
-                    // Extract LaTeX content
                     const latexContent = text.substring(startIndex, endIndex)
                     tokens.push({
                         type: 'latex',
@@ -102,34 +134,34 @@ export default function DppQuestionsList({ dpp }) {
                     continue
                 }
                 
-                // Regular character
                 currentText += text[i]
                 i++
             }
             
-            // Add any remaining text
             if (currentText) {
                 tokens.push({
-                    type: inBold ? 'bold' : 'text',
+                    type: inBold ? 'bold' : inItalic ? 'italic' : 'text',
                     content: currentText
                 })
             }
             
-            // Render tokens
             return tokens.map((token, index) => {
                 if (token.type === 'latex') {
                     return <InlineMath key={`latex-${index}`} math={token.content} />
                 } else if (token.type === 'bold') {
                     return <strong key={`bold-${index}`}>{token.content}</strong>
+                } else if (token.type === 'italic') {
+                    return <em key={`italic-${index}`}>{token.content}</em>
                 } else {
                     return <span key={`text-${index}`}>{token.content}</span>
                 }
             })
         } catch (error) {
-            console.error("Rendering error:", error)
-            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>
+            console.error("Formatting error:", error)
+            return <span className="text-red-500">Error formatting text: {error.message}</span>
         }
     }
+
     return(
         <div className="space-y-6 p-6 bg-gray-50">
             {questions.map((question, index) => (
@@ -149,7 +181,7 @@ export default function DppQuestionsList({ dpp }) {
                                     <div className="bg-gray-50 p-4 rounded-md">
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Multiple Choice Answer</h4>
                                         <ul className="space-y-2">
-                                            {question.answerMultiple.map((option, i) => (
+                                            {question.answerMultiple?.map((option, i) => (
                                                 <li key={i} className="text-gray-600">{renderFormattedText(option)}</li>
                                             ))}
                                         </ul>
@@ -187,7 +219,24 @@ export default function DppQuestionsList({ dpp }) {
                                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Numeric Answer</h4>
                                     <p className="text-gray-600">{renderFormattedText(question.answerNumeric.toString())}</p>
                                 </div>
-                            )}                        </div>
+                            )}
+                            {question.solutionPdf && (
+                                <div className="bg-gray-50 p-4 rounded-md mt-4">
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Solution</h4>
+                                    <a 
+                                        href={question.solutionPdf}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                        View Solution PDF
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex gap-2">
                             <button 
                                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"

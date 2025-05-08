@@ -1,10 +1,11 @@
 import { useState } from "react"
-import { addChapter, updateChapter } from "../../../../server_actions/actions/adminActions"
+import { addChapter, updateChapter, deleteChapter } from "../../../../server_actions/actions/adminActions"
 import VideoLectures from "./chapterPanel/VideoLectures"
 import Dpp from "./chapterPanel/Dpp"
 import ChapterExercise from "./chapterPanel/ChapterExercise"
 
-export default function SubjectDetiails({subject, productType}){
+export default function SubjectDetiails({subject, setSubjects, productType}){
+    const [subjectDetails, setSubjectDetails] = useState(subject)
     const [serialNumber, setSerialNumber] = useState('')
     const [chapterName, setChapterName] = useState('')
     const [imageUrl, setImageUrl] = useState('')
@@ -27,12 +28,15 @@ export default function SubjectDetiails({subject, productType}){
             serialNumber,
             chapterName,
             image: imageUrl,
-            subjectId: subject._id,
+            subjectId: subjectDetails._id,
         }
         const response = await addChapter(details)
         if(response.success){
             alert("Chapter added successfully")
-            subject.chapters = [...subject.chapters, response.chapter]
+            setSubjectDetails(prev => ({
+                ...prev,
+                chapters: [...prev.chapters, response.chapter]
+            }))
             setSerialNumber('')
             setChapterName('')
             setImageUrl('')
@@ -64,14 +68,17 @@ export default function SubjectDetiails({subject, productType}){
         const response = await updateChapter(details)
         if(response.success){
             alert("Chapter updated successfully")
-            subject.chapters = subject.chapters.map(chapter => 
-                chapter._id === chapterId ? {
-                    ...chapter,
-                    serialNumber: editSerialNumber,
-                    chapterName: editChapterName,
-                    image: editImageUrl
-                } : chapter
-            )
+            setSubjectDetails(prev => ({
+                ...prev,
+                chapters: prev.chapters.map(chapter => 
+                    chapter._id === chapterId ? {
+                        ...chapter,
+                        serialNumber: editSerialNumber,
+                        chapterName: editChapterName,
+                        image: editImageUrl
+                    } : chapter
+                )
+            }))
         }else{
             alert("Error in updating chapter")
         }
@@ -86,6 +93,21 @@ export default function SubjectDetiails({subject, productType}){
         } else {
             setExpandedChapter(chapterId)
             setSelectedComponent('video')
+        }
+    }
+
+    const handleDelete = async(chapterId) => {
+        if(confirm("Are you sure you want to delete this chapter?")){
+            const response = await deleteChapter(chapterId)
+            if(response.success){
+                alert(response.message)
+                setSubjectDetails(prev => ({
+                    ...prev,
+                    chapters: prev.chapters.filter(chapter => chapter._id !== chapterId)
+                }))
+            }else{
+                alert(response.message)
+            }
         }
     }
 
@@ -125,10 +147,10 @@ export default function SubjectDetiails({subject, productType}){
                 </button>
             </div>
             <div className="mt-8">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">{subject.chapters.length} Chapters</h2>
-                {subject.chapters && subject.chapters.length > 0 ? (
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">{subjectDetails.chapters.length} Chapters</h2>
+                {subjectDetails.chapters && subjectDetails.chapters.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                        {subject.chapters.map((chapter) => (
+                        {subjectDetails.chapters.map((chapter) => (
                             <div key={chapter._id} className="border border-gray-200 rounded-lg">
                                 {editingChapter === chapter._id ? (
                                     <div className="flex gap-2 p-4">
@@ -175,12 +197,20 @@ export default function SubjectDetiails({subject, productType}){
                                                 className="h-12 w-12 object-cover rounded-lg"
                                             />
                                             <span className="font-medium">{chapter.chapterName}</span>
-                                            <button
-                                                onClick={() => handleEdit(chapter)}
-                                                className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 ml-auto"
-                                            >
-                                                Edit
-                                            </button>
+                                            <div className="ml-auto flex gap-2">
+                                                <button
+                                                    onClick={() => handleEdit(chapter)}
+                                                    className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(chapter._id)}
+                                                    className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
                                         <button 
                                             onClick={() => toggleExpand(chapter._id)}
@@ -189,7 +219,6 @@ export default function SubjectDetiails({subject, productType}){
                                             Click here to know more
                                         </button>
 
-                                        {/* show video lectures , dpp , exercise if productType is course */}
                                         {expandedChapter === chapter._id && productType === 'course' && (
                                             <div className="p-4 border-t">
                                                 <div className="flex gap-4 mb-4">
@@ -229,7 +258,6 @@ export default function SubjectDetiails({subject, productType}){
                                             </div>
                                         )}
 
-                                        {/* show only dpp if productType is mtc */}
                                         {expandedChapter === chapter._id && productType === 'mtc' && (
                                             <div className="p-4 border-t">
                                                 <Dpp chapter={chapter} />

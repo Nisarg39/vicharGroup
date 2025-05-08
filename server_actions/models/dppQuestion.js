@@ -45,6 +45,9 @@ const dppQuestionSchema = new mongoose.Schema({
     answerNumeric: {
         type: Number,
     },
+    solutionPdf: {
+        type: String,
+    },
 }, {timestamps: true})
 
 const DppQuestion = mongoose.models.DppQuestion || mongoose.model('DppQuestion', dppQuestionSchema)

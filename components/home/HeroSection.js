@@ -9,7 +9,8 @@ const HeroSection = () => {
   
   const slides = [
     { src: "/vivekSirBanner.png", alt: "Director & Founder Of Vichar Group: ER. Vivek Gupta" },
-    { src: "https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png", alt: "Stock Market" },
+    { src: "/stock-market/vivekSirStock-1.jpeg", alt: "Stock Market" },
+    { src: "/course-photo/vicharFoundation-1.jpeg", alt: "Vichar Foundation" },
     { src: "/testSeriesLanding.png", alt: "Test Series" },
   ];
 
@@ -18,7 +19,7 @@ const HeroSection = () => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
   const handleTouchStart = (e) => {
     setTouchStart(e.touches[0].clientX);
@@ -51,11 +52,9 @@ const HeroSection = () => {
         <div className="flex flex-col lg:flex-row lg:gap-8 items-center">
           <div className="order-2 lg:order-1 lg:w-1/3 mt-8 lg:mt-0">
             <h1 className="text-7xl md:text-7xl lg:text-8xl font-extrabold mb-4 lg:mb-8 animate-fade-in drop-shadow-[3px_3px_rgba(0,0,0,0.15)]">
-              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#e96030] to-[#ff8a65]" : "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>V</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-800 hover:from-gray-800 hover:to-black transition-colors duration-300 hover:scale-105">ICHAR</span>
+              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#e96030] to-[#ff8a65]" : "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>VICHAR</span>
               <br />
-              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]" : "bg-gradient-to-r from-[#e96030] to-[#ff8a65]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>G</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-800 hover:from-gray-800 hover:to-black transition-colors duration-300 hover:scale-105">ROUP</span>
+              <span className={`${currentSlide === 0 ? "bg-gradient-to-r from-[#1d77bc] to-[#4da3e4]" : "bg-gradient-to-r from-[#e96030] to-[#ff8a65]"} text-transparent bg-clip-text hover:scale-110 transition-transform duration-300`}>GROUP</span>
             </h1>
             <p className="text-gray-600 text-lg lg:text-xl mb-4 lg:mb-8 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 bg-clip-text text-transparent animate-slide-up drop-shadow-md font-medium">
               Welcome to VICHAR GROUP, where innovation meets excellence.
@@ -93,7 +92,7 @@ const HeroSection = () => {
                 >
                   <Image
                     src={slide.src}
-                    alt=""
+                    alt={slide.alt}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 75vw, 66vw"
                     priority={true}

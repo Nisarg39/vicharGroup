@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 
 function DirectorMessage() {
     const [activeIndex, setActiveIndex] = useState(0);
@@ -47,93 +46,6 @@ function DirectorMessage() {
 
     return (
         <section className="w-full pb-16 flex items-center bg-transparent pt-12 md:pt-20 overflow-hidden relative">
-            <div className="absolute inset-0 pointer-events-none">
-                <motion.div
-                    className="absolute top-20 left-10 hidden md:block"
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 180, 360],
-                    }}
-                    transition={{
-                        duration: 5,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                >
-                    <div className="w-12 h-12 flex items-center justify-center bg-yellow-300 backdrop-blur-sm rounded-full opacity-50 shadow-lg">
-                        <span className="text-black text-lg font-bold">π</span>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    className="absolute bottom-20 right-10 hidden md:block"
-                    animate={{
-                        y: [0, -20, 0],
-                        x: [0, 20, 0],
-                    }}
-                    transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                >
-                    <div className="w-16 h-16 flex items-center justify-center bg-blue-400 backdrop-blur-sm rounded-lg opacity-40 shadow-lg">
-                        <span className="text-black text-xl font-bold">∑</span>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    className="absolute top-1/3 right-1/4"
-                    animate={{
-                        scale: [1, 0.8, 1],
-                        rotate: [0, -90, 0],
-                    }}
-                    transition={{
-                        duration: 6,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                >
-                    <div className="w-10 h-10 flex items-center justify-center bg-orange-400 backdrop-blur-sm rounded-full opacity-45 shadow-lg">
-                        <span className="text-black text-lg font-bold">∫</span>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    className="absolute bottom-1/4 left-1/4"
-                    animate={{
-                        x: [0, 30, 0],
-                        y: [0, -30, 0],
-                    }}
-                    transition={{
-                        duration: 7,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                >
-                    <div className="w-14 h-14 flex items-center justify-center bg-gray-400 backdrop-blur-sm rounded-lg opacity-40 rotate-45 shadow-lg">
-                        <span className="text-black text-xl font-bold -rotate-45">√</span>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    className="absolute top-1/2 left-10"
-                    animate={{
-                        rotate: [0, 360],
-                        scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                        duration: 8,
-                        repeat: Infinity,
-                        ease: "linear"
-                    }}
-                >
-                    <div className="w-8 h-8 flex items-center justify-center bg-green-400 backdrop-blur-sm rounded-full opacity-50 shadow-lg">
-                        <span className="text-black text-sm font-bold">∞</span>
-                    </div>
-                </motion.div>
-            </div>
-
             <div className="container mx-auto px-4 relative z-10">
                 <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-center mb-6 sm:mb-10 text-gray-800 leading-tight tracking-tight">Director's Message</h2>
                 <div className="max-w-6xl mx-auto">
