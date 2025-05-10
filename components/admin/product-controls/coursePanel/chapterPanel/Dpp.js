@@ -14,7 +14,7 @@ export default function Dpp({chapter}){
     const [editName, setEditName] = useState('')
     const [editDppCode, setEditDppCode] = useState('')
     const [dpps, setDpps] = useState(chapter.dpps)
-    const [selectedDpp, setSelectedDpp] = useState(null)
+    const [expandedQuestionDpp, setExpandedQuestionDpp] = useState(null)
     const [expandedDpp, setExpandedDpp] = useState(null)
 
     const handleAddDpp = async() => {
@@ -91,7 +91,7 @@ export default function Dpp({chapter}){
     }
 
     const handleAddQuestions = (dpp) => {
-        setSelectedDpp(dpp)
+        setExpandedQuestionDpp(dpp)
         setActiveDropdown(null)
     }
 
@@ -116,7 +116,7 @@ export default function Dpp({chapter}){
         // Here you can update the dpp with the new question
         setDpps((prevDpps) => {
             return prevDpps.map((dpp) => {
-                if (dpp._id === selectedDpp._id) {
+                if (dpp._id === expandedQuestionDpp._id) {
                     return {
                         ...dpp,
                         dppQuestions: [...dpp.dppQuestions, dppQuestion],
@@ -124,10 +124,13 @@ export default function Dpp({chapter}){
                 }
                 return dpp;
             });
-        }
-        );
-        setSelectedDpp(null)
+        });
     }
+
+    const closeQuestionForm = () => {
+        setExpandedQuestionDpp(null);
+    }
+
     return(
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Add Daily Practice Problems</h1>
@@ -281,29 +284,31 @@ export default function Dpp({chapter}){
                                         </td>
                                     </tr>
                                 )}
+                                {expandedQuestionDpp && expandedQuestionDpp._id === dpp._id && (
+                                    <tr>
+                                        <td colSpan="5" className="p-4 border-b">
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h2 className="text-xl font-bold">Add Question to {dpp.name}</h2>
+                                                    <button 
+                                                        onClick={closeQuestionForm}
+                                                        className="text-gray-500 hover:text-gray-700"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <DppQuestion dpp={dpp} addedQuestion={addedQuestion}/>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                             </>
                         ))}
                     </tbody>
                 </table>
             </div>
-            {selectedDpp && (
-                <div className="mt-16 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-4 w-11/12 max-h-[90%] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Add Question to {selectedDpp.name}</h2>
-                            <button 
-                                onClick={() => setSelectedDpp(null)}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <DppQuestion dpp={selectedDpp} addedQuestion={addedQuestion}/>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

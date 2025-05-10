@@ -63,6 +63,10 @@ const studentsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Payment",
     }],
+    dppTests: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DppTest",
+    }],
 }, {
     timestamps: true,
 })
