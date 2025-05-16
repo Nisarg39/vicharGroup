@@ -175,7 +175,10 @@ export default function DppQuestionsList({ dpp }) {
                                         {question.answerMultiple?.length > 0 ? 'Multiple Choice' : question.answerObjective ? 'Objective' : question.answerNumeric ? 'Numeric' : 'Not Specified'}
                                     </span>
                                 </div>
-                                <p className="text-gray-800 text-lg mb-4">{renderFormattedText(question.question)}</p>
+                                {question.isQuestionImage ? 
+                                    <img src={question.question} alt={`Question ${index + 1}`} className="max-w-full h-auto rounded-md mb-4" /> :
+                                    <p className="text-gray-800 text-lg mb-4">{renderFormattedText(question.question)}</p>
+                                }
                                 
                                 {question.answerMultiple?.length > 0 && (
                                     <div className="space-y-4">
@@ -183,7 +186,11 @@ export default function DppQuestionsList({ dpp }) {
                                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Multiple Choice Answer</h4>
                                             <ul className="space-y-2">
                                                 {question.answerMultiple?.map((option, i) => (
-                                                    <li key={i} className="text-gray-600">{renderFormattedText(option)}</li>
+                                                    <li key={i} className="text-gray-600">
+                                                        {option.isImage ? 
+                                                            <img src={option.value || option} alt={`Answer option ${i+1}`} className="max-w-full h-auto rounded-md" /> : 
+                                                            renderFormattedText(option.value || option)}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -191,7 +198,11 @@ export default function DppQuestionsList({ dpp }) {
                                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Options</h4>
                                             <ul className="space-y-2">
                                                 {question.multipleObjective?.map((option, i) => (
-                                                    <li key={i} className="text-gray-600">{renderFormattedText(option.text || option.option)}</li>
+                                                    <li key={i} className="text-gray-600">
+                                                        {option.isImage ? 
+                                                            <img src={option.text || option.option} alt={`Option ${i+1}`} className="max-w-full h-auto rounded-md" /> : 
+                                                            renderFormattedText(option.text || option.option)}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -202,13 +213,20 @@ export default function DppQuestionsList({ dpp }) {
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-4 rounded-md">
                                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Objective Answer</h4>
-                                            <p className="text-gray-600">{renderFormattedText(question.answerObjective)}</p>
+                                            {question.isAnswerImage ? 
+                                                <img src={question.answerObjective} alt="Answer" className="max-w-full h-auto rounded-md" /> : 
+                                                <p className="text-gray-600">{renderFormattedText(question.answerObjective)}</p>
+                                            }
                                         </div>
                                         <div className="bg-gray-50 p-4 rounded-md">
                                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Options</h4>
                                             <ul className="space-y-2">
                                                 {question.objectiveoptions?.map((option, i) => (
-                                                    <li key={i} className="text-gray-600">{renderFormattedText(option.text || option.option)}</li>
+                                                    <li key={i} className="text-gray-600">
+                                                        {option.isImage ? 
+                                                            <img src={option.text || option.option} alt={`Option ${i+1}`} className="max-w-full h-auto rounded-md" /> : 
+                                                            renderFormattedText(option.text || option.option)}
+                                                    </li>
                                                 ))}
                                             </ul>
                                         </div>
@@ -218,7 +236,10 @@ export default function DppQuestionsList({ dpp }) {
                                 {question.answerNumeric && (
                                     <div className="bg-gray-50 p-4 rounded-md">
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Numeric Answer</h4>
-                                        <p className="text-gray-600">{renderFormattedText(question.answerNumeric.toString())}</p>
+                                        {question.isAnswerImage ? 
+                                            <img src={question.answerNumeric} alt="Numeric Answer" className="max-w-full h-auto rounded-md" /> :
+                                            <p className="text-gray-600">{renderFormattedText(question.answerNumeric.toString())}</p>
+                                        }
                                     </div>
                                 )}
                                 {question.solutionPdf && (

@@ -444,6 +444,10 @@ export async function getChapterDetails(details){
             {
                 path: "dpps",
                 model: "Dpp",
+                populate: {
+                    path: "dppQuestions",
+                    model: "DppQuestion",
+                }
             },
             {
                 path: "exercises",
