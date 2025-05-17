@@ -10,6 +10,7 @@ import Lecture from "../models/lecture";
 import Dpp from "../models/dpp";
 import Exercise from "../models/exercise";
 import Teacher from "../models/teacher";
+import DppQuestion from "../models/dppQuestion";
 import Referral from "../models/referral";
 import Razorpay_Info from "../models/razorpay_info";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
