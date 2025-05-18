@@ -86,16 +86,32 @@ export default function Dpp({chapter}){
     }
 
     const toggleDppQuestions = (dpp) => {
+        // Close the question form if it's open
+        setExpandedQuestionDpp(null)
+        
+        // Toggle the questions list view
         setExpandedDpp(expandedDpp === dpp._id ? null : dpp._id)
         setActiveDropdown(null)
     }
 
     const handleAddQuestions = (dpp) => {
+        // Close the questions list view if it's open
+        setExpandedDpp(null)
+        
+        // Open the add question form
         setExpandedQuestionDpp(dpp)
         setActiveDropdown(null)
     }
 
     const handleDelete = async(dppId) => {
+        // Add confirmation dialog
+        const confirmDelete = window.confirm("Are you sure you want to delete this DPP? This action cannot be undone.")
+        
+        if (!confirmDelete) {
+            setActiveDropdown(null)
+            return
+        }
+        
         const details = {
             dppId: dppId,
             chapterId: chapter._id
@@ -110,7 +126,6 @@ export default function Dpp({chapter}){
         }
         setActiveDropdown(null)
     }
-
     const addedQuestion = (dppQuestion) => {
         console.log('Added Question:', dppQuestion)
         // Here you can update the dpp with the new question

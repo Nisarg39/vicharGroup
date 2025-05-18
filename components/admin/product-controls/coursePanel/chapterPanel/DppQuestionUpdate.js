@@ -68,7 +68,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
             throw new Error('Please select a question type')
         }
         if (selectedType === 'numeric') {
-            if (!numericAnswer || isNaN(numericAnswer)) {
+            if (!numericAnswer) {
                 throw new Error('Please enter a valid numeric answer')
             }
         }
@@ -105,7 +105,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
-                answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
+                answerNumeric: selectedType === 'numeric' ? numericAnswer : undefined,
                 solutionPdf: solutionPdfUrl || undefined,
             }
 
@@ -384,7 +384,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                 {selectedType === 'numeric' && (
                     <div className="bg-gray-50 p-4 rounded-md">
                         <input 
-                            type="number" 
+                            type="text" 
                             placeholder="Enter Numeric Answer"
                             required
                             value={numericAnswer}

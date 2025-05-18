@@ -43,7 +43,7 @@ const dppQuestionSchema = new mongoose.Schema({
         type: [String],
     },
     answerNumeric: {
-        type: Number,
+        type: String,
     },
     solutionPdf: {
         type: String,

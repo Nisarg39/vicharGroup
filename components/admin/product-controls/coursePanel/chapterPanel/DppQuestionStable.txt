@@ -5,6 +5,7 @@ import { InlineMath, BlockMath } from 'react-katex'
 import ImageUpload from '../../../../common/ImageUpload'
 import LatexToolbar from './LatexToolbar'
 import { CldUploadButton } from 'next-cloudinary'
+import { renderFormattedText } from '../../../../../utils/textFormatting'
 
 
 export default function DppQuestion({dpp, addedQuestion}){
@@ -81,8 +82,8 @@ export default function DppQuestion({dpp, addedQuestion}){
             throw new Error('Please select a question type')
         }
         if (selectedType === 'numeric') {
-            if (!numericAnswer || isNaN(numericAnswer)) {
-                throw new Error('Please enter a valid numeric answer')
+            if (!numericAnswer.trim()) {
+                throw new Error('Please enter an answer')
             }
         }
         if (selectedType === 'objective' || selectedType === 'multiple') {
@@ -118,7 +119,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
-                answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
+                answerNumeric: selectedType === 'numeric' ? numericAnswer : undefined,
                 solutionPdf: solutionPdfUrl || undefined,
             }
 
@@ -127,6 +128,21 @@ export default function DppQuestion({dpp, addedQuestion}){
             setResponseStatus('success')
             alert('Question added successfully')
             addedQuestion(response?.dppQuestion)
+            
+            // Reset all state values after successful addition
+            setSerialNumber('')
+            setQuestionText('')
+            setOptions({A: '', B: '', C: '', D: ''})
+            setNumericAnswer('')
+            setImageUrls({A: false, B: false, C: false, D: false})
+            setAnswer('')
+            setQuestionImage('')
+            setSolutionPdfUrl('')
+            setShowQuestionImageUpload(false)
+            setShowSolutionUpload(false)
+            // Keep the selected type as it is for convenience when adding multiple questions of same type
+            // setSelectedType('')
+            // setShowOptions(false)
         } catch (error) {
             setResponseMessage(error?.message || 'An error occurred')
             setResponseStatus('error')
@@ -138,7 +154,6 @@ export default function DppQuestion({dpp, addedQuestion}){
             setResponseStatus('')
         }, 3000)
     }
-
     const handleOptionChange = (option, value) => {
         setOptions(prev => ({...prev, [option]: value}))
     }
@@ -167,174 +182,6 @@ export default function DppQuestion({dpp, addedQuestion}){
             setAnswer(option)
         }
     }
-
-    const renderWithLatex = (text) => {
-        if (!text) return '';
-        
-        try {
-            // Split by dollar signs to identify LaTeX parts
-            const parts = text.split(/(\$[^$]*\$)/g);
-            
-            // Check if there are any LaTeX parts
-            const hasLatex = parts.some(part => part.startsWith('$') && part.endsWith('$'));
-            
-            if (!hasLatex) return text; // Return as string if no LaTeX
-            
-            // Process each part, converting LaTeX and preserving text
-            return parts.map((part, index) => {
-                if (part.startsWith('$') && part.endsWith('$')) {
-                    const latex = part.slice(1, -1);
-                    console.log("Rendering LaTeX:", latex);
-                    return <InlineMath key={index} math={latex} />;
-                }
-                return part; // Return text parts as is
-            });
-        } catch (error) {
-            console.error("Error rendering LaTeX:", error);
-            return <span className="text-red-500">Error rendering LaTeX: {error.message}</span>;
-        }
-    }
-
-    const renderFormattedText = (text) => {
-        if (!text) return '';
-        
-        try {
-            // Split the text by new lines first
-            const lines = text.split('\n');
-            
-            // If there's only one line, process it as before
-            if (lines.length === 1) {
-                return processTextFormatting(text);
-            }
-            
-            // If there are multiple lines, process each line and join with <br /> tags
-            return (
-                <>
-                    {lines.map((line, lineIndex) => (
-                        <React.Fragment key={`line-${lineIndex}`}>
-                            {lineIndex > 0 && <br />}
-                            {processTextFormatting(line)}
-                        </React.Fragment>
-                    ))}
-                </>
-            );
-        } catch (error) {
-            return <span className="text-red-500">Error rendering formatted text: {error.message}</span>;
-        }
-    }
-
-    // Helper function to process formatting (LaTeX, bold, italic) for a single line
-    const processTextFormatting = (text) => {
-        if (!text) return '';
-        
-        // First handle LaTeX
-        const latexProcessed = renderWithLatex(text);
-        
-        // If it's just a string (no LaTeX found), process bold and italic formatting
-        if (typeof latexProcessed === 'string') {
-            // Process bold formatting
-            const boldPattern = /\*\*(.*?)\*\*/g;
-            let parts = latexProcessed.split(boldPattern);
-            
-            // Process italic formatting
-            const italicPattern = /\*(.*?)\*/g;
-            
-            return (
-                <>
-                    {parts.map((part, index) => {
-                        // If this is a bold part (every odd index in the array)
-                        if (index % 2 === 1) {
-                            return <strong key={index}>{part}</strong>;
-                        }
-                        
-                        // For non-bold parts, check for italic formatting
-                        const italicParts = part.split(italicPattern);
-                        if (italicParts.length > 1) {
-                            return (
-                                <span key={index}>
-                                    {italicParts.map((italicPart, italicIndex) => {
-                                        return italicIndex % 2 === 0 ? 
-                                            <span key={`${index}-${italicIndex}`}>{italicPart}</span> : 
-                                            <em key={`${index}-${italicIndex}`}>{italicPart}</em>;
-                                    })}
-                                </span>
-                            );
-                        }
-                        
-                        // If no italic formatting, return the part as is
-                        return <span key={index}>{part}</span>;
-                    })}
-                </>
-            );
-        }
-        
-        // If we have an array of elements from LaTeX processing, we need to process each text element for formatting
-        return (
-            <>
-                {latexProcessed.map((part, index) => {
-                    // If this is a React element (LaTeX), return it as is
-                    if (React.isValidElement(part)) {
-                        return part;
-                    }
-                    
-                    // Process text parts for bold formatting
-                    const boldPattern = /\*\*(.*?)\*\*/g;
-                    let boldParts = part.split(boldPattern);
-                    
-                    if (boldParts.length > 1) {
-                        return (
-                            <span key={index}>
-                                {boldParts.map((boldPart, boldIndex) => {
-                                    // If this is a bold part
-                                    if (boldIndex % 2 === 1) {
-                                        return <strong key={`${index}-${boldIndex}`}>{boldPart}</strong>;
-                                    }
-                                    
-                                    // For non-bold parts, check for italic formatting
-                                    const italicPattern = /\*(.*?)\*/g;
-                                    const italicParts = boldPart.split(italicPattern);
-                                    
-                                    if (italicParts.length > 1) {
-                                        return (
-                                            <span key={`${index}-${boldIndex}`}>
-                                                {italicParts.map((italicPart, italicIndex) => {
-                                                    return italicIndex % 2 === 0 ? 
-                                                        <span key={`${index}-${boldIndex}-${italicIndex}`}>{italicPart}</span> : 
-                                                        <em key={`${index}-${boldIndex}-${italicIndex}`}>{italicPart}</em>;
-                                                })}
-                                            </span>
-                                        );
-                                    }
-                                    
-                                    // If no italic formatting, return the part as is
-                                    return <span key={`${index}-${boldIndex}`}>{boldPart}</span>;
-                                })}
-                            </span>
-                        );
-                    }
-                    
-                    // If no bold formatting, check for italic formatting
-                    const italicPattern = /\*(.*?)\*/g;
-                    const italicParts = part.split(italicPattern);
-                    
-                    if (italicParts.length > 1) {
-                        return (
-                            <span key={index}>
-                                {italicParts.map((italicPart, italicIndex) => {
-                                    return italicIndex % 2 === 0 ? 
-                                        <span key={`${index}-${italicIndex}`}>{italicPart}</span> : 
-                                        <em key={`${index}-${italicIndex}`}>{italicPart}</em>;
-                                })}
-                            </span>
-                        );
-                    }
-                    
-                    // If no formatting, return the text as is
-                    return <span key={index}>{part}</span>;
-                })}
-            </>
-        );
-    }; 
 
     return(
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -521,7 +368,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 {selectedType === 'numeric' && (
                     <div className="bg-gray-50 p-4 rounded-md">
                         <input 
-                            type="number" 
+                            type="text" 
                             placeholder="Enter Numeric Answer"
                             required
                             value={numericAnswer}

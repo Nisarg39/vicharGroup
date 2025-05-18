@@ -72,7 +72,7 @@ export default function DppQuestion({dpp, addedQuestion}){
     }
 
     const validateInputs = () => {
-        if (!serialNumber || serialNumber <= 0) {
+        if (!serialNumber) {
             throw new Error('Please enter a valid serial number')
         }
         if (!questionText.trim()) {
@@ -82,8 +82,8 @@ export default function DppQuestion({dpp, addedQuestion}){
             throw new Error('Please select a question type')
         }
         if (selectedType === 'numeric') {
-            if (!numericAnswer || isNaN(numericAnswer)) {
-                throw new Error('Please enter a valid numeric answer')
+            if (!numericAnswer.trim()) {
+                throw new Error('Please enter an answer')
             }
         }
         if (selectedType === 'objective' || selectedType === 'multiple') {
@@ -119,7 +119,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
-                answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
+                answerNumeric: selectedType === 'numeric' ? numericAnswer : undefined,
                 solutionPdf: solutionPdfUrl || undefined,
             }
 
@@ -128,10 +128,25 @@ export default function DppQuestion({dpp, addedQuestion}){
             setResponseStatus('success')
             alert('Question added successfully')
             addedQuestion(response?.dppQuestion)
+            
+            // Reset all state values after successful addition
+            setSerialNumber('')
+            setQuestionText('')
+            setOptions({A: '', B: '', C: '', D: ''})
+            setNumericAnswer('')
+            setImageUrls({A: false, B: false, C: false, D: false})
+            setAnswer('')
+            setQuestionImage('')
+            setSolutionPdfUrl('')
+            setShowQuestionImageUpload(false)
+            setShowSolutionUpload(false)
+            // Keep the selected type as it is for convenience when adding multiple questions of same type
+            // setSelectedType('')
+            // setShowOptions(false)
         } catch (error) {
             setResponseMessage(error?.message || 'An error occurred')
             setResponseStatus('error')
-            alert('Failed to add question')
+            alert(error)
         }
 
         setTimeout(() => {
@@ -139,7 +154,6 @@ export default function DppQuestion({dpp, addedQuestion}){
             setResponseStatus('')
         }, 3000)
     }
-
     const handleOptionChange = (option, value) => {
         setOptions(prev => ({...prev, [option]: value}))
     }
@@ -244,7 +258,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                         
                         {showQuestionImageUpload && (
                             <div className="mt-2">
-                                <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, 'question')} />
+                                <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, 'question', null)} />
                             </div>
                         )}
                     </div>
@@ -344,7 +358,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                 
                                 {imageUrls[option] && (
                                     <div className="mt-2">
-                                        <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, option)} />
+                                        <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, option, null)} />
                                     </div>
                                 )}
                             </div>
@@ -354,7 +368,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 {selectedType === 'numeric' && (
                     <div className="bg-gray-50 p-4 rounded-md">
                         <input 
-                            type="number" 
+                            type="text" 
                             placeholder="Enter Numeric Answer"
                             required
                             value={numericAnswer}

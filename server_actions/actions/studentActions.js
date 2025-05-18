@@ -464,7 +464,6 @@ export async function getChapterDetails(details){
             }
         }
         else{
-            console.log(chapter)
             return {
                 message: "Chapter details fetching failed",
                 success: false,

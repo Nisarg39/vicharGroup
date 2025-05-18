@@ -19,6 +19,8 @@ export default function DppQuestionsList({ dpp }) {
     }
 
     const handleDelete = async(id) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this question?")
+        if (!confirmDelete) return
        const response = await deleteDppQuestion(id)
        if(response.success){
            setQuestions(prevQuestions => prevQuestions.filter(question => question._id !== id))
