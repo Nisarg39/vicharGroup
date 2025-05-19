@@ -11,6 +11,7 @@ import Dpp from "../models/dpp";
 import Exercise from "../models/exercise";
 import Teacher from "../models/teacher";
 import DppQuestion from "../models/dppQuestion";
+import Segment from "../models/segment";
 import Referral from "../models/referral";
 import Razorpay_Info from "../models/razorpay_info";
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
@@ -478,4 +479,29 @@ export async function getChapterDetails(details){
             chapter: null
         }
     }
+}
+
+export async function getSegments(){
+    try {
+        await connectDB()
+        const segments = await Segment.find({})
+        .populate({
+            path: "products",
+            model: "Products",
+        })
+        .lean()
+        return {
+            message: "Segments fetched successfully",
+            success: true,
+            segments: JSON.parse(JSON.stringify(segments))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error fetching segments",
+            success: false,
+            segments: null
+        }
+    }
+    
 }

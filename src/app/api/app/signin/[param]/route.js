@@ -4,7 +4,8 @@ import {
     verifyOtp, 
     mandatoryDetails, 
     getStudentDetails,
-    getChapterDetails
+    getChapterDetails,
+    getSegments
 } from '../../../../../../server_actions/actions/studentActions'
 export async function POST(request, { params }) {
     const formData = await request.formData()
@@ -57,6 +58,13 @@ export async function POST(request, { params }) {
                 return NextResponse.json(getChapterDetailsResponse)
             }
             return NextResponse.json(getChapterDetailsResponse)
+
+        case 'getSegments':
+            const getSegmentsResponse = await getSegments()
+            if(getSegmentsResponse.success){
+                return NextResponse.json(getSegmentsResponse)
+            }
+            return NextResponse.json(getSegmentsResponse)
 
         default:
             return NextResponse.json({

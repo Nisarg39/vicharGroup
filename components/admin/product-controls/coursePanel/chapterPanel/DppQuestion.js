@@ -72,7 +72,7 @@ export default function DppQuestion({dpp, addedQuestion}){
     }
 
     const validateInputs = () => {
-        if (!serialNumber) {
+        if (!serialNumber || serialNumber <= 0) {
             throw new Error('Please enter a valid serial number')
         }
         if (!questionText.trim()) {
@@ -146,7 +146,7 @@ export default function DppQuestion({dpp, addedQuestion}){
         } catch (error) {
             setResponseMessage(error?.message || 'An error occurred')
             setResponseStatus('error')
-            alert(error)
+            alert('Failed to add question')
         }
 
         setTimeout(() => {
@@ -258,7 +258,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                         
                         {showQuestionImageUpload && (
                             <div className="mt-2">
-                                <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, 'question', null)} />
+                                <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, 'question')} />
                             </div>
                         )}
                     </div>
@@ -358,7 +358,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                 
                                 {imageUrls[option] && (
                                     <div className="mt-2">
-                                        <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, option, null)} />
+                                        <ImageUpload onImageUploaded={(url) => handleImageUploaded(url, option)} />
                                     </div>
                                 )}
                             </div>
