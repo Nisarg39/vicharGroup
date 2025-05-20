@@ -438,6 +438,7 @@ export async function getChapterDetails(details){
             {
                 path: "lectures",
                 model: "Lecture",
+                options: { sort: { serialNumber: 1 } },
                 populate: {
                     path: "teacher",
                     model: "Teacher",
@@ -446,6 +447,7 @@ export async function getChapterDetails(details){
             {
                 path: "dpps",
                 model: "Dpp",
+                options: { sort: { serialNumber: 1 } },
                 populate: {
                     path: "dppQuestions",
                     model: "DppQuestion",
@@ -480,7 +482,6 @@ export async function getChapterDetails(details){
         }
     }
 }
-
 export async function getSegments(){
     try {
         await connectDB()
