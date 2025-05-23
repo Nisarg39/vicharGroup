@@ -793,6 +793,33 @@ export async function updateLecture(details) {
     }
 }
 
+export async function deleteLecture(details) {
+    try {
+        await connectDB()
+        const chapter = await Chapter.findById(details.chapterId)
+        if(!chapter){
+            return {
+                success: false,
+                message: "Chapter not found"
+            }
+        }
+        chapter.lectures = chapter.lectures.filter((item) => item.toString() !== details.lectureId.toString());
+        await chapter.save()
+        const lecture = await Lecture.findByIdAndDelete(details.lectureId)
+        return {
+            success: true,
+            message: "Lecture deleted successfully",
+            lecture: lecture
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting lecture"
+        }
+    }
+}
+
 // dpp controls
 export async function addDpp(details) {
     try {

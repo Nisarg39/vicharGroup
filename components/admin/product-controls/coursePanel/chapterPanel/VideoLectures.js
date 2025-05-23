@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react"
-import { addLecture, showLectures, updateLecture } from "../../../../../server_actions/actions/adminActions"
-import { showTeachers } from "../../../../../server_actions/actions/adminActions"
-
+import { addLecture, showLectures, updateLecture, showTeachers, deleteLecture } from "../../../../../server_actions/actions/adminActions"
 
 export default function VideoLectures({chapter}){
     const [serialNumber, setSerialNumber] = useState('')
@@ -87,6 +85,27 @@ export default function VideoLectures({chapter}){
         }
         setIsSaving(false)
         setEditingId(null)
+    }
+
+    const handleDelete = async(lectureId) => {
+        const details = {
+            lectureId: lectureId,
+            chapterId: chapter._id
+        }
+        
+        // Confirmation dialog can be added here
+        if(confirm("Are you sure you want to delete this lecture?")) {
+            const response = await deleteLecture(details)
+            if(response.success){
+                alert(response.message)
+                const lectureResponse = await showLectures({chapterId: chapter._id})
+                if(lectureResponse.success){
+                    setLectures(lectureResponse.chapter.lectures)
+                }
+            }else{
+                alert(response.message)
+            }
+        }
     }
 
     return(
@@ -264,7 +283,7 @@ export default function VideoLectures({chapter}){
                                     </div>
                                 )}
                             </td>
-                            <td className="border p-2">
+                            <td className="border p-2 flex gap-2">
                                 {editingId === lecture._id ? (
                                     <button 
                                         className="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 disabled:bg-green-300"
@@ -274,12 +293,20 @@ export default function VideoLectures({chapter}){
                                         {isSaving ? 'Saving...' : 'Save'}
                                     </button>
                                 ) : (
-                                    <button 
-                                        className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                                        onClick={() => handleEdit(lecture)}
-                                    >
-                                        Edit
-                                    </button>
+                                    <>
+                                        <button 
+                                            className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                                            onClick={() => handleEdit(lecture)}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                                            onClick={() => handleDelete(lecture._id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
                                 )}
                             </td>
                         </tr>
