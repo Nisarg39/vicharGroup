@@ -1,3 +1,5 @@
+get the ip address of the server using the command - ipconfig getifaddr en0
+
 for setting up google sign in auth - https://www.youtube.com/watch?v=XmmMQfpQh40
 next auth - https://authjs.dev/getting-started/installation?framework=next-js
 next auth reference - https://www.telerik.com/blogs/how-to-implement-google-authentication-nextjs-app-using-nextauth

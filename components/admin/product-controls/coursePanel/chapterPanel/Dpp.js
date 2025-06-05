@@ -59,7 +59,7 @@ export default function Dpp({chapter}){
         setEditSerialNumber(dpp.serialNumber)
         setEditName(dpp.name)
         setEditDppCode(dpp.dppCode)
-        setActiveDropdown(null)
+        setActiveDropdown(null) 
     }
 
     const handleSave = async() => {

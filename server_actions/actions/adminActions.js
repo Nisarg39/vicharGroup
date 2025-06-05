@@ -853,9 +853,18 @@ export async function addDpp(details) {
 }
 
 export async function updateDpp(details){
+    console.log(details)
     try {
         await connectDB()
-        const dpp = await Dpp.findByIdAndUpdate(details.dppId, details, {new: true})
+        const dpp = await Dpp.findByIdAndUpdate(details._id, details, {new: true})
+        if (!dpp) {
+            return {
+                success: false,
+                message: "DPP not found"
+            }
+        }
+        
+        // console.log(dpp)
         return {
             success: true,
             message: "Dpp updated successfully",
