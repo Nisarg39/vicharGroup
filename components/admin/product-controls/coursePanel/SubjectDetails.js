@@ -253,14 +253,14 @@ export default function SubjectDetiails({subject, setSubjects, productType}){
                                                     </button>
                                                 </div>
                                                 {selectedComponent === 'video' && <VideoLectures chapter={chapter} />}
-                                                {selectedComponent === 'dpp' && <Dpp chapter={chapter} />}
+                                                {selectedComponent === 'dpp' && <Dpp chapter={chapter} productType={productType}/>}
                                                 {selectedComponent === 'exercise' && <ChapterExercise chapter={chapter} />}
                                             </div>
                                         )}
 
                                         {expandedChapter === chapter._id && productType === 'mtc' && (
                                             <div className="p-4 border-t">
-                                                <Dpp chapter={chapter} />
+                                                <Dpp chapter={chapter} productType={productType} />
                                             </div>
                                         )}
                                     </div>

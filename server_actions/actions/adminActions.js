@@ -282,6 +282,40 @@ export async function fetchAllStudents(page) {
     }
 }
 
+export async function searchStudent(details){
+    try {
+        await connectDB();
+        let query = {};
+        
+        if (details.searchTerm) {
+            // If search term is a number, search by phone
+            if (/^\d+$/.test(details.searchTerm)) {
+                query.phone = { $regex: details.searchTerm, $options: 'i' };
+            } else {
+                // Search by name with partial matching
+                query.name = { $regex: details.searchTerm, $options: 'i' };
+            }
+        }
+
+        const students = await Student.find(query)
+            .limit(10) // Limit results for better performance
+            .select('name phone email') // Select only needed fields
+            .lean(); // Convert to plain JavaScript objects
+
+        return {
+            success: true,
+            message: "Students found",
+            students: students
+        };
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching students"
+        }
+    }
+}
+
 export async function assignProduct(details){
     try {
         await connectDB()
@@ -1166,6 +1200,8 @@ export async function getAllCouponCodes(page = 1, limit = 10){
     }
 }
 
+// payment controls
+
 export async function paymentDetails(page = 1, limit = 10){
     try {
         await connectDB()
@@ -1212,6 +1248,88 @@ export async function paymentDetails(page = 1, limit = 10){
         return {
             success: false,
             message: "Error fetching payments"
+        }
+    }
+}
+
+// search student by name or phone just like searchStudent function but returning result like paymentDetails function
+export async function searchStudentPayments(searchTerm, page = 1, limit = 10){
+    try {
+        await connectDB()
+        const skip = (page - 1) * limit
+        
+        // First, find students that match the search criteria
+        let studentQuery = {};
+        if (/^\d+$/.test(searchTerm)) {
+            // If search term is a number, search by phone
+            studentQuery.phone = { $regex: searchTerm, $options: 'i' };
+        } else {
+            // Search by name with partial matching
+            studentQuery.name = { $regex: searchTerm, $options: 'i' };
+        }
+        
+        const matchingStudents = await Student.find(studentQuery).select('_id');
+        const studentIds = matchingStudents.map(student => student._id);
+        
+        if (studentIds.length === 0) {
+            return {
+                success: true,
+                payments: [],
+                totalPages: 0,
+                currentPage: page,
+                totalCount: 0,
+            }
+        }
+        
+        // Now find payments for these students
+        const payments = await Payment.find({
+            student: { $in: studentIds }
+        })
+        .populate({
+            path: 'student',
+            model: 'Student',
+            select: 'name email phone _id'
+        })
+        .populate({
+            path: 'product',
+            model: 'Products',
+            select: 'name price discountPrice _id type'
+        })
+        .populate({
+            path: 'razorpay_info',
+            model: 'Razorpay_Info',
+            select: 'razorpay_order_id razorpay_payment_id razorpay_signature'
+        })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+
+        const totalCount = await Payment.countDocuments({
+            student: { $in: studentIds }
+        })
+        
+        const serializedPayments = payments.map(payment => {
+            const plainPayment = payment.toObject()
+            return {
+                _id: plainPayment._id.toString(),
+                ...plainPayment,
+                createdAt: plainPayment.createdAt?.toISOString(),
+                updatedAt: plainPayment.updatedAt?.toISOString()
+            }
+        })
+        
+        return {
+            success: true,
+            payments: serializedPayments,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error searching payments"
         }
     }
 }

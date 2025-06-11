@@ -3,7 +3,7 @@ import { addDpp, updateDpp, deleteDpp } from "../../../../../server_actions/acti
 import DppQuestion from "./DppQuestion";
 import DppQuestionsList from "./DppQuestionsList";
 
-export default function Dpp({chapter}){
+export default function Dpp({chapter, productType}){
 
     const [serialNumber, setSerialNumber] = useState('')
     const [name, setName] = useState('')
@@ -17,6 +17,7 @@ export default function Dpp({chapter}){
     const [expandedQuestionDpp, setExpandedQuestionDpp] = useState(null)
     const [expandedDpp, setExpandedDpp] = useState(null)
 
+    console.log(productType)
     const handleAddDpp = async() => {
         if (!serialNumber.trim()) {
             alert('Serial Number is required')
@@ -148,7 +149,7 @@ export default function Dpp({chapter}){
 
     return(
         <div className="p-6 bg-white rounded-lg shadow-md">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800">Add Daily Practice Problems</h1>
+            <h1 className="text-2xl font-bold mb-6 text-gray-800">{productType === "course" ? "Add Daily Practice Problems" : "Add Master The Concept Question"}</h1>
             <div className="flex items-center space-x-4">
                 <div className="flex flex-col flex-1">
                     <label className="text-sm font-medium text-gray-700 mb-1">Serial Number</label>
@@ -171,10 +172,10 @@ export default function Dpp({chapter}){
                     />
                 </div>
                 <div className="flex flex-col flex-1">
-                    <label className="text-sm font-medium text-gray-700 mb-1">DPP Code</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1">{productType === "course" ? "DPP Code" : "MTC Code"}</label>
                     <input 
                         type="text" 
-                        placeholder="Enter DPP code" 
+                        placeholder={productType === "course" ? "Enter DPP Code" : "Enter MTC Code"}
                         value={dppCode}
                         onChange={(e) => setDppCode(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -187,18 +188,18 @@ export default function Dpp({chapter}){
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
-                    Add DPP
+                    {productType === "course" ? "Add DPP" : "Add MTC"}
                 </button>
             </div>
 
             <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800">Existing DPPs</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">{productType === "course" ? "Existing DPPs" : "Existing MTCs"}</h2>
                 <table className="min-w-full bg-white border border-gray-300">
                     <thead>
                         <tr className="bg-gray-100">
                             <th className="py-2 px-4 border-b text-left">Serial Number</th>
                             <th className="py-2 px-4 border-b text-left">Name</th>
-                            <th className="py-2 px-4 border-b text-left">DPP Code</th>
+                            <th className="py-2 px-4 border-b text-left">{productType === "course" ? "DPP Code" : "MTC Code"}</th>
                             <th className="py-2 px-4 border-b text-left">Questions</th>
                             <th className="py-2 px-4 border-b text-left">Options</th>
                         </tr>
@@ -304,7 +305,7 @@ export default function Dpp({chapter}){
                                         <td colSpan="5" className="p-4 border-b">
                                             <div className="bg-gray-50 p-4 rounded-lg">
                                                 <div className="flex justify-between items-center mb-4">
-                                                    <h2 className="text-xl font-bold">Add Question to {dpp.name}</h2>
+                                                    <h2 className="text-xl font-bold">{productType === "course" ? "Add Question to DPP" : "Add Question to MTC"}</h2>
                                                     <button 
                                                         onClick={closeQuestionForm}
                                                         className="text-gray-500 hover:text-gray-700"

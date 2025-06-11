@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchAllStudents, showProducts, assignProduct } from '../../server_actions/actions/adminActions';
+import { fetchAllStudents, showProducts, assignProduct, searchStudent } from '../../server_actions/actions/adminActions';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 export default function EnrolledStudentsList() {
@@ -9,6 +9,8 @@ export default function EnrolledStudentsList() {
     const [loading, setLoading] = useState(true);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [products, setProducts] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
 
 
     async function fetchAllStudentsDetails(page) {
@@ -57,9 +59,49 @@ export default function EnrolledStudentsList() {
           }
     };
 
+    const handleSearch = async (value) => {
+        setSearchTerm(value);
+        if (value.length > 0) {
+            const response = await searchStudent({ searchTerm: value });
+            if (response.success) {
+                setSearchResults(response.students);
+            }
+        } else {
+            setSearchResults([]);
+            fetchAllStudentsDetails(1); // Reset to normal list view
+        }
+    };
+
     return(
         <div className="w-full min-h-screen py-2 xs:py-6 md:py-8 ">
             <h1 className="text-xl font-bold mb-4 text-gray-800 px-4">Enrolled Students List</h1>
+            <div className="px-4 mb-4">
+                <input
+                    type="text"
+                    placeholder="Search by name or phone number..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchResults.length > 0 && searchTerm && (
+                    <div className="absolute z-10 w-full md:w-1/3 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                        {searchResults.map((student, index) => (
+                            <div 
+                                key={student._id}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                    setSelectedStudent(student);
+                                    setSearchTerm('');
+                                    setSearchResults([]);
+                                }}
+                            >
+                                <p className="font-medium">{student.name}</p>
+                                <p className="text-sm text-gray-600">+91 {student.phone}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <LoadingSpinner />
