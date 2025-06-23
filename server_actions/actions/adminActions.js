@@ -867,7 +867,7 @@ export async function addDpp(details) {
                 }
             }, {new: true})
 
-            console.log(chapter)
+            // console.log(chapter)
             if(chapter){
                 return {
                     success: true,

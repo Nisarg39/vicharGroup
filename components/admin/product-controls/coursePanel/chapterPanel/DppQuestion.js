@@ -25,7 +25,7 @@ export default function DppQuestion({dpp, addedQuestion}){
     const [showLatexToolbar, setShowLatexToolbar] = useState(false);
     const [activeField, setActiveField] = useState('question'); // Tracks which field to insert LaTeX into
     const [uploadPreset, setUploadPreset] = useState('');
-    const [solutionPdfUrl, setSolutionPdfUrl] = useState('');
+    const [solutionImageUrl, setSolutionImageUrl] = useState('');
     const [showSolutionUpload, setShowSolutionUpload] = useState(false);
 
     useEffect(() => {
@@ -120,7 +120,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
                 answerNumeric: selectedType === 'numeric' ? numericAnswer : undefined,
-                solutionPdf: solutionPdfUrl || undefined,
+                solutionImage: solutionImageUrl || undefined,
             }
 
             const response = await addDppQuestion(questionData)
@@ -137,7 +137,7 @@ export default function DppQuestion({dpp, addedQuestion}){
             setImageUrls({A: false, B: false, C: false, D: false})
             setAnswer('')
             setQuestionImage('')
-            setSolutionPdfUrl('')
+            setSolutionImageUrl('')
             setShowQuestionImageUpload(false)
             setShowSolutionUpload(false)
             // Keep the selected type as it is for convenience when adding multiple questions of same type
@@ -162,9 +162,9 @@ export default function DppQuestion({dpp, addedQuestion}){
         setImageUrls(prev => ({...prev, [option]: !prev[option]}))
     }
 
-    const handleSolutionPdfUploaded = (result) => {
+    const handleSolutionImageUploaded = (result) => {
         if (result?.info?.secure_url) {
-            setSolutionPdfUrl(result.info.secure_url);
+            setSolutionImageUrl(result.info.secure_url);
         } else {
             console.error("Unexpected result structure:", result);
         }
@@ -409,11 +409,11 @@ export default function DppQuestion({dpp, addedQuestion}){
                         )}
                     </div>
                 )}
-                {/* Solution PDF Upload Section */}
+                {/* Solution Image Upload Section */}
                 <div className="bg-gray-50 p-4 rounded-md">
                     <div className="mb-4">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-md font-semibold">Solution PDF</h3>
+                            <h3 className="text-md font-semibold">Solution Image</h3>
                             <button 
                                 type="button"
                                 onClick={() => setShowSolutionUpload(!showSolutionUpload)}
@@ -433,16 +433,16 @@ export default function DppQuestion({dpp, addedQuestion}){
                                         options={{
                                             maxFiles: 1,
                                             resourceType: "raw",
-                                            allowedFormats: ["pdf"]
+                                            allowedFormats: ["jpg", "jpeg", "png"]
                                         }}
-                                        onSuccess={handleSolutionPdfUploaded}
+                                        onSuccess={handleSolutionImageUploaded}
                                         onError={(error) => console.error("Upload failed:", error)}
                                         className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                                         </svg>
-                                        Upload Solution PDF
+                                        Upload Solution Image
                                     </CldUploadButton>
                                 </div>
                             ) : (
@@ -451,11 +451,11 @@ export default function DppQuestion({dpp, addedQuestion}){
                                 </div>
                             )}
                             
-                            {solutionPdfUrl && (
+                            {solutionImageUrl && (
                                 <div className="mt-4">
                                     <span className="font-semibold">Solution: </span>
                                     <a 
-                                        href={solutionPdfUrl}
+                                        href={solutionImageUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
@@ -463,7 +463,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                                         </svg>
-                                        View Solution PDF
+                                        View Solution Image
                                     </a>
                                 </div>
                             )}

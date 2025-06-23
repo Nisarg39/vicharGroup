@@ -244,11 +244,11 @@ export default function DppQuestionsList({ dpp }) {
                                         }
                                     </div>
                                 )}
-                                {question.solutionPdf && (
+                                {question.solutionImage && (
                                     <div className="bg-gray-50 p-4 rounded-md mt-4">
                                         <h4 className="text-sm font-semibold text-gray-700 mb-2">Solution</h4>
                                         <a 
-                                            href={question.solutionPdf}
+                                            href={question.solutionImage}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
@@ -256,7 +256,7 @@ export default function DppQuestionsList({ dpp }) {
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-7.707a1 1 0 011.414 0L12 10.586V4a1 1 0 112 0v6.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                                             </svg>
-                                            View Solution PDF
+                                            View Solution Image
                                         </a>
                                     </div>
                                 )}

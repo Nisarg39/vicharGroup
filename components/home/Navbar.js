@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from'react-redux'
 import { loggedIn, loggedOut } from '../../features/login/LoginSlice'
 import { FaGraduationCap, FaHeartbeat, FaChartLine, FaBook, FaChartBar, FaExchangeAlt, FaClipboardCheck, FaFlask, FaCalculator, FaUserTie, FaInfoCircle, FaClipboard, FaImages, FaEnvelope, FaSignInAlt, FaChalkboardTeacher } from 'react-icons/fa'
+import { motion } from 'framer-motion'
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)

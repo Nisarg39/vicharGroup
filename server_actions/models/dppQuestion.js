@@ -45,7 +45,7 @@ const dppQuestionSchema = new mongoose.Schema({
     answerNumeric: {
         type: String,
     },
-    solutionPdf: {
+    solutionImage: {
         type: String,
     },
 }, {timestamps: true})
