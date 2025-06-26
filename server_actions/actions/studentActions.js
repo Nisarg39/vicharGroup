@@ -127,7 +127,8 @@ export async function getStudentDetails(token){
                     populate: {
                         path: "chapters",
                         model: "Chapter",
-                        select: "image chapterName lectures dpps exercises",
+                        select: "serialNumber image chapterName lectures dpps exercises",
+                        sort: { serialNumber: 1 },
                     }
                 }
             }
