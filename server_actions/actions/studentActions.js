@@ -118,17 +118,18 @@ export async function getStudentDetails(token){
             path: "purchases",
             populate: {
                 path: "product",
-                model: "Products",
+                model: "Products", 
                 select: "name price discountPrice duration pageParameters class type image subjects",
                 populate: {
                     path: "subjects",
                     model: "Subject",
                     select: "name image chapters",
+                    options: { sort: { subjectCode: 1 } },
                     populate: {
                         path: "chapters",
                         model: "Chapter",
                         select: "serialNumber image chapterName lectures dpps exercises",
-                        sort: { serialNumber: 1 },
+                        options: { sort: { serialNumber: 1 } }
                     }
                 }
             }
