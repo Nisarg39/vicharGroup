@@ -56,7 +56,8 @@ export default function BannerControl() {
             imageUrl: bannerImageUrl
         }
 
-        if(localStorage.getItem('token') === null) {
+
+        if(!localStorage.getItem('isAdmin')) {
             setError('You must be logged in to add a banner')
             return
         }
