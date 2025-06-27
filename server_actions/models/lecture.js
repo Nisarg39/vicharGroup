@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const lectureSchema = new mongoose.Schema({
     serialNumber: {
-        type: Number,
+        type: String,
         required: true
     },
     title: {

@@ -16,6 +16,7 @@ import Exercise from "../models/exercise"
 import Teacher from "../models/teacher"
 import Razorpay_Info from "../models/razorpay_info"
 import Segment from "../models/segment"
+import Banner from "../models/banner"
 import jwt from "jsonwebtoken"
 
 
@@ -1333,3 +1334,69 @@ export async function searchStudentPayments(searchTerm, page = 1, limit = 10){
         }
     }
 }
+
+
+// ------------------------- App Controls -------------------------
+
+
+// // Banner controls
+export async function addBanner(details) {
+    try {
+        await connectDB()
+        const banner = await Banner.create({
+            serialNumber: details.serialNumber,
+            imageUrl: details.imageUrl
+        })
+        return {
+            success: true,
+            message: "Banner added successfully",
+            banner: JSON.parse(JSON.stringify(banner))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding banner"
+        }
+    }
+}
+
+export async function showBanners() {
+    try {
+        await connectDB()
+        const banners = await Banner.find({}).sort({ serialNumber: 1 }).lean()
+        return {
+            success: true,
+            banners: banners
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching banners"
+        }
+    }
+}
+
+// write a function to update the serial number of banner
+
+export async function updateBanner(details) {
+    try {
+        await connectDB()
+        const banner = await Banner.findByIdAndUpdate(details._id, { serialNumber: details.serialNumber }, {
+            new: true,
+        }).lean()
+        return {
+            success: true,
+            message: "Banner updated successfully",
+            banner: JSON.parse(JSON.stringify(banner))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating banner"
+        }
+    }
+}
+

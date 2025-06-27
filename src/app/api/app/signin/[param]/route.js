@@ -7,6 +7,8 @@ import {
     getChapterDetails,
     getSegments
 } from '../../../../../../server_actions/actions/studentActions'
+
+import { showBanners } from "../../../../../../server_actions/actions/adminActions";
 export async function POST(request, { params }) {
     const formData = await request.formData()
     const {param} = params
@@ -65,6 +67,13 @@ export async function POST(request, { params }) {
                 return NextResponse.json(getSegmentsResponse)
             }
             return NextResponse.json(getSegmentsResponse)
+
+        case 'showBanners':
+            const showBannersResponse = await showBanners()
+            if(showBannersResponse.success){
+                return NextResponse.json(showBannersResponse)
+            }
+            return NextResponse.json(showBannersResponse)
 
         default:
             return NextResponse.json({
