@@ -7,6 +7,7 @@ import Sidebar from './Sidebar'
 import AdminStats from "./AdminStats";
 import AdminControls from "./AdminControls";
 import AppControlHome from "./app-control/AppControlHome";
+import ExamPortalHome from "./exam_portal_components/super_admin/ExamPortalHome";
 
 export default function AdminHome() {
 
@@ -34,13 +35,17 @@ export default function AdminHome() {
       }, []);
     return (
       <div>
-        {isAdmin ? (
-          <>
-            <Sidebar setDashBoardName={setDashBoardName} />
+      {isAdmin ? (
+        <>
+          <Sidebar 
+              setDashBoardName={setDashBoardName}
+              dashBoardName={dashBoardName}
+          />
             {dashBoardName === "dashboard" && <Dashboard />}
             {dashBoardName === "statistics" && <AdminStats />}
             {dashBoardName === "adminControls" && <AdminControls />}
             {dashBoardName === "appControl" && <AppControlHome />}
+            {dashBoardName === "examPortal" && <ExamPortalHome />}
           </>
         ) : (
           <SignIn adminStatus={adminStatus} successHandler={successHandler} />

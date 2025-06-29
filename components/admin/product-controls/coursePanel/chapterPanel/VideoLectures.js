@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react"
+import React,{ useState, useEffect } from "react"
 import { addLecture, showLectures, updateLecture, showTeachers, deleteLecture } from "../../../../../server_actions/actions/adminActions"
+import LatexToolbar from './LatexToolbar'
+import 'katex/dist/katex.min.css'
+import { InlineMath } from 'react-katex'
 
 export default function VideoLectures({chapter}){
     const [serialNumber, setSerialNumber] = useState('')
@@ -11,6 +14,7 @@ export default function VideoLectures({chapter}){
     const [isSaving, setIsSaving] = useState(false)
     const [teachers, setTeachers] = useState([])
     const [selectedTeacher, setSelectedTeacher] = useState('')
+    const [activeField, setActiveField] = useState(null)
 
     useEffect(() => {
         const fetchLectures = async() => {
@@ -108,74 +112,142 @@ export default function VideoLectures({chapter}){
         }
     }
 
+    const handleExpressionSelect = (expression, field) => {
+        if (field === 'title') {
+            setTitle(prev => prev + expression)
+        } else if (field === 'description') {
+            setDescription(prev => prev + expression)
+        } else if (field === 'editTitle') {
+            const updatedLectures = [...lectures]
+            const lectureIndex = lectures.findIndex(l => l._id === editingId)
+            updatedLectures[lectureIndex].title += expression
+            setLectures(updatedLectures)
+        } else if (field === 'editDescription') {
+            const updatedLectures = [...lectures]
+            const lectureIndex = lectures.findIndex(l => l._id === editingId)
+            updatedLectures[lectureIndex].description += expression
+            setLectures(updatedLectures)
+        }
+    }
+
+    const renderFormattedContent = (content) => {
+        if (!content) return null
+        
+        // First split by new lines
+        const lines = content.split('\n')
+        
+        return lines.map((line, lineIndex) => {
+            // Split each line by special characters
+            const parts = line.split(/(\$[^$]*\$|\*\*[^*]*\*\*|\*[^*]*\*)/g)
+            
+            const renderedLine = parts.map((part, index) => {
+                if (part.startsWith('$') && part.endsWith('$')) {
+                    const latex = part.slice(1, -1)
+                    try {
+                        return <InlineMath key={`${lineIndex}-${index}`} math={latex} />
+                    } catch (error) {
+                        return <span key={`${lineIndex}-${index}`}>{part}</span>
+                    }
+                } else if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={`${lineIndex}-${index}`}>{part.slice(2, -2)}</strong>
+                } else if (part.startsWith('*') && part.endsWith('*')) {
+                    return <em key={`${lineIndex}-${index}`}>{part.slice(1, -1)}</em>
+                }
+                return <span key={`${lineIndex}-${index}`}>{part}</span>
+            })
+
+            // Return each line with a line break
+            return (
+                <React.Fragment key={lineIndex}>
+                    {renderedLine}
+                    {lineIndex < lines.length - 1 && <br />}
+                </React.Fragment>
+            )
+        })
+    }
+
     return(
         <div>
-            <table className="w-full h-full border-collapse">
-                <thead>
-                    <tr>
-                        <th className="border p-2">Serial Number</th>
-                        <th className="border p-2">Title</th>
-                        <th className="border p-2">Description</th>
-                        <th className="border p-2">Video URL</th>
-                        <th className="border p-2">Teacher</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td className="border p-2">
-                            <input 
-                                type="number" 
-                                className="w-full p-1 border rounded"
-                                placeholder="Enter serial number"
-                                value={serialNumber}
-                                onChange={(e) => setSerialNumber(e.target.value)}
-                            />
-                        </td>
-                        <td className="border p-2">
+            {activeField && (
+                <LatexToolbar 
+                    onSelectExpression={handleExpressionSelect}
+                    targetField={activeField}
+                />
+            )}
+            <div className="w-full mb-4">
+                <div className="flex gap-4 mb-4">
+                    <div className="w-1/6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                        <input 
+                            type="number" 
+                            className="w-full p-2 border rounded"
+                            placeholder="Enter serial number"
+                            value={serialNumber}
+                            onChange={(e) => setSerialNumber(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-5/6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <div className="relative">
                             <input 
                                 type="text" 
-                                className="w-full p-1 border rounded"
+                                className="w-full p-2 border rounded"
                                 placeholder="Enter title"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
+                                onFocus={() => setActiveField('title')}
                             />
-                        </td>
-                        <td className="border p-2">
-                            <input 
-                                type="text" 
-                                className="w-full p-1 border rounded"
-                                placeholder="Enter description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </td>
-                        <td className="border p-2">
-                            <input 
-                                type="text" 
-                                className="w-full p-1 border rounded"
-                                placeholder="Enter video URL"
-                                value={videoUrl}
-                                onChange={(e) => setVideoUrl(e.target.value)}
-                            />
-                        </td>
-                        <td className="border p-2">
-                            <select
-                                className="w-full p-1 border rounded"
-                                value={selectedTeacher}
-                                onChange={(e) => setSelectedTeacher(e.target.value)}
-                            >
-                                <option value="">Select Teacher</option>
-                                {teachers.map((teacher) => (
-                                    <option key={teacher._id} value={teacher._id} className="flex items-center gap-2">
-                                        {teacher.image && <img src={teacher.image} alt={teacher.name} className="w-6 h-6 rounded-full inline mr-2" />}
-                                        {teacher.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                            <div className="mt-2 text-sm text-gray-600">
+                                {renderFormattedContent(title)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <div className="relative">
+                        <textarea 
+                            className="w-full p-2 border rounded resize-y min-h-[100px]"
+                            placeholder="Enter description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            onFocus={() => setActiveField('description')}
+                        />
+                        <div className="mt-2 text-sm text-gray-600">
+                            {renderFormattedContent(description)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-4">
+                    <div className="w-1/2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+                        <input 
+                            type="text" 
+                            className="w-full p-2 border rounded"
+                            placeholder="Enter video URL"
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-1/2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                        <select
+                            className="w-full p-2 border rounded"
+                            value={selectedTeacher}
+                            onChange={(e) => setSelectedTeacher(e.target.value)}
+                        >
+                            <option value="">Select Teacher</option>
+                            {teachers.map((teacher) => (
+                                <option key={teacher._id} value={teacher._id}>
+                                    {teacher.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
             <button 
                 className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
                 onClick={handleAddLecture}
@@ -215,31 +287,47 @@ export default function VideoLectures({chapter}){
                             </td>
                             <td className="border p-2">
                                 {editingId === lecture._id ? (
-                                    <input 
-                                        type="text"
-                                        className="w-full p-1 border rounded"
-                                        value={lecture.title}
-                                        onChange={(e) => {
-                                            const updatedLectures = [...lectures]
-                                            updatedLectures[index].title = e.target.value
-                                            setLectures(updatedLectures)
-                                        }}
-                                    />
-                                ) : lecture.title}
+                                    <div className="relative">
+                                        <input 
+                                            type="text"
+                                            className="w-full p-1 border rounded"
+                                            value={lecture.title}
+                                            onChange={(e) => {
+                                                const updatedLectures = [...lectures]
+                                                updatedLectures[index].title = e.target.value
+                                                setLectures(updatedLectures)
+                                            }}
+                                            onFocus={() => setActiveField('editTitle')}
+                                        />
+                                        <div className="mt-2 text-sm text-gray-600">
+                                            {renderFormattedContent(lecture.title)}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>{renderFormattedContent(lecture.title)}</div>
+                                )}
                             </td>
                             <td className="border p-2">
                                 {editingId === lecture._id ? (
-                                    <input 
-                                        type="text"
-                                        className="w-full p-1 border rounded"
-                                        value={lecture.description}
-                                        onChange={(e) => {
-                                            const updatedLectures = [...lectures]
-                                            updatedLectures[index].description = e.target.value
-                                            setLectures(updatedLectures)
-                                        }}
-                                    />
-                                ) : lecture.description}
+                                    <div className="relative">
+                                        <input 
+                                            type="text"
+                                            className="w-full p-1 border rounded"
+                                            value={lecture.description}
+                                            onChange={(e) => {
+                                                const updatedLectures = [...lectures]
+                                                updatedLectures[index].description = e.target.value
+                                                setLectures(updatedLectures)
+                                            }}
+                                            onFocus={() => setActiveField('editDescription')}
+                                        />
+                                        <div className="mt-2 text-sm text-gray-600">
+                                            {renderFormattedContent(lecture.description)}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>{renderFormattedContent(lecture.description)}</div>
+                                )}
                             </td>
                             <td className="border p-2">
                                 {editingId === lecture._id ? (

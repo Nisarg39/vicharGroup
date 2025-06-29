@@ -2,9 +2,14 @@
 
 export default function Sidebar(props) {
 	const handleLogout = () => {
-	    localStorage.removeItem('isAdmin');
-        window.location.reload();
+		localStorage.removeItem('isAdmin');
+		window.location.reload();
 	};
+
+	// Function to determine if menu item is active
+	const isActive = (menuName) => {
+		return props.dashBoardName === menuName ? "bg-gray-200" : "";
+	}
 
 	return (
 		<div className="bg-gray-100">
@@ -18,7 +23,7 @@ export default function Sidebar(props) {
 									<div className="bg-top bg-cover space-y-1">
 										<a
 											onClick={() => props.setDashBoardName("dashboard")}
-											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+											className={`font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer ${isActive("dashboard")}`}
 										>
 											<span className="justify-center items-center flex">
 												<svg
@@ -40,8 +45,7 @@ export default function Sidebar(props) {
 										</a>
 										<a
 											onClick={() => props.setDashBoardName("adminControls")}
-											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
-                    transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+											className={`font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer ${isActive("adminControls")}`}
 										>
 											<span className="justify-center items-center flex">
 												<svg
@@ -63,8 +67,7 @@ export default function Sidebar(props) {
 										</a>
 										<a
 											onClick={() => props.setDashBoardName("appControl")}
-											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
-                    transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+											className={`font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer ${isActive("appControl")}`}
 										>
 											<span className="justify-center items-center flex">
 												<svg
@@ -85,9 +88,30 @@ export default function Sidebar(props) {
 											<span>App Control</span>
 										</a>
 										<a
+											onClick={() => props.setDashBoardName("examPortal")}
+											className={`font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer ${isActive("examPortal")}`}
+										>
+											<span className="justify-center items-center flex">
+												<svg
+													className="flex-shrink-0 w-5 h-5 mr-4"
+													xmlns="http://www.w3.org/2000/svg"
+													fill="none"
+													viewbox="0 0 24 24"
+													stroke="currentColor"
+													stroke-width="2"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+													/>
+												</svg>
+											</span>
+											<span>Exam Portal</span>
+										</a>
+										<a
 											onClick={() => props.setDashBoardName("settings")}
-											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
-                    transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+											className={`font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer ${isActive("settings")}`}
 										>
 											<span className="justify-center items-center flex">
 												<svg
@@ -114,8 +138,7 @@ export default function Sidebar(props) {
 										</a>
 										<a
 											onClick={handleLogout}
-											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex
-                    transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
+											className="font-medium text-sm items-center rounded-lg text-gray-900 px-4 py-2.5 flex transition-all duration-200 hover:bg-gray-200 group cursor-pointer"
 										>
 											<span className="justify-center items-center flex">
 												<svg
