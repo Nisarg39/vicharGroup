@@ -3,6 +3,45 @@ import { addLecture, showLectures, updateLecture, showTeachers, deleteLecture } 
 import LatexToolbar from './LatexToolbar'
 import 'katex/dist/katex.min.css'
 import { InlineMath } from 'react-katex'
+import Select from 'react-select'
+
+const customStyles = {
+    option: (provided, state) => ({
+        ...provided,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px'
+    }),
+    control: (provided) => ({
+        ...provided,
+        minHeight: '42px',
+        padding: '2px'
+    }),
+    menu: (provided) => ({
+        ...provided,
+        zIndex: 9999
+    }),
+    singleValue: (provided) => ({
+        ...provided,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+    })
+}
+
+const formatOptionLabel = ({ value, label, imageUrl }) => (
+    <div className="flex items-center gap-2">
+        {imageUrl && (
+            <img 
+                src={imageUrl} 
+                alt={label} 
+                className="w-6 h-6 rounded-full"
+            />
+        )}
+        <span>{label}</span>
+    </div>
+)
 
 export default function VideoLectures({chapter}){
     const [serialNumber, setSerialNumber] = useState('')
@@ -15,6 +54,7 @@ export default function VideoLectures({chapter}){
     const [teachers, setTeachers] = useState([])
     const [selectedTeacher, setSelectedTeacher] = useState('')
     const [activeField, setActiveField] = useState(null)
+    const [teacherOptions, setTeacherOptions] = useState([])
 
     useEffect(() => {
         const fetchLectures = async() => {
@@ -29,6 +69,13 @@ export default function VideoLectures({chapter}){
             const response = await showTeachers()
             if(response.success){
                 setTeachers(response.teachers)
+                // Transform teachers data into the format React-Select expects
+                const options = response.teachers.map(teacher => ({
+                    value: teacher._id,
+                    label: teacher.name,
+                    imageUrl: teacher.imageUrl
+                }))
+                setTeacherOptions(options)
             }else{
                 alert(response.message)
             }
@@ -233,18 +280,16 @@ export default function VideoLectures({chapter}){
                     </div>
                     <div className="w-1/2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
-                        <select
-                            className="w-full p-2 border rounded"
-                            value={selectedTeacher}
-                            onChange={(e) => setSelectedTeacher(e.target.value)}
-                        >
-                            <option value="">Select Teacher</option>
-                            {teachers.map((teacher) => (
-                                <option key={teacher._id} value={teacher._id}>
-                                    {teacher.name}
-                                </option>
-                            ))}
-                        </select>
+                        <Select
+                            styles={customStyles}
+                            formatOptionLabel={formatOptionLabel}
+                            options={teacherOptions}
+                            value={teacherOptions.find(option => option.value === selectedTeacher)}
+                            onChange={(option) => setSelectedTeacher(option.value)}
+                            className="w-full"
+                            placeholder="Select Teacher"
+                            isClearable
+                        />
                     </div>
                 </div>
             </div>
@@ -345,19 +390,16 @@ export default function VideoLectures({chapter}){
                             </td>
                             <td className="border p-2">
                                 {editingId === lecture._id ? (
-                                    <select
-                                    className="w-full p-1 border rounded"
-                                    value={selectedTeacher}
-                                    onChange={(e) => setSelectedTeacher(e.target.value)}
-                                >
-                                    <option value="">Select Teacher</option>
-                                    {teachers.map((teacher) => (
-                                        <option key={teacher._id} value={teacher._id} className="flex items-center gap-2">
-                                            {teacher.image && <img src={teacher.image} alt={teacher.name} className="w-6 h-6 rounded-full inline mr-2" />}
-                                            {teacher.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <Select
+                                        styles={customStyles}
+                                        formatOptionLabel={formatOptionLabel}
+                                        options={teacherOptions}
+                                        value={teacherOptions.find(option => option.value === selectedTeacher)}
+                                        onChange={(option) => setSelectedTeacher(option.value)}
+                                        className="w-full"
+                                        placeholder="Select Teacher"
+                                        isClearable
+                                    />
                                 ) : (
                                     <div className="flex items-center gap-2">
                                         {lecture.teacher && lecture.teacher.imageUrl && (

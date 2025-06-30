@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { addCollege } from '../../../../server_actions/actions/adminActions';
+import ImageUpload from '../../../common/ImageUpload';
 
 export default function AddCollege({ onAddCollege, setShowAddForm }) {
   const [errors, setErrors] = useState({});
@@ -11,27 +13,45 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     principalContact: '',
     address: '',
     collegeCode: '',
-    website: ''
+    website: '',
+    collegeLogo: ''
   });
+  const [imagePreview, setImagePreview] = useState('');
 
   const validateField = (name, value) => {
     switch (name) {
-      case 'name':
+      case 'name': // collegeName
+        if (!value) return 'College name is required';
         return value.length >= 3 ? '' : 'College name must be at least 3 characters';
+        
       case 'collegeCode':
+        if (!value) return 'College code is required';
         return value.length >= 2 ? '' : 'College code must be at least 2 characters';
-      case 'contact':
+        
+      case 'location': // collegeLocation
+        if (!value) return 'Location is required';
+        return value.length >= 2 ? '' : 'Location must be at least 2 characters';
+        
+      case 'contact': // collegeContact
+        if (!value) return 'Contact number is required';
         return /^[0-9]{10}$/.test(value) ? '' : 'Contact must be 10 digits';
-      case 'email':
+        
+      case 'email': // collegeEmail
+        if (!value) return 'Email is required';
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Invalid email format';
-      case 'website':
+        
+      case 'website': // collegeWebsite - optional
         return value === '' || /^https?:\/\/.+\..+/.test(value) ? '' : 'Invalid website URL';
-      case 'principalName':
-        return value.length >= 3 ? '' : 'Principal name must be at least 3 characters';
-      case 'principalContact':
-        return /^[0-9]{10}$/.test(value) ? '' : 'Contact must be 10 digits';
-      case 'address':
-        return value.length >= 10 ? '' : 'Address must be at least 10 characters';
+        
+      case 'principalName': // optional
+        return value === '' || value.length >= 3 ? '' : 'Principal name must be at least 3 characters';
+        
+      case 'principalContact': // optional
+        return value === '' || /^[0-9]{10}$/.test(value) ? '' : 'Contact must be 10 digits';
+        
+      case 'address': // Address - optional
+        return value === '' || value.length >= 10 ? '' : 'Address must be at least 10 characters';
+        
       default:
         return '';
     }
@@ -39,6 +59,30 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Handle phone number fields
+    if (name === 'contact' || name === 'principalContact') {
+      // Return early if non-numeric key is pressed
+      if (!/^\d*$/.test(value)) {
+        return;
+      }
+      
+      // Limit to 10 digits
+      const numbersOnly = value.slice(0, 10);
+      setNewCollege({
+        ...newCollege,
+        [name]: numbersOnly
+      });
+      
+      const error = validateField(name, numbersOnly);
+      setErrors({
+        ...errors,
+        [name]: error
+      });
+      return;
+    }
+
+    // Handle other fields
     setNewCollege({
       ...newCollege,
       [name]: value
@@ -60,20 +104,71 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     }`;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onAddCollege(newCollege);
-    setNewCollege({
-      name: '',
-      location: '',
-      contact: '',
-      email: '',
-      principalName: '',
-      principalContact: '',
-      address: '',
-      collegeCode: '',
-      website: ''
+    
+    // Check for any validation errors
+    const fieldErrors = {};
+    Object.keys(newCollege).forEach(key => {
+      const error = validateField(key, newCollege[key]);
+      if (error) fieldErrors[key] = error;
     });
+
+    // If there are validation errors, set them and return
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
+
+    // Map the form fields to match the MongoDB schema
+    const collegeData = {
+      collegeName: newCollege.name,
+      collegeCode: newCollege.collegeCode,
+      collegeLocation: newCollege.location,
+      collegeContact: newCollege.contact,
+      collegeEmail: newCollege.email,
+      collegeWebsite: newCollege.website,
+      principalName: newCollege.principalName,
+      principalContact: newCollege.principalContact,
+      Address: newCollege.address,
+      collegeLogo: newCollege.collegeLogo
+    };
+
+    try {
+      const response = await addCollege(collegeData);
+      
+      // Show success alert
+      alert('College added successfully!');
+      
+      // Reset form
+      setNewCollege({
+        name: '',
+        location: '',
+        contact: '',
+        email: '',
+        principalName: '',
+        principalContact: '',
+        address: '',
+        collegeCode: '',
+        website: '',
+        collegeLogo: ''
+      });
+      setImagePreview('');
+      
+      // Call the onAddCollege prop to trigger table refresh
+      if (onAddCollege) {
+        await onAddCollege();
+      }
+      
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error adding college:', error);
+      // Show error alert
+      alert('Failed to add college. Please try again.');
+      setErrors({
+        submit: 'Failed to add college. Please try again.'
+      });
+    }
   };
 
   return (
@@ -88,6 +183,32 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
         </button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">College Logo</label>
+          <ImageUpload
+            aspectRatio={1}
+            onImageUploaded={(imageUrl) => {
+              setNewCollege({
+                ...newCollege,
+                collegeLogo: imageUrl
+              });
+              setImagePreview(imageUrl);
+            }}
+            className="mt-1"
+            maxWidth={300}
+            maxHeight={300}
+            required={false}
+          />
+          {imagePreview && (
+            <div className="mt-2">
+              <img 
+                src={imagePreview} 
+                alt="College Logo Preview" 
+                className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+              />
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">College Name</label>
@@ -138,7 +259,15 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
               name="contact"
               value={newCollege.contact}
               onChange={handleInputChange}
+              onKeyPress={(e) => {
+                if (!/[0-9]/.test(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className={getInputClassName('contact')}
+              maxLength="10"
+              pattern="[0-9]*"
+              inputMode="numeric"
               required
             />
             {errors.contact && (
@@ -193,7 +322,15 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
               name="principalContact"
               value={newCollege.principalContact}
               onChange={handleInputChange}
+              onKeyPress={(e) => {
+                if (!/[0-9]/.test(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               className={getInputClassName('principalContact')}
+              maxLength="10"
+              pattern="[0-9]*"
+              inputMode="numeric"
               required
             />
             {errors.principalContact && (

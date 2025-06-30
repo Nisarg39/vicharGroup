@@ -17,8 +17,8 @@ import Teacher from "../models/teacher"
 import Razorpay_Info from "../models/razorpay_info"
 import Segment from "../models/segment"
 import Banner from "../models/banner"
+import College from "../models/exam_portal/college"
 import jwt from "jsonwebtoken"
-
 
 export async function adminLogin(details) {
     try {
@@ -1400,3 +1400,150 @@ export async function updateBanner(details) {
     }
 }
 
+
+// // ------------------------- Exam Portal Controls -------------------------
+
+export async function addCollege(details) {
+    try {
+        await connectDB()
+        const college = await College.create(details)
+        return {
+            success: true,
+            message: "College added successfully",
+            college: JSON.parse(JSON.stringify(college))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error adding college"
+        }
+    }
+}
+
+export async function showCollegeList(page = 1, limit = 10) {
+    try {
+        await connectDB()
+        const skip = (page - 1) * limit
+        const colleges = await College.find({})
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+            .lean()
+
+        const totalCount = await College.countDocuments({})
+        const totalPages = Math.ceil(totalCount / limit)
+
+        return {
+            success: true,
+            colleges: colleges,
+            totalLength: totalCount,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalCount,
+                itemsPerPage: limit
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching colleges"
+        }
+    }
+}
+
+export async function updateCollegeDetails(details){
+    try {
+        await connectDB();
+        const college = await College.findByIdAndUpdate(
+            details._id,
+            { $set: details }, // Use $set to update only provided fields
+            { 
+                new: true,
+                runValidators: true // Enable validation
+            }
+        );
+        
+        if (!college) {
+            return {
+                success: false,
+                message: "College not found"
+            };
+        }
+
+        return {
+            success: true,
+            message: "College details updated successfully",
+            college: JSON.parse(JSON.stringify(college))
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error updating college details: " + error.message
+        };
+    }
+}
+
+export async function deleteCollege(collegeId) {
+    try {
+        await connectDB();
+        const college = await College.findByIdAndDelete(collegeId);
+        if (!college) {
+            return {
+                success: false,
+                message: "College not found"
+            };
+        }
+        return {
+            success: true,
+            message: "College deleted successfully",
+            college: JSON.parse(JSON.stringify(college))
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error deleting college"
+        };
+    }
+}
+
+// search college by name and returning result like showCollegeList function show result according to closest match
+export async function searchCollege(searchTerm, page = 1, limit = 10) {
+    try {
+        await connectDB();
+        const skip = (page - 1) * limit;
+
+        // Use regex to search for college names that match the search term
+        const regex = new RegExp(searchTerm, 'i'); // 'i' for case-insensitive search
+
+        const colleges = await College.find({ collegeName: regex })
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const totalCount = await College.countDocuments({ name: regex });
+        const totalPages = Math.ceil(totalCount / limit);
+        return {
+            success: true,
+            colleges: colleges,
+            totalLength: totalCount,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalItems: totalCount,
+                itemsPerPage: limit
+            }
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error searching colleges"
+        };
+    }
+}

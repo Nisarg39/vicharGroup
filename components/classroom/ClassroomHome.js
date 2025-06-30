@@ -46,19 +46,19 @@ export default function ClassroomHome() {
     return (
       <section className="min-h-screen">
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-1.5 h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
-                  <p className="text-xl font-bold text-gray-800">
+          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-0">
+            <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md mx-auto transform transition-all duration-300 scale-100">
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-1 sm:w-1.5 h-8 sm:h-12 bg-gradient-to-b from-[#1d77bc] to-[#2488d8] rounded-full"></div>
+                  <p className="text-lg sm:text-xl font-bold text-gray-800">
                     Complete Your Purchase
                   </p>
                 </div>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   Redirecting to Payment Page .. 
                 </p>
-                <div className="flex justify-center">
+                <div className="flex justify-center py-2">
                   <LoadingSpinner />
                 </div>
               </div>
