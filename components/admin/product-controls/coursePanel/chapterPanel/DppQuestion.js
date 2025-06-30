@@ -6,7 +6,8 @@ import ImageUpload from '../../../../common/ImageUpload'
 import LatexToolbar from './LatexToolbar'
 import { CldUploadButton } from 'next-cloudinary'
 import { renderFormattedText } from '../../../../../utils/textFormatting'
-
+import { convertLatexToFormattedText } from '../../../../../utils/convertLatexToRegular'
+import { handleLatexConversion } from '../../../../../utils/latexConversion'
 
 export default function DppQuestion({dpp, addedQuestion}){
     const [showOptions, setShowOptions] = useState(false)
@@ -183,6 +184,58 @@ export default function DppQuestion({dpp, addedQuestion}){
         }
     }
 
+    // Add this helper function at the top of the component
+    const detectFormat = (text) => {
+      // Check for LaTeX markers ($) or common LaTeX commands
+      const hasLatexMarkers = text.includes('$') || /\\[a-zA-Z]+\{/.test(text);
+      return hasLatexMarkers ? 'latex' : 'regular';
+    };
+
+    // Add this conversion handler
+    const handleFormatConversion = (field) => {
+      let text = '';
+      let currentFormat = '';
+      
+      if (field === 'question') {
+        text = questionText;
+        currentFormat = detectFormat(questionText);
+      } else if (['A', 'B', 'C', 'D'].includes(field)) {
+        text = options[field];
+        currentFormat = detectFormat(options[field]);
+      }
+
+      if (currentFormat === 'latex') {
+        // Convert from LaTeX to regular text
+        const convertedText = convertLatexToFormattedText(text);
+        if (field === 'question') {
+          setQuestionText(convertedText);
+        } else {
+          handleOptionChange(field, convertedText);
+        }
+      } else {
+        // Convert from regular to LaTeX format
+        // You'll need to implement this conversion function
+        const convertedText = text.replace(/\*\*(.*?)\*\*/g, '\\textbf{$1}')
+                                 .replace(/\*(.*?)\*/g, '\\textit{$1}');
+        if (field === 'question') {
+          setQuestionText(convertedText);
+        } else {
+          handleOptionChange(field, convertedText);
+        }
+      }
+    };
+
+    // Add this function to handle real-time conversion
+    const handleTextChange = (value, field) => {
+      const convertedText = handleLatexConversion(value);
+      
+      if (field === 'question') {
+        setQuestionText(convertedText);
+      } else if (['A', 'B', 'C', 'D'].includes(field)) {
+        handleOptionChange(field, convertedText);
+      }
+    };
+
     return(
         <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="space-y-6">
@@ -242,7 +295,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                             placeholder="Question (Use $ for LaTeX, **text** for bold, press Enter for new line)"
                             required
                             value={questionText}
-                            onChange={(e) => setQuestionText(e.target.value)}
+                            onChange={(e) => handleTextChange(e.target.value, 'question')}
                             onFocus={() => handleFieldFocus('question')}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                         />                        
@@ -273,7 +326,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                     
                     <div className="mb-4">
                         <span className="font-bold mr-2">{serialNumber || 'Q.'})</span>
-                        {renderFormattedText(questionText)}
+                        {renderFormattedText(convertLatexToFormattedText(questionText))}
                     </div>
                     
                     {/* Display question image if available */}
@@ -291,7 +344,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                     {imageUrls[option] ? (
                                         <img src={options[option]} alt={`Option ${option}`} className="max-w-full h-auto" />
                                     ) : (
-                                        <div>{renderFormattedText(options[option])}</div>
+                                        <div>{renderFormattedText(convertLatexToFormattedText(options[option]))}</div>
                                     )}
                                 </div>
                             ))}
@@ -340,7 +393,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                         placeholder={`Option ${option} (Use $ for LaTeX, press Enter for new line)`}
                                         required
                                         value={options[option]}
-                                        onChange={(e) => handleOptionChange(option, e.target.value)}
+                                        onChange={(e) => handleTextChange(e.target.value, option)}
                                         onFocus={() => handleFieldFocus(option)}
                                         className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
                                         rows={2}

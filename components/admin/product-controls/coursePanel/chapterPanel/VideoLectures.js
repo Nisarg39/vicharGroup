@@ -4,6 +4,7 @@ import LatexToolbar from './LatexToolbar'
 import 'katex/dist/katex.min.css'
 import { InlineMath } from 'react-katex'
 import Select from 'react-select'
+import { handleLatexConversion } from '../../../../../utils/latexConversion'
 
 const customStyles = {
     option: (provided, state) => ({
@@ -241,7 +242,7 @@ export default function VideoLectures({chapter}){
                                 className="w-full p-2 border rounded"
                                 placeholder="Enter title"
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => setTitle(handleLatexConversion(e.target.value))}
                                 onFocus={() => setActiveField('title')}
                             />
                             <div className="mt-2 text-sm text-gray-600">
@@ -258,7 +259,7 @@ export default function VideoLectures({chapter}){
                             className="w-full p-2 border rounded resize-y min-h-[100px]"
                             placeholder="Enter description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(handleLatexConversion(e.target.value))}
                             onFocus={() => setActiveField('description')}
                         />
                         <div className="mt-2 text-sm text-gray-600">

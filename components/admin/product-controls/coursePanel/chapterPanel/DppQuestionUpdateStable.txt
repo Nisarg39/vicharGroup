@@ -6,6 +6,7 @@ import ImageUpload from '../../../../common/ImageUpload'
 import LatexToolbar from './LatexToolbar'
 import { CldUploadButton } from 'next-cloudinary';
 import { renderFormattedText } from '../../../../../utils/textFormatting'
+import { handleLatexConversion } from '../../../../../utils/latexConversion'
 
 export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
 
@@ -68,7 +69,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
             throw new Error('Please select a question type')
         }
         if (selectedType === 'numeric') {
-            if (!numericAnswer || isNaN(numericAnswer)) {
+            if (!numericAnswer) {
                 throw new Error('Please enter a valid numeric answer')
             }
         }
@@ -105,7 +106,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                 multipleObjective: selectedType === 'multiple' ? formattedOptions : undefined,
                 answerObjective: selectedType === 'objective' ? answer : undefined,
                 answerMultiple: selectedType === 'multiple' ? answer.split(',').map(a => a.trim()) : undefined,
-                answerNumeric: selectedType === 'numeric' ? Number(numericAnswer) : undefined,
+                answerNumeric: selectedType === 'numeric' ? numericAnswer : undefined,
                 solutionPdf: solutionPdfUrl || undefined,
             }
 
@@ -126,7 +127,14 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
         }, 3000)
     }
     const handleOptionChange = (option, value) => {
-        setOptions(prev => ({...prev, [option]: value}))
+        const convertedValue = handleLatexConversion(value)
+        setOptions(prev => ({...prev, [option]: convertedValue}))
+    }
+
+    // Add this new handler for question text
+    const handleQuestionTextChange = (e) => {
+        const convertedValue = handleLatexConversion(e.target.value)
+        setQuestionText(convertedValue)
     }
 
     const handleImageUrlChange = (option) => {
@@ -148,14 +156,12 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
 
     // Function to insert LaTeX expression into the active field
     const handleInsertLatex = (expression, targetField) => {
-        console.log("DppQuestionUpdate: Inserting expression:", expression, "to field:", targetField);
+        const convertedExpression = handleLatexConversion(expression)
         
         if (targetField === 'question') {
-            setQuestionText(prev => prev + expression);
+            setQuestionText(prev => prev + convertedExpression)
         } else if (['A', 'B', 'C', 'D'].includes(targetField)) {
-            handleOptionChange(targetField, options[targetField] + expression);
-        } else {
-            console.warn("DppQuestionUpdate: Unknown target field:", targetField);
+            handleOptionChange(targetField, options[targetField] + convertedExpression)
         }
     }
 
@@ -243,7 +249,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                             placeholder="Question (Use $ for LaTeX, **text** for bold, *text* for italic, press Enter for new line)"
                             required
                             value={questionText}
-                            onChange={(e) => setQuestionText(e.target.value)}
+                            onChange={handleQuestionTextChange}
                             onFocus={() => handleFieldFocus('question')}
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                         />                        
@@ -384,7 +390,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                 {selectedType === 'numeric' && (
                     <div className="bg-gray-50 p-4 rounded-md">
                         <input 
-                            type="number" 
+                            type="text" 
                             placeholder="Enter Numeric Answer"
                             required
                             value={numericAnswer}

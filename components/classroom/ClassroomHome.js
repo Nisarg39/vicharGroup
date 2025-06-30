@@ -44,7 +44,7 @@ export default function ClassroomHome() {
     }, [])
 
     return (
-      <section className="min-h-screen">
+      <section className="min-h-screen min-w-full overflow-y-auto">
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-0">
             <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-sm sm:max-w-md mx-auto transform transition-all duration-300 scale-100">
