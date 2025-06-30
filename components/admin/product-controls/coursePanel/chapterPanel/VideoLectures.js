@@ -340,7 +340,7 @@ export default function VideoLectures({chapter}){
                                             value={lecture.title}
                                             onChange={(e) => {
                                                 const updatedLectures = [...lectures]
-                                                updatedLectures[index].title = e.target.value
+                                                updatedLectures[index].title = handleLatexConversion(e.target.value)
                                                 setLectures(updatedLectures)
                                             }}
                                             onFocus={() => setActiveField('editTitle')}
@@ -362,7 +362,7 @@ export default function VideoLectures({chapter}){
                                             value={lecture.description}
                                             onChange={(e) => {
                                                 const updatedLectures = [...lectures]
-                                                updatedLectures[index].description = e.target.value
+                                                updatedLectures[index].description = handleLatexConversion(e.target.value)
                                                 setLectures(updatedLectures)
                                             }}
                                             onFocus={() => setActiveField('editDescription')}
