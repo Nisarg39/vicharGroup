@@ -14,7 +14,8 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     address: '',
     collegeCode: '',
     website: '',
-    collegeLogo: ''
+    collegeLogo: '',
+    isActive: true // Default to active
   });
   const [imagePreview, setImagePreview] = useState('');
 
@@ -95,6 +96,14 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     });
   };
 
+  // Handle toggle switch for isActive
+  const handleToggleChange = () => {
+    setNewCollege({
+      ...newCollege,
+      isActive: !newCollege.isActive
+    });
+  };
+
   const getInputClassName = (fieldName) => {
     const baseClasses = "mt-1 block w-full rounded-md border px-3 py-2";
     return `${baseClasses} ${
@@ -110,8 +119,10 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     // Check for any validation errors
     const fieldErrors = {};
     Object.keys(newCollege).forEach(key => {
-      const error = validateField(key, newCollege[key]);
-      if (error) fieldErrors[key] = error;
+      if (key !== 'isActive') { // Skip validation for boolean fields
+        const error = validateField(key, newCollege[key]);
+        if (error) fieldErrors[key] = error;
+      }
     });
 
     // If there are validation errors, set them and return
@@ -131,7 +142,8 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
       principalName: newCollege.principalName,
       principalContact: newCollege.principalContact,
       Address: newCollege.address,
-      collegeLogo: newCollege.collegeLogo
+      collegeLogo: newCollege.collegeLogo,
+      isActive: newCollege.isActive // Include isActive state in the data sent to server
     };
 
     try {
@@ -151,7 +163,8 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
         address: '',
         collegeCode: '',
         website: '',
-        collegeLogo: ''
+        collegeLogo: '',
+        isActive: true
       });
       setImagePreview('');
       
@@ -350,6 +363,36 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
             {errors.address && (
               <p className="mt-1 text-sm text-red-600">{errors.address}</p>
             )}
+          </div>
+          
+          {/* Toggle switch for isActive */}
+          <div className="col-span-2">
+            <div className="flex items-center">
+              <label className="mr-3 text-sm font-medium text-gray-700">Status:</label>
+              <div className="relative inline-block w-12 mr-2 align-middle select-none">
+                <input
+                  type="checkbox"
+                  name="isActive"
+                  id="isActive"
+                  checked={newCollege.isActive}
+                  onChange={handleToggleChange}
+                  className="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer focus:outline-none transition-transform duration-200 ease-in"
+                  style={{
+                    transform: newCollege.isActive ? 'translateX(100%)' : 'translateX(0)',
+                    borderColor: newCollege.isActive ? '#4F46E5' : '#D1D5DB',
+                  }}
+                />
+                <label
+                  htmlFor="isActive"
+                  className={`block overflow-hidden h-6 rounded-full cursor-pointer transition-colors duration-200 ease-in ${
+                    newCollege.isActive ? 'bg-indigo-600' : 'bg-gray-300'
+                  }`}
+                ></label>
+              </div>
+              <span className={`text-sm ${newCollege.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                {newCollege.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
           </div>
         </div>
         

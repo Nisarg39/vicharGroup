@@ -1420,27 +1420,43 @@ export async function addCollege(details) {
         }
     }
 }
-
 export async function showCollegeList(page = 1, limit = 10) {
     try {
         await connectDB()
         const skip = (page - 1) * limit
-        const colleges = await College.find({})
-            .skip(skip)
-            .limit(limit)
-            .sort({ createdAt: -1 })
-            .lean()
+        // Single aggregation pipeline to get colleges and counts
+        const [aggregateResult] = await College.aggregate([
+            {
+                $facet: {
+                    colleges: [
+                        { $sort: { createdAt: -1 } },
+                        { $skip: skip },
+                        { $limit: limit }
+                    ],
+                    totalCount: [
+                        { $count: 'count' }
+                    ],
+                    inactiveCount: [
+                        { $match: { isActive: false } },
+                        { $count: 'count' }
+                    ]
+                }
+            }
+        ])
 
-        const totalCount = await College.countDocuments({})
+        const colleges = aggregateResult.colleges
+        const totalCount = aggregateResult.totalCount[0]?.count || 0
+        const inactiveCount = aggregateResult.inactiveCount[0]?.count || 0
         const totalPages = Math.ceil(totalCount / limit)
 
         return {
             success: true,
-            colleges: colleges,
+            colleges,
             totalLength: totalCount,
+            inactiveCount,
             pagination: {
                 currentPage: page,
-                totalPages: totalPages,
+                totalPages,
                 totalItems: totalCount,
                 itemsPerPage: limit
             }

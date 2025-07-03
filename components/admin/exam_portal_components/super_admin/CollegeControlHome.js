@@ -16,6 +16,7 @@ export default function CollegeControlHome() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [inactiveColleges, setInactiveColleges] = useState(0);
 
   const fetchColleges = async () => {
     const response = await showCollegeList(currentPage, itemsPerPage);
@@ -23,6 +24,7 @@ export default function CollegeControlHome() {
       setColleges(response.colleges);
       setTotalPages(response.pagination.totalPages);
       setTotalColleges(response.totalLength);
+      setInactiveColleges(response.inactiveCount);
     }
   };
 
@@ -116,13 +118,21 @@ export default function CollegeControlHome() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
+      <div className="mb-6 flex gap-4">
         <div className="bg-[#1d77bc] text-white p-4 rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 max-w-[200px]">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Registered Colleges</h3>
             <FaUniversity className="text-xl opacity-80" />
           </div>
           <p className="text-2xl font-bold mt-1">{totalColleges}</p>
+        </div>
+        
+        <div className="bg-[#dc3545] text-white p-4 rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-200 max-w-[200px]">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Inactive Colleges</h3>
+            <FaUniversity className="text-xl opacity-80" />
+          </div>
+          <p className="text-2xl font-bold mt-1">{inactiveColleges}</p>
         </div>
       </div>
 
@@ -173,6 +183,7 @@ export default function CollegeControlHome() {
           totalItems={totalColleges}
           onCollegeUpdate={handleCollegeUpdate}
           onDeleteCollege={handleDeleteCollege}
+          refreshColleges={fetchColleges}
         />
       )}
     </div>

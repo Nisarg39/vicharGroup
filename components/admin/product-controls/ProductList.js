@@ -108,6 +108,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
           <option value="">All Products</option>
           <option value="course">Courses</option>
           <option value="test-series">Test Series</option>
+          <option value="mtc">MTC</option>
         </select>
       </div>
       <div className="px-3 space-y-3">
@@ -237,6 +238,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
                   <option value="">Select Type</option>
                   <option value="course">Course</option>
                   <option value="test-series">Test Series</option>
+                  <option value="mtc">MTC</option>
                 </select>
               </div>
               <div>

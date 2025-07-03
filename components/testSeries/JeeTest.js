@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 const JeeTest = (props) => {
   const courses = [
-    { id: 1, title: '11th Standard', level: '11th', image: '/course-photo/testSeries.jpeg', link: '#', description: 'Comprehensive JEE preparation course for 11th students.' },
+    { id: 1, title: '11th Standard', level: '11th', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/jee/11', description: 'Comprehensive JEE preparation course for 11th students.' },
     { id: 2, title: '12th Standard', level: '12th', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/jee/12', description: 'Comprehensive JEE preparation course for 12th students.' },
   ]
 
@@ -22,17 +22,11 @@ const JeeTest = (props) => {
               <div className="p-4 sm:p-5 md:p-6 relative">
                 <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-gray-800 hover:text-[#106fb8] transition-colors duration-300 text-center">{course.title}</h3>
                 <p className="text-sm sm:text-base text-gray-600 mb-2 sm:mb-2 leading-relaxed line-clamp-3">{course.description}</p>
-                {course.id === 2 ? (
-                  <Link href={course.link} passHref>
-                    <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base relative overflow-hidden">
-                      <span className="flex items-center justify-center gap-2">Enroll Now →</span>
-                    </button>
-                  </Link>
-                ) : (
-                  <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out text-sm sm:text-base relative overflow-hidden opacity-70 cursor-not-allowed">
-                    <span className="flex items-center justify-center gap-2">Coming Soon</span>
+                <Link href={course.link} passHref>
+                  <button className="w-full bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ee672d] hover:to-[#f47f33] text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[#f47f33] focus:ring-opacity-50 group text-sm sm:text-base relative overflow-hidden">
+                    <span className="flex items-center justify-center gap-2">Enroll Now →</span>
                   </button>
-                )}
+                </Link>
               </div>
             </div>
           ))}

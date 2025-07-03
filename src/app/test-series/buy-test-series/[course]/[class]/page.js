@@ -247,7 +247,48 @@ const Home = () => {
             </>
           )}
 
+          {params.course === "jee" && params.class === "11" && (
+            <>
+              <TestSeriesHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`} 
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Test Series"
+              />
+              <TestSchedule testSchedule={testScheduleJee} title="Test Schedule - JEE Mains (2025) [Full Length]" />
+            </>
+          )}
+
           {params.course === "neet" && params.class === "12" && (
+            <>
+              <TestSeriesHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Test Series"
+              />
+              <TestSchedule testSchedule={testScheduleNeet} title="Test Schedule – NEET (2025)[Full Length]" />
+              <TestSchedule testSchedule={testScheduleNeetPart2} title="Test Schedule – NEET (2025)[Part 2]" />
+            </>
+          )}
+
+          {params.course === "neet" && params.class === "11" && (
             <>
               <TestSeriesHero
                 productId={product._id}
@@ -288,6 +329,26 @@ const Home = () => {
             </>
           )}
 
+          {params.course === "cet-pcm" && params.class === "11" && (
+            <>
+              <TestSeriesHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Online Test Series"
+              />
+              <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – MHT-CET (2025) [Full Length]" />
+            </>
+          )}
+
           {params.course === "cet-pcb" && params.class === "12" && (
             <>
               <TestSeriesHero
@@ -307,6 +368,27 @@ const Home = () => {
               <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
             </>
           )}
+
+          {params.course === "cet-pcb" && params.class === "11" && (
+            <>
+              <TestSeriesHero
+                productId={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}  
+                discountPrice={`${product.discountPrice}`}
+                course={`${params.course}`}
+                params={`${params.class}`}
+                examMode="Offline Test Series"
+              />
+              <TestSchedule testSchedule={testScheduleCet} title="Test Schedule – CET (2025)" />
+            </>
+          )}
+          
         </>
       )}
     </section>

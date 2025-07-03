@@ -34,7 +34,11 @@ const collegeSchema = new mongoose.Schema({
     },
     Address: {
         type: String,
-    }
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
 },{
     timestamps: true
 });

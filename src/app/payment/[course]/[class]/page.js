@@ -713,7 +713,41 @@ const Home = () => {
             </>
           )}
 
+          {params.course === "jee" && params.class === "11" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
+              />
+            </>
+          )}
+
           {params.course === "neet" && params.class === "12" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
+              />
+            </>
+          )}
+
+          {params.course === "neet" && params.class === "11" && (
             <>
               <Payment
                 _id={product._id}
@@ -747,6 +781,23 @@ const Home = () => {
             </>
           )}
 
+          {params.course === "cet-pcm" && params.class === "11" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Maths"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                examMode="Online Test Series"
+              />
+            </>
+          )}
+
           {params.course === "cet-pcb" && params.class === "12" && (
             <>
               <Payment
@@ -763,6 +814,24 @@ const Home = () => {
               />
             </>
           )}
+
+          {params.course === "cet-pcb" && params.class === "11" && (
+            <>
+              <Payment
+                _id={product._id}
+                title={product.name}
+                class={product.class}
+                duration={`${product.duration} Months`}
+                language="English"
+                subjects="Physics, Chemistry, Biology"
+                testStartDate="11th March, 2025"
+                price={`${product.price}`}
+                discountPrice={`${product.discountPrice}`}
+                examMode="Offline Test Series"
+              />
+            </>
+          )}
+
         </>
       )}
     </section>

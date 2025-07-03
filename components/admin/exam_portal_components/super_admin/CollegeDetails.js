@@ -21,26 +21,37 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
     }));
   };
 
+  // Handle toggle switch for isActive
+  const handleToggleChange = () => {
+    setEditedCollege(prev => ({
+      ...prev,
+      isActive: !prev.isActive
+    }));
+  };
+
   const handleSubmit = async () => {
     try {
       const updatedData = {
-        _id: editedCollege._id, // Change collegeId to _id to match the model
-        ...editedCollege // Spread the rest of the edited college data
+        _id: editedCollege._id,
+        ...editedCollege
       };
       
       const response = await updateCollegeDetails(updatedData);
       
-      if(response.success) {
+
+      if(response && response.success) {
         setIsEditing(false);
         setEditedCollege(response.college);
         onUpdate(response.college);
-        alert(response.message);
+        alert("College details updated successfully!");
       } else {
-        alert(response.message || "Failed to update college details");
+        const errorMessage = response?.message || "Failed to update college details";
+        console.error("Update failed:", errorMessage);
+        alert(errorMessage);
       }
     } catch (error) {
       console.error("Error updating college details:", error);
-      alert("Failed to update college details");
+      alert("Failed to update college details. Please try again.");
     }
   };
 
@@ -236,6 +247,45 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
               <p className="text-sm font-semibold text-gray-600">Website</p>
             </div>
             {renderValue("Website URL", college.collegeWebsite, "collegeWebsite")}
+          </div>
+          
+          {/* Status Toggle Section */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-4 h-4 rounded-full ${editedCollege.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <p className="text-sm font-semibold text-gray-600">Status</p>
+            </div>
+            {!isEditing ? (
+              <p className={`text-sm ${editedCollege.isActive ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                {editedCollege.isActive ? 'Active' : 'Inactive'}
+              </p>
+            ) : (
+              <div className="flex items-center mt-2">
+                <div className="relative inline-block w-12 mr-2 align-middle select-none">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    id="isActive"
+                    checked={editedCollege.isActive}
+                    onChange={handleToggleChange}
+                    className="absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer focus:outline-none transition-transform duration-200 ease-in"
+                    style={{
+                      transform: editedCollege.isActive ? 'translateX(100%)' : 'translateX(0)',
+                      borderColor: editedCollege.isActive ? '#4F46E5' : '#D1D5DB',
+                    }}
+                  />
+                  <label
+                    htmlFor="isActive"
+                    className={`block overflow-hidden h-6 rounded-full cursor-pointer transition-colors duration-200 ease-in ${
+                      editedCollege.isActive ? 'bg-indigo-600' : 'bg-gray-300'
+                    }`}
+                  ></label>
+                </div>
+                <span className={`text-sm ${editedCollege.isActive ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                  {editedCollege.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

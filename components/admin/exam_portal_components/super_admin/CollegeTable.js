@@ -13,6 +13,7 @@ export default function CollegeTable({
   totalItems = 0,
   onCollegeUpdate,
   onDeleteCollege,
+  refreshColleges,
 }) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -50,7 +51,9 @@ export default function CollegeTable({
                   className={`cursor-pointer transition-colors duration-200 
                     ${selectedCollege?._id === college._id 
                       ? 'bg-blue-50 hover:bg-blue-100' 
-                      : 'hover:bg-gray-50'
+                      : college.isActive 
+                        ? 'hover:bg-gray-50'
+                        : 'bg-red-50 hover:bg-red-100'
                     }`}
                 >
                   <td className="px-6 py-5 text-sm">{college.collegeCode}</td>
@@ -97,6 +100,7 @@ export default function CollegeTable({
                         onUpdate={(updatedCollege) => {
                           onCollegeUpdate(updatedCollege);
                           onCollegeSelect(updatedCollege);
+                          refreshColleges();
                         }}
                       />
                     </td>
