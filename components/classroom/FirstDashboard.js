@@ -2,14 +2,15 @@
 import { useSelector } from "react-redux"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { useState } from "react"
 
 const CartCard = () => {
     const student = useSelector(state => state.login.studentDetails)
     const router = useRouter()
 
     return (
-        <div className="bg-white/90 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-gray-100 h-[300px] flex flex-col hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
-            <h2 className="text-lg lg:text-xl mb-6 text-gray-800 font-bold flex items-center gap-4 sticky top-0 bg-white/90 backdrop-blur-xl rounded-t-2xl">
+        <div className="bg-white/90 backdrop-blur-xl p-4 sm:p-6 rounded-3xl shadow-xl border border-gray-100 h-full flex flex-col hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
+            <h2 className="text-base sm:text-lg lg:text-xl mb-4 sm:mb-6 text-gray-800 font-bold flex items-center gap-2 sm:gap-4 sticky top-0 bg-white/90 backdrop-blur-xl rounded-t-2xl">
                 <div className="p-3 bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 rounded-xl">
                     <svg className="w-6 h-6 text-[#1d77bc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -19,66 +20,65 @@ const CartCard = () => {
                     Shopping Cart
                 </span>
                 {student?.cart?.length > 0 && (
-                    <span className="ml-auto bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white text-xs px-3 py-1.5 rounded-full font-bold">
+                    <span className="ml-auto bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white text-xs px-3 py-1.5 rounded-full font-bold animate-pulse">
                         {student.cart.length}
                     </span>
                 )}
             </h2>
 
-            <ul className="space-y-4 overflow-y-auto flex-1 pr-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+            <ul className="space-y-3 sm:space-y-4 overflow-y-auto flex-1 pr-2 sm:pr-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                 {student?.cart?.length > 0 ? (
-                    student.cart.map((item, index) => (
-                        <li key={index} className="group p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-2xl hover:from-blue-100/60 hover:to-indigo-100/60 transition-all duration-300 border border-blue-100/30 hover:border-blue-200/50 hover:shadow-lg transform hover:-translate-y-0.5">
-                            <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <Image 
-                                        src={item.image || "/course-photo/testSeries.jpeg"}
-                                        alt={item.type}
-                                        width={56}
-                                        height={56}
-                                        className="w-14 h-14 rounded-xl object-cover shadow-md group-hover:shadow-lg transition-all duration-300 border-2 border-white"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-base font-bold text-gray-800 truncate mb-1">{item.name}</p>
-                                    <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                                            </svg>
-                                            ₹{item.discountPrice}
-                                        </span>
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5 animate-pulse"></span>
-                                            {Math.round(((item.price - item.discountPrice) / item.price) * 100)}% OFF
-                                        </span>
+                    <>
+                        {student.cart.map((item, index) => (
+                            <li key={index} className="group p-3 sm:p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl sm:rounded-2xl hover:from-blue-100/60 hover:to-indigo-100/60 transition-all duration-300 border border-blue-100/30 hover:border-blue-200/50 hover:shadow-lg transform hover:-translate-y-0.5">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                        <Image 
+                                            src={item.image || "/course-photo/testSeries.jpeg"}
+                                            alt={item.type}
+                                            width={56}
+                                            height={56}
+                                            className="w-14 h-14 rounded-xl object-cover shadow-md group-hover:shadow-lg transition-all duration-300 border-2 border-white"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     </div>
-                                </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-base font-bold text-gray-800 truncate mb-1">{item.name}</p>
+                                        <div className="flex items-center gap-3">
+                                            <span className="line-through text-gray-400 text-sm">₹{item.price}</span>
+                                            <span className="text-green-600 font-bold text-sm bg-green-50 px-2.5 py-1 rounded-lg">₹{item.discountPrice}</span>
+                                            <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                                {Math.round(((item.price - item.discountPrice) / item.price) * 100)}% OFF
+                                            </span>
+                                        </div>
+                                    </div>
 
-                                <button 
-                                    onClick={() => router.push(`/payment/${item.pageParameters}`)}
-                                    className="flex items-center gap-2 bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 focus:ring-2 focus:ring-[#1d77bc]/50 focus:ring-offset-2"
-                                >
-                                    Purchase
-                                    <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </li>
-                    ))
+                                    <button 
+                                        onClick={() => router.push(`/payment/${item.pageParameters}`)}
+                                        className="flex items-center gap-2 bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 focus:ring-2 focus:ring-[#1d77bc]/50 focus:ring-offset-2"
+                                    >
+                                        Purchase
+                                        <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </>
                 ) : (
-                    <li className="p-8 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl text-center border border-blue-100/30">
+                    <li className="p-8 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl text-center border border-blue-100/30 flex flex-col items-center justify-center h-full">
                         <div className="relative inline-block">
-                            <svg className="w-20 h-20 text-blue-300 mx-auto mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-16 h-16 text-blue-300 mx-auto mb-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-400 rounded-full animate-ping"></div>
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
                         </div>
-                        <p className="text-lg font-semibold text-gray-800 mb-2">Your cart is empty</p>
-                        <p className="text-gray-500">Add items to begin your learning journey</p>
+                        <div className="text-center">
+                            <p className="text-lg font-semibold text-gray-800 mb-1">Your cart is empty</p>
+                            <p className="text-gray-500">Add items to begin your learning journey</p>
+                        </div>
                     </li>
                 )}
             </ul>
@@ -90,8 +90,8 @@ const ProductsCard = () => {
     const student = useSelector(state => state.login.studentDetails)
     
     return (
-        <div className="bg-white/90 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-gray-100 h-[300px] flex flex-col hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
-            <h2 className="text-lg lg:text-xl mb-6 text-gray-800 font-bold flex items-center gap-4 sticky top-0 bg-white/90 backdrop-blur-xl rounded-t-2xl">
+        <div className="bg-white/90 backdrop-blur-xl p-4 sm:p-6 rounded-3xl shadow-xl border border-gray-100 h-full flex flex-col hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
+            <h2 className="text-base sm:text-lg lg:text-xl mb-4 sm:mb-6 text-gray-800 font-bold flex items-center gap-2 sm:gap-4 sticky top-0 bg-white/90 backdrop-blur-xl rounded-t-2xl">
                 <div className="p-3 bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 rounded-xl">
                     <svg className="w-6 h-6 text-[#1d77bc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -107,10 +107,10 @@ const ProductsCard = () => {
                 )}
             </h2>
 
-            <ul className="space-y-4 overflow-y-auto flex-1 pr-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+            <ul className="space-y-3 sm:space-y-4 overflow-y-auto flex-1 pr-2 sm:pr-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                 {student?.purchases?.length > 0 ? (
                     student.purchases.map((purchase, index) => (
-                        <li key={index} className="group p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-2xl hover:from-blue-100/60 hover:to-indigo-100/60 transition-all duration-300 border border-blue-100/30 hover:border-blue-200/50 hover:shadow-lg transform hover:-translate-y-0.5">
+                        <li key={index} className="group p-3 sm:p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl sm:rounded-2xl hover:from-blue-100/60 hover:to-indigo-100/60 transition-all duration-300 border border-blue-100/30 hover:border-blue-200/50 hover:shadow-lg transform hover:-translate-y-0.5">
                             <div className="flex items-center gap-4">
                                 <div className="relative">
                                     <Image 
@@ -186,6 +186,7 @@ const ProductsCard = () => {
 }
 
 export default function FirstDashboard(){
+    const [showAnalysis, setShowAnalysis] = useState(false)
     const student = useSelector(state => state.login.studentDetails)
     
     const calculations = {
@@ -202,15 +203,32 @@ export default function FirstDashboard(){
     const totalSavings = calculations.totalProductPrice - calculations.totalAmountPaid
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50/800 via-blue-50/20 to-indigo-50/10 w-full p-6 sm:p-8 rounded-3xl relative overflow-hidden backdrop-blur-lg">
-            <div className="relative z-10 max-w-7xl mx-auto space-y-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50/800 via-blue-50/20 to-indigo-50/10 w-full px-4 sm:px-6 md:px-8 py-6 rounded-3xl relative overflow-hidden backdrop-blur-lg">
+            <div className="relative z-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+                <div className="md:hidden"> {/* Toggle button only visible on mobile/tablet */}
+                    <button 
+                        onClick={() => setShowAnalysis(!showAnalysis)}
+                        className="w-full bg-white/90 backdrop-blur-xl p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
+                    >
+                        <span className="font-semibold text-gray-800">Analysis Summary</span>
+                        <svg 
+                            className={`w-5 h-5 transition-transform duration-300 ${showAnalysis ? 'rotate-180' : ''}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 ${!showAnalysis ? 'hidden md:grid' : 'grid'}`}>
                     {/* Investment Stats */}
                     <div className="bg-gradient-to-br from-white to-blue-50/50 p-5 rounded-2xl border border-blue-100/30 hover:border-blue-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
                         <div className="flex items-center justify-between mb-4">
                             <div className="p-2.5 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
                                 <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
                             <span className="text-xs font-semibold text-blue-600 bg-blue-100/80 px-3 py-1.5 rounded-full">INVESTMENT</span>
@@ -279,10 +297,10 @@ export default function FirstDashboard(){
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:rotate-1">
+                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:rotate-1 h-[400px] sm:h-[300px]">
                         <CartCard />
                     </div>
-                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:-rotate-1">
+                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 h-[400px] sm:h-[300px]">
                         <ProductsCard />
                     </div>
                 </div>

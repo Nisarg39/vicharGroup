@@ -3,14 +3,28 @@ import { updateCollegeDetails } from "../../../../server_actions/actions/adminAc
 import ImageUpload from "../../../common/ImageUpload";
 import { useState } from "react";
 import { IoClose } from 'react-icons/io5';
-import { MdEmail, MdPhone, MdPerson, MdLocationOn, MdSchool, MdCalendarToday, MdEdit, MdCancel } from 'react-icons/md';
+import { MdEmail, MdPhone, MdPerson, MdLocationOn, MdSchool, MdCalendarToday, MdEdit, MdCancel, MdLock } from 'react-icons/md';
 import { FaGlobe, FaHashtag, FaMapMarkerAlt } from 'react-icons/fa';
+import { data } from '../../../../utils/examUtils/subject_Details';
+
+// Add this helper function
+const getAllSubjects = () => {
+  const subjects = new Set();
+  ['JEE', 'NEET', 'MHT-CET'].forEach(stream => {
+    Object.keys(data[stream] || {}).forEach(subject => {
+      subjects.add(subject);
+    });
+  });
+  return Array.from(subjects);
+};
 
 export default function CollegeDetails({ college, onClose, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [editedCollege, setEditedCollege] = useState({
     ...college,
-    collegeLogo: college?.collegeLogo || null
+    collegeLogo: college?.collegeLogo || null,
+    password: college.password
   });
 
   const handleInputChange = (e) => {
@@ -249,6 +263,36 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
             {renderValue("Website URL", college.collegeWebsite, "collegeWebsite")}
           </div>
           
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <MdLock className="text-[#1d77bc] text-lg" />
+              <p className="text-sm font-semibold text-gray-600">College Password</p>
+            </div>
+            {isEditing ? (
+              <input
+                type="text"
+                name="password"
+                value={editedCollege.password}
+                onChange={handleInputChange}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter new password"
+              />
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-gray-900 text-sm font-medium">
+                  {showPassword ? college.password : '••••••••••'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  {showPassword ? 'Hide' : 'Show'} Password
+                </button>
+              </div>
+            )}
+          </div>
+          
           {/* Status Toggle Section */}
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -296,6 +340,54 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
             <p className="text-sm font-semibold text-gray-600">Address</p>
           </div>
           {renderValue("Full Address", college.Address, "Address")}
+        </div>
+
+        {/* Allocated Subjects Section */}
+        <div className="md:col-span-2 lg:col-span-3 bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <MdSchool className="text-[#1d77bc] text-lg" />
+            <p className="text-sm font-semibold text-gray-600">Allocated Subjects</p>
+          </div>
+          {isEditing ? (
+            <div className="grid grid-cols-3 gap-4">
+              {getAllSubjects().map((subject) => (
+                <div key={subject} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={subject}
+                    name={subject}
+                    value={subject}
+                    checked={editedCollege.allocatedSubjects?.includes(subject)}
+                    onChange={(e) => {
+                      const subjects = e.target.checked
+                        ? [...(editedCollege.allocatedSubjects || []), subject]
+                        : editedCollege.allocatedSubjects?.filter(s => s !== subject);
+                      setEditedCollege(prev => ({
+                        ...prev,
+                        allocatedSubjects: subjects
+                      }));
+                    }}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  />
+                  <label htmlFor={subject} className="ml-2 text-sm text-gray-700">
+                    {subject}
+                  </label>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {editedCollege.allocatedSubjects?.length > 0 ? (
+                editedCollege.allocatedSubjects.map((subject, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                    {subject}
+                  </span>
+                ))
+              ) : (
+                <p className="text-gray-500 italic">No subjects allocated</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

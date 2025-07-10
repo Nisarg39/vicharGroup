@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
-let Schema = mongoose.Schema
+let Schema = mongoose.Schema;
+
 const mcqQuestionSchema = new Schema({
     stream: {
         type: String, required: true
@@ -40,8 +41,23 @@ const mcqQuestionSchema = new Schema({
     },
     createdAt: {
         type: Date, default: Date.now
+    },
+    multipleAnswer: [{ 
+        type: String 
+    }],
+    isMultipleAnswer: {
+        type: Boolean, default: false
+    },
+    difficultyLevel: {
+        type: String, 
+        enum: ["Easy", "Medium", "Hard"],
+        default: "Easy"
     }
 });
-mcqQuestionSchema.index({ questionNumber: 1, subject: 1 }, { unique: true })
 
-export default mongoose.model("master_mcq_question", mcqQuestionSchema) || mongoose.model(master_mcq_question);
+mcqQuestionSchema.index({ questionNumber: 1, subject: 1 }, { unique: true });
+
+// Check if model exists before compiling
+const master_mcq_question = mongoose.models.master_mcq_question || mongoose.model("master_mcq_question", mcqQuestionSchema);
+
+export default master_mcq_question;

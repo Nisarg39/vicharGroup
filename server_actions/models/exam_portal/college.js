@@ -39,6 +39,13 @@ const collegeSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    allocatedSubjects: {
+        type: [String],
+    },
+    password: {
+        type: String,
+        default: "collegeadmin@123"
+    },
 },{
     timestamps: true
 });

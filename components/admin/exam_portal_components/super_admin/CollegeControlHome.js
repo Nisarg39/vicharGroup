@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import AddCollege from './AddCollege';
 import CollegeTable from './CollegeTable';
+
 import { showCollegeList, deleteCollege, searchCollege } from '../../../../server_actions/actions/adminActions';
 import { FaUniversity, FaPlus, FaSpinner } from 'react-icons/fa';
 

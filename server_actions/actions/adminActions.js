@@ -18,6 +18,8 @@ import Razorpay_Info from "../models/razorpay_info"
 import Segment from "../models/segment"
 import Banner from "../models/banner"
 import College from "../models/exam_portal/college"
+import master_mcq_question from "../models/exam_portal/master_mcq_question"
+import TeacherExam from "../models/exam_portal/teacherExam"
 import jwt from "jsonwebtoken"
 
 export async function adminLogin(details) {
@@ -1403,6 +1405,9 @@ export async function updateBanner(details) {
 
 // // ------------------------- Exam Portal Controls -------------------------
 
+
+// College controls
+
 export async function addCollege(details) {
     try {
         await connectDB()
@@ -1451,7 +1456,7 @@ export async function showCollegeList(page = 1, limit = 10) {
 
         return {
             success: true,
-            colleges,
+            colleges: JSON.parse(JSON.stringify(colleges)),
             totalLength: totalCount,
             inactiveCount,
             pagination: {
@@ -1561,5 +1566,272 @@ export async function searchCollege(searchTerm, page = 1, limit = 10) {
             success: false,
             message: "Error searching colleges"
         };
+    }
+}
+
+
+
+// question related actions
+export async function addExamQuestion(questionData) {
+    try {
+        await connectDB();
+        
+        // Get the highest question number for this subject
+        const maxQuestionNumber = await master_mcq_question.findOne({ 
+            subject: questionData.subject 
+        }).sort({ questionNumber: -1 }).limit(1);
+        
+        // Calculate next question number
+        const nextNumber = (+maxQuestionNumber?.questionNumber || 0) + 1;
+        
+        // Add the question number to questionData
+        const questionWithNumber = {
+            ...questionData,
+            questionNumber: nextNumber
+        };
+        
+        const question = await master_mcq_question.create(questionWithNumber);
+        return {
+            success: true,
+            message: "Question added successfully",
+            question: JSON.parse(JSON.stringify(question))
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error adding question"
+        };
+    }
+}
+
+export async function showQuestionsList(questionData) {
+    try {
+        await connectDB();
+        const query = {};
+
+        // Add filters based on questionData parameters
+        if (questionData.stream) query.stream = questionData.stream;
+        if (questionData.standard) query.standard = questionData.standard;
+        if (questionData.subject) query.subject = questionData.subject;
+        if (questionData.topic) query.topic = questionData.topic;
+        if (questionData.section) query.section = questionData.section;
+        if (questionData.difficultyLevel) query.difficultyLevel = questionData.difficultyLevel;
+        
+        // Calculate pagination
+        const page = questionData.page || 1;
+        const limit = questionData.limit || 10;
+        const skip = (page - 1) * limit;
+
+        // Get filtered questions with pagination
+        const questions = await master_mcq_question.find(query)
+            .sort({ questionNumber: 1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        // Get total count for pagination
+        const totalCount = await master_mcq_question.countDocuments(query);
+
+        return {
+            success: true,
+            questions: questions,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalQuestions: totalCount,
+                questionsPerPage: limit
+            }
+        };
+    } catch (error) {
+        console.log(error);
+        return {
+            success: false,
+            message: "Error fetching questions"
+        };
+    }
+}
+
+export async function updateExamQuestion(details){
+    try {
+        await connectDB()
+        const updatedQuestion = await master_mcq_question.findByIdAndUpdate(details._id, {
+            ...details,
+            difficultyLevel: details.difficultyLevel // Add this explicitly
+        }, {new: true})
+        return {
+            success: true,
+            message: "Question updated successfully",
+            question: JSON.parse(JSON.stringify(updatedQuestion))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating question"
+        }
+    }
+}
+
+export async function deleteExamQuestion(questionId){
+    try {
+        await connectDB()
+        await master_mcq_question.findByIdAndDelete(questionId)
+        return {
+            success: true,
+            message: "Question deleted successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error deleting question"
+        }
+    }
+}
+
+
+// Teacher Exam Management
+
+export async function createTeacherExam(teacherExamData){
+    try {
+        await connectDB()
+        const teacherExam = await TeacherExam.create(teacherExamData)
+        return {
+            success: true,
+            message: "Teacher Exam created successfully",
+            teacherExam: JSON.parse(JSON.stringify(teacherExam))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error creating teacher exam"
+        }
+    }
+}
+
+export async function CreateTeacherExam(details) {
+    try {
+        await connectDB()
+        
+        // Check if teacher already exists with this email
+        const existingTeacher = await TeacherExam.findOne({ email: details.email })
+        if (existingTeacher) {
+            return {
+                success: false,
+                message: "Teacher with this email already exists"
+            }
+        }
+        
+        // Create new teacher
+        const teacher = await TeacherExam.create({
+            name: details.name,
+            email: details.email,
+            password: details.password,
+            subject: details.subject,
+            profileImageUrl: details.profileImageUrl || ""
+        })
+        
+        return {
+            success: true,
+            message: "Teacher created successfully",
+            teacher: teacher
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: error.message || "Error creating teacher"
+        }
+    }
+}
+
+export async function GetAllTeachers(page = 1, limit = 10) {
+    try {
+        await connectDB()
+        
+        const skip = (page - 1) * limit
+        
+        const teachers = await TeacherExam.find({})
+            .select('name email subject profileImageUrl createdAt')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+        
+        const totalCount = await TeacherExam.countDocuments({})
+        
+        const serializedTeachers = teachers.map(teacher => ({
+            _id: teacher._id.toString(),
+            ...teacher,
+        }))
+        
+        return {
+            success: true,
+            teachers: serializedTeachers,
+            totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            hasNextPage: page < Math.ceil(totalCount / limit),
+            hasPrevPage: page > 1
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: error.message || "Error fetching teachers"
+        }
+    }
+}
+
+export async function UpdateTeacherExam(teacherId, details) {
+    try {
+        await connectDB()
+        
+        // Check if another teacher already exists with this email (excluding current teacher)
+        const existingTeacher = await TeacherExam.findOne({ 
+            email: details.email,
+            _id: { $ne: teacherId }
+        })
+        
+        if (existingTeacher) {
+            return {
+                success: false,
+                message: "Another teacher with this email already exists"
+            }
+        }
+        
+        // Update teacher
+        const updatedTeacher = await TeacherExam.findByIdAndUpdate(
+            teacherId,
+            {
+                name: details.name,
+                email: details.email,
+                password: details.password,
+                subject: details.subject,
+                profileImageUrl: details.profileImageUrl || ""
+            },
+            { new: true }
+        )
+        
+        if (!updatedTeacher) {
+            return {
+                success: false,
+                message: "Teacher not found"
+            }
+        }
+        
+        return {
+            success: true,
+            message: "Teacher updated successfully",
+            teacher: updatedTeacher
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: error.message || "Error updating teacher"
+        }
     }
 }
