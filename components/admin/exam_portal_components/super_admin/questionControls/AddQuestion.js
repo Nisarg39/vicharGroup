@@ -5,8 +5,7 @@ import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 import axios from 'axios';
-import Quill from 'quill';
-const Clipboard = Quill.import('modules/clipboard');
+// Quill will be imported dynamically to avoid SSR issues
 import { getTopics } from '../../../../../utils/examUtils/subject_Details';
 import { addExamQuestion, updateExamQuestion } from '../../../../../server_actions/actions/adminActions';
 
@@ -16,55 +15,7 @@ const ReactQuill = dynamic(() => import('react-quill'), {
   loading: () => <div className="h-[200px] flex items-center justify-center bg-gray-50">Loading editor...</div>
 });
 
-class CustomClipboard extends Clipboard {
-  onPaste(e) {
-    const clipboardData = e.clipboardData || window.clipboardData;
-    const items = clipboardData.items;
-    
-    for (const item of items) {
-      if (item.type.startsWith('image')) {
-        const file = item.getAsFile();
-        this.uploadImage(file);
-        e.preventDefault();
-        return;
-      }
-    }
-    super.onPaste(e);
-  }
-
-  async uploadImage(file) {
-    try {
-      const fileName = `pasted_image_${Date.now()}.png`;
-      const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify({
-          fileName,
-          type: 'questionImage'
-        })
-      });
-
-      const data = await response.json();
-      const preSignedURL = data.url;
-
-      await fetch(preSignedURL, {
-        method: 'PUT',
-        body: file
-      });
-
-      const imageUrl = preSignedURL.split('?')[0];
-      const range = this.quill.getSelection();
-      this.quill.insertEmbed(range.index, 'image', imageUrl);
-    } catch (error) {
-      console.error('Error uploading pasted image:', error);
-    }
-  }
-}
-
-Quill.register('modules/clipboard', CustomClipboard);
+// CustomClipboard will be defined and registered inside the component when Quill is loaded
 
 const getNextQuestionNumber = async (stream, standard, subject) => {
   try {
@@ -161,6 +112,61 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
         try {
           const Quill = (await import('quill')).default;
           
+          // Register CustomClipboard here when Quill is available
+          if (!Quill.imports['modules/clipboard'] || !Quill.imports['modules/clipboard'].name?.includes('Custom')) {
+            const Clipboard = Quill.import('modules/clipboard');
+            
+            class CustomClipboard extends Clipboard {
+              onPaste(e) {
+                const clipboardData = e.clipboardData || window.clipboardData;
+                const items = clipboardData.items;
+                
+                for (const item of items) {
+                  if (item.type.startsWith('image')) {
+                    const file = item.getAsFile();
+                    this.uploadImage(file);
+                    e.preventDefault();
+                    return;
+                  }
+                }
+                super.onPaste(e);
+              }
+
+              async uploadImage(file) {
+                try {
+                  const fileName = `pasted_image_${Date.now()}.png`;
+                  const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                      fileName,
+                      type: 'questionImage'
+                    })
+                  });
+
+                  const data = await response.json();
+                  const preSignedURL = data.url;
+
+                  await fetch(preSignedURL, {
+                    method: 'PUT',
+                    body: file
+                  });
+
+                  const imageUrl = preSignedURL.split('?')[0];
+                  const range = this.quill.getSelection();
+                  this.quill.insertEmbed(range.index, 'image', imageUrl);
+                } catch (error) {
+                  console.error('Error uploading pasted image:', error);
+                }
+              }
+            }
+            
+            Quill.register('modules/clipboard', CustomClipboard);
+          }
+          
           // Check if ImageResize is already registered
           if (!Quill.imports['modules/imageResize']) {
             const ImageResize = (await import('quill-image-resize-module-react')).default;
@@ -182,7 +188,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       
       initQuill();
     }
-  }, [isQuillReady]);
+  }, [isQuillReady, adminToken]);
 
   // Create a stable change handler using useCallback
   const handleQuillChange = useCallback((content) => {
@@ -210,87 +216,101 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
   }, [tabValue, formData]);
 
   // Memoize the modules configuration to prevent re-creation on every render
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        ['bold', 'italic', 'underline'],
-        [{ 'script': 'sub'}, { 'script': 'super' }],
-        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-        ['link', 'image', 'formula'],
-        [{ 'color': [] }, { 'background': [] }],
-        ['clean'],
-        [{
-          'special-chars': [
-            '±', '∓', '×', '÷', '∑', '∏', 
-            '√', '∛', '∜', '∫', '∮', '∯', '∰',
-            '∂', '∇', '∆', '∞', '∝', '≈', '≠',
-            '≡', '≤', '≥', '⊂', '⊃', '⊆', '⊇',
-            '∈', '∉', '∋', '∌', '∩', '∪', '⊥',
-            'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η',
-            'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ',
-            'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ',
-            'ψ', 'ω', 'Δ', 'Π', 'Σ', 'Φ', 'Ψ',
-            'Ω', '°', '′', '″', '℃', '℉', '⇒',
-            '⇔', '←', '→', '↑', '↓', '↔', '↕'
-          ]
-        }]
-      ],
-      handlers: {
-        'special-chars': function(value) {
-          const cursorPosition = this.quill.getSelection().index;
-          this.quill.insertText(cursorPosition, value);
-          this.quill.setSelection(cursorPosition + 1);
-        },
-        image: function() {
-          const input = document.createElement('input');
-          input.setAttribute('type', 'file');
-          input.setAttribute('accept', 'image/*');
-          input.click();
+  const modules = useMemo(() => {
+    const baseModules = {
+      toolbar: {
+        container: [
+          ['bold', 'italic', 'underline'],
+          [{ 'script': 'sub'}, { 'script': 'super' }],
+          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+          ['link', 'image', 'formula'],
+          [{ 'color': [] }, { 'background': [] }],
+          ['clean'],
+          [{
+            'special-chars': [
+              '±', '∓', '×', '÷', '∑', '∏', 
+              '√', '∛', '∜', '∫', '∮', '∯', '∰',
+              '∂', '∇', '∆', '∞', '∝', '≈', '≠',
+              '≡', '≤', '≥', '⊂', '⊃', '⊆', '⊇',
+              '∈', '∉', '∋', '∌', '∩', '∪', '⊥',
+              'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η',
+              'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ',
+              'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ',
+              'ψ', 'ω', 'Δ', 'Π', 'Σ', 'Φ', 'Ψ',
+              'Ω', '°', '′', '″', '℃', '℉', '⇒',
+              '⇔', '←', '→', '↑', '↓', '↔', '↕'
+            ]
+          }]
+        ],
+        handlers: {
+          'special-chars': function(value) {
+            const cursorPosition = this.quill.getSelection().index;
+            this.quill.insertText(cursorPosition, value);
+            this.quill.setSelection(cursorPosition + 1);
+          },
+          image: function() {
+            if (typeof window === 'undefined') return; // Guard for SSR
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
 
-          input.onchange = () => {
-            const file = input.files[0];
-            if (!file) return;
+            input.onchange = () => {
+              const file = input.files[0];
+              if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const editor = this.quill;
-              const range = editor.getSelection(true);
-            
-              // Create temporary image to get dimensions
-              const img = new Image();
-              img.src = e.target.result;
-              img.onload = function() {
-                // Calculate scaled dimensions to fit editor width
-                const maxWidth = editor.container.offsetWidth - 30; // Padding buffer
-                const ratio = maxWidth / img.width;
-                const width = Math.min(maxWidth, img.width);
-                const height = img.height * ratio;
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const editor = this.quill;
+                const range = editor.getSelection(true);
+              
+                // Create temporary image to get dimensions
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                  // Calculate scaled dimensions to fit editor width
+                  const maxWidth = editor.container.offsetWidth - 30; // Padding buffer
+                  const ratio = maxWidth / img.width;
+                  const width = Math.min(maxWidth, img.width);
+                  const height = img.height * ratio;
 
-                // Insert image with calculated dimensions
-                if (range) {
-                  editor.insertEmbed(range.index, 'image', e.target.result, 'user');
-                  editor.formatText(range.index, 1, {
-                    width: `${width}px`,
-                    height: `${height}px`
-                  });
-                  editor.setSelection(range.index + 1);
-                }
+                  // Insert image with calculated dimensions
+                  if (range) {
+                    editor.insertEmbed(range.index, 'image', e.target.result, 'user');
+                    editor.formatText(range.index, 1, {
+                      width: `${width}px`,
+                      height: `${height}px`
+                    });
+                    editor.setSelection(range.index + 1);
+                  }
+                };
               };
+              reader.readAsDataURL(file);
             };
-            reader.readAsDataURL(file);
-          };
+          }
         }
+      },
+      clipboard: {
+        matchVisual: false
       }
-    },
-    clipboard: {
-      matchVisual: false
-    },
-    imageResize: {
-      parchment: Quill.import('parchment'),
-      modules: ['Resize', 'DisplaySize'],
-      displaySize: true
+    };
+
+    // Only add imageResize if we're on the client and Quill is ready
+    if (typeof window !== 'undefined' && isQuillReady) {
+      try {
+        const Quill = window.Quill || require('quill');
+        baseModules.imageResize = {
+          parchment: Quill.import('parchment'),
+          modules: ['Resize', 'DisplaySize'],
+          displaySize: true
+        };
+      } catch (error) {
+        console.log('Error setting up imageResize module:', error);
+      }
     }
-  }), [adminToken]);
+
+    return baseModules;
+  }, [isQuillReady]);
 
   useEffect(() => {
     const getAdminToken = async () => {
@@ -326,6 +346,10 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
 
   const processImages = async (questionContent) => {
     setIsUploading(true);
+    if (typeof window === 'undefined') {
+      setIsUploading(false);
+      return questionContent;
+    }
     const parser = new DOMParser();
     const doc = parser.parseFromString(questionContent, 'text/html');
     const images = doc.querySelectorAll('img');
