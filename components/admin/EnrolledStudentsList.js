@@ -10,16 +10,46 @@ export default function EnrolledStudentsList() {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState(null);
 
 
-    async function fetchAllStudentsDetails(page) {
-        setLoading(true);
-        const students = await fetchAllStudents(page);
-        setStudents(students.students);
-        setTotalPages(students.totalPages);
-        setCurrentPage(students.currentPage);
-        setLoading(false);
+    async function fetchAllStudentsDetails(page, isSearch = false, query = '') {
+        try {
+            if (isSearch) {
+                setSearchLoading(true);
+            } else {
+                setLoading(true);
+            }
+            
+            let data;
+            if (isSearch && query.trim()) {
+                data = await searchStudent({ searchTerm: query, page: page });
+            } else {
+                data = await fetchAllStudents(page);
+            }
+            
+            if (!data || !data.success) {
+                setStudents({});
+                setTotalPages(0);
+                setTotalCount(0);
+            } else {
+                setStudents(data.students);
+                setTotalPages(data.totalPages);
+                setCurrentPage(data.currentPage);
+                setTotalCount(data.totalCount || Object.keys(data.students).length);
+            }
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            setStudents({});
+            setTotalPages(0);
+            setTotalCount(0);
+        } finally {
+            setLoading(false);
+            setSearchLoading(false);
+        }
     }
 
     async function fetchAllProducts() {
@@ -27,13 +57,61 @@ export default function EnrolledStudentsList() {
         setProducts(response.products);
     }
 
+    const handleSearchChange = async (e) => {
+        const query = e.target.value;
+        setSearchTerm(query);
+        
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        const newTimeout = setTimeout(async () => {
+            if (query.trim()) {
+                setIsSearching(true);
+                setCurrentPage(1);
+                await fetchAllStudentsDetails(1, true, query);
+            } else {
+                setIsSearching(false);
+                setCurrentPage(1);
+                await fetchAllStudentsDetails(1, false);
+            }
+        }, 500);
+        
+        setSearchTimeout(newTimeout);
+    };
+
+    const clearSearch = () => {
+        setSearchTerm('');
+        setIsSearching(false);
+        setCurrentPage(1);
+        fetchAllStudentsDetails(1, false);
+    };
+
     useEffect(() => {
         fetchAllStudentsDetails(1);
-        fetchAllProducts()
+        fetchAllProducts();
     }, []);
 
+    useEffect(() => {
+        if (isSearching && searchTerm.trim()) {
+            fetchAllStudentsDetails(currentPage, true, searchTerm);
+        } else {
+            fetchAllStudentsDetails(currentPage, false);
+        }
+    }, [currentPage]);
+
+    useEffect(() => {
+        return () => {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+        };
+    }, [searchTimeout]);
+
     const handlePageChange = (page) => {
-        fetchAllStudentsDetails(page);
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
     };
 
     const handleProductAssign = async (studentId, product) => {
@@ -53,61 +131,94 @@ export default function EnrolledStudentsList() {
           const response = await assignProduct(data);
           if(response.success){
             alert(response.message);
-            fetchAllStudentsDetails(currentPage);
+            if (isSearching) {
+                fetchAllStudentsDetails(currentPage, true, searchTerm);
+            } else {
+                fetchAllStudentsDetails(currentPage);
+            }
           }else{
             alert(response.message);
           }
     };
 
-    const handleSearch = async (value) => {
-        setSearchTerm(value);
-        if (value.length > 0) {
-            const response = await searchStudent({ searchTerm: value });
-            if (response.success) {
-                setSearchResults(response.students);
-            }
-        } else {
-            setSearchResults([]);
-            fetchAllStudentsDetails(1); // Reset to normal list view
-        }
-    };
-
     return(
         <div className="w-full min-h-screen py-2 xs:py-6 md:py-8 ">
-            <h1 className="text-xl font-bold mb-4 text-gray-800 px-4">Enrolled Students List</h1>
-            <div className="px-4 mb-4">
-                <input
-                    type="text"
-                    placeholder="Search by name or phone number..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {searchResults.length > 0 && searchTerm && (
-                    <div className="absolute z-10 w-full md:w-1/3 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                        {searchResults.map((student, index) => (
-                            <div 
-                                key={student._id}
-                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                onClick={() => {
-                                    setSelectedStudent(student);
-                                    setSearchTerm('');
-                                    setSearchResults([]);
-                                }}
-                            >
-                                <p className="font-medium">{student.name}</p>
-                                <p className="text-sm text-gray-600">+91 {student.phone}</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-4 gap-4">
+                <h1 className="text-xl font-bold text-gray-800">Enrolled Students List</h1>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search by name or phone number..."
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        {searchLoading && (
+                            <div className="absolute right-10 top-2.5">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
                             </div>
-                        ))}
+                        )}
+                        {searchTerm && (
+                            <button
+                                onClick={clearSearch}
+                                className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 hover:text-gray-600"
+                            >
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                        {!searchTerm && (
+                            <svg className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        )}
                     </div>
-                )}
+                    <div className="text-gray-600 bg-gray-50 px-4 py-2 rounded-lg font-medium">
+                        {isSearching ? `Search Results: ${totalCount}` : `Total Students: ${totalCount}`}
+                    </div>
+                    {isSearching && (
+                        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                            Searching for: "{searchTerm}"
+                        </div>
+                    )}
+                </div>
             </div>
+            
+            {Object.keys(students).length === 0 && !loading && (
+                <div className="px-4">
+                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                        <p className="text-gray-600 text-lg">
+                            {isSearching 
+                                ? `No students found for "${searchTerm}"` 
+                                : "No students have been enrolled yet"
+                            }
+                        </p>
+                        {isSearching && (
+                            <button
+                                onClick={clearSearch}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Clear Search
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <LoadingSpinner />
                 </div>
-            ) : (
+            ) : Object.keys(students).length > 0 && (
                 <>
+                    <div className="px-4 mb-4 text-sm text-gray-600">
+                        {isSearching ? (
+                            <>Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalCount)} of {totalCount} search results</>
+                        ) : (
+                            <>Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalCount)} of {totalCount} students</>
+                        )}
+                    </div>
                     <div className="overflow-x-auto shadow-lg rounded-lg mx-4">
                         <table className="min-w-full bg-white border-collapse">
                             <thead className="bg-gray-100">
@@ -160,41 +271,43 @@ export default function EnrolledStudentsList() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex justify-center items-center mt-6 mb-8">
-                        <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
-                            <button
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={`relative inline-flex items-center px-3 py-2 rounded-l-md border ${
-                                    currentPage === 1 
-                                    ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
-                            >
-                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="ml-1">Previous</span>
-                            </button>
-                            <div className="relative inline-flex items-center px-4 py-2 border-t border-b border-gray-300 bg-white text-xs font-medium text-gray-700">
-                                Page {currentPage} of {totalPages}
-                            </div>
-                            <button
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={`relative inline-flex items-center px-3 py-2 rounded-r-md border ${
-                                    currentPage === totalPages 
-                                    ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
-                            >
-                                <span className="mr-1">Next</span>
-                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </nav>
-                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center mt-6 mb-8">
+                            <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className={`relative inline-flex items-center px-3 py-2 rounded-l-md border ${
+                                        currentPage === 1 
+                                        ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="ml-1">Previous</span>
+                                </button>
+                                <div className="relative inline-flex items-center px-4 py-2 border-t border-b border-gray-300 bg-white text-xs font-medium text-gray-700">
+                                    Page {currentPage} of {totalPages}
+                                </div>
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className={`relative inline-flex items-center px-3 py-2 rounded-r-md border ${
+                                        currentPage === totalPages 
+                                        ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <span className="mr-1">Next</span>
+                                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    )}
                 </>
             )}
             {selectedStudent && (

@@ -50,6 +50,6 @@ const dppQuestionSchema = new mongoose.Schema({
     },
 }, {timestamps: true})
 
-const DppQuestion = mongoose.models.DppQuestion || mongoose.model('DppQuestion', dppQuestionSchema)
+const DppQuestion = mongoose.models?.DppQuestion || mongoose.model('DppQuestion', dppQuestionSchema)
 
 export default DppQuestion

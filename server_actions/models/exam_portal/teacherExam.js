@@ -28,5 +28,5 @@ const teacherExamSchema = new mongoose.Schema({
     },
 }, {timestamps: true})
 
-const TeacherExam = mongoose.models.TeacherExam || mongoose.model("TeacherExam", teacherExamSchema);
+const TeacherExam = mongoose.models?.TeacherExam || mongoose.model("TeacherExam", teacherExamSchema);
 export default TeacherExam;

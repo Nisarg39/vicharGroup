@@ -34,5 +34,5 @@ const contactUsSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const ContactUs = mongoose.models.ContactUs || mongoose.model('ContactUs', contactUsSchema);
+const ContactUs = mongoose.models?.ContactUs || mongoose.model('ContactUs', contactUsSchema);
 export default ContactUs;

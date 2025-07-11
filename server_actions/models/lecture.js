@@ -23,6 +23,6 @@ const lectureSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const Lecture = mongoose.models.Lecture || mongoose.model("Lecture", lectureSchema);
+const Lecture = mongoose.models?.Lecture || mongoose.model("Lecture", lectureSchema);
 
 export default Lecture;

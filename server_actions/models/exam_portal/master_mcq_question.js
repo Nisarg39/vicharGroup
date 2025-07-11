@@ -58,6 +58,6 @@ const mcqQuestionSchema = new Schema({
 mcqQuestionSchema.index({ questionNumber: 1, subject: 1 }, { unique: true });
 
 // Check if model exists before compiling
-const master_mcq_question = mongoose.models.master_mcq_question || mongoose.model("master_mcq_question", mcqQuestionSchema);
+const master_mcq_question = mongoose.models?.master_mcq_question || mongoose.model("master_mcq_question", mcqQuestionSchema);
 
 export default master_mcq_question;

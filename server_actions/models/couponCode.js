@@ -36,7 +36,7 @@ const couponCodeSchema = new mongoose.Schema({
     }],
 }, { timestamps: true });
 
-const CouponCode = mongoose.models.CouponCode || mongoose.model("CouponCode", couponCodeSchema);
+const CouponCode = mongoose.models?.CouponCode || mongoose.model("CouponCode", couponCodeSchema);
 
 
 export default CouponCode;

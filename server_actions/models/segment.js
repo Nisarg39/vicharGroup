@@ -11,6 +11,6 @@ const segmentSchema = new mongoose.Schema({
     }],
 }, { timestamps: true })
 
-const Segment = mongoose.models.Segment || mongoose.model("Segment", segmentSchema)
+const Segment = mongoose.models?.Segment || mongoose.model("Segment", segmentSchema)
 
 export default Segment

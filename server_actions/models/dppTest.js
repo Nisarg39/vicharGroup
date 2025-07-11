@@ -23,5 +23,5 @@ const dppTestSchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
-const DppTest = mongoose.models.DppTest || mongoose.model('DppTest', dppTestSchema)
+const DppTest = mongoose.models?.DppTest || mongoose.model('DppTest', dppTestSchema)
 export default DppTest

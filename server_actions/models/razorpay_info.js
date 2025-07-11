@@ -20,6 +20,6 @@ const razorpay_info_Schema = mongoose.Schema({
     }
 }, {timeStamp: true})
 
-const Razorpay_Info = mongoose.models.Razorpay_Info || mongoose.model("Razorpay_Info", razorpay_info_Schema);
+const Razorpay_Info = mongoose.models?.Razorpay_Info || mongoose.model("Razorpay_Info", razorpay_info_Schema);
 
 export default Razorpay_Info;

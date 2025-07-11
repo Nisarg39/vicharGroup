@@ -49,6 +49,6 @@ const paymentSchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
-const Payment = mongoose.models.Payment || mongoose.model("Payment",paymentSchema)
+const Payment = mongoose.models?.Payment || mongoose.model("Payment",paymentSchema)
 
 export default Payment

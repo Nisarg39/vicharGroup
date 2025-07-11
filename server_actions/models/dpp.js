@@ -24,5 +24,5 @@ const dppSchema = new mongoose.Schema({
     }],
 }, {timestamps: true})
 
-const Dpp = mongoose.models.Dpp || mongoose.model("Dpp", dppSchema)
+const Dpp = mongoose.models?.Dpp || mongoose.model("Dpp", dppSchema)
 export default Dpp;

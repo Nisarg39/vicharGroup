@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 const collegeSchema = new mongoose.Schema({
     collegeName: {
         type: String,
@@ -46,9 +47,17 @@ const collegeSchema = new mongoose.Schema({
         type: String,
         default: "collegeadmin@123"
     },
-},{
+    token: {
+        type: String,
+    },
+    exams: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Exam',
+    }],
+}, {
     timestamps: true
 });
 
-const college = mongoose.models.College || mongoose.model('College', collegeSchema);
-export default college;
+const College = mongoose.models.College || mongoose.model('College', collegeSchema);
+
+export default College;

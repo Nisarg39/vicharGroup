@@ -15,5 +15,5 @@ const teacherSchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
-const Teacher = mongoose.models.Teacher || mongoose.model("Teacher", teacherSchema)
+const Teacher = mongoose.models?.Teacher || mongoose.model("Teacher", teacherSchema)
 export default Teacher

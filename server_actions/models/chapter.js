@@ -31,6 +31,6 @@ const chapterSchema = new mongoose.Schema({
     }],
 }, { timestamps: true })
 
-const Chapter = mongoose.models.Chapter || mongoose.model("Chapter", chapterSchema)
+const Chapter = mongoose.models?.Chapter || mongoose.model("Chapter", chapterSchema)
 
 export default Chapter
