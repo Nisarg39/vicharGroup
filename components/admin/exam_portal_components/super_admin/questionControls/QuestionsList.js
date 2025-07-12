@@ -160,7 +160,7 @@ export default function QuestionsList({ subjects }) {
   }
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-200px)]">
       {/* Header */}
       <div className="p-6 border-b">
         <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 flex items-center gap-2">
@@ -248,7 +248,7 @@ export default function QuestionsList({ subjects }) {
       </div>
 
       {/* Questions List */}
-      <div className="p-4">
+      <div className="flex-1 overflow-y-auto px-4">
         <div className="space-y-4">
           {questions.map((question, index) => (
             <div key={question._id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">

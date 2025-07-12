@@ -39,7 +39,6 @@ export async function collegeSignIn(details) {
 }
 
 export async function collegeDetails(details) {
-    console.log(details)
     try {
         const college = await collegeAuth(details)
         if (!college) {
@@ -70,7 +69,8 @@ export async function createExam(examData, collegeId) {
             ...examData,
             startTime: examData.examAvailability === 'scheduled' ? examData.startTime : null,
             endTime: examData.examAvailability === 'scheduled' ? examData.endTime : null,
-            examSubject: [examData.subject],
+            examSubject: examData.examSubject || [],
+            section: examData.stream === 'JEE' ? examData.section : null,
             status: 'draft',
             college: collegeId
         }
@@ -105,26 +105,45 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
         if (filters.subject) query.examSubject = filters.subject
         if (filters.standard) query.standard = filters.standard
         if (filters.examAvailability) query.examAvailability = filters.examAvailability
-        if (filters.topic) query.topic = filters.topic
-        if (filters.difficultyLevel) query.difficultyLevel = filters.difficultyLevel
 
-        // Calculate skip value for pagination
+        // Add sorting based on sortBy filter
+        let sortOptions = { createdAt: -1 } // Default sort by creation date
+
+        if (filters.sortBy) {
+            switch (filters.sortBy) {
+                case 'recent':
+                    sortOptions = { createdAt: -1 }
+                    break
+                case 'upcoming':
+                    query.startTime = { $gt: new Date() }
+                    sortOptions = { startTime: 1 }
+                    break
+                case 'updated':
+                    sortOptions = { updatedAt: -1 }
+                    break
+            }
+        }
+
         const skip = (page - 1) * limit
-
-        // Get total count for pagination
         const totalExams = await Exam.countDocuments(query)
         
-        // Fetch paginated results
         const exams = await Exam.find(query)
             .skip(skip)
             .limit(limit)
-            .sort({ createdAt: -1 })
+            .sort(sortOptions)
+            .lean()
+
+        const serializedExams = exams.map(exam => ({
+            ...exam,
+            _id: exam._id.toString(),
+            college: exam.college.toString()
+        }))
 
         return {
             success: true,
             message: "Exams fetched successfully",
             data: {
-                exams,
+                exams: serializedExams,
                 pagination: {
                     total: totalExams,
                     page: page,
@@ -137,6 +156,150 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
         return {
             success: false,
             message: error.message
+        }
+    }
+}
+
+export async function fetchQuestionsForExam(filters = {}) {
+    try {
+        await connectDB()
+        
+        // Build query based on filters
+        const query = {}
+        if (filters.stream) query.stream = filters.stream
+        if (filters.subject) query.subject = filters.subject
+        if (filters.standard) query.standard = filters.standard
+        if (filters.topic) query.topic = filters.topic
+        if (filters.difficultyLevel) query.difficultyLevel = filters.difficultyLevel
+        if (filters.section) query.section = filters.section
+        if (filters.marks) query.marks = parseInt(filters.marks)
+        if (filters.questionType) {
+            switch (filters.questionType) {
+                case 'MCSA':
+                    query.$and = [
+                        { isMultipleAnswer: { $ne: true } },
+                        { userInputAnswer: { $ne: true } }
+                    ];
+                    break;
+                case 'MCMA':
+                    query.isMultipleAnswer = true;
+                    break;
+                case 'numerical':
+                    query.userInputAnswer = true;
+                    break;
+            }
+        }
+
+        // Get filtered questions with pagination
+        const questions = await master_mcq_question.find(query)
+            .sort({ questionNumber: 1 })
+            .skip((filters.page - 1) * filters.limit)
+            .limit(filters.limit)
+            .lean()
+
+        const totalCount = await master_mcq_question.countDocuments(query)
+
+        return {
+            success: true,
+            questions: questions.map(q => ({
+                ...q,
+                _id: q._id.toString()
+            })),
+            pagination: {
+                currentPage: filters.page,
+                totalPages: Math.ceil(totalCount / filters.limit),
+                totalQuestions: totalCount,
+                questionsPerPage: filters.limit
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching questions:", error)
+        return {
+            success: false,
+            message: "Error fetching questions"
+        }
+    }
+}
+
+export async function assignQuestionsToExam(examId, questionIds) {
+    try {
+        await connectDB()
+        
+        // Update the exam with the selected questions
+        const exam = await Exam.findByIdAndUpdate(
+            examId,
+            { 
+                examQuestions: questionIds,
+                // Update total marks based on selected questions
+                totalMarks: questionIds.length * 4 // Assuming 4 marks per question
+            },
+            { new: true }
+        )
+        
+        if (!exam) {
+            return {
+                success: false,
+                message: "Exam not found"
+            }
+        }
+
+        // Update the usedInExamsCount for each question
+        await master_mcq_question.updateMany(
+            { _id: { $in: questionIds } },
+            { $inc: { usedInExamsCount: 1 } }
+        )
+
+        return {
+            success: true,
+            message: `${questionIds.length} questions assigned successfully`,
+            exam: exam
+        }
+    } catch (error) {
+        console.error("Error assigning questions:", error)
+        return {
+            success: false,
+            message: "Error assigning questions to exam"
+        }
+    }
+}
+
+export async function getExamQuestions(examId) {
+    try {
+        await connectDB()
+        
+        const exam = await Exam.findById(examId)
+            .populate('examQuestions')
+            .lean()
+        
+        if (!exam) {
+            return {
+                success: false,
+                message: "Exam not found"
+            }
+        }
+
+        // Convert ObjectIds to strings for client-side compatibility
+        const serializedExam = {
+            ...exam,
+            _id: exam._id.toString(),
+            college: exam.college.toString()
+        };
+
+        const serializedQuestions = (exam.examQuestions || []).map(q => ({
+            ...q,
+            _id: q._id.toString()
+        }));
+
+        return {
+            success: true,
+            exam: serializedExam,
+            assignedQuestions: serializedQuestions
+        }
+    } catch (error) {
+        console.error("Error fetching exam questions:", error)
+        return {
+            success: false,
+            message: "Error fetching exam questions"
         }
     }
 }

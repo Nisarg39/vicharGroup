@@ -93,6 +93,10 @@ const ExamSchema = new mongoose.Schema({
           type: Boolean,
           default: false,
         },
+        section: {
+          type: String,
+          enum: ["Section A", "Section B"],
+        }
       },
 );
 

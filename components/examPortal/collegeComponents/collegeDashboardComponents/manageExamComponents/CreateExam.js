@@ -3,7 +3,7 @@ import { createExam } from '../../../../../server_actions/actions/examController
 import ExamList from './ExamList';
 
 export default function CreateExam({ onBack, collegeData }) {
-    const [formData, setFormData] = useState({
+        const [formData, setFormData] = useState({
         examName: '',
         examAvailability: '',
         examType: '',
@@ -11,7 +11,7 @@ export default function CreateExam({ onBack, collegeData }) {
         examDate: '',
         examTime: '',
         stream: '',
-        examSubject: [], // Changed from subject
+        examSubject: [], // Multi-select array for subjects
         standard: '',
         section: '',
         startTime: '',
@@ -46,14 +46,7 @@ export default function CreateExam({ onBack, collegeData }) {
             setFormData({
                 ...formData,
                 stream: value,
-                subject: '',
-                standard: '',
-                section: ''
-            });
-        } else if (e.target.name === 'subject') {
-            setFormData({
-                ...formData,
-                subject: value,
+                examSubject: [], // Clear subjects when stream changes
                 standard: '',
                 section: ''
             });
@@ -71,8 +64,23 @@ export default function CreateExam({ onBack, collegeData }) {
         }
     };
 
+    const handleSubjectChange = (subject) => {
+        setFormData(prev => ({
+            ...prev,
+            examSubject: prev.examSubject.includes(subject)
+                ? prev.examSubject.filter(s => s !== subject)
+                : [...prev.examSubject, subject]
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate that at least one subject is selected
+        if (formData.examSubject.length === 0) {
+            alert("Please select at least one subject for the exam.");
+            return;
+        }
         
         // Create a clean data object with only the required fields
         const cleanExamData = {
@@ -81,7 +89,7 @@ export default function CreateExam({ onBack, collegeData }) {
             examType: formData.examType,
             examInstructions: formData.examInstructions,
             stream: formData.stream,
-            subject: formData.subject,
+            examSubject: formData.examSubject, // Use the multi-select subjects array
             standard: formData.standard,
             section: formData.section,
             startTime: formData.examAvailability === 'scheduled' ? new Date(formData.startTime).toISOString() : null,
@@ -288,22 +296,38 @@ export default function CreateExam({ onBack, collegeData }) {
                             </div>
 
                             <div className="flex flex-col">
-                                <label htmlFor="subject" className="text-sm font-medium text-gray-700 mb-1">
-                                    Subject
+                                <label className="text-sm font-medium text-gray-700 mb-2">
+                                    Subjects
+                                    <span className="text-red-500 ml-1">*</span>
                                 </label>
-                                <select 
-                                    id="subject"
-                                    name="subject"
-                                    value={formData.subject}
-                                    onChange={handleExamDetailsChange}
-                                    className="w-full border border-gray-200 rounded-lg p-2"
-                                    disabled={!formData.stream}
-                                >
-                                    <option value="">Select Subject</option>
-                                    {collegeData?.allocatedSubjects?.map((subject) => (
-                                        <option key={subject} value={subject}>{subject}</option>
-                                    ))}
-                                </select>
+                                <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                    {!formData.stream ? (
+                                        <p className="text-sm text-gray-500 italic">Please select a stream first</p>
+                                    ) : collegeData?.allocatedSubjects?.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {collegeData.allocatedSubjects.map((subject) => (
+                                                <label key={subject} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.examSubject.includes(subject)}
+                                                        onChange={() => handleSubjectChange(subject)}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm font-medium text-gray-700">{subject}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">No subjects allocated to this college</p>
+                                    )}
+                                    {formData.examSubject.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                            <p className="text-xs text-gray-600">
+                                                Selected: <span className="font-medium">{formData.examSubject.join(', ')}</span>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex flex-col">
@@ -316,7 +340,7 @@ export default function CreateExam({ onBack, collegeData }) {
                                     value={formData.standard}
                                     onChange={handleExamDetailsChange}
                                     className="w-full border border-gray-200 rounded-lg p-2"
-                                    disabled={!formData.subject}
+                                    disabled={formData.examSubject.length === 0}
                                 >
                                     <option value="">Select Standard</option>
                                     <option value="11">11th</option>
@@ -324,10 +348,11 @@ export default function CreateExam({ onBack, collegeData }) {
                                 </select>
                             </div>
 
-                            {formData.stream && !['MHT-CET', 'NEET', 'JEE'].includes(formData.stream) && (
+                            {formData.stream === 'JEE' && (
                                 <div className="flex flex-col">
                                     <label htmlFor="section" className="text-sm font-medium text-gray-700 mb-1">
                                         Section
+                                        <span className="text-red-500 ml-1">*</span>
                                     </label>
                                     <select
                                         id="section"
@@ -335,10 +360,11 @@ export default function CreateExam({ onBack, collegeData }) {
                                         value={formData.section}
                                         onChange={handleExamDetailsChange}
                                         className="w-full border border-gray-200 rounded-lg p-2"
+                                        required={formData.stream === 'JEE'}
                                     >
                                         <option value="">Select Section</option>
-                                        <option value="1">Section A</option>
-                                        <option value="2">Section B</option>
+                                        <option value="Section A">Section A</option>
+                                        <option value="Section B">Section B</option>
                                     </select>
                                 </div>
                             )}
