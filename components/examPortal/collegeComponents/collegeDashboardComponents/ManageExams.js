@@ -13,23 +13,26 @@ import {
 } from '@heroicons/react/24/outline';
 import CreateExam from './manageExamComponents/CreateExam';
 
-export default function ManageExams({collegeData}) {
+export default function ManageExams({collegeData, examDetails}) {
     const [currentView, setCurrentView] = useState('dashboard');
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Mock data - replace with actual data from your backend
+    // Calculate exam statistics from examDetails
     const examStats = {
-        totalExams: 12,
-        activeExams: 5,
-        completedExams: 7,
-        totalStudents: 245
+        totalExams: examDetails?.length || 0,
+        activeExams: examDetails?.filter(exam => exam.status === 'active').length || 0,
+        completedExams: examDetails?.filter(exam => exam.status === 'completed').length || 0,
+        totalStudents: examDetails?.reduce((total, exam) => total + (exam.students?.length || 0), 0) || 0
     };
 
-    const recentExams = [
-        { id: 1, title: 'Mathematics Final Exam', date: '2024-01-15', status: 'Active', students: 45 },
-        { id: 2, title: 'Physics Mid-term', date: '2024-01-10', status: 'Completed', students: 38 },
-        { id: 3, title: 'Chemistry Quiz', date: '2024-01-20', status: 'Scheduled', students: 52 },
-    ];
+    // Get recent exams from examDetails with safe date handling
+    const recentExams = examDetails?.slice(0, 3).map(exam => ({
+        id: exam._id,
+        title: exam.examName,
+        date: exam.examDate ? new Date(exam.examDate).toISOString().split('T')[0] : 'Not scheduled',
+        status: exam.status,
+        students: exam.students?.length || 0
+    })) || [];
 
     const quickActions = [
         {
@@ -37,14 +40,7 @@ export default function ManageExams({collegeData}) {
             description: 'Set up a new exam with questions and settings',
             icon: PlusIcon,
             color: 'bg-blue-500',
-            action: () => console.log('Create exam')
-        },
-        {
-            title: 'Question Bank',
-            description: 'Manage and organize exam questions',
-            icon: DocumentTextIcon,
-            color: 'bg-green-500',
-            action: () => console.log('Question bank')
+            action: () => handleCreateExam()
         },
         {
             title: 'View Results',
@@ -138,7 +134,7 @@ export default function ManageExams({collegeData}) {
                 {/* Quick Actions */}
                 <div className="mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {quickActions.map((action, index) => (
                             <button
                                 key={index}
@@ -154,121 +150,6 @@ export default function ManageExams({collegeData}) {
                                 <p className="text-sm text-gray-600">{action.description}</p>
                             </button>
                         ))}
-                    </div>
-                </div>
-
-                {/* Recent Exams Table */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-800">Recent Exams</h2>
-                            <button 
-                                onClick={handleCreateExam}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-                            >
-                                <PlusIcon className="h-4 w-4" />
-                                Create Exam
-                            </button>
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Exam Title
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Students
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {recentExams.map((exam) => (
-                                    <tr key={exam.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{exam.title}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{exam.date}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                exam.status === 'Active' ? 'bg-green-100 text-green-800' :
-                                                exam.status === 'Completed' ? 'bg-gray-100 text-gray-800' :
-                                                'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {exam.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {exam.students}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <button className="text-blue-600 hover:text-blue-900 p-1 rounded">
-                                                    <EyeIcon className="h-4 w-4" />
-                                                </button>
-                                                <button className="text-green-600 hover:text-green-900 p-1 rounded">
-                                                    <PencilIcon className="h-4 w-4" />
-                                                </button>
-                                                <button className="text-red-600 hover:text-red-900 p-1 rounded">
-                                                    <TrashIcon className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Additional Actions Section */}
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Exam Settings</h3>
-                        <div className="space-y-3">
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Default Exam Duration</div>
-                                <div className="text-sm text-gray-600">Set default time limits for exams</div>
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Grading System</div>
-                                <div className="text-sm text-gray-600">Configure marking and grading rules</div>
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Anti-Cheating Settings</div>
-                                <div className="text-sm text-gray-600">Enable proctoring and security features</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Reports & Analytics</h3>
-                        <div className="space-y-3">
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Performance Analytics</div>
-                                <div className="text-sm text-gray-600">View detailed exam performance reports</div>
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Export Results</div>
-                                <div className="text-sm text-gray-600">Download exam results in various formats</div>
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-                                <div className="font-medium text-gray-900">Student Progress</div>
-                                <div className="text-sm text-gray-600">Track individual student performance</div>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -50,7 +50,7 @@ export default function QuestionAssignmentModal({
     setFilters({
       stream: exam?.stream || "",
       subject: exam?.examSubject?.[0] || "",
-      standard: exam?.standard || "",
+      standard: exam?.standard || "", // Always use exam's standard
       topic: "",
       difficultyLevel: "",
       section: exam?.section || "",
@@ -65,13 +65,42 @@ export default function QuestionAssignmentModal({
     return questions.filter((q) => selectedQuestions.includes(q._id));
   };
 
-  // Modify the show selected questions toggle to include filter reset
+  // State to store all selected questions with full details
+  const [allSelectedQuestions, setAllSelectedQuestions] = useState([]);
+
+  // Handle sorting toggle
   const handleShowSelectedQuestions = () => {
-    if (!showSelectedQuestions) {
-      resetFilters(); // Reset filters when showing selected questions
+    const newShowSelected = !showSelectedQuestions;
+    setShowSelectedQuestions(newShowSelected);
+    
+    // Sort current questions immediately without refetching
+    if (newShowSelected) {
+      const sortedQuestions = [...questions].sort((a, b) => {
+        const aSelected = selectedQuestions.includes(a._id);
+        const bSelected = selectedQuestions.includes(b._id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return 0;
+      });
+      setQuestions(sortedQuestions);
+    } else {
+      // Restore original order by refetching
+      fetchQuestions();
     }
-    setShowSelectedQuestions(!showSelectedQuestions);
   };
+
+  // Update filters when exam changes
+  useEffect(() => {
+    if (exam) {
+      setFilters(prev => ({
+        ...prev,
+        stream: exam?.stream || "",
+        subject: exam?.examSubject?.[0] || "",
+        standard: exam?.standard || "", // Always use exam's standard
+        section: exam?.section || "",
+      }));
+    }
+  }, [exam]);
 
   // Fetch questions when modal opens or filters change
   useEffect(() => {
@@ -137,6 +166,8 @@ export default function QuestionAssignmentModal({
       if (response.success) {
         const assignedIds = response.assignedQuestions.map((q) => q._id);
         setSelectedQuestions(assignedIds);
+        // Store all selected questions with full details
+        setAllSelectedQuestions(response.assignedQuestions);
       }
     } catch (error) {
       console.error("Failed to fetch assigned questions:", error);
@@ -144,19 +175,63 @@ export default function QuestionAssignmentModal({
   };
 
   const handleQuestionToggle = (questionId) => {
-    setSelectedQuestions((prev) =>
-      prev.includes(questionId)
+    setSelectedQuestions((prev) => {
+      const newSelected = prev.includes(questionId)
         ? prev.filter((id) => id !== questionId)
-        : [...prev, questionId]
-    );
+        : [...prev, questionId];
+      
+      // Update allSelectedQuestions when toggling
+      setAllSelectedQuestions((prevAll) => {
+        if (prev.includes(questionId)) {
+          // Removing question
+          return prevAll.filter((q) => q._id !== questionId);
+        } else {
+          // Adding question - find it in current questions or existing allSelectedQuestions
+          const questionToAdd = questions.find((q) => q._id === questionId) || 
+                               prevAll.find((q) => q._id === questionId);
+          if (questionToAdd && !prevAll.some((q) => q._id === questionId)) {
+            return [...prevAll, questionToAdd];
+          }
+          return prevAll;
+        }
+      });
+      
+      // If showSelectedQuestions is enabled, re-sort the questions to maintain order
+      if (showSelectedQuestions) {
+        setQuestions((prevQuestions) => {
+          const sortedQuestions = [...prevQuestions].sort((a, b) => {
+            const aSelected = newSelected.includes(a._id);
+            const bSelected = newSelected.includes(b._id);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+          });
+          return sortedQuestions;
+        });
+      }
+      
+      return newSelected;
+    });
   };
 
   const handleSelectAll = () => {
     if (selectedQuestions.length === questions.length) {
-      setSelectedQuestions([]);
+      // Deselect all current page questions
+      const currentPageIds = questions.map((q) => q._id);
+      setSelectedQuestions((prev) => prev.filter((id) => !currentPageIds.includes(id)));
+      setAllSelectedQuestions((prev) => prev.filter((q) => !currentPageIds.includes(q._id)));
     } else {
+      // Select all current page questions
       const questionIds = questions.map((q) => q._id);
-      setSelectedQuestions(questionIds);
+      const newSelections = questionIds.filter((id) => !selectedQuestions.includes(id));
+      
+      setSelectedQuestions((prev) => [...prev, ...newSelections]);
+      setAllSelectedQuestions((prev) => {
+        const newQuestions = questions.filter((q) => 
+          newSelections.includes(q._id) && !prev.some((existing) => existing._id === q._id)
+        );
+        return [...prev, ...newQuestions];
+      });
     }
   };
 
@@ -180,6 +255,10 @@ export default function QuestionAssignmentModal({
   };
 
   const handleFilterChange = (field, value) => {
+    // Prevent changing the standard - it should always be the exam's standard
+    if (field === 'standard') {
+      return;
+    }
     setFilters((prev) => ({ ...prev, [field]: value }));
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
@@ -202,46 +281,56 @@ export default function QuestionAssignmentModal({
       onClick={handleBackdropClick}
     >
       <div className="fixed inset-0 bg-white overflow-hidden flex flex-col">
-  {/* Header */}
-  <ModalHeader exam={exam} onClose={onClose} />
+        {/* Header */}
+        <ModalHeader exam={exam} onClose={onClose} />
 
-        {/* Filters */}
-        <ModalFilters 
-          exam={exam}
-          filters={filters}
-          handleFilterChange={handleFilterChange}
-        />
+        {/* Main Content Area with Sidebar Layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar for Filters */}
+          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+            <ModalFilters 
+              exam={exam}
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+            />
+          </div>
 
-        <QuestionSelectionStats 
-          showSelectedQuestions={showSelectedQuestions}
-          setShowSelectedQuestions={setShowSelectedQuestions}
-          selectedQuestions={selectedQuestions}
-          questions={questions}
-          handleSelectAll={handleSelectAll}
-          handleQuestionToggle={handleQuestionToggle}
-          getSelectedQuestionDetails={getSelectedQuestionDetails}
-        />
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <QuestionSelectionStats 
+              showSelectedQuestions={showSelectedQuestions}
+              setShowSelectedQuestions={handleShowSelectedQuestions}
+              selectedQuestions={selectedQuestions}
+              questions={questions}
+              handleSelectAll={handleSelectAll}
+              handleQuestionToggle={handleQuestionToggle}
+              getSelectedQuestionDetails={getSelectedQuestionDetails}
+            />
 
-        {/* Questions List - This should be flex-1 and scrollable */}
-        <QuestionsList 
-          loading={loading}
-          questions={questions}
-          selectedQuestions={selectedQuestions}
-          handleQuestionToggle={handleQuestionToggle}
-          pagination={pagination}
-          setPagination={setPagination}
-          handlePageChange={handlePageChange}
-        />
+            {/* Questions List - This should be flex-1 and scrollable */}
+            <QuestionsList 
+              loading={loading}
+              questions={questions}
+              selectedQuestions={selectedQuestions}
+              handleQuestionToggle={handleQuestionToggle}
+              pagination={pagination}
+              setPagination={setPagination}
+              handlePageChange={handlePageChange}
+              allSelectedQuestions={allSelectedQuestions}
+              showSelectedQuestions={showSelectedQuestions}
+            />
 
-        {/* Footer - Move this OUTSIDE the scrollable area */}
-        <ModalFooter 
-          selectedQuestions={selectedQuestions}
-          questions={questions}
-          onClose={onClose}
-          handleAssignQuestions={handleAssignQuestions}
-          assigning={assigning}
-          setSelectedQuestions={setSelectedQuestions}
-        />
+            {/* Footer */}
+            <ModalFooter 
+              selectedQuestions={selectedQuestions}
+              questions={questions}
+              onClose={onClose}
+              handleAssignQuestions={handleAssignQuestions}
+              assigning={assigning}
+              setSelectedQuestions={setSelectedQuestions}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

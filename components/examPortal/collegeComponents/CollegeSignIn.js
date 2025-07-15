@@ -4,6 +4,7 @@ import { FaEnvelope, FaLock, FaUniversity, FaEye, FaEyeSlash } from 'react-icons
 import { motion } from 'framer-motion'
 import { collegeSignIn} from "../../../server_actions/actions/examController/collegeActions"
 import Modal from "../../common/Modal"
+import { toast } from 'react-hot-toast'
 
 export default function CollegeSignIn({ setIsCollegeSignedIn }) {
     const [email, setEmail] = useState('')
@@ -31,9 +32,7 @@ export default function CollegeSignIn({ setIsCollegeSignedIn }) {
             const result = await collegeSignIn(details)
             
             if (result.success) {
-                setIsSuccess(true)
-                setModalMessage(result.message + ' - Welcome!')
-                setShowModal(true)
+                toast.success(result.message + ' - Welcome!')
                 await localStorage.setItem('isCollege', result.college.token)
                 
                 // Add a slight delay before navigation
@@ -47,14 +46,10 @@ export default function CollegeSignIn({ setIsCollegeSignedIn }) {
                 }, 1500) // 1.5 seconds delay
                 
             } else {
-                setIsSuccess(false)
-                setModalMessage(result.message + ' - Please check your credentials')
-                setShowModal(true)
+                toast.error(result.message + ' - Please check your credentials')
             }
         } catch (error) {
-            setIsSuccess(false)
-            setModalMessage('An error occurred during login. Please try again.')
-            setShowModal(true)
+            toast.error('An error occurred during login. Please try again.')
             console.error('College Login error:', error)
         } finally {
             setIsLoading(false)

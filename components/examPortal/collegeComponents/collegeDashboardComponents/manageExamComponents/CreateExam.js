@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createExam } from '../../../../../server_actions/actions/examController/collegeActions';
 import ExamList from './ExamList';
+import { toast } from 'react-hot-toast';
 
 export default function CreateExam({ onBack, collegeData }) {
         const [formData, setFormData] = useState({
@@ -78,7 +79,8 @@ export default function CreateExam({ onBack, collegeData }) {
         
         // Validate that at least one subject is selected
         if (formData.examSubject.length === 0) {
-            alert("Please select at least one subject for the exam.");
+
+            toast.error("Please select at least one subject for the exam.");
             return;
         }
         
@@ -107,15 +109,16 @@ export default function CreateExam({ onBack, collegeData }) {
             const response = await createExam(cleanExamData, collegeData._id);
             
             if (response.success) {
-                // Show success notification
-                alert("Exam created successfully!");
-                // Clear form or redirect
-                onBack(); 
+
+
+                toast.success("Exam created successfully!");
             } else {
-                alert(response.message);
+
+                toast.error(response.message);
             }
         } catch (error) {
-            alert("Error creating exam. Please try again.");
+
+            toast.error("Error creating exam. Please try again.");
             console.error("Create exam error:", error);
         }
     };

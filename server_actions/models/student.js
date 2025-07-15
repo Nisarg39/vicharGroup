@@ -1,4 +1,3 @@
-import { strict } from "assert";
 import mongoose from "mongoose";
 
 const studentsSchema = new mongoose.Schema({
@@ -67,6 +66,10 @@ const studentsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "DppTest",
     }],
+    college: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "College",
+    },
 }, {
     timestamps: true,
 })

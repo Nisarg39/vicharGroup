@@ -8,12 +8,10 @@ import Footer from "../../components/home/Footer";
 import VicharApp from "../../components/home/VicharApp";
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Toaster } from "react-hot-toast";
 export const metadata = {
   title: "Vichar Group - Official Homepage",
   description: "Best Online Learning Platform for competitive exams like JEE, NEET,MHT-CET and Foundation.",
-  other: {
-    // 'fast2sms': 'qVKm62QLJgPIrbtC6IHWatGyxCZwX5pM'
-  }
 };
 
 export default function RootLayout({ children }) {
@@ -52,6 +50,34 @@ export default function RootLayout({ children }) {
           </div>
           <VicharApp />
           <Footer />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: 'white',
+                color: '#fff',
+                padding: '16px',
+                borderRadius: '10px',
+                marginTop: '40px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+                transform: 'translateY(0) scale(1)',
+                transition: 'all 0.2s ease-in-out',
+                fontSize: '14px'
+              },
+              success: {
+                style: {
+                  background: '#1d77bc',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                },
+              },
+              error: {
+                style: {
+                  background: '#ef4444',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                },
+              }
+            }}
+          />
         </ReduxProvider>
       </body>
     </html>

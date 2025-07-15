@@ -186,7 +186,6 @@ const ProductsCard = () => {
 }
 
 export default function FirstDashboard(){
-    const [showAnalysis, setShowAnalysis] = useState(false)
     const student = useSelector(state => state.login.studentDetails)
     
     const calculations = {
@@ -203,106 +202,55 @@ export default function FirstDashboard(){
     const totalSavings = calculations.totalProductPrice - calculations.totalAmountPaid
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50/800 via-blue-50/20 to-indigo-50/10 w-full px-4 sm:px-6 md:px-8 py-6 rounded-3xl relative overflow-hidden backdrop-blur-lg">
-            <div className="relative z-10 max-w-7xl mx-auto space-y-6 sm:space-y-8">
-                <div className="md:hidden"> {/* Toggle button only visible on mobile/tablet */}
-                    <button 
-                        onClick={() => setShowAnalysis(!showAnalysis)}
-                        className="w-full bg-white/90 backdrop-blur-xl p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
-                    >
-                        <span className="font-semibold text-gray-800">Analysis Summary</span>
-                        <svg 
-                            className={`w-5 h-5 transition-transform duration-300 ${showAnalysis ? 'rotate-180' : ''}`} 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        <div className="w-full space-y-6">
+            {/* Simplified Stats - Only 2 essential cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                {/* Investment Stats */}
+                <div className="bg-gradient-to-br from-white to-blue-50/50 p-5 rounded-2xl border border-blue-100/30 hover:border-blue-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <span className="text-xs font-semibold text-blue-600 bg-blue-100/80 px-3 py-1.5 rounded-full">INVESTMENT</span>
+                    </div>
+                    <p className="text-3xl font-bold text-blue-600 mb-2">₹{calculations.totalAmountPaid.toLocaleString()}</p>
+                    <p className="text-sm text-blue-600/80 flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
-                    </button>
+                        Original: ₹{calculations.totalProductPrice.toLocaleString()}
+                    </p>
                 </div>
 
-                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4 ${!showAnalysis ? 'hidden md:grid' : 'grid'}`}>
-                    {/* Investment Stats */}
-                    <div className="bg-gradient-to-br from-white to-blue-50/50 p-5 rounded-2xl border border-blue-100/30 hover:border-blue-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2.5 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            </div>
-                            <span className="text-xs font-semibold text-blue-600 bg-blue-100/80 px-3 py-1.5 rounded-full">INVESTMENT</span>
-                        </div>
-                        <p className="text-3xl font-bold text-blue-600 mb-2">₹{calculations.totalAmountPaid.toLocaleString()}</p>
-                        <p className="text-sm text-blue-600/80 flex items-center gap-1.5">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Savings Stats */}
+                <div className="bg-gradient-to-br from-white to-green-50/50 p-5 rounded-2xl border border-green-100/30 hover:border-green-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="p-2.5 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                             </svg>
-                            Original: ₹{calculations.totalProductPrice.toLocaleString()}
-                        </p>
-                    </div>
-
-                    {/* Savings Stats */}
-                    <div className="bg-gradient-to-br from-white to-green-50/50 p-5 rounded-2xl border border-green-100/30 hover:border-green-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2.5 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                </svg>
-                            </div>
-                            <span className="text-xs font-semibold text-green-600 bg-green-100/80 px-3 py-1.5 rounded-full">SAVINGS</span>
                         </div>
-                        <p className="text-3xl font-bold text-green-600 mb-2">₹{totalSavings.toLocaleString()}</p>
-                        <p className="text-sm text-green-600/80 flex items-center gap-1.5">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {calculations.totalProductPrice > 0 ? ((totalSavings/calculations.totalProductPrice) * 100).toFixed(1) : 0}% saved
-                        </p>
+                        <span className="text-xs font-semibold text-green-600 bg-green-100/80 px-3 py-1.5 rounded-full">SAVINGS</span>
                     </div>
-
-                    {/* Courses Stats */}
-                    <div className="bg-gradient-to-br from-white to-purple-50/50 p-5 rounded-2xl border border-purple-100/30 hover:border-purple-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2.5 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                            </div>
-                            <span className="text-xs font-semibold text-purple-600 bg-purple-100/80 px-3 py-1.5 rounded-full">COURSES</span>
-                        </div>
-                        <p className="text-3xl font-bold text-purple-600 mb-2">{calculations.courseCount}</p>
-                        <p className="text-sm text-purple-600/80 flex items-center gap-1.5">
-                            <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
-                            Active Courses
-                        </p>
-                    </div>
-
-                    {/* Tests Stats */}
-                    <div className="bg-gradient-to-br from-white to-orange-50/50 p-5 rounded-2xl border border-orange-100/30 hover:border-orange-200/50 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2.5 bg-orange-500/10 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <span className="text-xs font-semibold text-orange-600 bg-orange-100/80 px-3 py-1.5 rounded-full">TESTS</span>
-                        </div>
-                        <p className="text-3xl font-bold text-orange-600 mb-2">{calculations.testSeriesCount}</p>
-                        <p className="text-sm text-orange-600/80 flex items-center gap-1.5">
-                            <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
-                            Active Test Series
-                        </p>
-                    </div>
+                    <p className="text-3xl font-bold text-green-600 mb-2">₹{totalSavings.toLocaleString()}</p>
+                    <p className="text-sm text-green-600/80 flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {calculations.totalProductPrice > 0 ? ((totalSavings/calculations.totalProductPrice) * 100).toFixed(1) : 0}% saved
+                    </p>
                 </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:rotate-1 h-[400px] sm:h-[300px]">
-                        <CartCard />
-                    </div>
-                    <div className="transform transition-all duration-500 hover:scale-[1.02] hover:-rotate-1 h-[400px] sm:h-[300px]">
-                        <ProductsCard />
-                    </div>
+            </div>
+            
+            {/* Main Content Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <div className="transform transition-all duration-500 hover:scale-[1.02] h-[400px] sm:h-[350px]">
+                    <CartCard />
+                </div>
+                <div className="transform transition-all duration-500 hover:scale-[1.02] h-[400px] sm:h-[350px]">
+                    <ProductsCard />
                 </div>
             </div>
         </div>

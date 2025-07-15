@@ -1061,7 +1061,6 @@ export async function showExercise(chapterId) {
 }
 
 export async function deleteExercise(details) {
-    console.log(details)
     try {
         await connectDB()
         const chapter = await Chapter.findById(details.chapterId)

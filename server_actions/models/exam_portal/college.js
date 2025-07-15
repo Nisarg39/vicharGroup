@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
-
+import StudentRequest from "./studentRequest";
+import EnrolledStudent from "./enrolledStudent";
+import CollegeTeacher from "./collegeTeacher";
 const collegeSchema = new mongoose.Schema({
     collegeName: {
         type: String,
@@ -53,6 +55,18 @@ const collegeSchema = new mongoose.Schema({
     exams: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Exam',
+    }],
+    studentRequests: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StudentRequest',
+    }],
+    enrolledStudents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'EnrolledStudent',
+    }],
+    collegeTeachers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CollegeTeacher',
     }],
 }, {
     timestamps: true

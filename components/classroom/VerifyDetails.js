@@ -4,8 +4,8 @@ import { mandatoryDetails } from "../../server_actions/actions/studentActions"
 import { useDispatch } from "react-redux"
 import { studentDetails } from "../../features/login/LoginSlice"
 import Modal from "../common/Modal"
-export default function VerifyDetails(props) {
 
+export default function VerifyDetails(props) {
     const dispatch = useDispatch()
     const [showModal, setShowModal] = useState(false)
     const [isSuccess, setIsSuccess] = useState(false)
@@ -30,10 +30,10 @@ export default function VerifyDetails(props) {
     }
 
     return (
-        <section id="verify-details" className="max-w-md mx-auto min-h-screen p-8 flex items-center justify-center">
-            <div className="w-full bg-white rounded-xl shadow-lg p-8">
+        <div className="w-full h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6">
+            <div className="w-full max-w-md bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
                 <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">Verify Details</h1>
-                <p className="text-gray-600 text-center mb-6"> Please enter the mandatory details to get started </p>
+                <p className="text-gray-600 text-center mb-6">Please enter the mandatory details to get started</p>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="flex flex-col">
                         <label htmlFor="name" className="mb-2 text-gray-700 font-medium">Full Name:</label>
@@ -59,7 +59,7 @@ export default function VerifyDetails(props) {
                     </div>
                     <button 
                         type="submit"
-                        className="w-full bg-[#1d77bc] text-white py-3 px-6 rounded-lg hover:bg-[#1d77bc]/80 transition-all duration-200 font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        className="w-full bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-200 font-medium shadow-md transform hover:-translate-y-0.5"
                     >
                         Submit
                     </button>
@@ -71,6 +71,6 @@ export default function VerifyDetails(props) {
                 isSuccess={isSuccess}
                 modalMessage={modalMessage}
             />
-        </section>
+        </div>
     )
 }

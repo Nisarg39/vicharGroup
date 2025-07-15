@@ -13,6 +13,7 @@ import { collegeDetails } from "../../../server_actions/actions/examController/c
 export default function CollegeDashboard({ onSignOut }) {
     const [selectedMenu, setSelectedMenu] = useState('overview')
     const [collegeData, setCollegeData] = useState(null)
+    const [examDetails, setExamDetails] = useState(null)
 
     useEffect(() => {
         const fetchCollegeDetails = async () => {
@@ -22,6 +23,7 @@ export default function CollegeDashboard({ onSignOut }) {
             
             if (response.success) {
                 setCollegeData(response.college)
+                setExamDetails(response.examDetails)
             }
         }
 
@@ -36,7 +38,7 @@ export default function CollegeDashboard({ onSignOut }) {
         <div className="flex min-h-screen bg-gray-50">
             {/* Fixed Sidebar */}
             <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-10">
-                <CollegeSidebar onMenuSelect={handleMenuSelect} />
+                <CollegeSidebar onMenuSelect={handleMenuSelect} collegeData={collegeData} />
             </div>
             
             {/* Main Content */}
@@ -58,10 +60,10 @@ export default function CollegeDashboard({ onSignOut }) {
                 </header>
 
                 {/* Render components based on selected menu */}
-                {selectedMenu === 'overview' && <CollegeOverview />}
-                {selectedMenu === 'exams' && <ManageExams collegeData={collegeData} />}
-                {selectedMenu === 'students' && <Students />}
-                {selectedMenu === 'teachers' && <Teachers />}
+                {selectedMenu === 'overview' && <CollegeOverview collegeData={collegeData} examDetails={examDetails} />}
+                {selectedMenu === 'exams' && <ManageExams collegeData={collegeData} examDetails={examDetails} />}
+                {selectedMenu === 'students' && <Students collegeData={collegeData} />}
+                {selectedMenu === 'teachers' && <Teachers collegeData={collegeData} />}
                 {selectedMenu === 'results' && <Results />}
                 {selectedMenu === 'reports' && <Reports />}
                 {selectedMenu === 'profile' && <CollegeProfile collegeData={collegeData} />}

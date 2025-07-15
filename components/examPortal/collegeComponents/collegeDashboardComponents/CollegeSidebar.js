@@ -10,7 +10,7 @@ import {
     UserGroupIcon
 } from '@heroicons/react/24/outline'
 
-export default function CollegeSidebar({ onMenuSelect }) {
+export default function CollegeSidebar({ onMenuSelect, collegeData }) {
     const [activeItem, setActiveItem] = useState('overview')
 
     const menuItems = [
@@ -104,11 +104,26 @@ export default function CollegeSidebar({ onMenuSelect }) {
                 >
                     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                            <UserCircleIcon className="w-5 h-5 text-gray-600" />
+                            {collegeData?.collegeLogo ? (
+                                <img 
+                                    src={collegeData.collegeLogo} 
+                                    alt="College Logo" 
+                                    className="w-8 h-8 rounded-full object-cover"
+                                />
+                            ) : (
+                                <UserCircleIcon className="w-5 h-5 text-gray-600" />
+                            )}
                         </div>
                         <div className="flex-1 text-left">
-                            <p className="text-sm font-medium text-gray-800">College Admin</p>
-                            <p className="text-xs text-gray-500">admin@college.edu</p>
+                            <p className="text-sm font-medium text-gray-800">
+                                {collegeData?.collegeName || 'College Admin'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {collegeData?.collegeEmail || 'admin@college.edu'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {collegeData?.collegeCode}
+                            </p>
                         </div>
                     </div>
                 </button>

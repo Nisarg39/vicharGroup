@@ -14,6 +14,11 @@ import DppQuestion from "../models/dppQuestion";
 import Segment from "../models/segment";
 import Referral from "../models/referral";
 import Razorpay_Info from "../models/razorpay_info";
+import College from "../models/exam_portal/college";
+import StudentRequest from "../models/exam_portal/studentRequest";
+import EnrolledStudent from "../models/exam_portal/enrolledStudent";
+import Exam from "../models/exam_portal/exam";
+
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
 import { model } from "mongoose";
@@ -507,4 +512,178 @@ export async function getSegments(){
         }
     }
     
+}
+
+export async function getTestSeries(){
+    try {
+        await connectDB()
+        const testSeries = await Products.find({
+            type: "test-series",
+            // Add any additional filters if needed
+        })
+        .populate('subjects')
+        .lean()
+
+        return {
+            message: "Test series fetched successfully",
+            success: true,
+            testSeries: JSON.parse(JSON.stringify(testSeries))
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error fetching test series",
+            success: false,
+            testSeries: null
+        }
+    }
+}
+
+// exam college search
+
+export async function collegeRequestStatus(details){
+    try {
+        await connectDB()
+        const collegeRequest = await StudentRequest.find({studentId: details.studentId})
+        .populate('college')
+        .lean()
+        if(!collegeRequest){
+            return {
+                message: "College request not found",
+                success: false,
+                collegeRequest: null
+            }
+        }else{
+            return {
+                message: "College request found",
+                success: true,
+                collegeRequest: JSON.parse(JSON.stringify(collegeRequest))
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error connecting to database",
+            success: false,
+            collegeRequest: null
+        }
+    }
+}
+
+export async function searchCollege(details){
+    try {
+        await connectDB()
+        // Search by college code instead of ID
+        const college = await College.findOne({ collegeCode: details.collegeCode })
+        const exams = await Exam.find({ college: college._id })
+        if(!college){
+            return {
+                message: "College not found with this code",
+                success: false,
+                college: null
+            }
+        }else{
+            return {
+                message: "College found successfully",
+                success: true,
+                college: JSON.parse(JSON.stringify(college)),
+                exams: JSON.parse(JSON.stringify(exams))
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error searching for college",
+            success: false,
+            college: null
+        }
+    }
+}
+
+export async function sendStudentRequest(details){
+    try {
+        await connectDB()
+        const middleware = await verifyStudentMiddleware(details.token)
+        if(!middleware.success){
+            return {
+                message: "Student verification failed",
+                success: false,
+                studentRequest: null
+            }
+        }
+        const student = await Student.findById(middleware.student._id)
+        const college = await College.findById(details.collegeId)
+        .populate('studentRequests')
+        // Remove .lean() to get a Mongoose document
+
+        if(!college){
+            return {
+                message: "College not found",
+                success: false,
+                studentRequest: null
+            }
+        }
+
+        // Ensure studentRequests is an array before filtering
+        const studentRequests = college.studentRequests || []
+        
+        // Check if the student has already sent a request to this college
+        const checkRequest = studentRequests.filter(request => request.student.toString() === student._id.toString())
+        if(checkRequest.length > 0){
+            return {
+                message: "Student has already sent a request to this college",
+                success: false,
+                studentRequest: null
+            }
+        }
+        
+        const studentRequest = await StudentRequest.create({ 
+            student: student._id, 
+            college: college._id, 
+            message: details.message ,
+            status: "pending"
+        })
+        
+        // Update the college document (note: since we used .lean(), we need to update directly)
+        college.studentRequests.push(studentRequest._id)
+        await college.save()
+        
+        return {
+            message: "Student request sent successfully",
+            success: true,
+            studentRequest: studentRequest
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            message: "Error sending student request",
+            success: false, 
+            studentRequest: null
+        }
+    }
+}
+
+export async function assignStudent(details){
+    try {
+        await connectDB()
+        const enrolledStudent = await EnrolledStudent.create({
+            studentId: details.studentId,
+            collegeId: details.collegeId,
+            class: details.class,
+            allocatedSubjects: details.allocatedSubjects
+        })
+        const college   = await College.findById(details.collegeId)
+        college.enrolledStudents.push(enrolledStudent._id)
+        await college.save()
+        return {
+            success: true,
+            message: "Student assigned successfully"
+        }
+    } catch (error) {
+        console.error("Error assigning student:", error)
+        return {
+            success: false,
+            message: "Error assigning student"
+        }
+    }
 }

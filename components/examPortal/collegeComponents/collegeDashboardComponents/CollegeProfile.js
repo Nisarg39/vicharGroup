@@ -1,8 +1,9 @@
+"use client"
 import { FaUniversity, FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobe, FaUserTie, FaIdCard, FaBuilding, FaCamera, FaBook } from 'react-icons/fa'
+import { updateCollegeDetails } from '../../../../server_actions/actions/examController/collegeActions'
+import toast from 'react-hot-toast'
 
 export default function CollegeProfile({ collegeData }) {
-
-    console.log(collegeData)
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
             {!collegeData ? (
