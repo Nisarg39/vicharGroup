@@ -1,0 +1,123 @@
+{
+  "name": "Vichar Exam Portal",
+  "short_name": "Exam Portal",
+  "description": "Offline-capable exam portal for students to take exams with automatic sync",
+  "start_url": "/exams",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1d77bc",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/vicharlogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vicharlogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/takalkarLogo.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Take Exam",
+      "short_name": "Exam",
+      "description": "Start a new exam",
+      "url": "/exams",
+      "icons": [
+        {
+          "src": "/vicharlogo.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Results",
+      "short_name": "Results",
+      "description": "View your exam results",
+      "url": "/exams/results",
+      "icons": [
+        {
+          "src": "/vicharlogo.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/exam-screenshot-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Exam Interface"
+    },
+    {
+      "src": "/exam-screenshot-2.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile Exam View"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+exam",
+      "url": "/exams?exam=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/exams",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/exams/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "background": {
+    "service_worker": "/sw.js",
+    "type": "module"
+  },
+  "permissions": [
+    "background-sync",
+    "notifications",
+    "storage"
+  ],
+  "features": [
+    "Cross Platform",
+    "Offline Support",
+    "Auto Sync",
+    "Progress Saving"
+  ]
+} 

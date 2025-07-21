@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Exam Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .offline-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 8px 24px rgba(255, 107, 107, 0.3);
+        }
+
+        .offline-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        h1 {
+            color: #2d3436;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .subtitle {
+            color: #636e72;
+            font-size: 16px;
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .features {
+            background: rgba(116, 75, 162, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #2d3436;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            color: #636e72;
+            font-size: 14px;
+            margin-bottom: 8px;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #00b894;
+            font-weight: bold;
+        }
+
+        .retry-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .retry-button:active {
+            transform: translateY(0);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .status-offline {
+            background: rgba(255, 107, 107, 0.1);
+            color: #d63031;
+            border: 1px solid rgba(255, 107, 107, 0.2);
+        }
+
+        .status-online {
+            background: rgba(0, 184, 148, 0.1);
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline .status-dot {
+            background: #d63031;
+        }
+
+        .status-online .status-dot {
+            background: #00b894;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .connection-info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .connection-info h4 {
+            color: #f39c12;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .connection-info p {
+            color: #636e72;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 32px 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .subtitle {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M24 8.98C20.93 5.9 16.69 4 12 4S3.07 5.9 0 8.98L12 21 24 8.98zM2.92 9.07C5.51 7.08 8.67 6 12 6s6.49 1.08 9.08 3.07l-9.08 9.08-9.08-9.08z"/>
+            </svg>
+        </div>
+
+        <div class="status-indicator status-offline">
+            <div class="status-dot"></div>
+            <span>You're currently offline</span>
+        </div>
+
+        <h1>No Internet Connection</h1>
+        <p class="subtitle">
+            Don't worry! Your exam portal is designed to work offline. 
+            You can continue taking exams and your progress will be saved locally.
+        </p>
+
+        <div class="connection-info">
+            <h4>📱 Offline Capabilities</h4>
+            <p>
+                Your exam data is cached locally, so you can continue your exam without interruption. 
+                Results will be automatically synced when you're back online.
+            </p>
+        </div>
+
+        <div class="features">
+            <h3>What you can do offline:</h3>
+            <ul class="feature-list">
+                <li>Continue taking exams with cached questions</li>
+                <li>Save your progress automatically</li>
+                <li>Mark questions for review</li>
+                <li>Submit exams (stored locally)</li>
+                <li>View exam instructions and details</li>
+                <li>Auto-sync when connection is restored</li>
+            </ul>
+        </div>
+
+        <button class="retry-button" onclick="checkConnection()">
+            🔄 Check Connection
+        </button>
+    </div>
+
+    <script>
+        // Check connection status
+        function checkConnection() {
+            const button = document.querySelector('.retry-button');
+            const statusIndicator = document.querySelector('.status-indicator');
+            
+            button.textContent = '🔄 Checking...';
+            button.disabled = true;
+
+            // Simulate connection check
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusIndicator.innerHTML = '<div class="status-dot"></div><span>Connection restored!</span>';
+                    button.textContent = '🎉 Back Online!';
+                    button.style.background = 'linear-gradient(135deg, #00b894, #00cec9)';
+                    
+                    // Redirect to exam portal after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/exams';
+                    }, 2000);
+                } else {
+                    statusIndicator.className = 'status-indicator status-offline';
+                    statusIndicator.innerHTML = '<div class="status-dot"></div><span>Still offline</span>';
+                    button.textContent = '🔄 Check Connection';
+                    button.disabled = false;
+                }
+            }, 2000);
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const button = document.querySelector('.retry-button');
+            
+            statusIndicator.className = 'status-indicator status-online';
+            statusIndicator.innerHTML = '<div class="status-dot"></div><span>Connection restored!</span>';
+            button.textContent = '🎉 Back Online!';
+            button.style.background = 'linear-gradient(135deg, #00b894, #00cec9)';
+            
+            setTimeout(() => {
+                window.location.href = '/exams';
+            }, 2000);
+        });
+
+        window.addEventListener('offline', () => {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const button = document.querySelector('.retry-button');
+            
+            statusIndicator.className = 'status-indicator status-offline';
+            statusIndicator.innerHTML = '<div class="status-dot"></div><span>You\'re currently offline</span>';
+            button.textContent = '🔄 Check Connection';
+            button.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            button.disabled = false;
+        });
+
+        // Auto-check connection every 30 seconds
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.href = '/exams';
+            }
+        }, 30000);
+
+        // Register service worker if supported
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('Service Worker registered:', registration);
+                })
+                .catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+</body>
+</html> 

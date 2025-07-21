@@ -1,3 +1,4 @@
+"use client"
 import { useState } from 'react';
 import { createExam } from '../../../../../server_actions/actions/examController/collegeActions';
 import ExamList from './ExamList';

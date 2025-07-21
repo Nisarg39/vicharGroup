@@ -26,6 +26,7 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
     });
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
 
     // Initialize form data when exam changes
     useEffect(() => {
@@ -50,7 +51,6 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                 reattempt: exam.reattempt || '',
                 examStatus: exam.examStatus || 'active'
             });
-            setMessage({ type: '', text: '' });
         }
     }, [exam, isOpen]);
 
@@ -386,28 +386,6 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                         type="datetime-local"
                                         name="endTime"
                                         value={formData.endTime}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Date</label>
-                                    <input
-                                        type="date"
-                                        name="examDate"
-                                        value={formData.examDate}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Exam Time</label>
-                                    <input
-                                        type="time"
-                                        name="examTime"
-                                        value={formData.examTime}
                                         onChange={handleInputChange}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />

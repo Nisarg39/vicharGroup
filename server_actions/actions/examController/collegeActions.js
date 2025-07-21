@@ -511,7 +511,7 @@ export async function getEnrolledStudents(collegeId, page = 1, limit = 10) {
 
         return {
             success: true,
-            enrolledStudents,
+            enrolledStudents: JSON.stringify(enrolledStudents),
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(totalStudents / limit),

@@ -10,12 +10,6 @@ const ExamSchema = new mongoose.Schema({
           type: String,
           required: true,
         },
-        examDate: {
-          type: Date,
-        },
-        examTime: {
-          type: String,
-        },
         examInstructions: {
           type: String,
         },
@@ -25,7 +19,7 @@ const ExamSchema = new mongoose.Schema({
         },
         examResults: {
           type: [mongoose.Schema.Types.ObjectId],
-          ref: "Result",
+          ref: "ExamResult",
         },
         examStatus: {
           type: String,

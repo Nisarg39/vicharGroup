@@ -28,7 +28,7 @@ export default function EnrolledStudents({ collegeData }) {
         const fetchStudents = async () => {
             const response = await getEnrolledStudents(collegeData._id, currentPage, studentsPerPage)
             if (response.success) {
-                setStudents(response.enrolledStudents)
+                setStudents(JSON.parse(response.enrolledStudents))
                 setPagination(response.pagination)
             }
             setLoading(false)
@@ -129,7 +129,7 @@ export default function EnrolledStudents({ collegeData }) {
                 // Fetch fresh data after update
                 const refreshResponse = await getEnrolledStudents(collegeData._id, currentPage, studentsPerPage)
                 if (refreshResponse.success) {
-                    setStudents(refreshResponse.enrolledStudents)
+                    setStudents(JSON.parse(refreshResponse.enrolledStudents))
                     setPagination(refreshResponse.pagination)
                 }
                 setEditingStudent(null)

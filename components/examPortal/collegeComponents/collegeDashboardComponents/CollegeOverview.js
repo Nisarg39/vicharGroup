@@ -4,9 +4,12 @@ import {
     ClipboardDocumentListIcon,
     ChartBarIcon,
     CalendarIcon,
-    ClockIcon
+    ClockIcon,
+    ChevronDownIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import CollegeTeachersList from './teacherComponents.js/CollegeTeachersList';
+import React, { useState } from 'react';
 
 export default function CollegeOverview({collegeData, examDetails, teachers = []}) {
     // Calculate statistics from examDetails
@@ -21,10 +24,8 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
     const calculateAverageScore = () => {
         const completedExams = examDetails?.filter(exam => exam.status === 'completed' && exam.results?.length > 0);
         if (!completedExams || completedExams.length === 0) return 0;
-        
         let totalScore = 0;
         let totalStudents = 0;
-        
         completedExams.forEach(exam => {
             if (exam.results) {
                 exam.results.forEach(result => {
@@ -33,7 +34,6 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                 });
             }
         });
-        
         return totalStudents > 0 ? Math.round((totalScore / totalStudents)) : 0;
     };
 
@@ -46,6 +46,15 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
         studentsCount: exam.students?.length || 0,
         duration: exam.duration || 'N/A'
     })) || [];
+
+    // Shrink/expand state
+    const [recentExamsExpanded, setRecentExamsExpanded] = useState(false);
+    const [teachersExpanded, setTeachersExpanded] = useState(false);
+    // Teacher count state for summary
+    const [teacherCount, setTeacherCount] = useState(null);
+
+    // Handler to get teacher count from CollegeTeachersList
+    const handleTeacherCount = (count) => setTeacherCount(count);
 
     return (
         <main className="p-8">
@@ -79,7 +88,6 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
@@ -91,7 +99,6 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
@@ -103,7 +110,6 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
@@ -117,13 +123,52 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                 </div>
             </div>
 
-            {/* Recent Exams */}
+            {/* Recent Exams - shrink/expand */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h2 className="text-lg font-semibold text-gray-800">Recent Exams</h2>
+                    <button
+                        onClick={() => setRecentExamsExpanded((prev) => !prev)}
+                        className="flex items-center px-3 py-1 rounded-lg bg-white/80 hover:bg-gray-100 shadow border border-gray-200 transition-all"
+                        aria-label={recentExamsExpanded ? 'Shrink' : 'Expand'}
+                    >
+                        {recentExamsExpanded ? (
+                            <ChevronDownIcon className="h-5 w-5 text-gray-600" />
+                        ) : (
+                            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+                        )}
+                        <span className="ml-2 text-sm text-gray-600">{recentExamsExpanded ? 'Shrink' : 'Expand'}</span>
+                    </button>
                 </div>
                 <div className="p-6">
-                    {recentExams.length > 0 ? (
+                    {recentExams.length === 0 ? (
+                        <div className="text-center py-8">
+                            <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500">No exams created yet</p>
+                            <p className="text-sm text-gray-400 mt-1">Create your first exam to get started</p>
+                        </div>
+                    ) : !recentExamsExpanded ? (
+                        <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+                            <div>
+                                <h3 className="font-medium text-gray-800">{recentExams[0].name}</h3>
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                    <div className="flex items-center space-x-1">
+                                        <CalendarIcon className="w-4 h-4" />
+                                        <span>{recentExams[0].date}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                        <UsersIcon className="w-4 h-4" />
+                                        <span>{recentExams[0].studentsCount} students</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                        <ClockIcon className="w-4 h-4" />
+                                        <span>{recentExams[0].duration} min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span className="text-xs text-gray-400">+{recentExams.length - 1} more</span>
+                        </div>
+                    ) : (
                         <div className="space-y-4">
                             {recentExams.map((exam) => (
                                 <div key={exam.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -163,19 +208,40 @@ export default function CollegeOverview({collegeData, examDetails, teachers = []
                                 </div>
                             ))}
                         </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-500">No exams created yet</p>
-                            <p className="text-sm text-gray-400 mt-1">Create your first exam to get started</p>
-                        </div>
                     )}
                 </div>
             </div>
 
-            {/* College Teachers List */}
+            {/* College Teachers List - shrink/expand */}
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-100">
-                <CollegeTeachersList collegeData={collegeData} refreshKey={0} noOuterMargin={true} />
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-800">Teachers</h2>
+                    <button
+                        onClick={() => setTeachersExpanded((prev) => !prev)}
+                        className="flex items-center px-3 py-1 rounded-lg bg-white/80 hover:bg-gray-100 shadow border border-gray-200 transition-all"
+                        aria-label={teachersExpanded ? 'Shrink' : 'Expand'}
+                    >
+                        {teachersExpanded ? (
+                            <ChevronDownIcon className="h-5 w-5 text-gray-600" />
+                        ) : (
+                            <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+                        )}
+                        <span className="ml-2 text-sm text-gray-600">{teachersExpanded ? 'Shrink' : 'Expand'}</span>
+                    </button>
+                </div>
+                <div className="p-6">
+                    {!teachersExpanded ? (
+                        <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-center gap-2">
+                                <UsersIcon className="w-6 h-6 text-blue-600" />
+                                <span className="font-medium text-gray-800">{teacherCount !== null ? `${teacherCount} teachers` : 'Teachers'}</span>
+                            </div>
+                            <span className="text-xs text-gray-400">Expand to view all teachers</span>
+                        </div>
+                    ) : (
+                        <CollegeTeachersList collegeData={collegeData} refreshKey={0} noOuterMargin={true} onCount={handleTeacherCount} />
+                    )}
+                </div>
             </div>
         </main>
     );

@@ -7,6 +7,7 @@ import VerifyDetails from "./VerifyDetails"
 import StudentDashboard from "./StudentDashboard"
 import LoadingSpinner from "../common/LoadingSpinner"
 import { useRouter } from "next/navigation"
+import toast from "react-hot-toast"
 
 export default function ClassroomHome() {
     const dispatch = useDispatch()
@@ -37,6 +38,13 @@ export default function ClassroomHome() {
                     localStorage.removeItem("cart")
                     router.push(cart)
                 }, 3000)
+            }else if(localStorage.getItem("examIdRedirect")){
+                const examId = localStorage.getItem("examIdRedirect")
+                setTimeout(() => {
+                    toast.success("Redirecting to exam page")
+                    router.push(`/exams/${examId}`)
+                    localStorage.removeItem("examIdRedirect")
+                }, 2000)
             }else{
                 getDetails(token)
             }

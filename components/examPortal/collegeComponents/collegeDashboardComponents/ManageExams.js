@@ -9,7 +9,7 @@ import {
     CalendarIcon,
     ClockIcon,
     UsersIcon,
-    AcademicCapIcon
+    AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import CreateExam from './manageExamComponents/CreateExam';
 
@@ -128,6 +128,29 @@ export default function ManageExams({collegeData, examDetails}) {
                                 <UsersIcon className="h-6 w-6 text-orange-600" />
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Recent Exams Section */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Recent Exams</h2>
+                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-100/50 p-6">
+                        {recentExams.length === 0 && (
+                            <p className="text-gray-500">No recent exams found.</p>
+                        )}
+                        {recentExams.length > 0 && (
+                            <ul className="divide-y divide-gray-100">
+                                {recentExams.map((exam) => (
+                                    <li key={exam.id} className="py-3 flex items-center justify-between">
+                                        <div>
+                                            <p className="font-medium text-gray-800">{exam.title}</p>
+                                            <p className="text-xs text-gray-500">{exam.date} &middot; {exam.status}</p>
+                                        </div>
+                                        <span className="text-xs text-gray-400">{exam.students} students</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
 

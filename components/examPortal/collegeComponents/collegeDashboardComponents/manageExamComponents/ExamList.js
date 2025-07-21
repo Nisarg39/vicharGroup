@@ -44,7 +44,7 @@ export default function ExamList({ collegeData, onBack }) {
             
             if (response.success) {
                 console.log('Exam data:', response.data.exams[0]); // Log first exam for data structure
-                setExams(response.data.exams);
+                setExams((response.data.exams || []).filter(exam => exam && exam._id));
                 setPagination({
                     currentPage: response.data.pagination.page,
                     totalPages: response.data.pagination.totalPages,
@@ -312,319 +312,319 @@ export default function ExamList({ collegeData, onBack }) {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {exams.map((exam, index) => (
-                                            <React.Fragment key={exam._id}>
-                                                <tr 
-                                                    onClick={() => toggleExamDetails(exam._id)}
-                                                    className={`hover:bg-gray-50 transition-all duration-200 cursor-pointer ${
-                                                        expandedExamId === exam._id ? 'bg-gray-50 border-l-4 border-blue-500' : ''
-                                                    }`}
-                                                >
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center">
-                                                            <div className="flex-shrink-0 h-10 w-10">
-                                                                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                                                                    <span className="text-white font-semibold text-sm">
-                                                                        {exam.examName.charAt(0).toUpperCase()}
+                                    {exams.filter(exam => exam && exam._id).map((exam, index) => (
+                                        <React.Fragment key={exam._id}>
+                                            <tr 
+                                                onClick={() => toggleExamDetails(exam._id)}
+                                                className={`hover:bg-gray-50 transition-all duration-200 cursor-pointer ${
+                                                    expandedExamId === exam._id ? 'bg-gray-50 border-l-4 border-blue-500' : ''
+                                                }`}
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center">
+                                                        <div className="flex-shrink-0 h-10 w-10">
+                                                            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                                                                <span className="text-white font-semibold text-sm">
+                                                                    {exam.examName.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="ml-3 min-w-0 flex-1">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <h3 className="text-base font-semibold text-gray-900">
+                                                                    {exam.examName}
+                                                                    {exam.standard && (
+                                                                        <span className="ml-2 text-sm font-medium text-blue-600">
+                                                                            (Class {exam.standard})
+                                                                        </span>
+                                                                    )}
+                                                                </h3>
+                                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                                    {exam.examAvailability === 'scheduled' && exam.startTime && (
+                                                                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-md">
+                                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                            </svg>
+                                                                            {new Date(exam.startTime).toLocaleString('en-US', {
+                                                                                day: 'numeric',
+                                                                                month: 'short',
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit'
+                                                                            })}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md ${
+                                                                        exam.examAvailability === 'scheduled' 
+                                                                        ? 'bg-purple-50 text-purple-700' 
+                                                                        : 'bg-emerald-50 text-emerald-700'
+                                                                    }`}>
+                                                                        {exam.examAvailability === 'scheduled' ? '📅 Scheduled' : '🎯 Practice'}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <div className="ml-3 min-w-0 flex-1">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <h3 className="text-base font-semibold text-gray-900">
-                                                                        {exam.examName}
-                                                                        {exam.standard && (
-                                                                            <span className="ml-2 text-sm font-medium text-blue-600">
-                                                                                (Class {exam.standard})
-                                                                            </span>
-                                                                        )}
-                                                                    </h3>
-                                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                                        {exam.examAvailability === 'scheduled' && exam.startTime && (
-                                                                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-md">
-                                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <div className="mt-2 flex items-center gap-3 text-xs">
+                                                                <span className="text-gray-500">
+                                                                    Created {exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : 'Recently'}
+                                                                </span>
+                                                                {exam.examQuestions && exam.examQuestions.length > 0 && (
+                                                                    <span className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded-md">
+                                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                        </svg>
+                                                                        {exam.examQuestions.length} Questions
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-gray-500">•</span>
+                                                                <span className="text-gray-500">
+                                                                    {exam.examDurationMinutes || 0} min
+                                                                </span>
+                                                                <span className="text-gray-500">•</span>
+                                                                <span className="text-gray-500">
+                                                                    {exam.totalMarks || 0} marks
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {exam.examSubject?.map((subject, idx) => (
+                                                            <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700">
+                                                                {subject}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 text-gray-700">
+                                                        <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                                        </svg>
+                                                        {exam.stream}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                                                        exam.status === 'draft' ? 'bg-yellow-50 text-yellow-700' :
+                                                        exam.status === 'published' ? 'bg-green-50 text-green-700' :
+                                                        exam.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+                                                        exam.status === 'completed' ? 'bg-gray-50 text-gray-700' :
+                                                        'bg-red-50 text-red-700'
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                                                            exam.status === 'draft' ? 'bg-yellow-500' :
+                                                            exam.status === 'published' ? 'bg-green-500' :
+                                                            exam.status === 'scheduled' ? 'bg-blue-500' :
+                                                            exam.status === 'completed' ? 'bg-gray-500' :
+                                                            'bg-red-500'
+                                                        }`}></div>
+                                                        {exam.status.charAt(0).toUpperCase() + exam.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditExam(exam);
+                                                            }}
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200"
+                                                        >
+                                                            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                            </svg>
+                                                            Edit
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleAssignQuestions(exam);
+                                                            }}
+                                                            className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 transition-colors duration-200"
+                                                        >
+                                                            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                            </svg>
+                                                            Assign Questions
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {expandedExamId === exam._id && (
+                                                <tr className="bg-gray-50">
+                                                    <td colSpan="5" className="px-6 py-4">
+                                                        <div className="border-t border-gray-200 pt-4">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                                                    {/* Basic Details */}
+                                                                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-blue-900">Basic Info</h5>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-blue-700">Standard</span>
+                                                                                <span className="text-xs font-semibold text-blue-900">{exam.standard ? `Class ${exam.standard}` : 'N/A'}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-blue-700">Section</span>
+                                                                                <span className="text-xs font-semibold text-blue-900">{exam.section || 'All'}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-blue-700">Type</span>
+                                                                                <span className="text-xs font-semibold text-blue-900 capitalize">{exam.examAvailability || 'N/A'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Exam Configuration */}
+                                                                    <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-green-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-green-900">Configuration</h5>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-green-700">Duration</span>
+                                                                                <span className="text-xs font-semibold text-green-900">{exam.examDurationMinutes || 0} min</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-green-700">Total Marks</span>
+                                                                                <span className="text-xs font-semibold text-green-900">{exam.totalMarks || 0}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-green-700">Passing Marks</span>
+                                                                                <span className="text-xs font-semibold text-green-900">{exam.passingMarks || 0}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Questions & Timing */}
+                                                                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-purple-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-purple-900">Questions</h5>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-purple-700">Assigned</span>
+                                                                                <span className={`text-xs font-semibold ${
+                                                                                    exam.examQuestions && exam.examQuestions.length > 0 
+                                                                                        ? 'text-green-600' 
+                                                                                        : 'text-red-600'
+                                                                                }`}>
+                                                                                    {exam.examQuestions ? exam.examQuestions.length : 0}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-purple-700">Shuffle</span>
+                                                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${exam.questionShuffle ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                                                                    {exam.questionShuffle ? 'Yes' : 'No'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-purple-700">Reattempts</span>
+                                                                                <span className="text-xs font-semibold text-purple-900">{exam.reattempt || 0}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Scoring */}
+                                                                    <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-orange-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-orange-900">Scoring</h5>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-orange-700">Negative Marks</span>
+                                                                                <span className="text-xs font-semibold text-orange-900">{exam.negativeMarks || 0}</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-xs text-orange-700">Success Rate</span>
+                                                                                <span className="text-xs font-semibold text-orange-900">
+                                                                                    {exam.totalMarks ? Math.round((exam.passingMarks / exam.totalMarks) * 100) : 0}%
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Schedule Section */}
+                                                                {(exam.startTime || exam.endTime) && (
+                                                                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-gray-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                                                 </svg>
-                                                                                {new Date(exam.startTime).toLocaleString('en-US', {
-                                                                                    day: 'numeric',
-                                                                                    month: 'short',
-                                                                                    hour: '2-digit',
-                                                                                    minute: '2-digit'
-                                                                                })}
-                                                                            </span>
-                                                                        )}
-                                                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md ${
-                                                                            exam.examAvailability === 'scheduled' 
-                                                                            ? 'bg-purple-50 text-purple-700' 
-                                                                            : 'bg-emerald-50 text-emerald-700'
-                                                                        }`}>
-                                                                            {exam.examAvailability === 'scheduled' ? '📅 Scheduled' : '🎯 Practice'}
-                                                                        </span>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-gray-900">Schedule</h5>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                            <div>
+                                                                                <span className="text-xs text-gray-600 block mb-1">Start Time</span>
+                                                                                <div className="bg-white px-3 py-2 rounded-md border border-gray-200">
+                                                                                    <span className="text-xs font-medium text-gray-800">
+                                                                                        {exam.startTime ? new Date(exam.startTime).toLocaleString() : 'Not scheduled'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <span className="text-xs text-gray-600 block mb-1">End Time</span>
+                                                                                <div className="bg-white px-3 py-2 rounded-md border border-gray-200">
+                                                                                    <span className="text-xs font-medium text-gray-800">
+                                                                                        {exam.endTime ? new Date(exam.endTime).toLocaleString() : 'Not scheduled'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
+                                                                )}
+
+                                                                {/* Instructions Section */}
+                                                                {exam.examInstructions && (
+                                                                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                                                        <div className="flex items-center mb-3">
+                                                                            <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-2">
+                                                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                                                </svg>
+                                                                            </div>
+                                                                            <h5 className="text-sm font-semibold text-blue-900">Exam Instructions</h5>
+                                                                        </div>
+                                                                        <div className="bg-white rounded-md p-3 border border-blue-200">
+                                                                            <p className="text-xs text-gray-700 leading-relaxed">
+                                                                                {exam.examInstructions}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                                 </div>
-                                                                <div className="mt-2 flex items-center gap-3 text-xs">
-                                                                    <span className="text-gray-500">
-                                                                        Created {exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : 'Recently'}
-                                                                    </span>
-                                                                    {exam.examQuestions && exam.examQuestions.length > 0 && (
-                                                                        <span className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded-md">
-                                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                            </svg>
-                                                                            {exam.examQuestions.length} Questions
-                                                                        </span>
-                                                                    )}
-                                                                    <span className="text-gray-500">•</span>
-                                                                    <span className="text-gray-500">
-                                                                        {exam.examDurationMinutes || 0} min
-                                                                    </span>
-                                                                    <span className="text-gray-500">•</span>
-                                                                    <span className="text-gray-500">
-                                                                        {exam.totalMarks || 0} marks
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {exam.examSubject?.map((subject, idx) => (
-                                                                <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700">
-                                                                    {subject}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 text-gray-700">
-                                                            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                                            </svg>
-                                                            {exam.stream}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                                                            exam.status === 'draft' ? 'bg-yellow-50 text-yellow-700' :
-                                                            exam.status === 'published' ? 'bg-green-50 text-green-700' :
-                                                            exam.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-                                                            exam.status === 'completed' ? 'bg-gray-50 text-gray-700' :
-                                                            'bg-red-50 text-red-700'
-                                                        }`}>
-                                                            <div className={`w-2 h-2 rounded-full mr-2 ${
-                                                                exam.status === 'draft' ? 'bg-yellow-500' :
-                                                                exam.status === 'published' ? 'bg-green-500' :
-                                                                exam.status === 'scheduled' ? 'bg-blue-500' :
-                                                                exam.status === 'completed' ? 'bg-gray-500' :
-                                                                'bg-red-500'
-                                                            }`}></div>
-                                                            {exam.status.charAt(0).toUpperCase() + exam.status.slice(1)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-2">
-                                                            <button 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleEditExam(exam);
-                                                                }}
-                                                                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200"
-                                                            >
-                                                                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                                Edit
-                                                            </button>
-                                                            <button 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleAssignQuestions(exam);
-                                                                }}
-                                                                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 transition-colors duration-200"
-                                                            >
-                                                                <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                                </svg>
-                                                                Assign Questions
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {expandedExamId === exam._id && (
-                                                    <tr className="bg-gray-50">
-                                                        <td colSpan="5" className="px-6 py-4">
-                                                            <div className="border-t border-gray-200 pt-4">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                                                        {/* Basic Details */}
-                                                                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-blue-900">Basic Info</h5>
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-blue-700">Standard</span>
-                                                                                    <span className="text-xs font-semibold text-blue-900">{exam.standard ? `Class ${exam.standard}` : 'N/A'}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-blue-700">Section</span>
-                                                                                    <span className="text-xs font-semibold text-blue-900">{exam.section || 'All'}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-blue-700">Type</span>
-                                                                                    <span className="text-xs font-semibold text-blue-900 capitalize">{exam.examAvailability || 'N/A'}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Exam Configuration */}
-                                                                        <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-green-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-green-900">Configuration</h5>
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-green-700">Duration</span>
-                                                                                    <span className="text-xs font-semibold text-green-900">{exam.examDurationMinutes || 0} min</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-green-700">Total Marks</span>
-                                                                                    <span className="text-xs font-semibold text-green-900">{exam.totalMarks || 0}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-green-700">Passing Marks</span>
-                                                                                    <span className="text-xs font-semibold text-green-900">{exam.passingMarks || 0}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Questions & Timing */}
-                                                                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-purple-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-purple-900">Questions</h5>
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-purple-700">Assigned</span>
-                                                                                    <span className={`text-xs font-semibold ${
-                                                                                        exam.examQuestions && exam.examQuestions.length > 0 
-                                                                                            ? 'text-green-600' 
-                                                                                            : 'text-red-600'
-                                                                                    }`}>
-                                                                                        {exam.examQuestions ? exam.examQuestions.length : 0}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-purple-700">Shuffle</span>
-                                                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${exam.questionShuffle ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                                                        {exam.questionShuffle ? 'Yes' : 'No'}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-purple-700">Reattempts</span>
-                                                                                    <span className="text-xs font-semibold text-purple-900">{exam.reattempt || 0}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Scoring */}
-                                                                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-orange-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-orange-900">Scoring</h5>
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-orange-700">Negative Marks</span>
-                                                                                    <span className="text-xs font-semibold text-orange-900">{exam.negativeMarks || 0}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-orange-700">Success Rate</span>
-                                                                                    <span className="text-xs font-semibold text-orange-900">
-                                                                                        {exam.totalMarks ? Math.round((exam.passingMarks / exam.totalMarks) * 100) : 0}%
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Schedule Section */}
-                                                                    {(exam.startTime || exam.endTime) && (
-                                                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-gray-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-gray-900">Schedule</h5>
-                                                                            </div>
-                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                                <div>
-                                                                                    <span className="text-xs text-gray-600 block mb-1">Start Time</span>
-                                                                                    <div className="bg-white px-3 py-2 rounded-md border border-gray-200">
-                                                                                        <span className="text-xs font-medium text-gray-800">
-                                                                                            {exam.startTime ? new Date(exam.startTime).toLocaleString() : 'Not scheduled'}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div>
-                                                                                    <span className="text-xs text-gray-600 block mb-1">End Time</span>
-                                                                                    <div className="bg-white px-3 py-2 rounded-md border border-gray-200">
-                                                                                        <span className="text-xs font-medium text-gray-800">
-                                                                                            {exam.endTime ? new Date(exam.endTime).toLocaleString() : 'Not scheduled'}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* Instructions Section */}
-                                                                    {exam.examInstructions && (
-                                                                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                                                            <div className="flex items-center mb-3">
-                                                                                <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-2">
-                                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                                    </svg>
-                                                                                </div>
-                                                                                <h5 className="text-sm font-semibold text-blue-900">Exam Instructions</h5>
-                                                                            </div>
-                                                                            <div className="bg-white rounded-md p-3 border border-blue-200">
-                                                                                <p className="text-xs text-gray-700 leading-relaxed">
-                                                                                    {exam.examInstructions}
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    </div>
-                                                                    </td>
-                                                                    </tr>
-                                                                    )}
-                                                                    </React.Fragment>
-                                                                    ))}
-                                                                    </tbody>
-                                                                    </table>
-                                                                    </div>
+                                                                </td>
+                                                                </tr>
+                                                                )}
+                                                                </React.Fragment>
+                                    ))}
+                                </tbody>
+                                </table>
+                                </div>
 
                         <div className="mt-6 flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
                             <div className="flex items-center">
@@ -662,7 +662,7 @@ export default function ExamList({ collegeData, onBack }) {
                             </div>
                         </div>
                     </>
-                )}
+                )};
             </div>
 
             {/* Question Assignment Modal */}

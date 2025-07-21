@@ -1,10 +1,13 @@
-const Exams = () => {
-    
+import CreateExam from "../../../components/examPortal/collegeComponents/collegeDashboardComponents/manageExamComponents/CreateExam"
+
+const mockCollegeData = { _id: "mock-id", allocatedSubjects: [] };
+
+const ExamTeacherPortal = () => {
     return (
         <div className="mt-20">
-            Exams Home
+            <CreateExam collegeData={mockCollegeData} />
         </div>
     )
 }
 
-export default Exams
+export default ExamTeacherPortal;
