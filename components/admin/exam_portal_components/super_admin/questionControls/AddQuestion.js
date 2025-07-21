@@ -600,6 +600,32 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
   }, [isQuillReady, tabValue]);
 
+  // Keyboard shortcut handler for tab switching
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only trigger on Ctrl+Arrow or Ctrl+Number
+      if (e.ctrlKey) {
+        // Ctrl+ArrowLeft/ArrowRight for previous/next tab
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          setTabValue((prev) => (prev > 0 ? prev - 1 : 0));
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          setTabValue((prev) => (prev < 5 ? prev + 1 : 5));
+        }
+        // Ctrl+1-6 for direct tab access (1=Question, 2=OptionA, ..., 6=Answer)
+        if (e.key >= '1' && e.key <= '6') {
+          e.preventDefault();
+          setTabValue(Number(e.key) - 1);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   return (
     <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Add the new header section */}
@@ -730,9 +756,17 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                   : 'text-gray-600 hover:bg-gray-100'}`}
               onClick={() => setTabValue(index)}
             >
-              {tab}
+              <span>{tab}</span>
+              <span className="ml-2 text-xs text-gray-400 font-normal">Ctrl+{index + 1}</span>
             </button>
           ))}
+        </div>
+        {/* Keyboard shortcut helper text */}
+        <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/></svg>
+          <span>
+            Use <span className="font-medium text-gray-600">Ctrl + 1-6</span> to switch tabs directly, or <span className="font-medium text-gray-600">Ctrl + ←/→</span> to move between tabs.
+          </span>
         </div>
       </div>
 

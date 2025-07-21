@@ -38,7 +38,7 @@ export default function TeacherPortalDashboard() {
     }, [])
     
     return (
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 pt-4 min-h-screen flex flex-col">
             {/* Header Section */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h1 className="text-2xl md:text-4xl font-semibold text-gray-900 flex items-center gap-3">
@@ -85,9 +85,11 @@ export default function TeacherPortalDashboard() {
             </div>
 
             {/* Content Sections */}
-            {activeSection === 'addQuestion' && <AddQuestion subjects={subjects}/>}
-            {activeSection === 'questionsList' && <QuestionsList subjects={subjects}/>}
-            {activeSection === 'teacherProfile' && <TeacherProfile teacherDetails={teacherDetails}/>}
+            <div className="flex-1 flex flex-col">
+                {activeSection === 'addQuestion' && <AddQuestion subjects={subjects}/>}
+                {activeSection === 'questionsList' && <QuestionsList subjects={subjects}/>}
+                {activeSection === 'teacherProfile' && <TeacherProfile teacherDetails={teacherDetails}/>}
+            </div>
         </div>
     )
 }

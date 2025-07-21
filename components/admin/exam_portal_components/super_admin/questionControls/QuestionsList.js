@@ -160,7 +160,7 @@ export default function QuestionsList({ subjects }) {
   }
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+    <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-120px)] min-h-[600px]">
       {/* Header */}
       <div className="p-6 border-b">
         <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 flex items-center gap-2">
@@ -248,7 +248,7 @@ export default function QuestionsList({ subjects }) {
       </div>
 
       {/* Questions List */}
-      <div className="flex-1 overflow-y-auto px-4">
+      <div className="flex-1 overflow-y-auto px-4 min-h-[400px] max-h-[calc(100vh-320px)]">
         <div className="space-y-4">
           {questions.map((question, index) => (
             <div key={question._id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
@@ -395,9 +395,11 @@ export default function QuestionsList({ subjects }) {
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Pagination */}
-        <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
+      {/* Pagination (now outside scrollable area) */}
+      <div className="flex flex-col items-center mt-4">
+        <div className="flex justify-center items-center gap-2 flex-wrap">
           <button
             onClick={() => handlePageChange(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
@@ -405,7 +407,6 @@ export default function QuestionsList({ subjects }) {
           >
             Previous
           </button>
-          
           {pagination.currentPage > 3 && (
             <>
               <button
@@ -417,7 +418,6 @@ export default function QuestionsList({ subjects }) {
               <span className="px-2">...</span>
             </>
           )}
-          
           {[...Array(5)].map((_, i) => {
             const pageNum = pagination.currentPage - 2 + i
             if (pageNum > 0 && pageNum <= pagination.totalPages) {
@@ -437,7 +437,6 @@ export default function QuestionsList({ subjects }) {
             }
             return null
           })}
-          
           {pagination.currentPage < pagination.totalPages - 2 && (
             <>
               <span className="px-2">...</span>
@@ -449,7 +448,6 @@ export default function QuestionsList({ subjects }) {
               </button>
             </>
           )}
-
           <button
             onClick={() => handlePageChange(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
@@ -458,7 +456,6 @@ export default function QuestionsList({ subjects }) {
             Next
           </button>
         </div>
-
         <div className="text-center text-sm text-gray-500 mt-2">
           Showing {((pagination.currentPage - 1) * pagination.questionsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.questionsPerPage, pagination.totalQuestions)} of {pagination.totalQuestions} questions
         </div>
