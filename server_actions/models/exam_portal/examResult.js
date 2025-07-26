@@ -82,6 +82,27 @@ const ExamResultSchema = new mongoose.Schema({
       default: 0,
     },
   },
+  // Negative marking rule information used for this exam
+  negativeMarkingInfo: {
+    ruleUsed: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "NegativeMarkingRule",
+    },
+    defaultRuleUsed: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DefaultNegativeMarkingRule",
+    },
+    negativeMarks: {
+      type: Number,
+      default: 0,
+    },
+    ruleDescription: String,
+    ruleSource: {
+      type: String,
+      enum: ["college_specific", "college_default", "super_admin_default", "exam_specific"],
+      default: "exam_specific"
+    }
+  },
   // Additional metadata
   deviceInfo: {
     userAgent: String,

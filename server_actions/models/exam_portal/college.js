@@ -45,6 +45,12 @@ const collegeSchema = new mongoose.Schema({
     allocatedSubjects: {
         type: [String],
     },
+    allocatedStreams: {
+        type: [String],
+    },
+    allocatedClasses: {
+        type: [String],
+    },
     password: {
         type: String,
         default: "collegeadmin@123"
@@ -68,6 +74,14 @@ const collegeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CollegeTeacher',
     }],
+    negativeMarkingRules: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'NegativeMarkingRule',
+    }],
+    globalNegativeMarks: {
+        type: Number,
+        default: 0, // Fallback default when no specific rules match
+    },
 }, {
     timestamps: true
 });

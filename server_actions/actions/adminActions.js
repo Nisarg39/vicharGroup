@@ -20,7 +20,10 @@ import Banner from "../models/banner"
 import College from "../models/exam_portal/college"
 import master_mcq_question from "../models/exam_portal/master_mcq_question"
 import TeacherExam from "../models/exam_portal/teacherExam"
+import DefaultNegativeMarkingRule from "../models/exam_portal/defaultNegativeMarkingRule"
+import NegativeMarkingRule from "../models/exam_portal/negativeMarkingRule"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 export async function adminLogin(details) {
     try {
@@ -1410,10 +1413,16 @@ export async function updateBanner(details) {
 export async function addCollege(details) {
     try {
         await connectDB()
+        
+        // Create the college first
         const college = await College.create(details)
+        
+        // Apply default negative marking rules to the new college
+        await applyDefaultNegativeMarkingRules(college._id)
+        
         return {
             success: true,
-            message: "College added successfully",
+            message: "College added successfully with default negative marking rules",
             college: JSON.parse(JSON.stringify(college))
         }
     } catch (error) {
@@ -1422,6 +1431,46 @@ export async function addCollege(details) {
             success: false,
             message: "Error adding college"
         }
+    }
+}
+
+// Helper function to apply default negative marking rules to a new college
+async function applyDefaultNegativeMarkingRules(collegeId) {
+    try {
+        // Get all active default rules
+        const defaultRules = await DefaultNegativeMarkingRule.find({ isActive: true })
+        
+        // Create college-specific rules based on default rules
+        const collegeRules = defaultRules.map(rule => ({
+            college: collegeId,
+            stream: rule.stream,
+            standard: rule.standard,
+            subject: rule.subject,
+            negativeMarks: rule.negativeMarks,
+            description: rule.description,
+            priority: rule.priority
+        }))
+        
+        if (collegeRules.length > 0) {
+            const createdRules = await NegativeMarkingRule.insertMany(collegeRules)
+            
+            // Update college with references to the created rules
+            await College.findByIdAndUpdate(
+                collegeId,
+                { 
+                    $push: { 
+                        negativeMarkingRules: { 
+                            $each: createdRules.map(rule => rule._id) 
+                        } 
+                    } 
+                }
+            )
+        }
+        
+        console.log(`Applied ${collegeRules.length} default negative marking rules to college ${collegeId}`)
+    } catch (error) {
+        console.error('Error applying default negative marking rules:', error)
+        // Don't throw error - college creation should still succeed
     }
 }
 export async function showCollegeList(page = 1, limit = 10) {
@@ -1831,6 +1880,216 @@ export async function UpdateTeacherExam(teacherId, details) {
         return {
             success: false,
             message: error.message || "Error updating teacher"
+        }
+    }
+}
+
+// Default Negative Marking Rules Management (Super Admin)
+
+export async function createDefaultNegativeMarkingRule(ruleData, adminId) {
+    try {
+        await connectDB()
+        
+        const rule = await DefaultNegativeMarkingRule.create({
+            ...ruleData,
+            createdBy: adminId
+        })
+        
+        return {
+            success: true,
+            message: "Default negative marking rule created successfully",
+            rule: JSON.stringify(rule)
+        }
+    } catch (error) {
+        console.error("Error creating default negative marking rule:", error)
+        return {
+            success: false,
+            message: error.message || "Failed to create default negative marking rule"
+        }
+    }
+}
+
+export async function getDefaultNegativeMarkingRules() {
+    try {
+        await connectDB()
+        
+        const rules = await DefaultNegativeMarkingRule.find({ isActive: true })
+            .populate('createdBy', 'username')
+            .sort({ stream: 1, standard: 1, subject: 1, priority: -1 })
+
+        return {
+            success: true,
+            rules: JSON.stringify(rules)
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function updateDefaultNegativeMarkingRule(ruleId, updateData) {
+    try {
+        await connectDB()
+        
+        const rule = await DefaultNegativeMarkingRule.findByIdAndUpdate(
+            ruleId,
+            updateData,
+            { new: true, runValidators: true }
+        )
+
+        if (!rule) {
+            return {
+                success: false,
+                message: "Rule not found"
+            }
+        }
+
+        return {
+            success: true,
+            message: "Default negative marking rule updated successfully",
+            rule: JSON.stringify(rule)
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function deleteDefaultNegativeMarkingRule(ruleId) {
+    try {
+        await connectDB()
+        
+        const rule = await DefaultNegativeMarkingRule.findByIdAndUpdate(
+            ruleId,
+            { isActive: false },
+            { new: true }
+        )
+
+        if (!rule) {
+            return {
+                success: false,
+                message: "Rule not found"
+            }
+        }
+
+        return {
+            success: true,
+            message: "Default negative marking rule deleted successfully"
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) {
+    try {
+        await connectDB()
+        
+        console.log("Starting migration with data:", negativeMarkingData)
+        console.log("Admin ID:", adminId)
+        
+        const rules = []
+        
+        // Validate input data
+        if (!negativeMarkingData || !negativeMarkingData.exams || !Array.isArray(negativeMarkingData.exams)) {
+            throw new Error("Invalid negative marking data structure")
+        }
+        
+        // Process the negative marking rules from the file
+        for (const exam of negativeMarkingData.exams) {
+            console.log("Processing exam:", exam.name)
+            
+            const examName = exam.name
+            const conductedBy = exam.conductedBy
+            
+            // Handle different marking scheme structures
+            if (exam.markingScheme) {
+                for (const [key, scheme] of Object.entries(exam.markingScheme)) {
+                    if (key === 'note') continue // Skip notes
+                    
+                    console.log(`Processing scheme for ${examName} - ${key}:`, scheme)
+                    
+                    // Determine if this is a subject-specific rule (like MHT-CET) or question type (like JEE)
+                    const isSubject = ['Physics', 'Chemistry', 'Mathematics', 'Biology'].includes(key)
+                    const isQuestionType = ['MCQ', 'Numerical'].includes(key)
+                    
+                    let stream = examName.includes('JEE') ? 'JEE' : 
+                                examName.includes('NEET') ? 'NEET' : 
+                                examName.includes('MHT-CET') ? 'MHT-CET' : examName
+                    
+                    const rule = {
+                        stream: stream,
+                        standard: null, // Can be set later by super admin
+                        subject: isSubject ? key : null,
+                        negativeMarks: Math.abs(scheme.incorrect || 0),
+                        positiveMarks: scheme.correct || 4,
+                        description: scheme.note || `${key}: +${scheme.correct || 4} for correct, ${scheme.incorrect ? scheme.incorrect : '0'} for incorrect`,
+                        examType: examName,
+                        conductedBy: conductedBy,
+                        questionType: isQuestionType ? key : null,
+                        isActive: true,
+                        priority: isSubject ? 3 : isQuestionType ? 2 : 1, // Subject > Question Type > General
+                        createdBy: new mongoose.Types.ObjectId(adminId) // Ensure proper ObjectId format
+                    }
+                    
+                    console.log("Created rule:", rule)
+                    rules.push(rule)
+                }
+            }
+        }
+        
+        console.log(`Attempting to insert ${rules.length} rules`)
+        
+        if (rules.length === 0) {
+            return {
+                success: false,
+                message: "No rules to migrate - check data format"
+            }
+        }
+        
+        // Insert all rules with error handling for duplicates
+        let createdRules = []
+        try {
+            createdRules = await DefaultNegativeMarkingRule.insertMany(rules, { ordered: false })
+        } catch (error) {
+            if (error.code === 11000) {
+                // Handle duplicate key errors - some rules might already exist
+                console.log("Some rules already exist, continuing with unique ones")
+                // Try inserting one by one to get successful ones
+                for (const rule of rules) {
+                    try {
+                        const created = await DefaultNegativeMarkingRule.create(rule)
+                        createdRules.push(created)
+                    } catch (duplicateError) {
+                        if (duplicateError.code !== 11000) {
+                            throw duplicateError // Re-throw if not a duplicate error
+                        }
+                        // Skip duplicates
+                        console.log(`Skipping duplicate rule for ${rule.stream} - ${rule.subject || rule.questionType || 'general'}`)
+                    }
+                }
+            } else {
+                throw error // Re-throw if not a duplicate error
+            }
+        }
+        
+        return {
+            success: true,
+            message: `Successfully migrated ${createdRules.length} default negative marking rules`,
+            rules: JSON.stringify(createdRules)
+        }
+    } catch (error) {
+        console.error("Error migrating negative marking rules:", error)
+        return {
+            success: false,
+            message: `Failed to migrate: ${error.message}`
         }
     }
 }

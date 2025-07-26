@@ -1,61 +1,58 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../ui/card"
+import { VicharCard, VicharCardContent, VicharCardHeader, VicharCardTitle } from "../../../ui/vichar-card"
 import { WifiOff, Download, Upload, Timer, RefreshCw } from "lucide-react"
 
 export default function OfflineCapabilitiesCard() {
     return (
-        <Card className="bg-white/90 backdrop-blur-xl shadow-xl border border-gray-100/60">
-            <CardHeader>
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <VicharCard aria-label="Offline and Sync Features" className="w-full max-w-md mx-auto">
+            <VicharCardHeader>
+                <VicharCardTitle className="flex items-center gap-2 text-xl">
                     <WifiOff className="w-5 h-5 text-blue-600" />
-                    Offline Capabilities
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <Download className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-900">Exam Data Cached</h4>
-                                <p className="text-sm text-gray-600">All exam questions and details are stored locally for offline access.</p>
-                            </div>
+                    Offline & Sync Features
+                </VicharCardTitle>
+                <p className="text-gray-600 text-sm mt-1">Seamless experience even when you lose connection.</p>
+            </VicharCardHeader>
+            <VicharCardContent className="p-6 pt-2">
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-start gap-4">
+                        <div className="p-2 bg-blue-100 rounded-lg flex items-center justify-center min-w-[44px] min-h-[44px]">
+                            <Download className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <Upload className="w-5 h-5 text-green-600" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-900">Offline Submission</h4>
-                                <p className="text-sm text-gray-600">Complete exams offline and submit automatically when connection is restored.</p>
-                            </div>
+                        <div>
+                            <div className="font-semibold text-gray-900">Exam Data Cached</div>
+                            <div className="text-sm text-gray-600">All exam questions and details are stored locally for offline access.</div>
                         </div>
                     </div>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <Timer className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-900">Progress Saved</h4>
-                                <p className="text-sm text-gray-600">Your exam progress is automatically saved and can be resumed.</p>
-                            </div>
+                    <div className="flex items-start gap-4">
+                        <div className="p-2 bg-green-100 rounded-lg flex items-center justify-center min-w-[44px] min-h-[44px]">
+                            <Upload className="w-5 h-5 text-green-600" />
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-100 rounded-lg">
-                                <RefreshCw className="w-5 h-5 text-orange-600" />
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-gray-900">Auto Sync</h4>
-                                <p className="text-sm text-gray-600">Results are automatically uploaded when you're back online.</p>
-                            </div>
+                        <div>
+                            <div className="font-semibold text-gray-900">Offline Submission</div>
+                            <div className="text-sm text-gray-600">Complete exams offline and submit automatically when connection is restored.</div>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                        <div className="p-2 bg-purple-100 rounded-lg flex items-center justify-center min-w-[44px] min-h-[44px]">
+                            <Timer className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                            <div className="font-semibold text-gray-900">Progress Saved</div>
+                            <div className="text-sm text-gray-600">Your exam progress is automatically saved and can be resumed.</div>
+                        </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                        <div className="p-2 bg-orange-100 rounded-lg flex items-center justify-center min-w-[44px] min-h-[44px]">
+                            <RefreshCw className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div>
+                            <div className="font-semibold text-gray-900">Auto Sync</div>
+                            <div className="text-sm text-gray-600">Results are automatically uploaded when you're back online.</div>
                         </div>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
+            </VicharCardContent>
+        </VicharCard>
     )
 } 

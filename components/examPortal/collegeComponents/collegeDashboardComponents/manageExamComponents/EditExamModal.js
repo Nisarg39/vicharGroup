@@ -75,7 +75,17 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
         setIsSubmitting(true);
 
         try {
-            const response = await updateExam(exam._id, formData, collegeData._id);
+            // Validation: Check if exam is being set to active without questions
+            if (formData.examStatus === 'active' && (!exam.examQuestions || exam.examQuestions.length === 0)) {
+                toast.error('Cannot activate exam: Please assign at least 1 question for each selected subject before making the exam active.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Always store standard as a plain number string
+            const cleanStandard = typeof formData.standard === 'string' ? formData.standard.replace(/[^0-9]/g, '') : formData.standard;
+            const cleanFormData = { ...formData, standard: cleanStandard };
+            const response = await updateExam(exam._id, cleanFormData, collegeData._id);
             
             if (response.success) {
                 toast.success(response.message);
@@ -152,9 +162,13 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
                                     <option value="">Select Stream</option>
-                                    <option value="NEET">NEET</option>
-                                    <option value="JEE">JEE</option>
-                                    <option value="MHT-CET">MHT-CET</option>
+                                    {collegeData?.allocatedStreams && collegeData.allocatedStreams.length > 0 ? (
+                                        collegeData.allocatedStreams.map((stream) => (
+                                            <option key={stream} value={stream}>{stream}</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No streams allocated</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -168,32 +182,36 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                 <div className="space-y-2">
                                     {/* Checkbox-style Subject Selection */}
                                     <div className="grid grid-cols-2 gap-3 p-4 border border-gray-300 rounded-lg bg-gray-50">
-                                        {collegeData?.allocatedSubjects?.map((subject) => (
-                                            <label 
-                                                key={subject}
-                                                className="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.examSubject.includes(subject)}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                examSubject: [...prev.examSubject, subject]
-                                                            }));
-                                                        } else {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                examSubject: prev.examSubject.filter(s => s !== subject)
-                                                            }));
-                                                        }
-                                                    }}
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="text-sm font-medium text-gray-700">{subject}</span>
-                                            </label>
-                                        ))}
+                                        {collegeData?.allocatedSubjects && collegeData.allocatedSubjects.length > 0 ? (
+                                            collegeData.allocatedSubjects.map((subject) => (
+                                                <label 
+                                                    key={subject}
+                                                    className="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.examSubject.includes(subject)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    examSubject: [...prev.examSubject, subject]
+                                                                }));
+                                                            } else {
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    examSubject: prev.examSubject.filter(s => s !== subject)
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm font-medium text-gray-700">{subject}</span>
+                                                </label>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-500 italic">No subjects allocated to this college</span>
+                                        )}
                                     </div>
                                     
                                     {/* Selected Subjects Display */}
@@ -239,8 +257,13 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 >
                                     <option value="">Select Standard</option>
-                                    <option value="11">11th</option>
-                                    <option value="12">12th</option>
+                                    {collegeData?.allocatedClasses && collegeData.allocatedClasses.length > 0 ? (
+                                        collegeData.allocatedClasses.map((cls) => (
+                                            <option key={cls} value={cls}>{cls}th</option>
+                                        ))
+                                    ) : (
+                                        <option value="" disabled>No classes allocated</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -307,6 +330,21 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
+                                {/* Warning message for active status without questions */}
+                                {formData.examStatus === 'active' && (!exam.examQuestions || exam.examQuestions.length === 0) && (
+                                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                                        <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.316 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                        <div className="text-sm">
+                                            <p className="font-medium text-yellow-800">Warning: No questions assigned</p>
+                                            <p className="text-yellow-700 mt-1">
+                                                You need to assign at least 1 question for each selected subject ({formData.examSubject.join(', ')}) before making this exam active. 
+                                                Students won't be able to see this exam until questions are assigned.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div>

@@ -18,6 +18,12 @@ const getAllSubjects = () => {
   return Array.from(subjects);
 };
 
+// Helper to get all streams
+const getAllStreams = () => Object.keys(data);
+
+// Helper to get all classes
+const getAllClasses = () => ['11', '12'];
+
 export default function CollegeDetails({ college, onClose, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +32,8 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
     collegeLogo: college?.collegeLogo || null,
     password: college.password
   });
+  const [errors, setErrors] = useState({});
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,7 +51,62 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
     }));
   };
 
+  // Handlers for streams and classes
+  const handleStreamChange = (stream) => {
+    let updatedStreams;
+    if (editedCollege.allocatedStreams?.includes(stream)) {
+      updatedStreams = editedCollege.allocatedStreams.filter(s => s !== stream);
+    } else {
+      updatedStreams = [...(editedCollege.allocatedStreams || []), stream];
+    }
+
+    // Auto-select subjects for selected streams
+    // Gather all subjects for all selected streams
+    const getSubjectsForStreams = (streams) => {
+      const subjects = new Set();
+      streams.forEach(str => {
+        Object.keys(data[str] || {}).forEach(subject => {
+          subjects.add(subject);
+        });
+      });
+      return Array.from(subjects);
+    };
+    const autoSubjects = getSubjectsForStreams(updatedStreams);
+
+    setEditedCollege(prev => ({
+      ...prev,
+      allocatedStreams: updatedStreams,
+      allocatedSubjects: autoSubjects
+    }));
+  };
+
+  const handleClassChange = (classValue) => {
+    let updatedClasses;
+    if (editedCollege.allocatedClasses?.includes(classValue)) {
+      updatedClasses = editedCollege.allocatedClasses.filter(c => c !== classValue);
+    } else {
+      updatedClasses = [...(editedCollege.allocatedClasses || []), classValue];
+    }
+    setEditedCollege(prev => ({
+      ...prev,
+      allocatedClasses: updatedClasses
+    }));
+  };
+
   const handleSubmit = async () => {
+    // Validation for streams and classes
+    let customErrors = {};
+    if (!editedCollege.allocatedStreams || editedCollege.allocatedStreams.length === 0) {
+      customErrors.allocatedStreams = 'At least one stream must be selected.';
+    }
+    if (!editedCollege.allocatedClasses || editedCollege.allocatedClasses.length === 0) {
+      customErrors.allocatedClasses = 'At least one class must be selected.';
+    }
+    if (Object.keys(customErrors).length > 0) {
+      setErrors(customErrors);
+      return;
+    }
+    setErrors({});
     try {
       const updatedData = {
         _id: editedCollege._id,
@@ -340,6 +403,90 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
             <p className="text-sm font-semibold text-gray-600">Address</p>
           </div>
           {renderValue("Full Address", college.Address, "Address")}
+        </div>
+
+        {/* Allocated Streams Section */}
+        <div className="md:col-span-2 lg:col-span-3 bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <MdSchool className="text-[#1d77bc] text-lg" />
+            <p className="text-sm font-semibold text-gray-600">Allocated Streams</p>
+          </div>
+          {isEditing ? (
+            <>
+              <div className="flex gap-4">
+                {getAllStreams().map((stream) => (
+                  <label key={stream} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name={`allocatedStream-${stream}`}
+                      value={stream}
+                      checked={editedCollege.allocatedStreams?.includes(stream)}
+                      onChange={() => handleStreamChange(stream)}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2">{stream}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.allocatedStreams && (
+                <p className="mt-1 text-sm text-red-600">{errors.allocatedStreams}</p>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {editedCollege.allocatedStreams?.length > 0 ? (
+                editedCollege.allocatedStreams.map((stream, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                    {stream}
+                  </span>
+                ))
+              ) : (
+                <p className="text-gray-500 italic">No streams allocated</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Allocated Classes Section */}
+        <div className="md:col-span-2 lg:col-span-3 bg-gray-50 rounded-lg p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <MdSchool className="text-[#1d77bc] text-lg" />
+            <p className="text-sm font-semibold text-gray-600">Allocated Classes</p>
+          </div>
+          {isEditing ? (
+            <>
+              <div className="flex gap-4">
+                {getAllClasses().map((classValue) => (
+                  <label key={classValue} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name={`allocatedClass-${classValue}`}
+                      value={classValue}
+                      checked={editedCollege.allocatedClasses?.includes(classValue)}
+                      onChange={() => handleClassChange(classValue)}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2">{classValue}th</span>
+                  </label>
+                ))}
+              </div>
+              {errors.allocatedClasses && (
+                <p className="mt-1 text-sm text-red-600">{errors.allocatedClasses}</p>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {editedCollege.allocatedClasses?.length > 0 ? (
+                editedCollege.allocatedClasses.map((classValue, index) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                    {classValue}th
+                  </span>
+                ))
+              ) : (
+                <p className="text-gray-500 italic">No classes allocated</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Allocated Subjects Section */}

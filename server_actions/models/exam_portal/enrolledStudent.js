@@ -19,6 +19,19 @@ const enrolledStudentSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    allocatedStreams: {
+        type: [String],
+        default: [],
+    },
+    allocatedSubjects: {
+        type: [String],
+        default: [],
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'retired'],
+        default: 'approved',
+    },
 }, {
     timestamps: true
 });

@@ -1,7 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../ui/card"
-import { Button } from "../../../ui/button"
+import { VicharCard, VicharCardHeader, VicharCardTitle, VicharCardContent } from "../../../ui/vichar-card"
+import { VicharButton } from "../../../ui/vichar-button"
 import { AlertTriangle } from "lucide-react"
 
 export default function ConfirmSubmitModal({ 
@@ -15,14 +15,14 @@ export default function ConfirmSubmitModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-100/60 max-w-md w-full">
-                <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+            <VicharCard className="bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-100/60 max-w-md w-full">
+                <VicharCardHeader className="p-4 sm:p-6">
+                    <VicharCardTitle className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
                         <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                         Confirm Submission
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 space-y-4">
+                    </VicharCardTitle>
+                </VicharCardHeader>
+                <VicharCardContent className="p-4 sm:p-6 space-y-4">
                     <p className="text-gray-700 text-sm sm:text-base">
                         Are you sure you want to submit your exam? This action cannot be undone.
                     </p>
@@ -34,22 +34,22 @@ export default function ConfirmSubmitModal({
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <Button
+                        <VicharButton
                             variant="outline"
                             onClick={onCancel}
                             className="flex-1"
                         >
                             Cancel
-                        </Button>
-                        <Button
+                        </VicharButton>
+                        <VicharButton
                             onClick={onSubmit}
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                         >
                             Submit Exam
-                        </Button>
+                        </VicharButton>
                     </div>
-                </CardContent>
-            </Card>
+                </VicharCardContent>
+            </VicharCard>
         </div>
     )
 } 

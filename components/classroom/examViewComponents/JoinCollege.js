@@ -4,6 +4,9 @@ import { BuildingOfficeIcon, UserGroupIcon, AcademicCapIcon, ArrowRightIcon, Boo
 import { ClockIcon, CalendarIcon, TagIcon, ClipboardIcon } from '@heroicons/react/24/outline'
 import { searchCollege, sendStudentRequest, collegeRequestStatus } from '../../../server_actions/actions/studentActions'
 import toast from 'react-hot-toast'
+// Add import for shadcn Checkbox if available, else fallback to input
+import { Checkbox } from "@/components/ui/checkbox" // Uncomment if shadcn Checkbox exists
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export default function JoinCollege() {
     const [collegeCode, setCollegeCode] = useState('')
@@ -17,6 +20,11 @@ export default function JoinCollege() {
     const [requestStatuses, setRequestStatuses] = useState([])
     const [loadingStatus, setLoadingStatus] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
+    const [allocatedStreams, setAllocatedStreams] = useState([]) // <-- NEW: selected streams
+    const [allocatedClasses, setAllocatedClasses] = useState([]) // <-- selected class (as array for backend)
+
+    // Remove or comment out this debug log after testing
+    // console.log(foundCollege.allocatedClasses[0]);
 
     useEffect(() => {
         const checkRequestStatus = async () => {
@@ -76,7 +84,15 @@ export default function JoinCollege() {
             toast.error('Please enter a message to introduce yourself')
             return
         }
-
+        if (!allocatedStreams.length) {
+            toast.error('Please select at least one stream')
+            return
+        }
+        if (!allocatedClasses.length) {
+            toast.error('Please select a class')
+            return
+        }
+        
         // Check if this would be the 5th request
         if (requestStatuses.length === 4) {
             setShowWarning(true)
@@ -95,7 +111,9 @@ export default function JoinCollege() {
             const details = {
                 collegeId: foundCollege._id,
                 message: requestMessage.trim(),
-                token: token
+                token: token,
+                allocatedStreams: allocatedStreams, // <-- NEW: send selected streams
+                allocatedClasses: allocatedClasses, // <-- send selected class as array
             }
             const result = await sendStudentRequest(details)
             
@@ -107,6 +125,8 @@ export default function JoinCollege() {
                 })
                 setRequestMessage('')
                 setRequestSent(true)
+                setAllocatedStreams([]) // Reset after send
+                setAllocatedClasses([]) // Reset after send
             } else {
                 toast.error(result.message || "Failed to send request")
             }
@@ -154,6 +174,8 @@ export default function JoinCollege() {
         setExams([])
         setRequestMessage('')
         setRequestSent(false)
+        setAllocatedStreams([]) // Reset streams
+        setAllocatedClasses([]) // Reset classes
     }
 
     return (
@@ -545,6 +567,52 @@ export default function JoinCollege() {
                                     </div>
                                 </div>
 
+                                {/* NEW: Class Selection */}
+                                {foundCollege.allocatedClasses && foundCollege.allocatedClasses.length > 0 && (
+                                    <div className="mt-6 mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Select Class <span className="text-red-500">*</span>
+                                        </label>
+                                        <RadioGroup
+                                            value={allocatedClasses[0] || ""}
+                                            onValueChange={val => setAllocatedClasses(val ? [val] : [])}
+                                            className="flex flex-wrap gap-3"
+                                        >
+                                            {foundCollege.allocatedClasses.map((className, idx) => (
+                                                <div key={className} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                    <RadioGroupItem value={className} id={`class-radio-${idx}`} />
+                                                    <label htmlFor={`class-radio-${idx}`} className="text-sm text-gray-700 cursor-pointer">{className}</label>
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                    </div>
+                                )}
+                                {/* NEW: Streams Selection */}
+                                {foundCollege.allocatedStreams && foundCollege.allocatedStreams.length > 0 && (
+                                    <div className="mt-6 mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Select Streams <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="flex flex-wrap gap-3">
+                                            {foundCollege.allocatedStreams.map((stream, idx) => (
+                                                <label key={stream} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                    <Checkbox
+                                                        checked={allocatedStreams.includes(stream)}
+                                                        onCheckedChange={checked => {
+                                                            if (checked) {
+                                                                setAllocatedStreams([...allocatedStreams, stream])
+                                                            } else {
+                                                                setAllocatedStreams(allocatedStreams.filter(s => s !== stream))
+                                                            }
+                                                        }}
+                                                        id={`stream-checkbox-${idx}`}
+                                                    />
+                                                    <span className="text-sm text-gray-700">{stream}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 {/* Join Button */}
                                 <div className="mt-6 space-y-4">
                                     <div className="rounded-lg border border-gray-200 p-4">

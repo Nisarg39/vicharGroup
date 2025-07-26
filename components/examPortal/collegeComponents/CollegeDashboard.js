@@ -8,6 +8,7 @@ import Teachers from './collegeDashboardComponents/Teachers';
 import Results from './collegeDashboardComponents/Results';
 import Reports from './collegeDashboardComponents/Reports';
 import CollegeProfile from './collegeDashboardComponents/CollegeProfile';
+import NegativeMarkingSettings from './collegeDashboardComponents/NegativeMarkingSettings';
 import { collegeDetails } from "../../../server_actions/actions/examController/collegeActions";
 
 export default function CollegeDashboard({ onSignOut }) {
@@ -66,6 +67,7 @@ export default function CollegeDashboard({ onSignOut }) {
                 {selectedMenu === 'teachers' && <Teachers collegeData={collegeData} />}
                 {selectedMenu === 'results' && <Results />}
                 {selectedMenu === 'reports' && <Reports />}
+                {selectedMenu === 'negative-marking' && <NegativeMarkingSettings collegeData={collegeData} onBack={() => setSelectedMenu('overview')} />}
                 {selectedMenu === 'profile' && <CollegeProfile collegeData={collegeData} />}
             </div>
         </div>

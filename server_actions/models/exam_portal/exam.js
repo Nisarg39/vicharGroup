@@ -91,7 +91,9 @@ const ExamSchema = new mongoose.Schema({
           type: String,
           enum: ["Section A", "Section B"],
         }
-      },
+      },{
+        timestamps: true
+      }
 );
 
 const Exam = mongoose.models?.Exam || mongoose.model("Exam", ExamSchema);

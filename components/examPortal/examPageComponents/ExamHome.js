@@ -21,6 +21,9 @@ import OfflineCapabilitiesCard from "./examHomeComponents/OfflineCapabilitiesCar
 import ExamInterface from "./ExamInterface"
 import Instructions from "./Instructions"
 import ExamResult from "./ExamResult"
+import { VicharCard, VicharCardContent, VicharCardHeader, VicharCardTitle } from "../../ui/vichar-card";
+import { VicharButton } from "../../ui/vichar-button";
+import { VicharTable } from "../../ui/vichar-table";
 
 export default function ExamHome({ examId }) {
     const router = useRouter()
@@ -38,6 +41,7 @@ export default function ExamHome({ examId }) {
     const [previousResult, setPreviousResult] = useState(null)
     const [allAttempts, setAllAttempts] = useState([]);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
+    const [isEligible, setIsEligible] = useState(false); // NEW: eligibility state
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -49,6 +53,10 @@ export default function ExamHome({ examId }) {
 
     // Handler for starting or retaking exam
     const handleStartExam = () => {
+        if (!isEligible) {
+            toast.error('You are not eligible to attempt this exam.');
+            return;
+        }
         const progressKey = getProgressKey();
         if (progressKey) {
             const savedProgress = localStorage.getItem(progressKey);
@@ -138,6 +146,13 @@ export default function ExamHome({ examId }) {
             
             if (successfulSubmissions.length > 0) {
                 toast.success(`${successfulSubmissions.length} exam(s) synced successfully!`)
+                
+                // IMMEDIATELY refresh attempts after sync to validate reattempt logic
+                const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                if (updatedAttempts.success) {
+                    setAllAttempts(updatedAttempts.attempts);
+                }
+                
                 // Show result if this was a recent submission
                 if (examResult) {
                     setCurrentView('result')
@@ -318,6 +333,7 @@ export default function ExamHome({ examId }) {
             if(eligibility.success){
                 toast.success(eligibility.message)
                 setExam(eligibility.exam)
+                setIsEligible(true); // NEW: set eligible
                 
                 // Cache exam data for offline use
                 cacheExamData(eligibility.exam, eligibility.exam.examQuestions || [])
@@ -336,10 +352,12 @@ export default function ExamHome({ examId }) {
                 console.log('Exam questions:', eligibility.exam.examQuestions)
             } else {
                 toast.error(eligibility.message)
+                setIsEligible(false); // NEW: set not eligible
             }
         } catch (error) {
             console.error('Error checking eligibility:', error)
             toast.error('Failed to check exam eligibility')
+            setIsEligible(false); // NEW: set not eligible
         }
     }
 
@@ -384,9 +402,14 @@ export default function ExamHome({ examId }) {
     useEffect(() => {
         async function fetchAttempts() {
             if (student?._id && examId) {
+                console.log("Fetching attempts for student:", student._id, "exam:", examId);
                 const res = await getAllExamAttempts(student._id, examId);
+                console.log("getAllExamAttempts response:", res);
                 if (res.success) {
+                    console.log("Setting attempts:", res.attempts);
                     setAllAttempts(res.attempts);
+                } else {
+                    console.error("Failed to fetch attempts:", res.message);
                 }
             }
         }
@@ -442,6 +465,13 @@ export default function ExamHome({ examId }) {
 
             if (result.success) {
                 setExamResult(result.result);
+                
+                // IMMEDIATELY refresh attempts after submission to validate reattempt logic
+                const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                if (updatedAttempts.success) {
+                    setAllAttempts(updatedAttempts.attempts);
+                }
+                
                 setCurrentView('result');
                 toast.success('Exam submitted successfully!');
                 // Remove any pending offline submission for this exam (if it exists)
@@ -541,9 +571,23 @@ export default function ExamHome({ examId }) {
                 student={student}
                 onComplete={handleExamComplete}
                 isOnline={isOnline}
+                onBack={() => setCurrentView('home')}
             />
         )
     }
+
+    // Handler for retake with reattempt validation
+    const handleRetake = () => {
+        // exam.reattempt: allowed attempts (0 = unlimited, but server treats as 1 if undefined)
+        // allAttempts: array of all attempts for this student and exam
+        const allowed = exam?.reattempt || 1; // Match server logic: default to 1 attempt
+        const attempts = allAttempts.length;
+        if (allowed > 0 && attempts >= allowed) {
+            toast.error(`You have reached the maximum allowed attempts (${allowed}) for this exam.`);
+            return;
+        }
+        setCurrentView('instructions');
+    };
 
     // Result view
     if (currentView === 'result') {
@@ -552,7 +596,8 @@ export default function ExamHome({ examId }) {
                 result={examResult}
                 exam={exam}
                 onBack={() => setCurrentView('home')}
-                onRetake={() => setCurrentView('instructions')}
+                onRetake={handleRetake}
+                allAttempts={allAttempts}
             />
         )
     }
@@ -564,54 +609,149 @@ export default function ExamHome({ examId }) {
                 result={selectedAttempt}
                 exam={exam}
                 onBack={() => setCurrentView('home')}
-                onRetake={() => setCurrentView('instructions')}
+                onRetake={handleRetake}
+                allAttempts={allAttempts}
             />
         );
     }
 
     // Main home view
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-            <div className="container mx-auto px-4 py-6 max-w-6xl">
-                <div className="space-y-6">
-                {/* Header */}
-                    <ExamHeader
-                        student={student}
-                        isOnline={isOnline}
-                        offlineSubmissions={offlineSubmissions}
-                        onSyncOfflineData={syncOfflineData}
-                        onViewResults={handleViewResults}
-                    />
-
-                    {/* Previous Attempt Alert */}
-                    <PreviousAttemptAlert
-                        hasAttempted={hasAttempted}
-                        onViewPreviousResult={viewPreviousResult}
-                    />
-
-                {/* Exam Details */}
-                    <ExamDetailsCard
-                        exam={exam}
-                        hasUncompletedExam={hasUncompletedExam}
-                        hasAttempted={hasAttempted}
-                        allAttempts={allAttempts}
-                        isOnline={isOnline}
-                        onStartExam={handleStartExam}
-                        onContinueExam={handleContinueExamDirect}
-                        onViewPreviousResult={viewPreviousResult}
-                    />
-
-                    {/* All Attempts Table */}
-                    <ExamAttemptsTable
-                        allAttempts={allAttempts}
-                        bestAttempt={bestAttempt}
-                        onViewAttemptDetails={handleViewAttemptDetails}
-                    />
-
-                    {/* Offline Capabilities */}
-                    <OfflineCapabilitiesCard />
-                        </div>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/40 relative overflow-hidden">
+            {/* Background Decorative Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/5 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/10 to-blue-400/5 rounded-full blur-3xl"></div>
+                <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gradient-to-br from-purple-400/5 to-pink-400/5 rounded-full blur-2xl"></div>
             </div>
+
+            <div className="relative z-10 container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
+                <div className="space-y-6 sm:space-y-8">
+                    {/* Header */}
+                    <section aria-label="Exam Portal Header" className="animate-fadeIn">
+                        <ExamHeader
+                            student={student}
+                            isOnline={isOnline}
+                            offlineSubmissions={offlineSubmissions}
+                            onSyncOfflineData={syncOfflineData}
+                            onViewResults={handleViewResults}
+                        />
+                    </section>
+
+                    {/* Alerts and Previous Attempt */}
+                    <section aria-label="Exam Alerts" className="space-y-4 animate-slideUp" style={{animationDelay: '0.1s'}}>
+                        <PreviousAttemptAlert
+                            hasAttempted={hasAttempted}
+                            onViewPreviousResult={viewPreviousResult}
+                        />
+                    </section>
+
+                    {/* Main Content Grid */}
+                    <section aria-label="Exam Main Content" className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 animate-slideUp" style={{animationDelay: '0.2s'}}>
+                        {/* Main Content Area */}
+                        <div className="lg:col-span-8 space-y-6 lg:space-y-8">
+                            {/* Exam Details */}
+                            <div className="group">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                        Exam Details
+                                    </h2>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
+                                </div>
+                                <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                                    <ExamDetailsCard
+                                        exam={exam}
+                                        hasUncompletedExam={hasUncompletedExam}
+                                        hasAttempted={hasAttempted}
+                                        allAttempts={allAttempts}
+                                        isOnline={isOnline}
+                                        onStartExam={handleStartExam}
+                                        onContinueExam={handleContinueExamDirect}
+                                        onViewPreviousResult={viewPreviousResult}
+                                        isEligible={isEligible}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Attempts Table */}
+                            <div className="group">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                                        Your Attempts
+                                    </h2>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
+                                </div>
+                                <div className="transform transition-all duration-300 hover:scale-[1.01]">
+                                    <ExamAttemptsTable
+                                        allAttempts={allAttempts}
+                                        bestAttempt={bestAttempt}
+                                        onViewAttemptDetails={handleViewAttemptDetails}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="lg:col-span-4 space-y-6 lg:space-y-8">
+                            <div className="group">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                        Offline & Sync
+                                    </h2>
+                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
+                                </div>
+                                <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                                    <OfflineCapabilitiesCard />
+                                </div>
+                            </div>
+
+                            {/* Additional Info Panel */}
+                            <div className="bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    Exam Guidelines
+                                </h3>
+                                <div className="space-y-3 text-sm text-gray-700">
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                                        <span>Ensure stable internet connection for best experience</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                        <span>Your progress is automatically saved every few seconds</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                                        <span>Questions can be marked for review and revisited later</span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                                        <span>Exam supports offline mode with automatic sync</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <style jsx>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.6s ease-out forwards;
+                }
+                .animate-slideUp {
+                    animation: slideUp 0.6s ease-out forwards;
+                    opacity: 0;
+                }
+            `}</style>
         </div>
     )
 }

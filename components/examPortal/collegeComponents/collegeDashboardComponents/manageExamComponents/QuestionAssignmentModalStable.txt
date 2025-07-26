@@ -1,11 +1,17 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   fetchQuestionsForExam,
   assignQuestionsToExam,
   getExamQuestions,
+  getQuestionCountsPerSubject,
 } from "../../../../../server_actions/actions/examController/collegeActions";
 import { getTopics } from "../../../../../utils/examUtils/subject_Details";
+import ModalHeader from './QuestionAssignmentModal/ModalHeader';
+import ModalFilters from './QuestionAssignmentModal/ModalFilters';
+import QuestionSelectionStats from './QuestionAssignmentModal/QuestionSelectionStats';
+import QuestionsList from './QuestionAssignmentModal/QuestionsList';
+import ModalFooter from './QuestionAssignmentModal/ModalFooter';
 
 export default function QuestionAssignmentModal({
   exam,
@@ -14,6 +20,7 @@ export default function QuestionAssignmentModal({
   onQuestionsAssigned,
   collegeData,
 }) {
+  // All hooks must be declared at the top level, before any logic or return
   const [questions, setQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +32,6 @@ export default function QuestionAssignmentModal({
     totalQuestions: 0,
     questionsPerPage: 20,
   });
-
   const [filters, setFilters] = useState({
     stream: exam?.stream || "",
     subject: exam?.examSubject?.[0] || "",
@@ -36,16 +42,18 @@ export default function QuestionAssignmentModal({
     questionType: "",
     marks: "",
   });
+  const [showSelectedQuestions, setShowSelectedQuestions] = useState(false);
+  const [allSelectedQuestions, setAllSelectedQuestions] = useState([]);
+  const [topics, setTopics] = useState({});
+  const [totalQuestionsPerSubject, setTotalQuestionsPerSubject] = useState({});
 
   // Add this state for showing selected questions
-  const [showSelectedQuestions, setShowSelectedQuestions] = useState(false);
-
   // Add this function to reset filters
   const resetFilters = () => {
     setFilters({
       stream: exam?.stream || "",
       subject: exam?.examSubject?.[0] || "",
-      standard: exam?.standard || "",
+      standard: exam?.standard || "", // Always use exam's standard
       topic: "",
       difficultyLevel: "",
       section: exam?.section || "",
@@ -60,13 +68,61 @@ export default function QuestionAssignmentModal({
     return questions.filter((q) => selectedQuestions.includes(q._id));
   };
 
-  // Modify the show selected questions toggle to include filter reset
+  // State to store all selected questions with full details
+  // Handle sorting toggle
   const handleShowSelectedQuestions = () => {
-    if (!showSelectedQuestions) {
-      resetFilters(); // Reset filters when showing selected questions
+    const newShowSelected = !showSelectedQuestions;
+    setShowSelectedQuestions(newShowSelected);
+    
+    // Sort current questions immediately without refetching
+    if (newShowSelected) {
+      const sortedQuestions = [...questions].sort((a, b) => {
+        const aSelected = selectedQuestions.includes(a._id);
+        const bSelected = selectedQuestions.includes(b._id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return 0;
+      });
+      setQuestions(sortedQuestions);
+    } else {
+      // Restore original order by refetching
+      fetchQuestions();
     }
-    setShowSelectedQuestions(!showSelectedQuestions);
   };
+
+  // Update filters when exam changes
+  useEffect(() => {
+    if (exam) {
+      setFilters(prev => ({
+        ...prev,
+        stream: exam?.stream || "",
+        subject: exam?.examSubject?.[0] || "",
+        standard: exam?.standard || "", // Always use exam's standard
+        section: exam?.section || "",
+      }));
+    }
+  }, [exam]);
+
+  // Fetch questions with useCallback to always use latest filters
+  const fetchQuestions = useCallback(async () => {
+    setLoading(true);
+    console.log('Fetching with filters:', filters); // Debug log
+    try {
+      const response = await fetchQuestionsForExam({
+        ...filters,
+        page: pagination.currentPage,
+        limit: pagination.questionsPerPage,
+      });
+      console.log('Backend response:', response); // Debug log for backend response
+      if (response.success) {
+        setQuestions(response.questions);
+        setPagination(response.pagination);
+      }
+    } catch (error) {
+      console.error("Failed to fetch questions:", error);
+    }
+    setLoading(false);
+  }, [filters, pagination.currentPage, pagination.questionsPerPage]);
 
   // Fetch questions when modal opens or filters change
   useEffect(() => {
@@ -74,7 +130,7 @@ export default function QuestionAssignmentModal({
       fetchQuestions();
       fetchAssignedQuestions();
     }
-  }, [isOpen, exam, filters, pagination.currentPage]);
+  }, [isOpen, exam, fetchQuestions]);
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -96,8 +152,6 @@ export default function QuestionAssignmentModal({
     };
   }, [isOpen, onClose]);
 
-  const [topics, setTopics] = useState({});
-
   useEffect(() => {
     const availableTopics = getTopics(
       filters.stream,
@@ -107,31 +161,14 @@ export default function QuestionAssignmentModal({
     setTopics(availableTopics);
   }, [filters.stream, filters.subject, filters.standard]);
 
-  const fetchQuestions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchQuestionsForExam({
-        ...filters,
-        page: pagination.currentPage,
-        limit: pagination.questionsPerPage,
-      });
-
-      if (response.success) {
-        setQuestions(response.questions);
-        setPagination(response.pagination);
-      }
-    } catch (error) {
-      console.error("Failed to fetch questions:", error);
-    }
-    setLoading(false);
-  };
-
   const fetchAssignedQuestions = async () => {
     try {
       const response = await getExamQuestions(exam._id);
       if (response.success) {
         const assignedIds = response.assignedQuestions.map((q) => q._id);
         setSelectedQuestions(assignedIds);
+        // Store all selected questions with full details
+        setAllSelectedQuestions(response.assignedQuestions);
       }
     } catch (error) {
       console.error("Failed to fetch assigned questions:", error);
@@ -139,19 +176,63 @@ export default function QuestionAssignmentModal({
   };
 
   const handleQuestionToggle = (questionId) => {
-    setSelectedQuestions((prev) =>
-      prev.includes(questionId)
+    setSelectedQuestions((prev) => {
+      const newSelected = prev.includes(questionId)
         ? prev.filter((id) => id !== questionId)
-        : [...prev, questionId]
-    );
+        : [...prev, questionId];
+      
+      // Update allSelectedQuestions when toggling
+      setAllSelectedQuestions((prevAll) => {
+        if (prev.includes(questionId)) {
+          // Removing question
+          return prevAll.filter((q) => q._id !== questionId);
+        } else {
+          // Adding question - find it in current questions or existing allSelectedQuestions
+          const questionToAdd = questions.find((q) => q._id === questionId) || 
+                               prevAll.find((q) => q._id === questionId);
+          if (questionToAdd && !prevAll.some((q) => q._id === questionId)) {
+            return [...prevAll, questionToAdd];
+          }
+          return prevAll;
+        }
+      });
+      
+      // If showSelectedQuestions is enabled, re-sort the questions to maintain order
+      if (showSelectedQuestions) {
+        setQuestions((prevQuestions) => {
+          const sortedQuestions = [...prevQuestions].sort((a, b) => {
+            const aSelected = newSelected.includes(a._id);
+            const bSelected = newSelected.includes(b._id);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+          });
+          return sortedQuestions;
+        });
+      }
+      
+      return newSelected;
+    });
   };
 
   const handleSelectAll = () => {
     if (selectedQuestions.length === questions.length) {
-      setSelectedQuestions([]);
+      // Deselect all current page questions
+      const currentPageIds = questions.map((q) => q._id);
+      setSelectedQuestions((prev) => prev.filter((id) => !currentPageIds.includes(id)));
+      setAllSelectedQuestions((prev) => prev.filter((q) => !currentPageIds.includes(q._id)));
     } else {
+      // Select all current page questions
       const questionIds = questions.map((q) => q._id);
-      setSelectedQuestions(questionIds);
+      const newSelections = questionIds.filter((id) => !selectedQuestions.includes(id));
+      
+      setSelectedQuestions((prev) => [...prev, ...newSelections]);
+      setAllSelectedQuestions((prev) => {
+        const newQuestions = questions.filter((q) => 
+          newSelections.includes(q._id) && !prev.some((existing) => existing._id === q._id)
+        );
+        return [...prev, ...newQuestions];
+      });
     }
   };
 
@@ -175,6 +256,10 @@ export default function QuestionAssignmentModal({
   };
 
   const handleFilterChange = (field, value) => {
+    // Prevent changing the standard - it should always be the exam's standard
+    if (field === 'standard') {
+      return;
+    }
     setFilters((prev) => ({ ...prev, [field]: value }));
     setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
@@ -183,6 +268,27 @@ export default function QuestionAssignmentModal({
     setPagination((prev) => ({ ...prev, currentPage: newPage }));
   };
 
+  // Fetch subject counts for all questions in DB (for current filters)
+  const fetchSubjectCounts = useCallback(async () => {
+    try {
+      const response = await getQuestionCountsPerSubject(filters);
+      if (response.success) {
+        setTotalQuestionsPerSubject(response.counts);
+      } else {
+        setTotalQuestionsPerSubject({});
+      }
+    } catch (error) {
+      setTotalQuestionsPerSubject({});
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    if (isOpen && exam) {
+      fetchSubjectCounts();
+    }
+  }, [isOpen, exam, fetchSubjectCounts]);
+
+  // Now, after all hooks, you can have early returns
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
@@ -198,1067 +304,57 @@ export default function QuestionAssignmentModal({
     >
       <div className="fixed inset-0 bg-white overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-blue-600 to-indigo-600 p-4 md:p-5">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/95 to-indigo-600/95"></div>
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white rounded-full translate-x-8 -translate-y-8"></div>
-            <div className="absolute bottom-0 left-1/4 w-12 h-12 bg-white/50 rounded-full"></div>
+        <ModalHeader exam={exam} onClose={onClose} />
+
+        {/* Main Content Area with Sidebar Layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar for Filters */}
+          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+            <ModalFilters 
+              exam={exam}
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+            />
           </div>
 
-          {/* Content */}
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-1.5 bg-white/15 rounded-lg backdrop-blur-sm">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-xl md:text-2xl font-bold text-white">
-                  Assign Questions
-                </h2>
-                <div className="flex items-center space-x-2 mt-0.5">
-                  <span className="text-blue-100 text-sm font-medium">
-                    {exam?.examName}
-                  </span>
-                  <span className="text-blue-200 text-xs">
-                    • {exam?.stream} • {exam?.examSubject?.[0]} •{" "}
-                    {exam?.standard}th
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="group p-2 text-white/80 hover:text-white transition-all duration-200 hover:bg-white/10 rounded-lg"
-              aria-label="Close modal"
-            >
-              <svg
-                className="w-5 h-5 transform group-hover:scale-110 transition-transform duration-200"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="p-4 bg-gray-50/80 border-b border-gray-200">
-          <div className="flex items-center space-x-2 mb-3">
-            <svg
-              className="w-4 h-4 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-shrink-0">
+              <QuestionSelectionStats 
+                showSelectedQuestions={showSelectedQuestions}
+                setShowSelectedQuestions={handleShowSelectedQuestions}
+                selectedQuestions={selectedQuestions}
+                questions={questions}
+                handleSelectAll={handleSelectAll}
+                handleQuestionToggle={handleQuestionToggle}
+                getSelectedQuestionDetails={getSelectedQuestionDetails}
+                allSelectedQuestions={allSelectedQuestions}
+                totalQuestionsPerSubject={totalQuestionsPerSubject}
               />
-            </svg>
-            <span className="text-sm font-medium text-gray-700">Filters</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-            {/* Stream Label */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Stream
-              </label>
-              <div className="w-full px-2 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-700 font-medium">
-                {exam?.stream || "Not specified"}
-              </div>
             </div>
-
-            {/* Subject Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Subject
-              </label>
-              <select
-                value={filters.subject}
-                onChange={(e) => handleFilterChange("subject", e.target.value)}
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                {exam?.examSubject?.map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
-                  </option>
-                ))}
-              </select>
+            <div className="flex-1 overflow-auto">
+              <QuestionsList 
+                loading={loading}
+                questions={questions}
+                selectedQuestions={selectedQuestions}
+                handleQuestionToggle={handleQuestionToggle}
+                pagination={pagination}
+                setPagination={setPagination}
+                handlePageChange={handlePageChange}
+                allSelectedQuestions={allSelectedQuestions}
+                showSelectedQuestions={showSelectedQuestions}
+              />
             </div>
-
-            {/* Standard Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Standard
-              </label>
-              <select
-                value={filters.standard}
-                onChange={(e) => handleFilterChange("standard", e.target.value)}
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                <option value="11">11th</option>
-                <option value="12">12th</option>
-              </select>
+            <div className="flex-shrink-0">
+              <ModalFooter 
+                selectedQuestions={selectedQuestions}
+                questions={questions}
+                onClose={onClose}
+                handleAssignQuestions={handleAssignQuestions}
+                assigning={assigning}
+                setSelectedQuestions={setSelectedQuestions}
+              />
             </div>
-
-            {/* Difficulty Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Difficulty
-              </label>
-              <select
-                value={filters.difficultyLevel}
-                onChange={(e) =>
-                  handleFilterChange("difficultyLevel", e.target.value)
-                }
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-            </div>
-
-            {/* Topic Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Topic
-              </label>
-              <select
-                value={filters.topic}
-                onChange={(e) => handleFilterChange("topic", e.target.value)}
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                {Object.keys(topics).map((topic) => (
-                  <option key={topics[topic]} value={topic}>
-                    {topic}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Section Filter - only show for JEE stream */}
-            {filters.stream === "JEE" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Section
-                </label>
-                <select
-                  value={filters.section}
-                  onChange={(e) =>
-                    handleFilterChange("section", e.target.value)
-                  }
-                  className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All</option>
-                  <option value="Section A">Section A</option>
-                  <option value="Section B">Section B</option>
-                </select>
-              </div>
-            )}
-
-            {/* Question Type Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Type
-              </label>
-              <select
-                value={filters.questionType}
-                onChange={(e) =>
-                  handleFilterChange("questionType", e.target.value)
-                }
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                <option value="MCSA">MCSA</option>
-                <option value="MCMA">MCMA</option>
-                <option value="numerical">Numerical</option>
-              </select>
-            </div>
-
-            {/* Marks Filter */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Marks
-              </label>
-              <select
-                value={filters.marks}
-                onChange={(e) => handleFilterChange("marks", e.target.value)}
-                className="w-full px-2 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Question Selection Stats */}
-        <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200/60">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={() => setShowSelectedQuestions(!showSelectedQuestions)}
-                className="flex items-center space-x-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors duration-200 cursor-pointer"
-              >
-                <div className="p-1 bg-blue-500 rounded-full">
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm text-blue-700 font-medium">
-                  Selected:{" "}
-                  <span className="font-bold text-blue-800">
-                    {selectedQuestions.length}
-                  </span>{" "}
-                  questions
-                </span>
-                <svg
-                  className={`w-4 h-4 text-blue-600 transition-transform duration-200 ${
-                    showSelectedQuestions ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              <div className="flex items-center space-x-2">
-                <div className="p-1 bg-green-500 rounded-full">
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <span className="text-sm text-green-700 font-medium">
-                  Total Marks:{" "}
-                  <span className="font-bold text-green-800">
-                    {selectedQuestions.reduce((total, questionId) => {
-                      const question = questions.find(
-                        (q) => q._id === questionId
-                      );
-                      return total + (question?.marks || 4);
-                    }, 0)}
-                  </span>
-                </span>
-              </div>
-
-              {questions.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <div className="p-1 bg-purple-500 rounded-full">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-purple-700 font-medium">
-                    Available:{" "}
-                    <span className="font-bold text-purple-800">
-                      {questions.length}
-                    </span>
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-3">
-              {questions.length > 0 && (
-                <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md border">
-                  {Math.round(
-                    (selectedQuestions.length / questions.length) * 100
-                  )}
-                  % selected
-                </div>
-              )}
-
-              <button
-                onClick={handleSelectAll}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d={
-                      selectedQuestions.length === questions.length
-                        ? "M6 18L18 6M6 6l12 12"
-                        : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    }
-                  />
-                </svg>
-                <span>
-                  {selectedQuestions.length === questions.length
-                    ? "Deselect All"
-                    : "Select All"}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Selected Questions Preview */}
-          {showSelectedQuestions && selectedQuestions.length > 0 && (
-            <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-900">
-                  Selected Questions Preview
-                </h4>
-                <button
-                  onClick={() => setShowSelectedQuestions(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="max-h-60 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {getSelectedQuestionDetails().map((question, index) => (
-                  <div
-                    key={question._id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          Q{question.questionNumber}
-                        </span>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            question.difficultyLevel === "Easy"
-                              ? "bg-green-100 text-green-800"
-                              : question.difficultyLevel === "Medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {question.difficultyLevel}
-                        </span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {question.marks} marks
-                        </span>
-                      </div>
-                      <div
-                        className="text-xs text-gray-600 truncate"
-                        dangerouslySetInnerHTML={{
-                          __html: question.question.substring(0, 100) + "...",
-                        }}
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        {question.topic}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleQuestionToggle(question._id)}
-                      className="ml-3 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                      title="Remove from selection"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {selectedQuestions.length >
-                getSelectedQuestionDetails().length && (
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-xs text-yellow-700">
-                    <span className="font-medium">
-                      {selectedQuestions.length -
-                        getSelectedQuestionDetails().length}
-                    </span>{" "}
-                    selected questions are not visible in current page/filters.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Questions List - This should be flex-1 and scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : questions.length === 0 ? (
-            <div className="flex flex-col justify-center items-center h-40 text-center">
-              <div className="p-3 bg-gray-100 rounded-full mb-3">
-                <svg
-                  className="w-6 h-6 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-600">
-                No questions found with current filters
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4 pb-4">
-              {questions.map((question) => (
-                <div
-                  key={question._id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                    selectedQuestions.includes(question._id)
-                      ? "border-blue-500 bg-blue-50 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300 bg-white hover:shadow-sm"
-                  }`}
-                  onClick={() => handleQuestionToggle(question._id)}
-                >
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedQuestions.includes(question._id)}
-                      onChange={() => handleQuestionToggle(question._id)}
-                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900">
-                            Q{question.questionNumber}
-                          </span>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full font-medium ${
-                              question.difficultyLevel === "Easy"
-                                ? "bg-green-100 text-green-800"
-                                : question.difficultyLevel === "Medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {question.difficultyLevel}
-                          </span>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {question.marks} marks
-                          </span>
-                          {question.questionType && (
-                            <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
-                              {question.questionType}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 font-medium">
-                          {question.topic}
-                        </div>
-                      </div>
-
-                      <div
-                        className="text-sm text-gray-700 mb-3 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: question.question }}
-                      />
-
-                      {question.options && question.options.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                          {question.options.map((option, index) => (
-                            <div
-                              key={index}
-                              className="flex items-start space-x-2"
-                            >
-                              <span className="font-medium text-gray-500 mt-0.5">
-                                {String.fromCharCode(65 + index)}.
-                              </span>
-                              <span
-                                className="leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: option }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination - Move this inside the scrollable area */}
-          {pagination.totalPages > 1 && (
-            <div className="mt-6 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(pagination.currentPage - 1) *
-                      pagination.questionsPerPage +
-                      1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      pagination.currentPage * pagination.questionsPerPage,
-                      pagination.totalQuestions
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium">
-                    {pagination.totalQuestions}
-                  </span>{" "}
-                  questions
-                </div>
-
-                {/* Page size selector */}
-                <div className="hidden sm:flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">Show:</span>
-                  <select
-                    value={pagination.questionsPerPage}
-                    onChange={(e) => {
-                      setPagination((prev) => ({
-                        ...prev,
-                        questionsPerPage: parseInt(e.target.value),
-                        currentPage: 1,
-                      }));
-                    }}
-                    className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                  <span className="text-sm text-gray-500">per page</span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                {/* First page button */}
-                <button
-                  onClick={() => handlePageChange(1)}
-                  disabled={pagination.currentPage === 1}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="First page"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-
-                {/* Previous page button */}
-                <button
-                  onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  disabled={pagination.currentPage === 1}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Previous
-                </button>
-
-                {/* Page numbers */}
-                <div className="hidden sm:flex items-center space-x-1">
-                  {(() => {
-                    const pages = [];
-                    const totalPages = pagination.totalPages;
-                    const currentPage = pagination.currentPage;
-
-                    // Always show first page
-                    if (currentPage > 3) {
-                      pages.push(
-                        <button
-                          key={1}
-                          onClick={() => handlePageChange(1)}
-                          className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                        >
-                          1
-                        </button>
-                      );
-                      if (currentPage > 4) {
-                        pages.push(
-                          <span key="ellipsis1" className="px-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                    }
-
-                    // Show pages around current page
-                    for (
-                      let i = Math.max(1, currentPage - 2);
-                      i <= Math.min(totalPages, currentPage + 2);
-                      i++
-                    ) {
-                      pages.push(
-                        <button
-                          key={i}
-                          onClick={() => handlePageChange(i)}
-                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                            i === currentPage
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                          }`}
-                        >
-                          {i}
-                        </button>
-                      );
-                    }
-
-                    // Always show last page
-                    if (currentPage < totalPages - 2) {
-                      if (currentPage < totalPages - 3) {
-                        pages.push(
-                          <span key="ellipsis2" className="px-2 text-gray-400">
-                            ...
-                          </span>
-                        );
-                      }
-                      pages.push(
-                        <button
-                          key={totalPages}
-                          onClick={() => handlePageChange(totalPages)}
-                          className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                        >
-                          {totalPages}
-                        </button>
-                      );
-                    }
-
-                    return pages;
-                  })()}
-                </div>
-
-                {/* Mobile page indicator */}
-                <div className="sm:hidden flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    Page {pagination.currentPage} of {pagination.totalPages}
-                  </span>
-                </div>
-
-                {/* Next page button */}
-                <button
-                  onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  disabled={pagination.currentPage === pagination.totalPages}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <svg
-                    className="w-4 h-4 ml-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-
-                {/* Last page button */}
-                <button
-                  onClick={() => handlePageChange(pagination.totalPages)}
-                  disabled={pagination.currentPage === pagination.totalPages}
-                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="Last page"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer - Move this OUTSIDE the scrollable area */}
-        <div className="bg-white border-t border-gray-200 shadow-lg">
-          <div className="p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              {/* Selection Summary */}
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div className="p-1.5 bg-blue-100 rounded-full">
-                    <svg
-                      className="w-4 h-4 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    <span className="font-bold text-blue-600">
-                      {selectedQuestions.length}
-                    </span>{" "}
-                    questions selected
-                  </span>
-                </div>
-
-                {selectedQuestions.length > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <div className="p-1.5 bg-green-100 rounded-full">
-                      <svg
-                        className="w-4 h-4 text-green-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">
-                      Total:{" "}
-                      <span className="font-bold text-green-600">
-                        {selectedQuestions.reduce((total, questionId) => {
-                          const question = questions.find(
-                            (q) => q._id === questionId
-                          );
-                          return total + (question?.marks || 4);
-                        }, 0)}
-                      </span>{" "}
-                      marks
-                    </span>
-                  </div>
-                )}
-
-                {/* Progress indicator */}
-                {questions.length > 0 && selectedQuestions.length > 0 && (
-                  <div className="hidden md:flex items-center space-x-2">
-                    <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
-                        style={{
-                          width: `${Math.min(
-                            (selectedQuestions.length / questions.length) * 100,
-                            100
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <span className="text-xs text-gray-500 font-medium">
-                      {Math.round(
-                        (selectedQuestions.length / questions.length) * 100
-                      )}
-                      %
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                {/* Clear Selection Button */}
-                {selectedQuestions.length > 0 && (
-                  <button
-                    onClick={() => setSelectedQuestions([])}
-                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors duration-200"
-                  >
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Clear All
-                  </button>
-                )}
-
-                {/* Cancel Button */}
-                <button
-                  onClick={onClose}
-                  className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                  Cancel
-                </button>
-
-                {/* Assign Questions Button */}
-                <button
-                  onClick={handleAssignQuestions}
-                  disabled={selectedQuestions.length === 0 || assigning}
-                  className="inline-flex items-center justify-center px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  {assigning ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Assigning...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
-                      Assign {selectedQuestions.length} Question
-                      {selectedQuestions.length !== 1 ? "s" : ""}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Stats Bar */}
-            {selectedQuestions.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                    <span>
-                      Easy:{" "}
-                      {
-                        selectedQuestions.filter((id) => {
-                          const q = questions.find(
-                            (question) => question._id === id
-                          );
-                          return q?.difficultyLevel === "Easy";
-                        }).length
-                      }
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                    <span>
-                      Medium:{" "}
-                      {
-                        selectedQuestions.filter((id) => {
-                          const q = questions.find(
-                            (question) => question._id === id
-                          );
-                          return q?.difficultyLevel === "Medium";
-                        }).length
-                      }
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-                    <span>
-                      Hard:{" "}
-                      {
-                        selectedQuestions.filter((id) => {
-                          const q = questions.find(
-                            (question) => question._id === id
-                          );
-                          return q?.difficultyLevel === "Hard";
-                        }).length
-                      }
-                    </span>
-                  </div>
-
-                  {/* Question Types */}
-                  <div className="hidden sm:flex items-center space-x-4 ml-4 pl-4 border-l border-gray-200">
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                      <span>
-                        MCSA:{" "}
-                        {
-                          selectedQuestions.filter((id) => {
-                            const q = questions.find(
-                              (question) => question._id === id
-                            );
-                            return q?.questionType === "MCSA";
-                          }).length
-                        }
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                      <span>
-                        MCMA:{" "}
-                        {
-                          selectedQuestions.filter((id) => {
-                            const q = questions.find(
-                              (question) => question._id === id
-                            );
-                            return q?.questionType === "MCMA";
-                          }).length
-                        }
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
-                      <span>
-                        Numerical:{" "}
-                        {
-                          selectedQuestions.filter((id) => {
-                            const q = questions.find(
-                              (question) => question._id === id
-                            );
-                            return q?.questionType === "numerical";
-                          }).length
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

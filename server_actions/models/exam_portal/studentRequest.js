@@ -20,6 +20,14 @@ const studentRequestSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending',
     },
+    allocatedStreams: {
+        type: [String],
+        required: true,
+    },
+    allocatedClasses: {
+        type: [String],
+        required: true,
+    },
 }, {
     timestamps: true
 });

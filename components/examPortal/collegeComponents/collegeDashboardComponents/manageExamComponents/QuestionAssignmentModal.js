@@ -1,14 +1,15 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   fetchQuestionsForExam,
   assignQuestionsToExam,
   getExamQuestions,
+  getQuestionCountsPerSubject,
 } from "../../../../../server_actions/actions/examController/collegeActions";
 import { getTopics } from "../../../../../utils/examUtils/subject_Details";
 import ModalHeader from './QuestionAssignmentModal/ModalHeader';
 import ModalFilters from './QuestionAssignmentModal/ModalFilters';
-import QuestionSelectionStats from './QuestionAssignmentModal/QuestionSelectionStats';
 import QuestionsList from './QuestionAssignmentModal/QuestionsList';
 import ModalFooter from './QuestionAssignmentModal/ModalFooter';
 
@@ -19,6 +20,7 @@ export default function QuestionAssignmentModal({
   onQuestionsAssigned,
   collegeData,
 }) {
+  // All hooks must be declared at the top level, before any logic or return
   const [questions, setQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,6 @@ export default function QuestionAssignmentModal({
     totalQuestions: 0,
     questionsPerPage: 20,
   });
-
   const [filters, setFilters] = useState({
     stream: exam?.stream || "",
     subject: exam?.examSubject?.[0] || "",
@@ -41,10 +42,12 @@ export default function QuestionAssignmentModal({
     questionType: "",
     marks: "",
   });
+  const [showSelectedQuestions, setShowSelectedQuestions] = useState(false);
+  const [allSelectedQuestions, setAllSelectedQuestions] = useState([]);
+  const [topics, setTopics] = useState({});
+  const [totalQuestionsPerSubject, setTotalQuestionsPerSubject] = useState({});
 
   // Add this state for showing selected questions
-  const [showSelectedQuestions, setShowSelectedQuestions] = useState(false);
-
   // Add this function to reset filters
   const resetFilters = () => {
     setFilters({
@@ -66,8 +69,6 @@ export default function QuestionAssignmentModal({
   };
 
   // State to store all selected questions with full details
-  const [allSelectedQuestions, setAllSelectedQuestions] = useState([]);
-
   // Handle sorting toggle
   const handleShowSelectedQuestions = () => {
     const newShowSelected = !showSelectedQuestions;
@@ -102,13 +103,34 @@ export default function QuestionAssignmentModal({
     }
   }, [exam]);
 
+  // Fetch questions with useCallback to always use latest filters
+  const fetchQuestions = useCallback(async () => {
+    setLoading(true);
+    console.log('Fetching with filters:', filters); // Debug log
+    try {
+      const response = await fetchQuestionsForExam({
+        ...filters,
+        page: pagination.currentPage,
+        limit: pagination.questionsPerPage,
+      });
+      console.log('Backend response:', response); // Debug log for backend response
+      if (response.success) {
+        setQuestions(response.questions);
+        setPagination(response.pagination);
+      }
+    } catch (error) {
+      console.error("Failed to fetch questions:", error);
+    }
+    setLoading(false);
+  }, [filters, pagination.currentPage, pagination.questionsPerPage]);
+
   // Fetch questions when modal opens or filters change
   useEffect(() => {
     if (isOpen && exam) {
       fetchQuestions();
       fetchAssignedQuestions();
     }
-  }, [isOpen, exam, filters, pagination.currentPage]);
+  }, [isOpen, exam, fetchQuestions]);
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -130,8 +152,6 @@ export default function QuestionAssignmentModal({
     };
   }, [isOpen, onClose]);
 
-  const [topics, setTopics] = useState({});
-
   useEffect(() => {
     const availableTopics = getTopics(
       filters.stream,
@@ -140,25 +160,6 @@ export default function QuestionAssignmentModal({
     );
     setTopics(availableTopics);
   }, [filters.stream, filters.subject, filters.standard]);
-
-  const fetchQuestions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchQuestionsForExam({
-        ...filters,
-        page: pagination.currentPage,
-        limit: pagination.questionsPerPage,
-      });
-
-      if (response.success) {
-        setQuestions(response.questions);
-        setPagination(response.pagination);
-      }
-    } catch (error) {
-      console.error("Failed to fetch questions:", error);
-    }
-    setLoading(false);
-  };
 
   const fetchAssignedQuestions = async () => {
     try {
@@ -267,6 +268,33 @@ export default function QuestionAssignmentModal({
     setPagination((prev) => ({ ...prev, currentPage: newPage }));
   };
 
+  // Helper to omit 'subject' from filters
+  const getSubjectlessFilters = (filters) => {
+    const { subject, ...rest } = filters;
+    return rest;
+  };
+
+  // Fetch subject counts for all questions in DB (for current filters, but not subject)
+  const fetchSubjectCounts = useCallback(async () => {
+    try {
+      const response = await getQuestionCountsPerSubject(getSubjectlessFilters(filters));
+      if (response.success) {
+        setTotalQuestionsPerSubject(response.counts);
+      } else {
+        setTotalQuestionsPerSubject({});
+      }
+    } catch (error) {
+      setTotalQuestionsPerSubject({});
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    if (isOpen && exam) {
+      fetchSubjectCounts();
+    }
+  }, [isOpen, exam, fetchSubjectCounts]);
+
+  // Now, after all hooks, you can have early returns
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
@@ -275,15 +303,14 @@ export default function QuestionAssignmentModal({
     }
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex"
       onClick={handleBackdropClick}
     >
-      <div className="fixed inset-0 bg-white overflow-hidden flex flex-col">
+      <div className="relative h-full w-full bg-white flex flex-col overflow-hidden">
         {/* Header */}
         <ModalHeader exam={exam} onClose={onClose} />
-
         {/* Main Content Area with Sidebar Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar for Filters */}
@@ -294,44 +321,44 @@ export default function QuestionAssignmentModal({
               handleFilterChange={handleFilterChange}
             />
           </div>
-
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <QuestionSelectionStats 
-              showSelectedQuestions={showSelectedQuestions}
-              setShowSelectedQuestions={handleShowSelectedQuestions}
-              selectedQuestions={selectedQuestions}
-              questions={questions}
-              handleSelectAll={handleSelectAll}
-              handleQuestionToggle={handleQuestionToggle}
-              getSelectedQuestionDetails={getSelectedQuestionDetails}
-            />
-
-            {/* Questions List - This should be flex-1 and scrollable */}
-            <QuestionsList 
-              loading={loading}
-              questions={questions}
-              selectedQuestions={selectedQuestions}
-              handleQuestionToggle={handleQuestionToggle}
-              pagination={pagination}
-              setPagination={setPagination}
-              handlePageChange={handlePageChange}
-              allSelectedQuestions={allSelectedQuestions}
-              showSelectedQuestions={showSelectedQuestions}
-            />
-
-            {/* Footer */}
-            <ModalFooter 
-              selectedQuestions={selectedQuestions}
-              questions={questions}
-              onClose={onClose}
-              handleAssignQuestions={handleAssignQuestions}
-              assigning={assigning}
-              setSelectedQuestions={setSelectedQuestions}
-            />
+            <div className="flex-1 overflow-auto">
+              <QuestionsList 
+                loading={loading}
+                questions={questions}
+                selectedQuestions={selectedQuestions}
+                handleQuestionToggle={handleQuestionToggle}
+                pagination={pagination}
+                setPagination={setPagination}
+                handlePageChange={handlePageChange}
+                allSelectedQuestions={allSelectedQuestions}
+                showSelectedQuestions={showSelectedQuestions}
+              />
+            </div>
+            <div className="flex-shrink-0">
+              <ModalFooter 
+                selectedQuestions={selectedQuestions}
+                questions={questions}
+                onClose={onClose}
+                handleAssignQuestions={handleAssignQuestions}
+                assigning={assigning}
+                setSelectedQuestions={setSelectedQuestions}
+                totalQuestionsPerSubject={totalQuestionsPerSubject}
+                allSelectedQuestions={allSelectedQuestions}
+                showSelectedQuestions={showSelectedQuestions}
+                setShowSelectedQuestions={handleShowSelectedQuestions}
+                handleSelectAll={handleSelectAll}
+                handleQuestionToggle={handleQuestionToggle}
+                getSelectedQuestionDetails={getSelectedQuestionDetails}
+                examSubjects={exam?.examSubject || []}
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, typeof window !== 'undefined' ? document.body : null);
 }

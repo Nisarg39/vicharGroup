@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../ui/card"
+import { VicharCard, VicharCardContent, VicharCardHeader, VicharCardTitle, VicharCardDescription } from "../../../ui/vichar-card"
 
 export default function QuestionNavigator({ 
     questions, 
@@ -55,29 +55,26 @@ export default function QuestionNavigator({
     }
 
     return (
-        <div className="lg:col-span-1">
-            <Card className="bg-white/90 backdrop-blur-xl shadow-xl border border-gray-100/60 lg:sticky lg:top-24">
-                <CardHeader className="p-3 sm:p-4">
+        <div className="w-full">
+            <VicharCard className="bg-white shadow-xl border border-gray-200 rounded-2xl lg:sticky lg:top-24">
+                <VicharCardHeader className="p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">Question Navigator</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">Click to jump to any question</CardDescription>
+                            <VicharCardTitle className="text-lg font-bold text-gray-900">Question Navigator</VicharCardTitle>
+                            <VicharCardDescription className="text-sm text-gray-600">Click to jump to any question</VicharCardDescription>
                         </div>
                         <div className="text-right">
-                            <div className="text-xs sm:text-sm font-medium text-gray-900">
+                            <div className="text-sm font-bold text-blue-600">
                                 {currentQuestionIndex + 1} / {questions.length}
                             </div>
                             <div className="text-xs text-gray-500">Current</div>
                         </div>
                     </div>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-4">
+                </VicharCardHeader>
+                <VicharCardContent className="p-4">
                     {/* Scrollable Question Grid */}
-                    <div className={`overflow-y-auto ${getMaxHeight()} scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}>
-                        <div 
-                            className={`grid ${getGridCols()}`}
-                            style={{ gap: '8px' }}
-                        >
+                    <div className="overflow-y-auto max-h-96 scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100">
+                        <div className="grid grid-cols-5 gap-2">
                             {questions.map((_, index) => {
                                 const isAnswered = answers[questions[index]?._id]
                                 const isMarked = markedQuestions.has(index)
@@ -87,15 +84,15 @@ export default function QuestionNavigator({
                                     <button
                                         key={index}
                                         onClick={() => onGoToQuestion(index)}
-                                        className={`${getButtonSize()} p-1 m-1 rounded-lg font-medium transition-all duration-200 flex items-center justify-center ${
+                                        className={`w-10 h-10 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center text-sm shadow-md hover:shadow-lg transform hover:scale-105 ${
                                             isCurrent
-                                                ? 'bg-blue-600 text-white shadow-lg scale-105'
+                                                ? 'bg-blue-600 text-white shadow-lg scale-110'
                                                 : isAnswered
                                                 ? isMarked
                                                     ? 'bg-orange-100 text-orange-800 border-2 border-orange-300 hover:bg-orange-200'
                                                     : 'bg-green-100 text-green-800 border-2 border-green-300 hover:bg-green-200'
                                                 : isMarked
-                                                ? 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100'
+                                                ? 'bg-orange-50 text-orange-600 border-2 border-orange-200 hover:bg-orange-100'
                                                 : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                                         }`}
                                         title={`Question ${index + 1}${isAnswered ? ' (Answered)' : ''}${isMarked ? ' (Marked)' : ''}`}
@@ -108,44 +105,44 @@ export default function QuestionNavigator({
                     </div>
 
                     {/* Legend */}
-                    <div className="mt-3 sm:mt-4 space-y-1 sm:space-y-2 text-xs">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-green-100 border-2 border-green-300 rounded flex-shrink-0"></div>
-                            <span className="truncate">Answered</span>
+                    <div className="mt-4 space-y-2 text-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded-lg flex-shrink-0"></div>
+                            <span className="font-medium text-gray-700">Answered</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-orange-100 border-2 border-orange-300 rounded flex-shrink-0"></div>
-                            <span className="truncate">Marked</span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-orange-100 border-2 border-orange-300 rounded-lg flex-shrink-0"></div>
+                            <span className="font-medium text-gray-700">Marked for Review</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded flex-shrink-0"></div>
-                            <span className="truncate">Unanswered</span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded-lg flex-shrink-0"></div>
+                            <span className="font-medium text-gray-700">Not Answered</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-blue-600 rounded flex-shrink-0"></div>
-                            <span className="truncate">Current</span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 bg-blue-600 rounded-lg flex-shrink-0"></div>
+                            <span className="font-medium text-gray-700">Current Question</span>
                         </div>
                     </div>
 
                     {/* Progress Summary */}
-                    <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-200">
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center">
-                                <div className="font-semibold text-green-600">{Object.keys(answers).length}</div>
-                                <div className="text-gray-500">Answered</div>
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="grid grid-cols-3 gap-3 text-center">
+                            <div className="bg-green-50 rounded-xl py-3 px-2">
+                                <div className="text-lg font-bold text-green-600">{Object.keys(answers).length}</div>
+                                <div className="text-xs text-green-700 font-medium">Answered</div>
                             </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-orange-600">{markedQuestions.size}</div>
-                                <div className="text-gray-500">Marked</div>
+                            <div className="bg-orange-50 rounded-xl py-3 px-2">
+                                <div className="text-lg font-bold text-orange-600">{markedQuestions.size}</div>
+                                <div className="text-xs text-orange-700 font-medium">Marked</div>
                             </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-gray-600">{questions.length - Object.keys(answers).length}</div>
-                                <div className="text-gray-500">Left</div>
+                            <div className="bg-gray-50 rounded-xl py-3 px-2">
+                                <div className="text-lg font-bold text-gray-600">{questions.length - Object.keys(answers).length}</div>
+                                <div className="text-xs text-gray-700 font-medium">Remaining</div>
                             </div>
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </VicharCardContent>
+            </VicharCard>
         </div>
     )
 } 

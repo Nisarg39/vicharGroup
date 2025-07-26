@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import JoinCollege from './examViewComponents/JoinCollege';
 import MyTestSeries from './examViewComponents/MyTestSeries';
-import AvailableTests from './examViewComponents/AvailableTests';
 
 export default function ExamView() {
     const [activeSection, setActiveSection] = useState('joinCollege');
@@ -30,8 +29,7 @@ export default function ExamView() {
                     <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-1.5 shadow-lg border border-gray-100/50 hover:shadow-xl transition-all duration-300">
                         {[
                             { id: 'joinCollege', label: 'Join College' },
-                            { id: 'purchased', label: 'My Test Series' },
-                            { id: 'available', label: 'Available Tests' }
+                            { id: 'purchased', label: 'My Test Series' }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -53,84 +51,9 @@ export default function ExamView() {
                     <div className="bg-white/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-xl border border-gray-100/50 hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
                         {activeSection === 'joinCollege' && <JoinCollege />}
                         {activeSection === 'purchased' && <MyTestSeries />}
-                        {activeSection === 'available' && <AvailableTests />}
                     </div>
                 </div>
 
-                {/* Quick Stats Section */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8">
-                    {[
-                        {
-                            title: "Available Exams",
-                            value: "24+",
-                            icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-                            description: "Ready to take",
-                            colors: {
-                                bg: "from-white to-blue-50/50",
-                                iconBg: "bg-blue-500/10",
-                                iconColor: "text-blue-600",
-                                badge: "bg-blue-100/80 text-blue-600"
-                            }
-                        },
-                        {
-                            title: "Colleges",
-                            value: "50+",
-                            icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-                            description: "Partner institutions",
-                            colors: {
-                                bg: "from-white to-green-50/50",
-                                iconBg: "bg-green-500/10",
-                                iconColor: "text-green-600",
-                                badge: "bg-green-100/80 text-green-600"
-                            }
-                        },
-                        {
-                            title: "Success Rate",
-                            value: "92%",
-                            icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-                            description: "Student satisfaction",
-                            colors: {
-                                bg: "from-white to-purple-50/50",
-                                iconBg: "bg-purple-500/10",
-                                iconColor: "text-purple-600",
-                                badge: "bg-purple-100/80 text-purple-600"
-                            }
-                        },
-                        {
-                            title: "Practice Tests",
-                            value: "100+",
-                            icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
-                            description: "For all subjects",
-                            colors: {
-                                bg: "from-white to-orange-50/50",
-                                iconBg: "bg-orange-500/10",
-                                iconColor: "text-orange-600",
-                                badge: "bg-orange-100/80 text-orange-600"
-                            }
-                        }
-                    ].map((stat, index) => (
-                        <div 
-                            key={index}
-                            className={`bg-gradient-to-br ${stat.colors.bg} p-5 rounded-2xl border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group`}
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`p-2.5 ${stat.colors.iconBg} rounded-xl group-hover:scale-110 transition-transform duration-300`}>
-                                    <svg className={`w-5 h-5 ${stat.colors.iconColor}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={stat.icon} />
-                                    </svg>
-                                </div>
-                                <span className={`text-xs font-semibold ${stat.colors.badge} px-3 py-1.5 rounded-full`}>
-                                    {stat.title.toUpperCase()}
-                                </span>
-                            </div>
-                            <p className={`text-3xl font-bold ${stat.colors.iconColor} mb-2`}>{stat.value}</p>
-                            <p className={`text-sm ${stat.colors.iconColor}/80 flex items-center gap-1.5`}>
-                                <span className={`w-2 h-2 ${stat.colors.iconColor} rounded-full animate-pulse`}></span>
-                                {stat.description}
-                            </p>
-                        </div>
-                    ))}
-                </div>
             </div>
         </div>
     );

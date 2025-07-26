@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
 
+// Utility to count by subject for assigned questions
+function getSubjectCounts(questions) {
+  const counts = {};
+  questions.forEach(q => {
+    if (q.subject) {
+      counts[q.subject] = (counts[q.subject] || 0) + 1;
+    }
+  });
+  return counts;
+}
+
 export default function QuestionsList({
   loading,
   questions,
@@ -9,6 +20,7 @@ export default function QuestionsList({
   setPagination,
   handlePageChange,
   allSelectedQuestions = [], // Array of all selected question objects
+  totalQuestionsPerSubject = {}, // Object: { subject: count } for all questions in DB (for current filters)
   showSelectedQuestions = false // Whether to show selected questions from other pages
 }) {
   const [expandedQuestions, setExpandedQuestions] = useState(new Set());
@@ -22,8 +34,12 @@ export default function QuestionsList({
     }
     setExpandedQuestions(newExpanded);
   };
+
+  // Assigned questions count by subject
+  const assignedSubjectCounts = getSubjectCounts(allSelectedQuestions);
+
   return (
-    <div className="flex flex-col flex-1 overflow-hidden h-full">
+    <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-120px)] min-h-[600px]">
       {/* Questions list container */}
       <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
         {loading ? (

@@ -8,6 +8,7 @@ import Student from "../../models/student"
 import StudentRequest from "../../models/exam_portal/studentRequest"
 import EnrolledStudent from "../../models/exam_portal/enrolledStudent"
 import CollegeTeacher from "../../models/exam_portal/collegeTeacher"
+import NegativeMarkingRule from "../../models/exam_portal/negativeMarkingRule"
 import jwt from "jsonwebtoken"
 import { collegeAuth } from "../../middleware/collegeAuth"
 
@@ -95,6 +96,18 @@ export async function createExam(examData, collegeId) {
     try {
         await connectDB()
         
+        // Get default negative marking if not provided
+        let negativeMarks = examData.negativeMarks
+        if (negativeMarks === undefined || negativeMarks === null) {
+            const defaultNegativeMarking = await getDefaultNegativeMarking(
+                collegeId, 
+                examData.stream, 
+                examData.standard, 
+                examData.examSubject?.[0] // Use first subject if multiple
+            )
+            negativeMarks = defaultNegativeMarking.negativeMarks || 0
+        }
+        
         // Create a plain object for the exam
         const examDoc = {
             ...examData,
@@ -102,6 +115,7 @@ export async function createExam(examData, collegeId) {
             endTime: examData.examAvailability === 'scheduled' ? examData.endTime : null,
             examSubject: examData.examSubject || [],
             section: examData.stream === 'JEE' ? examData.section : null,
+            negativeMarks: negativeMarks,
             status: 'draft',
             college: collegeId
         }
@@ -114,7 +128,8 @@ export async function createExam(examData, collegeId) {
             exam: {
                 _id: exam._id,
                 examName: exam.examName,
-                status: exam.status
+                status: exam.status,
+                negativeMarks: exam.negativeMarks
             }
         }
     } catch (error) {
@@ -141,17 +156,18 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
         let sortOptions = { createdAt: -1 } // Default sort by creation date
 
         if (filters.sortBy) {
-            switch (filters.sortBy) {
-                case 'recent':
-                    sortOptions = { createdAt: -1 }
-                    break
-                case 'upcoming':
-                    query.startTime = { $gt: new Date() }
-                    sortOptions = { startTime: 1 }
-                    break
-                case 'updated':
-                    sortOptions = { updatedAt: -1 }
-                    break
+            if (filters.sortBy === 'recent') {
+                sortOptions = { createdAt: -1 };
+                // Do NOT filter by startTime
+            } else if (filters.sortBy === 'updated') {
+                sortOptions = { updatedAt: -1 };
+                // Do NOT filter by startTime
+            } else if (filters.sortBy === 'upcoming') {
+                query.startTime = { $ne: null, $gt: new Date() };
+                query.examAvailability = 'scheduled';
+                sortOptions = { startTime: 1 };
+                console.log('Upcoming Exams Query:', JSON.stringify(query));
+                console.log('Upcoming Exams Sort:', JSON.stringify(sortOptions));
             }
         }
 
@@ -163,6 +179,10 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
             .limit(limit)
             .sort(sortOptions)
             .lean()
+
+        if (filters.sortBy === 'upcoming') {
+            console.log('Found Upcoming Exams:', exams.map(e => ({ examName: e.examName, startTime: e.startTime })));
+        }
 
         const serializedExams = exams.map(exam => ({
             ...exam,
@@ -202,8 +222,13 @@ export async function fetchQuestionsForExam(filters = {}) {
         if (filters.standard) query.standard = filters.standard
         if (filters.topic) query.topic = filters.topic
         if (filters.difficultyLevel) query.difficultyLevel = filters.difficultyLevel
-        if (filters.section) query.section = filters.section
-        if (filters.marks) query.marks = parseInt(filters.marks)
+        if (filters.section) {
+          // Convert 'Section A'/'Section B' to 1/2, or use as number if valid
+          if (filters.section === 'Section A') query.section = 1;
+          else if (filters.section === 'Section B') query.section = 2;
+          else if (!isNaN(Number(filters.section))) query.section = Number(filters.section);
+        }
+        if (filters.marks && !isNaN(parseInt(filters.marks))) query.marks = parseInt(filters.marks)
         if (filters.questionType) {
             switch (filters.questionType) {
                 case 'MCSA':
@@ -247,7 +272,7 @@ export async function fetchQuestionsForExam(filters = {}) {
         console.error("Error fetching questions:", error)
         return {
             success: false,
-            message: "Error fetching questions"
+            message: error.message || "Error fetching questions"
         }
     }
 }
@@ -413,6 +438,55 @@ export async function getExamQuestions(examId) {
     }
 }
 
+// Returns an object { subject: count } for all questions matching the filters (except subject, which is grouped)
+export async function getQuestionCountsPerSubject(filters = {}) {
+  try {
+    await connectDB();
+    // Build query based on filters, but do NOT include subject (we want to group by subject)
+    const query = {};
+    if (filters.stream) query.stream = filters.stream;
+    if (filters.standard) query.standard = filters.standard;
+    if (filters.topic) query.topic = filters.topic;
+    if (filters.difficultyLevel) query.difficultyLevel = filters.difficultyLevel;
+    if (filters.section) {
+      if (filters.section === 'Section A') query.section = 1;
+      else if (filters.section === 'Section B') query.section = 2;
+      else if (!isNaN(Number(filters.section))) query.section = Number(filters.section);
+    }
+    if (filters.marks && !isNaN(parseInt(filters.marks))) query.marks = parseInt(filters.marks);
+    if (filters.questionType) {
+      switch (filters.questionType) {
+        case 'MCSA':
+          query.$and = [
+            { isMultipleAnswer: { $ne: true } },
+            { userInputAnswer: { $ne: true } }
+          ];
+          break;
+        case 'MCMA':
+          query.isMultipleAnswer = true;
+          break;
+        case 'numerical':
+          query.userInputAnswer = true;
+          break;
+      }
+    }
+    // Use aggregation to group by subject and count
+    const result = await master_mcq_question.aggregate([
+      { $match: query },
+      { $group: { _id: "$subject", count: { $sum: 1 } } }
+    ]);
+    // Convert to { subject: count }
+    const counts = {};
+    result.forEach(r => {
+      counts[r._id] = r.count;
+    });
+    return { success: true, counts };
+  } catch (error) {
+    console.error("Error getting question counts per subject:", error);
+    return { success: false, message: error.message || "Error getting question counts per subject" };
+  }
+}
+
 // Student controls
 
 export async function getStudentRequests(collegeId, page = 1, limit = 10) {
@@ -460,20 +534,35 @@ export async function assignStudent(details){
                 message: "Student already enrolled"
             }
         }
+        // If status is rejected or pending, only update StudentRequest status and return
+        if (details.status === 'rejected' || details.status === 'pending') {
+            await StudentRequest.findOneAndUpdate(
+                {college: details.collegeId, student: details.studentId},
+                {status: details.status},
+                {new: true}
+            );
+            return {
+                success: true,
+                message: `Student request ${details.status}`
+            }
+        }
+        // If approved, enroll the student
         enrolledStudent = await EnrolledStudent.create({
             student: details.studentId,
             college: details.collegeId,
-            allocatedSubjects: details.allocatedSubject,
-            class: details.class
+            class: details.class,
+            allocatedSubjects: details.allocatedSubjects,
+            allocatedStreams: details.allocatedStreams,
+            status: 'approved',
         })
         const college = await College.findById(details.collegeId)
         const student = await Student.findById(details.studentId)
-        const studentRequest = await StudentRequest.deleteOne({college: details.collegeId, student: details.studentId})
+        const studentRequest = await StudentRequest.findOne({college: details.collegeId, student: details.studentId})
         student.college = college._id
-        college.studentRequests.push(studentRequest._id)
         studentRequest.status = 'approved'
         college.enrolledStudents.push(enrolledStudent._id)
         await college.save()
+        await studentRequest.save()
         await enrolledStudent.save()
         await student.save()
         if(!enrolledStudent) {
@@ -484,7 +573,7 @@ export async function assignStudent(details){
         }
         return {
             success: true,
-            enrolledStudent: enrolledStudent
+            enrolledStudent: JSON.parse(JSON.stringify(enrolledStudent))
         }
     } catch (error) {
         console.error("Error assigning student:", error)
@@ -530,12 +619,43 @@ export async function getEnrolledStudents(collegeId, page = 1, limit = 10) {
 export async function updateEnrolledStudent(studentId, updateData) {
     try {
         await connectDB()
+        // Validation
+        if (updateData.class !== undefined && (typeof updateData.class !== 'string' || updateData.class.trim() === '')) {
+            return {
+                success: false,
+                message: 'Class must be a non-empty string.'
+            }
+        }
+        if (updateData.allocatedSubjects !== undefined && !Array.isArray(updateData.allocatedSubjects)) {
+            return {
+                success: false,
+                message: 'Allocated subjects must be an array.'
+            }
+        }
+        if (updateData.allocatedStreams !== undefined && !Array.isArray(updateData.allocatedStreams)) {
+            return {
+                success: false,
+                message: 'Allocated streams must be an array.'
+            }
+        }
+        if (updateData.status !== undefined) {
+            const allowedStatuses = ['pending', 'approved', 'rejected', 'retired'];
+            if (!allowedStatuses.includes(updateData.status)) {
+                return {
+                    success: false,
+                    message: 'Invalid status value.'
+                }
+            }
+        }
+        // Build update object dynamically
+        const updateObj = {};
+        if (updateData.class !== undefined) updateObj.class = updateData.class;
+        if (updateData.allocatedSubjects !== undefined) updateObj.allocatedSubjects = updateData.allocatedSubjects;
+        if (updateData.allocatedStreams !== undefined) updateObj.allocatedStreams = updateData.allocatedStreams;
+        if (updateData.status !== undefined) updateObj.status = updateData.status;
         const updatedStudent = await EnrolledStudent.findByIdAndUpdate(
             studentId,
-            {
-                class: updateData.class,
-                allocatedSubjects: updateData.allocatedSubjects,
-            },
+            updateObj,
             { new: true, runValidators: true }
         ).populate('student', 'name email').lean()
 
@@ -544,15 +664,6 @@ export async function updateEnrolledStudent(studentId, updateData) {
                 success: false,
                 message: "Student not found"
             }
-        }
-
-        // Update request status if provided
-        if (updateData.requestStatus) {
-            await StudentRequest.findOneAndUpdate(
-                { student: updatedStudent.student._id },
-                { status: updateData.requestStatus },
-                { new: true }
-            ).lean()
         }
 
         return {
@@ -663,6 +774,166 @@ export async function updateCollegeTeacher(teacherId, updateData) {
         return {
             success: false,
             message: error.message
+        }
+    }
+}
+
+// Negative Marking Rules Management
+
+export async function createNegativeMarkingRule(ruleData, collegeId) {
+    try {
+        await connectDB()
+        
+        const rule = await NegativeMarkingRule.create({
+            ...ruleData,
+            college: collegeId
+        })
+        
+        // Add rule to college's negativeMarkingRules array
+        await College.findByIdAndUpdate(
+            collegeId,
+            { $push: { negativeMarkingRules: rule._id } }
+        )
+
+        return {
+            success: true,
+            message: "Negative marking rule created successfully",
+            rule: JSON.stringify(rule)
+        }
+    } catch (error) {
+        console.error("Error creating negative marking rule:", error)
+        return {
+            success: false,
+            message: error.message || "Failed to create negative marking rule"
+        }
+    }
+}
+
+export async function getNegativeMarkingRules(collegeId) {
+    try {
+        await connectDB()
+        
+        const rules = await NegativeMarkingRule.find({ 
+            college: collegeId, 
+            isActive: true 
+        }).sort({ stream: 1, standard: 1, subject: 1 })
+
+        return {
+            success: true,
+            rules: JSON.stringify(rules)
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function updateNegativeMarkingRule(ruleId, updateData, collegeId) {
+    try {
+        await connectDB()
+        
+        const rule = await NegativeMarkingRule.findOneAndUpdate(
+            { _id: ruleId, college: collegeId },
+            updateData,
+            { new: true, runValidators: true }
+        )
+
+        if (!rule) {
+            return {
+                success: false,
+                message: "Rule not found or access denied"
+            }
+        }
+
+        return {
+            success: true,
+            message: "Negative marking rule updated successfully",
+            rule: JSON.stringify(rule)
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function deleteNegativeMarkingRule(ruleId, collegeId) {
+    try {
+        await connectDB()
+        
+        const rule = await NegativeMarkingRule.findOneAndUpdate(
+            { _id: ruleId, college: collegeId },
+            { isActive: false },
+            { new: true }
+        )
+
+        if (!rule) {
+            return {
+                success: false,
+                message: "Rule not found or access denied"
+            }
+        }
+
+        // Remove from college's negativeMarkingRules array
+        await College.findByIdAndUpdate(
+            collegeId,
+            { $pull: { negativeMarkingRules: ruleId } }
+        )
+
+        return {
+            success: true,
+            message: "Negative marking rule deleted successfully"
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+export async function getDefaultNegativeMarking(collegeId, stream, standard, subject) {
+    try {
+        await connectDB()
+        
+        // Find the most specific rule that matches
+        const rules = await NegativeMarkingRule.find({
+            college: collegeId,
+            stream: stream,
+            isActive: true,
+            $or: [
+                // Exact match for subject-specific rules
+                { standard: standard, subject: subject },
+                // Standard-specific rules (no subject)
+                { standard: standard, subject: { $in: [null, undefined] } },
+                // Stream-wide rules (no standard or subject)
+                { standard: { $in: [null, undefined] }, subject: { $in: [null, undefined] } }
+            ]
+        }).sort({ priority: -1 })
+
+        if (rules.length > 0) {
+            return {
+                success: true,
+                negativeMarks: rules[0].negativeMarks,
+                description: rules[0].description
+            }
+        }
+
+        // Fallback to college global default
+        const college = await College.findById(collegeId)
+        return {
+            success: true,
+            negativeMarks: college.globalNegativeMarks || 0,
+            description: "Global college default"
+        }
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message,
+            negativeMarks: 0
         }
     }
 }

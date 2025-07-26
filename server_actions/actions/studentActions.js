@@ -148,10 +148,12 @@ export async function getStudentDetails(token){
     .lean()
     
     if(student){
+        // Serialize Date objects to prevent Redux serialization warnings
+        const serializedStudent = JSON.parse(JSON.stringify(student));
         return {
             message: "Student details fetched successfully",
             success: true,
-            student: student
+            student: serializedStudent
         }
     }else{
         return {
@@ -641,7 +643,9 @@ export async function sendStudentRequest(details){
             student: student._id, 
             college: college._id, 
             message: details.message ,
-            status: "pending"
+            status: "pending",
+            allocatedStreams: details.allocatedStreams, // <-- Save selected streams
+            allocatedClasses: details.allocatedClasses // <-- Save selected class
         })
         
         // Update the college document (note: since we used .lean(), we need to update directly)
@@ -651,7 +655,7 @@ export async function sendStudentRequest(details){
         return {
             message: "Student request sent successfully",
             success: true,
-            studentRequest: studentRequest
+            studentRequest: JSON.parse(JSON.stringify(studentRequest))
         }
     } catch (error) {
         console.log(error)
@@ -670,7 +674,7 @@ export async function assignStudent(details){
             studentId: details.studentId,
             collegeId: details.collegeId,
             class: details.class,
-            allocatedSubjects: details.allocatedSubjects
+            allocatedSubjects: details.allocatedSubjects,
         })
         const college   = await College.findById(details.collegeId)
         college.enrolledStudents.push(enrolledStudent._id)

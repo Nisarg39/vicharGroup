@@ -27,6 +27,7 @@ export default function EnrolledStudents({ collegeData }) {
     useEffect(() => {
         const fetchStudents = async () => {
             const response = await getEnrolledStudents(collegeData._id, currentPage, studentsPerPage)
+            // console.log(response)
             if (response.success) {
                 setStudents(JSON.parse(response.enrolledStudents))
                 setPagination(response.pagination)
@@ -245,7 +246,13 @@ export default function EnrolledStudents({ collegeData }) {
                                             </div>
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Streams
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Allocated Subjects
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status
                                         </th>
                                         <th 
                                             className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
@@ -285,6 +292,22 @@ export default function EnrolledStudents({ collegeData }) {
                                                     {student.class}
                                                 </span>
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {student.allocatedStreams && student.allocatedStreams.length > 0 ? (
+                                                    student.allocatedStreams.map((stream, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="inline-flex px-2 py-1 mr-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"
+                                                        >
+                                                            {stream}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600">
+                                                        No streams
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-1">
                                                     {student.allocatedSubjects && student.allocatedSubjects.length > 0 ? (
@@ -302,6 +325,11 @@ export default function EnrolledStudents({ collegeData }) {
                                                         </span>
                                                     )}
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${student.status === 'approved' ? 'bg-green-100 text-green-800' : student.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : student.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {student.status ? student.status.charAt(0).toUpperCase() + student.status.slice(1) : 'N/A'}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {new Date(student.createdAt).toLocaleDateString('en-US', {

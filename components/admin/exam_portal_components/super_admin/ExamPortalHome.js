@@ -4,7 +4,9 @@ import { MdSchool } from 'react-icons/md';
 import { FaUniversity, FaQuestion } from 'react-icons/fa';
 import PdfSmartCropTool from './PdfSmartCropTool';
 import { FaCrop } from 'react-icons/fa';
+import { MdCalculate } from 'react-icons/md';
 import QuestionsControlHome from './questionControls/QuestionsControlHome';
+import DefaultNegativeMarkingRules from './DefaultNegativeMarkingRules';
 
 export default function ExamPortalHome() {
   const [activeComponent, setActiveComponent] = useState('collegeControl');
@@ -41,11 +43,20 @@ export default function ExamPortalHome() {
             <FaCrop />
             Smart Crop Tool
           </button>
+
+          <button 
+            className={`${activeComponent === 'negativeMarkingRules' ? 'bg-[#f44336]' : 'bg-[#f44336]/60'} text-white px-6 py-2.5 rounded-lg hover:bg-[#f44336]/90 transition-colors duration-200 flex items-center gap-2`}
+            onClick={() => setActiveComponent('negativeMarkingRules')}
+          >
+            <MdCalculate />
+            Default Negative Marking
+          </button>
         </div>
 
         {activeComponent === 'collegeControl' && <CollegeControlHome />}
         {activeComponent === 'questionsControl' && <QuestionsControlHome />}
         {activeComponent === 'smartCropTool' && <PdfSmartCropTool />}
+        {activeComponent === 'negativeMarkingRules' && <DefaultNegativeMarkingRules onBack={() => setActiveComponent('collegeControl')} />}
       </div>
     </div>
   );

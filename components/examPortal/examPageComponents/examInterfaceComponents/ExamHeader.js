@@ -2,7 +2,7 @@
 
 import { Button } from "../../../ui/button"
 import { Badge } from "../../../ui/badge"
-import { Clock, Wifi, WifiOff } from "lucide-react"
+import { Clock, Wifi, WifiOff, Building2 } from "lucide-react"
 
 export default function ExamHeader({ 
     exam, 
@@ -11,7 +11,8 @@ export default function ExamHeader({
     timeLeft, 
     answeredQuestions, 
     totalQuestions, 
-    progressPercentage
+    progressPercentage,
+    collegeDetails
 }) {
     // Format time display
     const formatTime = (seconds) => {
@@ -28,7 +29,25 @@ export default function ExamHeader({
                     <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                         <div className="min-w-0 flex-1">
                             <h1 className="text-sm sm:text-lg font-bold text-gray-900 truncate">{exam?.examName}</h1>
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">Student: {student?.name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs sm:text-sm text-gray-600 truncate">Student: {student?.name}</p>
+                                {collegeDetails && (
+                                    <div className="flex items-center gap-2 bg-white/80 backdrop-blur rounded-lg px-2 py-1 border border-gray-100/60">
+                                        {collegeDetails.collegeLogo ? (
+                                            <img src={collegeDetails.collegeLogo} alt="College Logo" className="w-5 h-5 rounded-full object-cover bg-gray-100 border border-gray-200" />
+                                        ) : (
+                                            <Building2 className="w-4 h-4 text-blue-600" />
+                                        )}
+                                        <span className="font-semibold text-gray-900 text-xs sm:text-sm">{collegeDetails.collegeName}</span>
+                                        {collegeDetails.collegeCode && (
+                                            <span className="text-xs sm:text-xs text-blue-700 bg-blue-50 rounded-full px-2 py-0.5">Code: {collegeDetails.collegeCode}</span>
+                                        )}
+                                        {collegeDetails.collegeLocation && (
+                                            <span className="text-xs sm:text-xs text-gray-600">{collegeDetails.collegeLocation}</span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     

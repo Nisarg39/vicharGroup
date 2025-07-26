@@ -10,6 +10,7 @@ import {
     CheckCircleIcon,
     XCircleIcon
 } from '@heroicons/react/24/outline'
+import { data } from "../../../../../utils/examUtils/subject_Details"
 
 export default function StudentRequest({ collegeData }) {
     const [requests, setRequests] = useState([])
@@ -17,13 +18,27 @@ export default function StudentRequest({ collegeData }) {
     const [expandedRequest, setExpandedRequest] = useState(null)
     const [selectedSubjects, setSelectedSubjects] = useState({})
     const [selectedClass, setSelectedClass] = useState({})
+    const [selectedStream, setSelectedStream] = useState({})
     const [currentPage, setCurrentPage] = useState(1)
     const [pagination, setPagination] = useState(null)
     const [requestsPerPage] = useState(10)
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedStatus, setSelectedStatus] = useState({})
 
     const examTypes = ['NEET', 'JEE', 'MHT-CET']
-    const classOptions = ['11th', '12th']
+    const classOptions = collegeData.allocatedClasses || []
+    const streamOptions = collegeData.allocatedStreams || []
+
+    // Status badge helper
+    const getStatusBadge = (status) => {
+        const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+        switch (status) {
+            case 'pending': return `${baseClasses} bg-yellow-100 text-yellow-800`;
+            case 'approved': return `${baseClasses} bg-green-100 text-green-800`;
+            case 'rejected': return `${baseClasses} bg-red-100 text-red-800`;
+            default: return `${baseClasses} bg-gray-100 text-gray-800`;
+        }
+    };
 
     const handleClassChange = (requestId, classYear) => {
         setSelectedClass(prev => ({
@@ -31,6 +46,99 @@ export default function StudentRequest({ collegeData }) {
             [requestId]: classYear
         }))
     }
+    const handleStreamChange = (requestId, stream) => {
+        setSelectedStream(prev => ({
+            ...prev,
+            [requestId]: stream
+        }))
+    }
+
+    // Helper: Get valid subjects for a request based on selected streams and class (single)
+    const getValidSubjectsForRequest = (requestId) => {
+        const streams = selectedStream[requestId] || [];
+        const classYear = selectedClass[requestId];
+        let validSubjects = new Set();
+        if (!classYear) return [];
+        streams.forEach(stream => {
+            const streamData = data[stream];
+            if (streamData) {
+                Object.keys(streamData).forEach(subject => {
+                    if (streamData[subject][classYear]) {
+                        validSubjects.add(subject);
+                    }
+                });
+            }
+        });
+        return Array.from(validSubjects);
+    };
+
+    // Helper for multi-select checkboxes and single-select radio for class
+    const handleMultiCheckboxChange = (requestId, value, type) => {
+        let state, setState;
+        if (type === 'class') {
+            // Single-select: set value directly
+            setSelectedClass(prev => ({ ...prev, [requestId]: value }));
+            // After setting class, recalculate valid subjects
+            setSelectedSubjects(prev => {
+                const streams = selectedStream[requestId] || [];
+                const classYear = value;
+                let validSubjects = new Set();
+                if (classYear) {
+                    streams.forEach(stream => {
+                        const streamData = data[stream];
+                        if (streamData) {
+                            Object.keys(streamData).forEach(subject => {
+                                if (streamData[subject][classYear]) {
+                                    validSubjects.add(subject);
+                                }
+                            });
+                        }
+                    });
+                }
+                return {
+                    ...prev,
+                    [requestId]: Array.from(validSubjects)
+                };
+            });
+            return;
+        } else if (type === 'stream') {
+            state = selectedStream;
+            setState = setSelectedStream;
+        } else if (type === 'subject') {
+            state = selectedSubjects;
+            setState = setSelectedSubjects;
+        }
+        const current = state[requestId] || [];
+        const updated = current.includes(value)
+            ? current.filter(v => v !== value)
+            : [...current, value];
+        setState(prev => ({ ...prev, [requestId]: updated }));
+
+        // If stream changes, recalculate selected subjects for all selected streams and the single class
+        if (type === 'stream') {
+            setSelectedSubjects(prev => {
+                const streams = updated;
+                const classYear = selectedClass[requestId];
+                let validSubjects = new Set();
+                if (classYear) {
+                    streams.forEach(stream => {
+                        const streamData = data[stream];
+                        if (streamData) {
+                            Object.keys(streamData).forEach(subject => {
+                                if (streamData[subject][classYear]) {
+                                    validSubjects.add(subject);
+                                }
+                            });
+                        }
+                    });
+                }
+                return {
+                    ...prev,
+                    [requestId]: Array.from(validSubjects)
+                };
+            });
+        }
+    };
 
     useEffect(() => {
         const fetchRequests = async () => {
@@ -44,60 +152,118 @@ export default function StudentRequest({ collegeData }) {
         fetchRequests()
     }, [currentPage, requestsPerPage])
 
-    const handleExpand = (requestId) => {
-        setExpandedRequest(expandedRequest === requestId ? null : requestId)
-    }
-
-    const handleSubjectToggle = (requestId, subject) => {
-        setSelectedSubjects(prev => {
-            const currentSubjects = prev[requestId] || []
-            const updatedSubjects = currentSubjects.includes(subject)
-                ? currentSubjects.filter(s => s !== subject)
-                : [...currentSubjects, subject]
-            return {
-                ...prev,
-                [requestId]: updatedSubjects
-            }
-        })
-    }
-
-    const getStatusBadge = (status) => {
-        const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-        switch (status) {
-            case 'pending': return `${baseClasses} bg-yellow-100 text-yellow-800`
-            case 'approved': return `${baseClasses} bg-green-100 text-green-800`
-            case 'rejected': return `${baseClasses} bg-red-100 text-red-800`
-            default: return `${baseClasses} bg-gray-100 text-gray-800`
+    // Auto-select on expand (always set, not just if empty)
+    useEffect(() => {
+        if (!expandedRequest) return;
+        const req = requests.find(r => r._id === expandedRequest);
+        if (req) {
+            // Class (single)
+            setSelectedClass(prev => ({ ...prev, [expandedRequest]: req.allocatedClasses && req.allocatedClasses.length > 0 ? req.allocatedClasses[0] : '' }));
+            // Streams
+            setSelectedStream(prev => ({ ...prev, [expandedRequest]: req.allocatedStreams || [] }));
+            // Subjects
+            setSelectedSubjects(prev => {
+                if (prev[expandedRequest] && prev[expandedRequest].length > 0) {
+                    return prev;
+                }
+                if (req.allocatedSubjects && req.allocatedSubjects.length > 0) {
+                    return { ...prev, [expandedRequest]: req.allocatedSubjects };
+                }
+                // Otherwise, mark all valid subjects for requested streams/class
+                const streams = req.allocatedStreams || [];
+                const classYear = req.allocatedClasses && req.allocatedClasses.length > 0 ? req.allocatedClasses[0] : '';
+                let validSubjects = new Set();
+                if (classYear) {
+                    streams.forEach(stream => {
+                        const streamData = data[stream];
+                        if (streamData) {
+                            Object.keys(streamData).forEach(subject => {
+                                if (streamData[subject][classYear]) {
+                                    validSubjects.add(subject);
+                                }
+                            });
+                        }
+                    });
+                }
+                return { ...prev, [expandedRequest]: Array.from(validSubjects) };
+            });
+            // Status
+            setSelectedStatus(prev => ({ ...prev, [expandedRequest]: req.status || 'pending' }));
         }
-    }
+    }, [expandedRequest, requests]);
 
     const handleAcceptRequest = async (request) => {
-        if (!selectedClass[request._id] || !selectedSubjects[request._id]?.length) {
-            toast.error("Please select both class and subjects")
+        const classYear = selectedClass[request._id] || '';
+        const streams = selectedStream[request._id] || [];
+        const subjects = selectedSubjects[request._id] || [];
+        const status = selectedStatus[request._id] || 'pending';
+        if (!classYear) {
+            toast.error("Please select a class.");
             return;
         }
-
+        if (!streams.length) {
+            toast.error("Please select at least one stream.");
+            return;
+        }
+        if (!subjects.length) {
+            toast.error("Please select at least one subject.");
+            return;
+        }
         const details = {
             studentId: request.student._id,
             collegeId: collegeData._id,
-            allocatedSubjects: selectedSubjects[request._id],
-            class: selectedClass[request._id],
+            class: classYear,
+            allocatedSubjects: subjects,
+            allocatedStreams: streams,
             studentRequest: request._id,
+            status,
         };
-
         const response = await assignStudent(details);
-        
         if (response.success) {
             toast.success("Student assigned successfully")
             const updatedResponse = await getStudentRequests(collegeData._id);
             if (updatedResponse.success) {
                 setRequests(updatedResponse.studentRequest);
-                setExpandedRequest(null); // Reset expanded state
-                setSelectedSubjects({}); // Clear selections
+                setExpandedRequest(null);
+                setSelectedSubjects({});
                 setSelectedClass({});
+                setSelectedStream({});
+                setSelectedStatus({});
             }
         } else {
             toast.error(response.message || "Failed to assign student")
+        }
+    }
+    const handleRejectRequest = async (request) => {
+        // Set status to rejected and call assignStudent
+        setSelectedStatus(prev => ({ ...prev, [request._id]: 'rejected' }));
+        const classYear = selectedClass[request._id] || '';
+        const streams = selectedStream[request._id] || [];
+        const subjects = selectedSubjects[request._id] || [];
+        const status = 'rejected';
+        const details = {
+            studentId: request.student._id,
+            collegeId: collegeData._id,
+            class: classYear,
+            allocatedSubjects: subjects,
+            allocatedStreams: streams,
+            studentRequest: request._id,
+            status,
+        };
+        const response = await assignStudent(details);
+        if (response.success) {
+            toast.success("Student request rejected")
+            const updatedResponse = await getStudentRequests(collegeData._id);
+            if (updatedResponse.success) {
+                setRequests(updatedResponse.studentRequest);
+                setExpandedRequest(null);
+                setSelectedSubjects({});
+                setSelectedClass({});
+                setSelectedStream({});
+                setSelectedStatus({});
+            }
+        } else {
+            toast.error(response.message || "Failed to reject student request")
         }
     }
 
@@ -187,6 +353,11 @@ export default function StudentRequest({ collegeData }) {
             (studentData.phone && studentData.phone.includes(searchQuery))
         )
     })
+
+    // Toggle expand/collapse for a request
+    const handleExpand = (requestId) => {
+        setExpandedRequest(expandedRequest === requestId ? null : requestId);
+    };
 
     if (loading) {
         return (
@@ -298,7 +469,21 @@ export default function StudentRequest({ collegeData }) {
                                             </span>
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-medium text-gray-900">{request.student.name}</h3>
+                                            <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                                                {request.student.name}
+                                                {/* Class label(s) */}
+                                                {request.allocatedClasses && request.allocatedClasses.length > 0 && (
+                                                    <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200">
+                                                        Class: {request.allocatedClasses.join(', ')}
+                                                    </span>
+                                                )}
+                                                {/* Stream label(s) */}
+                                                {request.allocatedStreams && request.allocatedStreams.length > 0 && (
+                                                    <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold border border-green-200">
+                                                        Stream: {request.allocatedStreams.join(', ')}
+                                                    </span>
+                                                )}
+                                            </h3>
                                             <p className="text-sm text-gray-500">{request.student.email}</p>
                                         </div>
                                     </div>
@@ -317,85 +502,152 @@ export default function StudentRequest({ collegeData }) {
                                     </div>
                                 </div>
 
-                                {expandedRequest === request._id && request.status === 'pending' && (
+                                {expandedRequest === request._id && (request.status === 'pending' || request.status === 'rejected') && (
                                     <div className="mt-6 pl-14">
                                         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                                             <h4 className="text-lg font-semibold text-gray-900 mb-4">
                                                 Student Assignment Details
                                             </h4>
-                                            
                                             <div className="space-y-6">
-                                                {/* Class Selection */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Select Class Level
-                                                    </label>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        {classOptions.map(classYear => (
-                                                            <button
-                                                                key={classYear}
-                                                                className={`
-                                                                    px-4 py-3 rounded-lg border text-sm font-medium
-                                                                    ${selectedClass[request._id] === classYear 
-                                                                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                                                                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                                                                    }
-                                                                `}
-                                                                onClick={() => handleClassChange(request._id, classYear)}
-                                                                type="button"
-                                                            >
-                                                                {classYear}
-                                                            </button>
-                                                        ))}
+                                                {/* Show student's requested class and streams */}
+                                                <div className="mb-4">
+                                                    <div className="text-xs text-gray-500 mb-1">Student Requested:</div>
+                                                    <div className="flex flex-wrap gap-4">
+                                                        {request.allocatedClasses && request.allocatedClasses.length > 0 && (
+                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                                                                Class: {request.allocatedClasses.join(', ')}
+                                                            </span>
+                                                        )}
+                                                        {request.allocatedStreams && request.allocatedStreams.length > 0 && (
+                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-medium border border-green-100">
+                                                                Stream: {request.allocatedStreams.join(', ')}
+                                                            </span>
+                                                        )}
+                                                        {request.allocatedSubjects && request.allocatedSubjects.length > 0 && (
+                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-purple-50 text-purple-700 text-xs font-medium border border-purple-100">
+                                                                Subjects: {request.allocatedSubjects.join(', ')}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
 
-                                                {/* Subject Selection */}
-                                                <div>
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <label className="block text-sm font-medium text-gray-700">
-                                                            Assign Subjects
-                                                        </label>
-                                                        <span className="text-xs text-gray-500">
-                                                            Selected: {(selectedSubjects[request._id] || []).length}
-                                                        </span>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {collegeData.allocatedSubjects.map(subject => (
-                                                            <label 
-                                                                key={subject} 
-                                                                className={`
-                                                                    relative flex items-center p-4 rounded-lg border-2 cursor-pointer
-                                                                    transition-all duration-200 ease-in-out
-                                                                    ${(selectedSubjects[request._id] || []).includes(subject)
-                                                                        ? 'border-blue-500 bg-blue-50'
-                                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                                    }
-                                                                `}
-                                                            >
-                                                                <input 
-                                                                    type="checkbox"
-                                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                    checked={(selectedSubjects[request._id] || []).includes(subject)}
-                                                                    onChange={() => handleSubjectToggle(request._id, subject)}
-                                                                />
-                                                                <span className="ml-3 text-sm font-medium text-gray-900">
-                                                                    {subject}
-                                                                </span>
-                                                                {(selectedSubjects[request._id] || []).includes(subject) && (
-                                                                    <span className="absolute top-2 right-2">
-                                                                        <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                        </svg>
-                                                                    </span>
-                                                                )}
+                                                {/* Derive checked arrays for this request */}
+                                                {(() => {
+                                                    const checkedClasses = selectedClass[request._id] !== undefined
+                                                        ? selectedClass[request._id]
+                                                        : request.allocatedClasses || [];
+                                                    const checkedStreams = selectedStream[request._id] !== undefined
+                                                        ? selectedStream[request._id]
+                                                        : request.allocatedStreams || [];
+                                                    const checkedSubjects = selectedSubjects[request._id] !== undefined
+                                                        ? selectedSubjects[request._id]
+                                                        : request.allocatedSubjects || [];
+
+                                                    return <>
+                                                        {/* Class Selection (radio buttons) */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                Assign Class
                                                             </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                            <div className="flex flex-wrap gap-3">
+                                                                {classOptions.map(classYear => (
+                                                                    <label key={classYear} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                                        <input
+                                                                            type="radio"
+                                                                            name={`class-${request._id}`}
+                                                                            checked={checkedClasses.includes(classYear)}
+                                                                            onChange={() => handleMultiCheckboxChange(request._id, classYear, 'class')}
+                                                                        />
+                                                                        <span className="text-sm text-gray-700">{classYear}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        {/* Stream Selection (checkboxes) */}
+                                                        {streamOptions.length > 0 && (
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                    Assign Streams
+                                                                </label>
+                                                                <div className="flex flex-wrap gap-3">
+                                                                    {streamOptions.map(stream => (
+                                                                        <label key={stream} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={checkedStreams.includes(stream)}
+                                                                                onChange={() => handleMultiCheckboxChange(request._id, stream, 'stream')}
+                                                                            />
+                                                                            <span className="text-sm text-gray-700">{stream}</span>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {/* Subject Selection (checkboxes) */}
+                                                        <div>
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <label className="block text-sm font-medium text-gray-700">
+                                                                    Assign Subjects
+                                                                </label>
+                                                                <span className="text-xs text-gray-500">
+                                                                    Selected: {checkedSubjects.length}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                {/* Only show subjects valid for selected streams/classes */}
+                                                                {getValidSubjectsForRequest(request._id).map(subject => (
+                                                                    <label 
+                                                                        key={subject} 
+                                                                        className={
+                                                                            `relative flex items-center p-4 rounded-lg border-2 cursor-pointer
+                                                                            transition-all duration-200 ease-in-out
+                                                                            ${checkedSubjects.includes(subject)
+                                                                                ? 'border-blue-500 bg-blue-50'
+                                                                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        <input 
+                                                                            type="checkbox"
+                                                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                            checked={checkedSubjects.includes(subject)}
+                                                                            onChange={() => handleMultiCheckboxChange(request._id, subject, 'subject')}
+                                                                        />
+                                                                        <span className="ml-3 text-sm font-medium text-gray-900">
+                                                                            {subject}
+                                                                        </span>
+                                                                        {checkedSubjects.includes(subject) && (
+                                                                            <span className="absolute top-2 right-2">
+                                                                                <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                                </svg>
+                                                                            </span>
+                                                                        )}
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </>;
+                                                })()}
 
-                                                {/* Action Buttons */}
-                                                <div className="flex gap-4 pt-4 border-t border-gray-200">
+                                                {/* Action Buttons and Status Dropdown */}
+                                                <div className="flex gap-4 pt-4 border-t border-gray-200 items-center">
+                                                    <div className="relative">
+                                                        <select
+                                                            className="appearance-none px-3 py-2 pr-8 rounded-lg border border-gray-300 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150 bg-white text-gray-800"
+                                                            value={selectedStatus[request._id] || 'pending'}
+                                                            onChange={e => setSelectedStatus(prev => ({ ...prev, [request._id]: e.target.value }))}
+                                                        >
+                                                            <option value="pending" className="text-yellow-700 bg-yellow-50">Pending</option>
+                                                            <option value="approved" className="text-green-700 bg-green-50">Approved</option>
+                                                            <option value="rejected" className="text-red-700 bg-red-50">Rejected</option>
+                                                        </select>
+                                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                                                                <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
                                                     <button 
                                                         className={`
                                                             flex-1 px-6 py-3 rounded-lg text-sm font-medium
@@ -412,15 +664,22 @@ export default function StudentRequest({ collegeData }) {
                                                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                         </svg>
-                                                        Accept Request
+                                                        Save
                                                     </button>
-                                                    <button 
-                                                        className="flex-1 px-6 py-3 bg-white border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors duration-200 flex items-center justify-center gap-2"
+                                                    <button
+                                                        className="flex-1 px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
+                                                        onClick={() => {
+                                                            setExpandedRequest(null);
+                                                            setSelectedSubjects({});
+                                                            setSelectedClass({});
+                                                            setSelectedStream({});
+                                                            setSelectedStatus({});
+                                                        }}
                                                     >
                                                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                         </svg>
-                                                        Reject Request
+                                                        Cancel
                                                     </button>
                                                 </div>
                                             </div>

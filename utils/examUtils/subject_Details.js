@@ -8,6 +8,18 @@ const getTopics = (stream, subject, standard) => {
 
 const data = {
     JEE: {
+        positiveMarking: {
+            rule: "+4 for each correct MCQ answer (numerical questions: +4, no negative marking)",
+            value: 4,
+            per: "question",
+            note: "Numerical questions have no negative marking."
+        },
+        negativeMarking: {
+            rule: "-1 for each incorrect MCQ answer (numerical questions: no negative marking)",
+            value: -1,
+            per: "question",
+            note: "Numerical questions have no negative marking."
+        },
         Physics: {
             "11": {
                 "Physical World and Measurement": "1",
@@ -123,55 +135,65 @@ const data = {
                 "Statistics": "97"
             }
         },
-        Botany: {
-            "11": {
-                "Living World": "98",
-                "Biological Classification": "99",
-                "Plant Kingdom": "100",
-                "Morphology of Flowering Plants": "101",
-                "Anatomy of Flowering Plants": "102",
-                "Cell: The unit of life": "103",
-                "Cell Cycle and Cell Division": "104",
-                "Photosynthesis in Higher Plants": "105",
-                "Respiration in Plants": "106",
-                "Plant Growth and Development": "107"
-            },
-            "12": {
-                "Sexual Reproduction in Flowering Plants": "108",
-                "Principles of Inheritance and Variation": "109",
-                "Molecular Basis of Inheritance": "110",
-                "Biotechnology: Principles and Processes": "111",
-                "Organisms and Populations": "112",
-                "Ecosystem": "113",
-                "Biodiversity and Conservation": "114",
-                "Transport in Plants & Mineral Nutrition": "115",
-                "Strategies of Enhancement in Food Production": "116",
-                "Environmental Issues": "117"
-            }
-        },
-        Zoology: {
-            "11": {
-                "Animal Kingdom": "118",
-                "Structural Organisation in Animals": "119",
-                "Biomolecules": "120",
-                "Breathing and Exchange of Gases": "121",
-                "Body Fluids and Circulation": "122",
-                "Excretory Products and Their Elimination": "123",
-                "Locomotion and Movement": "124",
-                "Neural control and co-ordination": "125",
-                "Chemical co-ordination and Integration": "126"
-            },
-            "12": {
-                "Human Reproduction": "127",
-                "Reproductive Health": "128",
-                "Evolution": "129",
-                "Human Health and Disease": "130",
-                "Microbes in Human Welfare": "131",
-                "Biotechnology and Its Applications": "132"
-            }
-        }
+        // Botany: {
+        //     "11": {
+        //         "Living World": "98",
+        //         "Biological Classification": "99",
+        //         "Plant Kingdom": "100",
+        //         "Morphology of Flowering Plants": "101",
+        //         "Anatomy of Flowering Plants": "102",
+        //         "Cell: The unit of life": "103",
+        //         "Cell Cycle and Cell Division": "104",
+        //         "Photosynthesis in Higher Plants": "105",
+        //         "Respiration in Plants": "106",
+        //         "Plant Growth and Development": "107"
+        //     },
+        //     "12": {
+        //         "Sexual Reproduction in Flowering Plants": "108",
+        //         "Principles of Inheritance and Variation": "109",
+        //         "Molecular Basis of Inheritance": "110",
+        //         "Biotechnology: Principles and Processes": "111",
+        //         "Organisms and Populations": "112",
+        //         "Ecosystem": "113",
+        //         "Biodiversity and Conservation": "114",
+        //         "Transport in Plants & Mineral Nutrition": "115",
+        //         "Strategies of Enhancement in Food Production": "116",
+        //         "Environmental Issues": "117"
+        //     }
+        // },
+        // Zoology: {
+        //     "11": {
+        //         "Animal Kingdom": "118",
+        //         "Structural Organisation in Animals": "119",
+        //         "Biomolecules": "120",
+        //         "Breathing and Exchange of Gases": "121",
+        //         "Body Fluids and Circulation": "122",
+        //         "Excretory Products and Their Elimination": "123",
+        //         "Locomotion and Movement": "124",
+        //         "Neural control and co-ordination": "125",
+        //         "Chemical co-ordination and Integration": "126"
+        //     },
+        //     "12": {
+        //         "Human Reproduction": "127",
+        //         "Reproductive Health": "128",
+        //         "Evolution": "129",
+        //         "Human Health and Disease": "130",
+        //         "Microbes in Human Welfare": "131",
+        //         "Biotechnology and Its Applications": "132"
+        //     }
+        // }
     },
     NEET: {
+        positiveMarking: {
+            rule: "+4 for each correct answer",
+            value: 4,
+            per: "question"
+        },
+        negativeMarking: {
+            rule: "-1 for each incorrect answer",
+            value: -1,
+            per: "question"
+        },
         Physics: {
             "11": {
                 "Physical World and Measurement": "133",
@@ -247,46 +269,46 @@ const data = {
                 "Polymer": "195"
             }
         },
-        Maths: {
-            "11": {
-                "Basic Mathematics": "196",
-                "Logarithm": "197",
-                "Quadratic Equation": "198",
-                "Trigonometric Ratios and Identities": "199",
-                "Sequence and Progression": "200",
-                "Trigonometric equation": "201",
-                "Solution of Triangle": "202",
-                "Determinant": "203",
-                "Straight line": "204",
-                "Circle": "205",
-                "Parabola": "206",
-                "Ellipse": "207",
-                "Hyperbola": "208",
-                "Binomial Theorem": "209",
-                "Permutation and Combination": "210",
-                "Set & Relation": "211",
-                "Function": "212"
-            },
-            "12": {
-                "Inverse Trigonometric Functions": "213",
-                "Limit": "214",
-                "Continuity": "215",
-                "Derivability": "216",
-                "Method of Differentiation": "217",
-                "Indefinite Integration": "218",
-                "Definite Integration": "219",
-                "Application of Derivatives": "220",
-                "Area under the Curve": "221",
-                "Differential Equations": "222",
-                "Vector": "223",
-                "Three Dimensional Geometry": "224",
-                "Complex Numbers": "225",
-                "Probability": "226",
-                "Mathematical logic": "227",
-                "Matrices": "228",
-                "Statistics": "229"
-            }
-        },
+        // Maths: {
+        //     "11": {
+        //         "Basic Mathematics": "196",
+        //         "Logarithm": "197",
+        //         "Quadratic Equation": "198",
+        //         "Trigonometric Ratios and Identities": "199",
+        //         "Sequence and Progression": "200",
+        //         "Trigonometric equation": "201",
+        //         "Solution of Triangle": "202",
+        //         "Determinant": "203",
+        //         "Straight line": "204",
+        //         "Circle": "205",
+        //         "Parabola": "206",
+        //         "Ellipse": "207",
+        //         "Hyperbola": "208",
+        //         "Binomial Theorem": "209",
+        //         "Permutation and Combination": "210",
+        //         "Set & Relation": "211",
+        //         "Function": "212"
+        //     },
+        //     "12": {
+        //         "Inverse Trigonometric Functions": "213",
+        //         "Limit": "214",
+        //         "Continuity": "215",
+        //         "Derivability": "216",
+        //         "Method of Differentiation": "217",
+        //         "Indefinite Integration": "218",
+        //         "Definite Integration": "219",
+        //         "Application of Derivatives": "220",
+        //         "Area under the Curve": "221",
+        //         "Differential Equations": "222",
+        //         "Vector": "223",
+        //         "Three Dimensional Geometry": "224",
+        //         "Complex Numbers": "225",
+        //         "Probability": "226",
+        //         "Mathematical logic": "227",
+        //         "Matrices": "228",
+        //         "Statistics": "229"
+        //     }
+        // },
         Biology: {
             "11": {
                 "Living World": "230",
@@ -330,6 +352,21 @@ const data = {
         }
     },
     "MHT-CET": {
+        positiveMarking: {
+            rule: "+2 for each correct Maths answer, +1 for each correct answer in Physics, Chemistry, Biology",
+            value: {
+                Maths: 2,
+                Physics: 1,
+                Chemistry: 1,
+                Biology: 1
+            },
+            per: "question"
+        },
+        negativeMarking: {
+            rule: "No negative marking",
+            value: 0,
+            per: "question"
+        },
         Physics: {
             "11": {
                 "Motion in a Plane": "265",

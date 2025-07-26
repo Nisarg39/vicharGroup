@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../ui/card"
 import { Button } from "../../../ui/button"
-import { Clock, BookOpen, CheckCircle, AlertTriangle } from "lucide-react"
+import { Clock, BookOpen, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react"
 
-export default function ExamStartScreen({ exam, totalQuestions, onStartExam }) {
+export default function ExamStartScreen({ exam, totalQuestions, onStartExam, onBack }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
             <div className="max-w-4xl mx-auto">
@@ -37,17 +37,41 @@ export default function ExamStartScreen({ exam, totalQuestions, onStartExam }) {
                         </div>
 
                         {totalQuestions === 0 ? (
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                                <div className="flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                    <span className="text-red-800 font-medium">No Questions Available</span>
+                            <>
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                                        <span className="text-red-800 font-medium">No Questions Available</span>
+                                    </div>
+                                    <p className="text-red-700 text-sm mt-2">
+                                        This exam doesn't have any questions configured. Please contact your administrator.
+                                    </p>
                                 </div>
-                                <p className="text-red-700 text-sm mt-2">
-                                    This exam doesn't have any questions configured. Please contact your administrator.
-                                </p>
-                            </div>
+                                {onBack && (
+                                    <div className="flex justify-center">
+                                        <Button 
+                                            onClick={onBack}
+                                            variant="outline"
+                                            className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg"
+                                        >
+                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            Back to Dashboard
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            <div className="flex justify-center">
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                                {onBack && (
+                                    <Button 
+                                        onClick={onBack}
+                                        variant="outline"
+                                        className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg"
+                                    >
+                                        <ArrowLeft className="w-4 h-4 mr-2" />
+                                        Back to Dashboard
+                                    </Button>
+                                )}
                                 <Button 
                                     onClick={onStartExam}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg"

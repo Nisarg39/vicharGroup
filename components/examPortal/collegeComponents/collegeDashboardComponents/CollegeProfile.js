@@ -146,41 +146,69 @@ export default function CollegeProfile({ collegeData }) {
                             </div>
                         </div>
 
-                        {/* Allocated Subjects Card */}
+                        {/* Combined Allocations Card */}
                         <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-100 lg:col-span-2">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="bg-[#7c3aed] p-2 rounded-lg">
                                     <FaBook className="text-white text-lg" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">Allocated Subjects</h3>
+                                <h3 className="text-xl font-semibold text-gray-900">Allocated Streams, Classes & Subjects</h3>
                             </div>
-                            
-                            {collegeData.allocatedSubjects && Array.isArray(collegeData.allocatedSubjects) && collegeData.allocatedSubjects.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    {collegeData.allocatedSubjects.map((subject, index) => (
-                                        <div key={index} className="bg-white rounded-lg p-4 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 bg-[#7c3aed] rounded-full"></div>
-                                                <span className="text-gray-900 font-medium text-sm">
-                                                    {typeof subject === 'string' ? subject : subject.name || subject.subjectName || 'Unknown Subject'}
-                                                </span>
-                                            </div>
-                                            {typeof subject === 'object' && subject.code && (
-                                                <div className="mt-1 text-xs text-gray-500">
-                                                    Code: {subject.code}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <div className="bg-white rounded-lg p-6 border border-purple-200">
-                                        <FaBook className="text-gray-400 text-3xl mx-auto mb-3" />
-                                        <p className="text-gray-500 italic">No subjects allocated yet.</p>
+                            {/* Streams */}
+                            <div className="mb-4">
+                                <span className="block text-sm font-semibold text-gray-700 mb-1">Streams:</span>
+                                {collegeData.allocatedStreams && Array.isArray(collegeData.allocatedStreams) && collegeData.allocatedStreams.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {collegeData.allocatedStreams.map((stream, idx) => (
+                                            <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                                                {stream}
+                                            </span>
+                                        ))}
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className="text-gray-500 italic">No streams allocated yet.</p>
+                                )}
+                            </div>
+                            {/* Classes */}
+                            <div className="mb-4">
+                                <span className="block text-sm font-semibold text-gray-700 mb-1">Classes:</span>
+                                {collegeData.allocatedClasses && Array.isArray(collegeData.allocatedClasses) && collegeData.allocatedClasses.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {collegeData.allocatedClasses.map((cls, idx) => (
+                                            <span key={idx} className="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full">
+                                                {cls}th
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 italic">No classes allocated yet.</p>
+                                )}
+                            </div>
+                            {/* Subjects */}
+                            <div>
+                                <span className="block text-sm font-semibold text-gray-700 mb-1">Subjects:</span>
+                                {collegeData.allocatedSubjects && Array.isArray(collegeData.allocatedSubjects) && collegeData.allocatedSubjects.length > 0 ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                        {collegeData.allocatedSubjects.map((subject, index) => (
+                                            <div key={index} className="bg-white rounded-lg p-4 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-[#7c3aed] rounded-full"></div>
+                                                    <span className="text-gray-900 font-medium text-sm">
+                                                        {typeof subject === 'string' ? subject : subject.name || subject.subjectName || 'Unknown Subject'}
+                                                    </span>
+                                                </div>
+                                                {typeof subject === 'object' && subject.code && (
+                                                    <div className="mt-1 text-xs text-gray-500">
+                                                        Code: {subject.code}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 italic">No subjects allocated yet.</p>
+                                )}
+                            </div>
                         </div>
 
                         {/* Principal Information Card */}

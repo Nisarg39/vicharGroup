@@ -3,6 +3,10 @@ import { addCollege } from '../../../../server_actions/actions/adminActions';
 import ImageUpload from '../../../common/ImageUpload';
 import { data, getTopics } from '../../../../utils/examUtils/subject_Details';
 
+
+// for now we can only allocate subjects to the college but i want to alocate the college to the stream, subject as well as class
+// when the user selects the stream automatically check the subjects in the checkbox and keep 11th or 12th as option for class
+
 export default function AddCollege({ onAddCollege, setShowAddForm }) {
   const [errors, setErrors] = useState({});
   const [newCollege, setNewCollege] = useState({
@@ -17,15 +21,31 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     website: '',
     collegeLogo: '',
     password: 'collegeadmin@123',
-    isActive: true
+    isActive: true,
   });
   const [imagePreview, setImagePreview] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedStreams, setSelectedStreams] = useState([]); // NEW: for streams
+  const [selectedClass, setSelectedClass] = useState([]); // Now an array for multi-select
 
   const getAllSubjects = () => {
     const subjects = new Set();
     ['JEE', 'NEET', 'MHT-CET'].forEach(stream => {
+      Object.keys(data[stream] || {}).forEach(subject => {
+        subjects.add(subject);
+      });
+    });
+    return Array.from(subjects);
+  };
+
+  // Helper to get all streams
+  const getAllStreams = () => Object.keys(data);
+
+  // Helper to get subjects for selected streams
+  const getSubjectsForStreams = (streams) => {
+    const subjects = new Set();
+    streams.forEach(stream => {
       Object.keys(data[stream] || {}).forEach(subject => {
         subjects.add(subject);
       });
@@ -122,6 +142,29 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     });
   };
 
+  // Handle stream selection
+  const handleStreamChange = (stream) => {
+    let updatedStreams;
+    if (selectedStreams.includes(stream)) {
+      updatedStreams = selectedStreams.filter(s => s !== stream);
+    } else {
+      updatedStreams = [...selectedStreams, stream];
+    }
+    setSelectedStreams(updatedStreams);
+    // Auto-select subjects for selected streams
+    const autoSubjects = getSubjectsForStreams(updatedStreams);
+    setSelectedSubjects(autoSubjects);
+  };
+
+  // Handle class selection (multi-select)
+  const handleClassChange = (classValue) => {
+    if (selectedClass.includes(classValue)) {
+      setSelectedClass(selectedClass.filter(c => c !== classValue));
+    } else {
+      setSelectedClass([...selectedClass, classValue]);
+    }
+  };
+
   const getInputClassName = (fieldName) => {
     const baseClasses = "mt-1 block w-full rounded-md border px-3 py-2";
     return `${baseClasses} ${
@@ -134,6 +177,14 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Custom validation for streams and classes
+    let customErrors = {};
+    if (selectedStreams.length === 0) {
+      customErrors.selectedStreams = 'At least one stream must be selected.';
+    }
+    if (selectedClass.length === 0) {
+      customErrors.selectedClass = 'At least one class must be selected.';
+    }
     // Check for any validation errors
     const fieldErrors = {};
     Object.keys(newCollege).forEach(key => {
@@ -142,10 +193,9 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
         if (error) fieldErrors[key] = error;
       }
     });
-
-    // If there are validation errors, set them and return
-    if (Object.keys(fieldErrors).length > 0) {
-      setErrors(fieldErrors);
+    const allErrors = { ...fieldErrors, ...customErrors };
+    if (Object.keys(allErrors).length > 0) {
+      setErrors(allErrors);
       return;
     }
 
@@ -163,15 +213,15 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
       collegeLogo: newCollege.collegeLogo,
       password: newCollege.password,
       isActive: newCollege.isActive,
+      allocatedStreams: selectedStreams, // NEW
+      allocatedClasses: selectedClass, // Now an array
       allocatedSubjects: selectedSubjects
     };
 
     try {
       const response = await addCollege(collegeData);
-      
       // Show success alert
       alert('College added successfully!');
-      
       // Reset form
       setNewCollege({
         name: '',
@@ -188,13 +238,12 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
         isActive: true
       });
       setImagePreview('');
-      setSelectedSubjects([]); // Add this line with other reset statements
-      
-      // Call the onAddCollege prop to trigger table refresh
+      setSelectedSubjects([]);
+      setSelectedStreams([]); // NEW
+      setSelectedClass([]); // NEW
       if (onAddCollege) {
         await onAddCollege();
       }
-      
       setShowAddForm(false);
     } catch (error) {
       console.error('Error adding college:', error);
@@ -416,6 +465,65 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
               </span>
             </div>
           </div>
+          {/* Streams selection */}
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Allocated Streams</label>
+            <div className="flex gap-4">
+              {getAllStreams().map((stream) => (
+                <div key={stream} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id={`stream-${stream}`}
+                    name={stream}
+                    value={stream}
+                    checked={selectedStreams.includes(stream)}
+                    onChange={() => handleStreamChange(stream)}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  />
+                  <label htmlFor={`stream-${stream}`} className="ml-2 text-sm text-gray-700">
+                    {stream}
+                  </label>
+                </div>
+              ))}
+            </div>
+            {errors.selectedStreams && (
+              <p className="mt-1 text-sm text-red-600">{errors.selectedStreams}</p>
+            )}
+          </div>
+          {/* Class selection (only show if at least one stream is selected) */}
+          {selectedStreams.length > 0 && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Allocated Class</label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="allocatedClass11"
+                    value="11"
+                    checked={selectedClass.includes('11')}
+                    onChange={() => handleClassChange('11')}
+                    className="h-4 w-4 text-blue-600 border-gray-300"
+                  />
+                  <span className="ml-2">11th</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="allocatedClass12"
+                    value="12"
+                    checked={selectedClass.includes('12')}
+                    onChange={() => handleClassChange('12')}
+                    className="h-4 w-4 text-blue-600 border-gray-300"
+                  />
+                  <span className="ml-2">12th</span>
+                </label>
+              </div>
+              {errors.selectedClass && (
+                <p className="mt-1 text-sm text-red-600">{errors.selectedClass}</p>
+              )}
+            </div>
+          )}
+          {/* Allocated Subjects (auto-checked for selected streams) */}
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Allocated Subjects

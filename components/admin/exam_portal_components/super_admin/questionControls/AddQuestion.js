@@ -771,7 +771,24 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       </div>
 
       {/* Editor Content */}
-      <div className="mx-4 mb-2">
+      <div className="mx-4 mb-2 relative">
+        {/* Style override for Quill formula popup */}
+        <style>{`
+          /* Ensure Quill formula tooltip stays above modal and inside editor */
+          .ql-tooltip.ql-editing {
+            z-index: 10510 !important;
+            position: absolute !important;
+            max-width: 95vw;
+            left: 0 !important;
+            right: 0 !important;
+            margin: 0 auto !important;
+          }
+          /* Prevent tooltip from going out of the editor area */
+          .ql-container .ql-tooltip {
+            max-width: 95vw;
+            word-break: break-word;
+          }
+        `}</style>
         {tabValue === 5 ? (
           <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
             <div className="flex flex-col gap-3">
