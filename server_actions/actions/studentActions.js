@@ -60,6 +60,7 @@ export async function sendOtp(phone){
         }else{
             student.otp = Math.floor(1000 + Math.random() * 9000)
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+            student.previousToken = student.token
             student.token = token
             // console.log(student.otp)
             await fetch('https://www.fast2sms.com/dev/bulkV2', {

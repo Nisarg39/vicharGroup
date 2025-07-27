@@ -57,7 +57,12 @@ export async function verifyOtpMiddleware(handler){
 
 export async function verifyStudentMiddleware(handler){
     try {   
-        const student = await Student.findOne({token: handler})
+        const student = await Student.findOne({
+            $or: [
+                { token: handler },
+                { previousToken: handler }
+            ]
+        })
         if (!student) {
             return {
                 success: false,

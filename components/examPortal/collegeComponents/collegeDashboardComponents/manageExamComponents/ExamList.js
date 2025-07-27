@@ -1,7 +1,7 @@
 "use client";
 import { getTopics, data } from '../../../../../utils/examUtils/subject_Details';
 import React,{ useState, useEffect } from 'react';
-import { showExamList } from '../../../../../server_actions/actions/examController/collegeActions';
+import { showExamList, getApplicableNegativeMarkingRule } from '../../../../../server_actions/actions/examController/collegeActions';
 import QuestionAssignmentModal from './QuestionAssignmentModal';
 import EditExamModal from './EditExamModal';
 
@@ -29,6 +29,9 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingExam, setEditingExam] = useState(null);
     const [updateStatus, setUpdateStatus] = useState({ show: false, type: '', message: '' });
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [examNegativeMarkingRules, setExamNegativeMarkingRules] = useState({});
+    const [loadingRules, setLoadingRules] = useState({});
 
     const topics = getTopics(formData.stream, formData.subject, formData.standard);
 
@@ -63,6 +66,18 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
     }, [collegeData?._id, formData, refreshKey]);
 
+    // Click outside to close dropdown
+    useEffect(() => {
+        const handleClickOutside = () => {
+            setActiveDropdown(null);
+        };
+
+        if (activeDropdown) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [activeDropdown]);
+
     const handlePageChange = (newPage) => {
         fetchExams(newPage);
     };
@@ -94,8 +109,35 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
         });
     };
 
-    const toggleExamDetails = (examId) => {
-        setExpandedExamId(expandedExamId === examId ? null : examId);
+    const toggleExamDetails = async (examId) => {
+        const newExpandedId = expandedExamId === examId ? null : examId;
+        setExpandedExamId(newExpandedId);
+        
+        // Fetch negative marking rule when expanding an exam
+        if (newExpandedId && !examNegativeMarkingRules[examId]) {
+            const exam = exams.find(e => e._id === examId);
+            if (exam && exam.stream) {
+                setLoadingRules(prev => ({ ...prev, [examId]: true }));
+                try {
+                    const response = await getApplicableNegativeMarkingRule(
+                        collegeData._id,
+                        exam.stream,
+                        exam.standard,
+                        exam.examSubject?.[0] // Use first subject as reference
+                    );
+                    if (response.success) {
+                        setExamNegativeMarkingRules(prev => ({
+                            ...prev,
+                            [examId]: response
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Error fetching negative marking rule for exam:', error);
+                } finally {
+                    setLoadingRules(prev => ({ ...prev, [examId]: false }));
+                }
+            }
+        }
     };
 
     const handleAssignQuestions = (exam) => {
@@ -314,12 +356,11 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                             <div className="p-6">
                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                     <div className="bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4 border-b border-gray-100">
-                                        <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600 uppercase tracking-wide">
+                                        <div className="grid grid-cols-10 gap-4 text-sm font-semibold text-gray-600 uppercase tracking-wide">
                                             <div className="col-span-4">Exam Details</div>
-                                            <div className="col-span-2">Subjects</div>
                                             <div className="col-span-2">Stream</div>
-                                            <div className="col-span-2">Status</div>
-                                            <div className="col-span-2">Actions</div>
+                                            <div className="col-span-3">Status</div>
+                                            <div className="col-span-1">Actions</div>
                                         </div>
                                     </div>
                                     <div className="divide-y divide-gray-50">
@@ -335,7 +376,7 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                             : ''
                                                     }`}
                                                 >
-                                                    <div className="grid grid-cols-12 gap-4 items-center p-6">
+                                                    <div className="grid grid-cols-10 gap-4 items-center p-6">
                                                         <div className="col-span-4">
                                                             <div className="flex items-center gap-4">
                                                                 <div className={`relative h-12 w-12 rounded-xl flex items-center justify-center shadow-md ${
@@ -395,20 +436,6 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                             </div>
                                                         </div>
                                                         <div className="col-span-2">
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                {exam.examSubject?.slice(0, 2).map((subject, idx) => (
-                                                                    <span key={idx} className="inline-flex items-center px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-full">
-                                                                        {subject}
-                                                                    </span>
-                                                                ))}
-                                                                {exam.examSubject?.length > 2 && (
-                                                                    <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                                                        +{exam.examSubject.length - 2}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="col-span-2">
                                                             <span className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700">
                                                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -416,7 +443,7 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                                 {exam.stream}
                                                             </span>
                                                         </div>
-                                                        <div className="col-span-2">
+                                                        <div className="col-span-3">
                                                             <div className="flex flex-col gap-2">
                                                                 <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold w-fit ${
                                                                     exam.status === 'draft' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
@@ -444,32 +471,49 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="col-span-2">
-                                                            <div className="flex gap-2">
+                                                        <div className="col-span-1">
+                                                            <div className="relative">
                                                                 <button 
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleEditExam(exam);
+                                                                        setActiveDropdown(activeDropdown === exam._id ? null : exam._id);
                                                                     }}
-                                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all duration-200 hover:shadow-sm"
+                                                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
                                                                 >
-                                                                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                                                     </svg>
-                                                                    Edit
                                                                 </button>
-                                                                <button 
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleAssignQuestions(exam);
-                                                                    }}
-                                                                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 transition-all duration-200 hover:shadow-sm"
-                                                                >
-                                                                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                                    </svg>
-                                                                    Questions
-                                                                </button>
+                                                                {activeDropdown === exam._id && (
+                                                                    <div className="absolute right-0 top-10 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleEditExam(exam);
+                                                                                setActiveDropdown(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3"
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                            </svg>
+                                                                            Edit Exam
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleAssignQuestions(exam);
+                                                                                setActiveDropdown(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center gap-3"
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                                            </svg>
+                                                                            Assign Questions
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -583,9 +627,40 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                                                 <h5 className="text-sm font-semibold text-orange-900">Scoring</h5>
                                                                             </div>
                                                                             <div className="space-y-2">
-                                                                                <div className="flex justify-between items-center">
-                                                                                    <span className="text-xs text-orange-700">Negative Marks</span>
-                                                                                    <span className="text-xs font-semibold text-orange-900">{exam.negativeMarks || 0}</span>
+                                                                                <div className="flex flex-col space-y-1">
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <span className="text-xs text-orange-700">Negative Marks</span>
+                                                                                        {loadingRules[exam._id] ? (
+                                                                                            <div className="flex items-center space-x-1">
+                                                                                                <div className="animate-spin rounded-full h-3 w-3 border-b border-orange-600"></div>
+                                                                                                <span className="text-xs text-orange-600">Loading...</span>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <span className="text-xs font-semibold text-orange-900">
+                                                                                                -{examNegativeMarkingRules[exam._id]?.negativeMarks || 0} marks
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {examNegativeMarkingRules[exam._id] && (
+                                                                                        <div className="flex items-center space-x-1">
+                                                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                                                                                examNegativeMarkingRules[exam._id].source === 'college_specific'
+                                                                                                    ? 'bg-blue-100 text-blue-700'
+                                                                                                    : examNegativeMarkingRules[exam._id].source === 'super_admin_default'
+                                                                                                    ? 'bg-purple-100 text-purple-700'
+                                                                                                    : 'bg-gray-100 text-gray-700'
+                                                                                            }`}>
+                                                                                                {examNegativeMarkingRules[exam._id].source === 'college_specific' ? '🏫' :
+                                                                                                 examNegativeMarkingRules[exam._id].source === 'super_admin_default' ? '⚙️' :
+                                                                                                 '📝'}
+                                                                                            </span>
+                                                                                            <span className="text-xs text-orange-600">
+                                                                                                {examNegativeMarkingRules[exam._id].source === 'college_specific' ? 'College Rule' :
+                                                                                                 examNegativeMarkingRules[exam._id].source === 'super_admin_default' ? 'Default Rule' :
+                                                                                                 'No Rule'}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-xs text-orange-700">Success Rate</span>

@@ -19,6 +19,7 @@ export async function signInGoogle(details) {
         
         if (student) {
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+            student.previousToken = student.token
             student.token = token
             await student.save()
             return {
@@ -61,6 +62,7 @@ export async function validateGoogleSignIn(data) {
         const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, {
           expiresIn: "30d",
         });
+        student.previousToken = student.token;
         student.token = token;
         student.isVerified = true;
         await student.save();

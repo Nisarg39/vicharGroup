@@ -626,20 +626,55 @@ export async function addSubject(details){
 export async function showSubjects(productId){
     try {
         await connectDB()
-        const subjects = await Subject.find({productId: productId})
-        .populate({
-            path: 'chapters',
-            model: Chapter,
-            select: 'serialNumber chapterName image dpps',
-            populate: {
-                path: 'dpps',
-                model: "Dpp",
-                populate: {
-                    path: 'dppQuestions',
-                    model: "DppQuestion",
-                },
+        
+        // First, get the product to access its subjects array
+        const product = await Products.findById(productId).lean()
+        if (!product) {
+            return {
+                success: false,
+                message: "Product not found"
             }
-        }).lean()
+        }
+        
+        // Get subjects by their IDs from the product's subjects array
+        let subjects = []
+        if (product.subjects && product.subjects.length > 0) {
+            subjects = await Subject.find({
+                _id: { $in: product.subjects }
+            })
+            .populate({
+                path: 'chapters',
+                model: Chapter,
+                select: 'serialNumber chapterName image dpps lectures exercises',
+                populate: [
+                    {
+                        path: 'dpps',
+                        model: "Dpp",
+                        populate: {
+                            path: 'dppQuestions',
+                            model: "DppQuestion",
+                        },
+                    },
+                    {
+                        path: 'lectures',
+                        model: "Lecture",
+                        select: 'serialNumber title description videoUrl teacher'
+                    },
+                    {
+                        path: 'exercises',
+                        model: "Exercise",
+                        select: 'exerciseName pdfUrl'
+                    }
+                ]
+            }).lean()
+        }
+        
+        // Add logging to debug
+        console.log(`Product ${product.name} has ${subjects.length} subjects`)
+        subjects.forEach(subject => {
+            console.log(`Subject: ${subject.name}, Chapters: ${subject.chapters?.length || 0}`)
+        })
+        
         return {
             success: true,
             subjects: subjects
@@ -671,6 +706,109 @@ export async function updateSubject(details){
         return {
             success: false,
             message: "Error updating subject"
+        }
+    }
+}
+
+export async function getAllSubjectsAcrossProducts(excludeProductId = null){
+    try {
+        await connectDB()
+        
+        let currentProductSubjects = []
+        if (excludeProductId) {
+            // Get the current product to know which subjects to exclude
+            const currentProduct = await Products.findById(excludeProductId).lean()
+            if (currentProduct && currentProduct.subjects) {
+                currentProductSubjects = currentProduct.subjects.map(id => id.toString())
+            }
+        }
+        
+        const subjects = await Subject.find({})
+            .populate({
+                path: 'productId',
+                model: 'Products',
+                select: 'name type'
+            })
+            .lean()
+        
+        const subjectsWithProductInfo = subjects
+            .filter(subject => !currentProductSubjects.includes(subject._id.toString()))
+            .map(subject => ({
+                ...subject,
+                productName: subject.productId?.name || 'Unknown Product',
+                productType: subject.productId?.type || 'Unknown Type'
+            }))
+        
+        return {
+            success: true,
+            subjects: subjectsWithProductInfo
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching all subjects"
+        }
+    }
+}
+
+export async function addExistingSubjectToProduct(details){
+    try {
+        await connectDB()
+        console.log("Adding existing subject reference to product:", details.subjectId, "->", details.productId)
+        
+        // Verify the product exists
+        const targetProduct = await Products.findById(details.productId)
+        if (!targetProduct) {
+            return {
+                success: false,
+                message: "Target product not found"
+            }
+        }
+        
+        // Verify the subject exists
+        const subject = await Subject.findById(details.subjectId)
+            .populate({
+                path: 'chapters',
+                model: Chapter,
+                select: 'serialNumber chapterName'
+            })
+        
+        if (!subject) {
+            return {
+                success: false,
+                message: "Subject not found"
+            }
+        }
+        
+        // Check if subject is already in the product's subjects array
+        if (targetProduct.subjects.includes(details.subjectId)) {
+            return {
+                success: false,
+                message: "Subject is already added to this product"
+            }
+        }
+        
+        // Add the subject reference to the product's subjects array
+        await Products.findByIdAndUpdate(details.productId, {
+            $addToSet: {
+                subjects: details.subjectId
+            }
+        })
+        
+        console.log(`Successfully added subject reference ${subject.name} to product`)
+        
+        return {
+            success: true,
+            message: "Subject added to product successfully",
+            subject: subject,
+            chaptersCount: subject.chapters?.length || 0
+        }
+    } catch (error) {
+        console.error("Error in addExistingSubjectToProduct:", error)
+        return {
+            success: false,
+            message: "Error adding existing subject to product: " + error.message
         }
     }
 }

@@ -9,6 +9,7 @@ import StudentRequest from "../../models/exam_portal/studentRequest"
 import EnrolledStudent from "../../models/exam_portal/enrolledStudent"
 import CollegeTeacher from "../../models/exam_portal/collegeTeacher"
 import NegativeMarkingRule from "../../models/exam_portal/negativeMarkingRule"
+import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegativeMarkingRule"
 import jwt from "jsonwebtoken"
 import { collegeAuth } from "../../middleware/collegeAuth"
 
@@ -934,6 +935,153 @@ export async function getDefaultNegativeMarking(collegeId, stream, standard, sub
             success: false,
             message: error.message,
             negativeMarks: 0
+        }
+    }
+}
+
+export async function getApplicableNegativeMarkingRule(collegeId, stream, standard, subject) {
+    try {
+        await connectDB()
+        
+        // Priority order: College-specific rule > Super admin default > Fallback to 0
+        
+        // 1. Try to find college-specific rule (most specific first: subject > standard > stream)
+        const collegeRules = await NegativeMarkingRule.find({
+            college: collegeId,
+            stream: stream,
+            isActive: true
+        }).sort({ priority: -1 })
+
+        // Check for subject-specific rule
+        if (subject) {
+            const subjectRule = collegeRules.find(rule => 
+                rule.subject === subject && 
+                (rule.standard === standard || !rule.standard)
+            )
+            if (subjectRule) {
+                return {
+                    success: true,
+                    source: "college_specific",
+                    negativeMarks: subjectRule.negativeMarks,
+                    description: subjectRule.description || `College rule: ${stream} > ${standard}th > ${subject}`,
+                    ruleId: subjectRule._id,
+                    defaultRuleId: null,
+                    ruleType: "subject_specific"
+                }
+            }
+        }
+
+        // Check for standard-specific rule
+        if (standard) {
+            const standardRule = collegeRules.find(rule => 
+                rule.standard === standard && !rule.subject
+            )
+            if (standardRule) {
+                return {
+                    success: true,
+                    source: "college_specific", 
+                    negativeMarks: standardRule.negativeMarks,
+                    description: standardRule.description || `College rule: ${stream} > ${standard}th`,
+                    ruleId: standardRule._id,
+                    defaultRuleId: null,
+                    ruleType: "standard_specific"
+                }
+            }
+        }
+
+        // Check for stream-wide college rule
+        const streamRule = collegeRules.find(rule => !rule.standard && !rule.subject)
+        if (streamRule) {
+            return {
+                success: true,
+                source: "college_specific",
+                negativeMarks: streamRule.negativeMarks,
+                description: streamRule.description || `College rule: ${stream}`,
+                ruleId: streamRule._id,
+                defaultRuleId: null,
+                ruleType: "stream_specific"
+            }
+        }
+
+        // 2. Try super admin default rules (same priority order)
+        const defaultRules = await DefaultNegativeMarkingRule.find({
+            stream: stream,
+            isActive: true
+        }).sort({ priority: -1 })
+
+        // Check for subject-specific default rule
+        if (subject) {
+            const defaultSubjectRule = defaultRules.find(rule => 
+                rule.subject === subject && 
+                (rule.standard === standard || !rule.standard)
+            )
+            if (defaultSubjectRule) {
+                return {
+                    success: true,
+                    source: "super_admin_default",
+                    negativeMarks: defaultSubjectRule.negativeMarks,
+                    description: defaultSubjectRule.description || `Default rule: ${stream} > ${standard}th > ${subject}`,
+                    ruleId: null,
+                    defaultRuleId: defaultSubjectRule._id,
+                    ruleType: "subject_default"
+                }
+            }
+        }
+
+        // Check for standard-specific default rule
+        if (standard) {
+            const defaultStandardRule = defaultRules.find(rule => 
+                rule.standard === standard && !rule.subject
+            )
+            if (defaultStandardRule) {
+                return {
+                    success: true,
+                    source: "super_admin_default",
+                    negativeMarks: defaultStandardRule.negativeMarks,
+                    description: defaultStandardRule.description || `Default rule: ${stream} > ${standard}th`,
+                    ruleId: null,
+                    defaultRuleId: defaultStandardRule._id,
+                    ruleType: "standard_default"
+                }
+            }
+        }
+
+        // Check for stream-wide default rule
+        const defaultStreamRule = defaultRules.find(rule => !rule.standard && !rule.subject)
+        if (defaultStreamRule) {
+            return {
+                success: true,
+                source: "super_admin_default",
+                negativeMarks: defaultStreamRule.negativeMarks,
+                description: defaultStreamRule.description || `Default rule: ${stream}`,
+                ruleId: null,
+                defaultRuleId: defaultStreamRule._id,
+                ruleType: "stream_default"
+            }
+        }
+
+        // 3. Fallback - no rule found
+        return {
+            success: true,
+            source: "none",
+            negativeMarks: 0,
+            description: "No negative marking rule found",
+            ruleId: null,
+            defaultRuleId: null,
+            ruleType: "none"
+        }
+
+    } catch (error) {
+        console.error("Error getting applicable negative marking rule:", error)
+        return {
+            success: false,
+            message: error.message,
+            source: "error",
+            negativeMarks: 0,
+            description: "Error fetching rule",
+            ruleId: null,
+            defaultRuleId: null,
+            ruleType: "error"
         }
     }
 }

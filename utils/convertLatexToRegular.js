@@ -26,7 +26,7 @@ export function convertLatexToFormattedText(latex) {
   output = output.replace(/\\emph\{(.*?)\}/g, '*$1*');
 
   // Strip LaTeX comments and clean spacing
-  output = output.replace(/%.*$/gm, ''); // remove % comments
+  output = output.replace(/^\s*%.*$/gm, ''); // remove % comments (only at line start)
   output = output.replace(/\r\n|\r|\n/g, '\n'); // normalize line endings
   output = output.replace(/\n{3,}/g, '\n\n'); // collapse extra line breaks
 

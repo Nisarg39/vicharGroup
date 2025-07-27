@@ -1,7 +1,7 @@
 "use client"
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { createExam, getDefaultNegativeMarking } from '../../../../../server_actions/actions/examController/collegeActions';
+import { createExam, getApplicableNegativeMarkingRule } from '../../../../../server_actions/actions/examController/collegeActions';
 import ExamList from './ExamList';
 import { toast } from 'react-hot-toast';
 import { data } from '../../../../../utils/examUtils/subject_Details';
@@ -15,6 +15,8 @@ import { useState } from 'react';
 
 export default function CreateExam({ onBack, collegeData }) {
     const [examListRefreshKey, setExamListRefreshKey] = useState(Date.now());
+    const [negativeMarkingRule, setNegativeMarkingRule] = useState(null);
+    const [loadingRule, setLoadingRule] = useState(false);
     const form = useForm({
         defaultValues: {
             examName: '',
@@ -33,7 +35,6 @@ export default function CreateExam({ onBack, collegeData }) {
             status: 'draft',
             totalMarks: 0,
             passingMarks: 0,
-            negativeMarks: 0,
             questionShuffle: false,
             reattempt: 0,
             examGroup: null,
@@ -67,27 +68,29 @@ export default function CreateExam({ onBack, collegeData }) {
             setValue('standard', '');
             setValue('section', '');
             
-            // Fetch default negative marking from college rules
-            const fetchDefaultNegativeMarking = async () => {
+            // Fetch applicable negative marking rule
+            const fetchNegativeMarkingRule = async () => {
+                if (!formData.stream) return;
+                
+                setLoadingRule(true);
                 try {
-                    const response = await getDefaultNegativeMarking(
+                    const response = await getApplicableNegativeMarkingRule(
                         collegeData._id,
                         formData.stream,
                         formData.standard,
                         autoSubjects[0] // Use first subject as reference
                     );
                     if (response.success) {
-                        setValue('negativeMarks', response.negativeMarks);
+                        setNegativeMarkingRule(response);
                     }
                 } catch (error) {
-                    console.error('Error fetching default negative marking:', error);
-                    // Fallback to hardcoded data if college rules fail
-                    const fallbackNegativeMarks = streamData?.negativeMarking?.value ?? 0;
-                    setValue('negativeMarks', fallbackNegativeMarks);
+                    console.error('Error fetching negative marking rule:', error);
+                } finally {
+                    setLoadingRule(false);
                 }
             };
             
-            fetchDefaultNegativeMarking();
+            fetchNegativeMarkingRule();
         }
         // eslint-disable-next-line
     }, [formData.stream]);
@@ -103,24 +106,29 @@ export default function CreateExam({ onBack, collegeData }) {
             setValue('examSubject', autoSubjects);
             setValue('section', '');
             
-            // Update negative marking for the specific standard
-            const fetchUpdatedNegativeMarking = async () => {
+            // Update negative marking rule for the specific standard
+            const fetchUpdatedNegativeMarkingRule = async () => {
+                if (!formData.stream || !formData.standard) return;
+                
+                setLoadingRule(true);
                 try {
-                    const response = await getDefaultNegativeMarking(
+                    const response = await getApplicableNegativeMarkingRule(
                         collegeData._id,
                         formData.stream,
                         formData.standard,
                         autoSubjects[0] // Use first subject as reference
                     );
                     if (response.success) {
-                        setValue('negativeMarks', response.negativeMarks);
+                        setNegativeMarkingRule(response);
                     }
                 } catch (error) {
-                    console.error('Error fetching updated negative marking:', error);
+                    console.error('Error fetching updated negative marking rule:', error);
+                } finally {
+                    setLoadingRule(false);
                 }
             };
             
-            fetchUpdatedNegativeMarking();
+            fetchUpdatedNegativeMarkingRule();
         }
         // eslint-disable-next-line
     }, [formData.standard]);
@@ -164,7 +172,6 @@ export default function CreateExam({ onBack, collegeData }) {
             status: 'draft',
             totalMarks: values.totalMarks || 0,
             passingMarks: values.passingMarks || 0,
-            negativeMarks: values.negativeMarks || 0,
             questionShuffle: values.questionShuffle || false,
             reattempt: values.reattempt || 0
         };
@@ -381,27 +388,75 @@ export default function CreateExam({ onBack, collegeData }) {
                                                 </span>
                                             </div>
                                         )}
-                                        <FormField name="negativeMarks" control={form.control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Negative Marking</FormLabel>
-                                                <FormControl>
-                                                    <div className="space-y-2">
-                                                        <Input {...field} type="number" step="0.01" />
-                                                        {formData.stream && (
-                                                            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                                                                <span className="font-medium">💡 Using college default: </span>
-                                                                {field.value > 0 
-                                                                    ? `-${field.value} marks for each wrong answer`
-                                                                    : 'No negative marking'
-                                                                }
-                                                                <br />
-                                                                <span className="text-gray-600">You can override this value if needed</span>
-                                                            </div>
-                                                        )}
+                                        {/* Negative Marking Information */}
+                                        <div className="col-span-1 lg:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                                                Negative Marking Information
+                                            </label>
+                                            
+                                            {loadingRule ? (
+                                                <div className="p-4 border border-gray-300 rounded-lg bg-gray-50">
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                                        <span className="text-sm text-gray-600">Loading applicable rule...</span>
                                                     </div>
-                                                </FormControl>
-                                            </FormItem>
-                                        )} />
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {/* Current Rule Display */}
+                                                    {negativeMarkingRule ? (
+                                                        <div className={`p-4 border rounded-lg ${
+                                                            negativeMarkingRule.source === 'college_specific' 
+                                                                ? 'border-blue-200 bg-blue-50' 
+                                                                : negativeMarkingRule.source === 'super_admin_default'
+                                                                ? 'border-purple-200 bg-purple-50'
+                                                                : 'border-gray-200 bg-gray-50'
+                                                        }`}>
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center space-x-2 mb-2">
+                                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                                            negativeMarkingRule.source === 'college_specific'
+                                                                                ? 'bg-blue-100 text-blue-800'
+                                                                                : negativeMarkingRule.source === 'super_admin_default'
+                                                                                ? 'bg-purple-100 text-purple-800'
+                                                                                : 'bg-gray-100 text-gray-800'
+                                                                        }`}>
+                                                                            {negativeMarkingRule.source === 'college_specific' ? '🏫 College Rule' :
+                                                                             negativeMarkingRule.source === 'super_admin_default' ? '⚙️ Default Rule' :
+                                                                             '📝 No Rule'}
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-800">
+                                                                            -{negativeMarkingRule.negativeMarks} marks per wrong answer
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-600">{negativeMarkingRule.description}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-4 border border-gray-200 bg-gray-50 rounded-lg">
+                                                            <p className="text-sm text-gray-600">
+                                                                <span className="font-medium">Select stream and standard</span> to see applicable negative marking rule
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Information Note */}
+                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                        <div className="flex items-start gap-2">
+                                                            <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            <div className="text-sm text-blue-800">
+                                                                <p className="font-medium mb-1">Rule-Based Negative Marking</p>
+                                                                <p>This exam will use the negative marking rule shown above. To configure negative marking rules for your college, use the "Negative Marking Settings" in your dashboard.</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex justify-end">
                                         <VicharButton type="submit" className="px-8 py-3">
