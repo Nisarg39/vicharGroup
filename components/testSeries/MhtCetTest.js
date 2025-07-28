@@ -7,10 +7,10 @@ const MhtCetTest = (props) => {
   const [selectedClass, setSelectedClass] = useState('12th')
   
   const courses = [
-    { id: 1, title: 'PCM', level: 'PCM', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/cet-pcm/12', class: '12th' },
-    { id: 2, title: 'PCB', level: 'PCB', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/cet-pcb/12', class: '12th' },
-    { id: 3, title: 'PCM', level: 'PCM', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/cet-pcm/11', class: '11th' },
-    { id: 4, title: 'PCB', level: 'PCB', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/cet-pcb/11', class: '11th' },
+    { id: 1, title: 'PCM', level: 'PCM', image: '/test-series/testSeriesCetPcm12.png', link: '/test-series/buy-test-series/cet-pcm/12', class: '12th' },
+    { id: 2, title: 'PCB', level: 'PCB', image: '/test-series/testSeriesCetPcb12.png', link: '/test-series/buy-test-series/cet-pcb/12', class: '12th' },
+    { id: 3, title: 'PCM', level: 'PCM', image: '/test-series/testSeriesCetPcm11.png', link: '/test-series/buy-test-series/cet-pcm/11', class: '11th' },
+    { id: 4, title: 'PCB', level: 'PCB', image: '/test-series/testSeriesCetPcb11.png', link: '/test-series/buy-test-series/cet-pcb/11', class: '11th' },
   ]
 
   // Filter courses based on selected class

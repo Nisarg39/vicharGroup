@@ -9,10 +9,10 @@ const TestSeriesHero = () => {
   const [touchEnd, setTouchEnd] = useState(null);
   
   const slides = [
-    { src: "/test-series/firstPhoto.png", alt: "Arambh Test Series" },
-    { src: "/test-series/secondPhoto.png", alt: "How to apply for Arambh Test Series" },
-    { src: "/test-series/fourthPhoto.png", alt: "Vichar Test App" },
-    { src: "/test-series/fifthPhoto.png", alt: "Vichar Test"},
+    { src: "/test-series/testSeriesLanding.png", alt: "Arambh Test Series" },
+    { src: "/test-series/testSeriesLanding2.png", alt: "How to apply for Arambh Test Series" },
+    // { src: "/test-series/fourthPhoto.png", alt: "Vichar Test App" },
+    // { src: "/test-series/fifthPhoto.png", alt: "Vichar Test"},
   ];
 
   useEffect(() => {

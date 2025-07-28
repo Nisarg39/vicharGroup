@@ -4,8 +4,8 @@ import Link from 'next/link'
 
 const NeetTest = (props) => {
   const courses = [
-    { id: 1, title: '11th Standard', level: '11th', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/neet/11', description: 'Comprehensive NEET preparation course for 11th students.' },
-    { id: 2, title: '12th Standard', level: '12th', image: '/course-photo/testSeries.jpeg', link: '/test-series/buy-test-series/neet/12', description: 'Comprehensive NEET preparation course for 12th students.' },
+    { id: 1, title: '11th Standard', level: '11th', image: '/test-series/testSeriesNeet11.png', link: '/test-series/buy-test-series/neet/11', description: 'Comprehensive NEET preparation course for 11th students.' },
+    { id: 2, title: '12th Standard', level: '12th', image: '/test-series/testSeriesNeet12.png', link: '/test-series/buy-test-series/neet/12', description: 'Comprehensive NEET preparation course for 12th students.' },
   ]
 
   return (

@@ -6,7 +6,7 @@ import { IoMdThunderstorm } from 'react-icons/io'
 const Courses = () => {
   const courses = [
     { id: 1, title: 'Vichar Education', level: '8th - 12th', description: 'Expert academic coaching for Grades 8-12 and Boards (8th-12th).Specialized preparation for JEE, NEET, and MHT-CET.', image: '/course-photo/foundationStudentsCourse.jpg', link: '/vichar-education' },
-    { id: 2, title: 'Vichar Stock Market', level: 'Finance', description: 'Master stock market trends and strategies with our course, tailored for beginners to advanced traders.', image: 'https://wallpapercg.com/download/heartbeat-stock-market-candlestick-trading-chart-amoled--19463.png', link: '/vichar-stock-market' },
+    { id: 2, title: 'Vichar Stock Market', level: 'Finance', description: 'Master stock market trends and strategies with our course, tailored for beginners to advanced traders.', image: '/stock-market/stockMarketCard.png', link: '/vichar-stock-market' },
   ]
 
   return (

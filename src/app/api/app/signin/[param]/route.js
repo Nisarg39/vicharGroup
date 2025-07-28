@@ -5,7 +5,8 @@ import {
     mandatoryDetails, 
     getStudentDetails,
     getChapterDetails,
-    getSegments
+    getSegments,
+    updateStudentDetails
 } from '../../../../../../server_actions/actions/studentActions'
 
 import { showBanners } from "../../../../../../server_actions/actions/adminActions";
@@ -50,6 +51,26 @@ export async function POST(request, { params }) {
                 return NextResponse.json(getStudentDetailsResponse)
             }
             return NextResponse.json(getStudentDetailsResponse)
+
+        case 'updateStudentDetails':
+            console.log(formData.get('token'))
+            const updateStudentDetailsResponse = await updateStudentDetails({
+                token: formData.get('token'),
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                gender: formData.get('gender'),
+                referralCode: formData.get('referralCode'),
+                address: formData.get('address'),
+                area: formData.get('area'),
+                city: formData.get('city'),
+                state: formData.get('state'),
+                dob: formData.get('dob'),
+            })
+            if(updateStudentDetailsResponse.success){
+                return NextResponse.json(updateStudentDetailsResponse)
+            }
+            return NextResponse.json(updateStudentDetailsResponse)
 
         case 'getChapterDetails':
             const getChapterDetailsResponse = await getChapterDetails({
