@@ -111,6 +111,17 @@ export default function AddProductForm({ handleSubmit, details, handleChange, er
           />
           {errors.imageUrl && <p className="text-red-500 text-sm">{errors.imageUrl}</p>}
         </div>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm mb-1">Cart URL</label>
+          <input
+            type="text"
+            name="cart_url"
+            value={details.cart_url}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+          />
+          {errors.cart_url && <p className="text-red-500 text-sm">{errors.cart_url}</p>}
+        </div>
         <button 
           type="submit" 
           disabled={isSubmitting}

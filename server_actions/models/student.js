@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const studentsSchema = new mongoose.Schema({
     name: {
@@ -72,6 +73,14 @@ const studentsSchema = new mongoose.Schema({
     college: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "College",
+    },
+    interestedStream: {
+        type: String,
+        enum: ["NEET", "JEE", "MHT-CET", "SSC", "HSC", "ICSE"]
+    },
+    interestedClass: {
+        type: Number,
+        enum: [12, 11, 10, 9, 8]
     },
 }, {
     timestamps: true,

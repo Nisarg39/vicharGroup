@@ -39,6 +39,9 @@ const productsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Segment'
     },
+    cart_url:{
+        type: String
+    },
     subjects: [
         {
             type: mongoose.Schema.Types.ObjectId,

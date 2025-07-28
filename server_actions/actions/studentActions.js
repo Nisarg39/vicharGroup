@@ -18,6 +18,8 @@ import College from "../models/exam_portal/college";
 import StudentRequest from "../models/exam_portal/studentRequest";
 import EnrolledStudent from "../models/exam_portal/enrolledStudent";
 import Exam from "../models/exam_portal/exam";
+import HelpAndSupport from "../models/app_models/helpAndSupport";
+import FeelingConfused from "../models/app_models/feelingConsufed"
 
 import { verifyOtpMiddleware, verifyStudentMiddleware } from '../middleware/studentAuth'
 import jwt from 'jsonwebtoken'
@@ -182,6 +184,8 @@ export async function mandatoryDetails(data){
         
         student.name = data.name
         student.email = data.email
+        if(data.interestedStream) student.interestedStream = data.interestedStream
+        if(data.interestedClass) student.interestedClass = data.interestedClass
         student.isVerified = true
         student.referralCode = `${data.name.slice(0, 3)}${Math.floor(1000 + Math.random() * 9000)}`
         await student.save()
@@ -538,6 +542,83 @@ export async function getTestSeries(){
             message: "Error fetching test series",
             success: false,
             testSeries: null
+        }
+    }
+}
+
+export async function studentAppSupport(details) {
+    try {
+        await connectDB()
+        const middleware = await verifyStudentMiddleware(details.token)
+        if(!middleware.success){
+            return {
+                message: "Student verification failed",
+                success: false,
+                studentRequest: null
+            }
+        }
+        const helpAndSupportMessage = await HelpAndSupport.create({
+            student: middleware.student._id,
+            message: details.message,
+        })
+        // console.log(helpAndSupportMessage)
+        if(helpAndSupportMessage){
+            return {
+                message : "We have recieved your message, we look at your request and respond to you if necessary",
+                success: true,
+                helpAndSupportMessage: JSON.parse(JSON.stringify(helpAndSupportMessage))
+            }
+        }else{
+            return {
+                message : "Something went wrong while storing your message, please follow the website to create enquiry",
+                success: false,
+                helpAndSupportMessage: JSON.parse(JSON.stringify(helpAndSupportMessage))
+            }
+        }   
+    } catch (error) {
+        console.error("Error creating message", error)
+        return {
+            success: false,
+            message: "Error assigning student"
+        }
+    }
+}
+
+export async function feelingConfusedMessage(details){
+    try {
+        await connectDB()
+        const middleware = await verifyStudentMiddleware(details.token)
+        if(!middleware.success){
+            return {
+                message: "Student verification failed",
+                success: false,
+                studentRequest: null
+            }
+        }
+        const feelingConfusedMessageDetails = await FeelingConfused.create({
+            student: middleware.student._id,
+            message: details.message,
+            streamName: details.streamName
+        })
+        // console.log(helpAndSupportMessage)
+        if(feelingConfusedMessageDetails){
+            return {
+                message : "We have recieved your message, we look at your request and respond to you if necessary",
+                success: true,
+                helpAndSupportMessage: JSON.parse(JSON.stringify(feelingConfusedMessageDetails))
+            }
+        }else{
+            return {
+                message : "Something went wrong while storing your message, please follow the website to create enquiry",
+                success: false,
+                helpAndSupportMessage: JSON.parse(JSON.stringify(feelingConfusedMessageDetails))
+            }
+        }   
+    } catch (error) {
+        console.error("Error creating message", error)
+        return {
+            success: false,
+            message: "Error assigning student"
         }
     }
 }

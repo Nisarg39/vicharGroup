@@ -15,6 +15,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
   const [editDuration, setEditDuration] = useState('')
   const [editPageParameters, setEditPageParameters] = useState('')
   const [editImage, setEditImage] = useState('')
+  const [editCartUrl, setEditCartUrl] = useState('')
   const [originalProductName, setOriginalProductName] = useState('')
   const [updateMessage, setUpdateMessage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -31,6 +32,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
       duration: editDuration,
       pageParameters: editPageParameters,
       image: editImage,
+      cart_url: editCartUrl,
       originalName: originalProductName
     }
     try{
@@ -73,6 +75,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
     setEditDuration(product.duration)
     setEditPageParameters(product.pageParameters)
     setEditImage(product.image || '')
+    setEditCartUrl(product.cart_url || '')
     setIsModalOpen(true)
   }
 
@@ -87,6 +90,7 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
     setEditDuration('')
     setEditPageParameters('')
     setEditImage('')
+    setEditCartUrl('')
     setUpdateMessage(null)
   }
 
@@ -248,6 +252,16 @@ export default function ProductList({ productsAvailable, handleChange, handleSub
                   name="pageParameters"
                   value={editPageParameters}
                   onChange={(e) => setEditPageParameters(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 text-sm mb-1">Cart URL</label>
+                <input
+                  type="text"
+                  name="cart_url"
+                  value={editCartUrl}
+                  onChange={(e) => setEditCartUrl(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1d77bc]"
                 />
               </div>

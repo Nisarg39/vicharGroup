@@ -80,17 +80,45 @@ const SignIn = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!mobileError && mobile) {
+        if (!mobileError && mobile && mobile.length === 10) {
             setIsLoading(true)
-            const response = await sendOtp(mobile)
-            setIsLoading(false)
-            if (response.success) {
-                setModalMessage(response.message || 'OTP sent successfully')
-                setIsSuccess(true)
+            try {
+                const response = await sendOtp(mobile)
+                setIsLoading(false)
+                
+                if (response.success) {
+                    // Clear any previous errors
+                    setMobileError('')
+                    setOtpError('')
+                    setOtp('')
+                    
+                    // Show success message briefly then transition to OTP input
+                    setModalMessage(response.message || 'OTP sent successfully')
+                    setIsSuccess(true)
+                    setShowModal(true)
+                    
+                    // Auto-close modal and show OTP input after 2 seconds
+                    setTimeout(() => {
+                        setShowModal(false)
+                        setShowOtpInput(true)
+                    }, 2000)
+                } else {
+                    setModalMessage(response.message || 'Failed to send OTP')
+                    setIsSuccess(false)
+                    setShowModal(true)
+                }
+            } catch (error) {
+                setIsLoading(false)
+                setModalMessage('Network error. Please try again.')
+                setIsSuccess(false)
                 setShowModal(true)
-                setShowOtpInput(true)
             }
         } else {
+            if (!mobile) {
+                setMobileError('Please enter your mobile number')
+            } else if (mobile.length !== 10) {
+                setMobileError('Please enter a valid 10-digit mobile number')
+            }
             setModalMessage('Please fix the errors in the form')
             setIsSuccess(false)
             setShowModal(true)
@@ -99,18 +127,69 @@ const SignIn = () => {
 
     const handleVerifyOtp = async (e) => {
         e.preventDefault()
-        if (!otpError && otp) {
+        if (!otpError && otp && otp.length === 4) {
             setIsLoading(true)
-            const response = await verifyOtp({otp, mobile})
-            setIsLoading(false)
-            if (response.success){
-                localStorage.setItem('token', response.student.token)
-                setModalMessage('Login successful')
-                setIsSuccess(true)
+            try {
+                const response = await verifyOtp({otp, mobile})
+                setIsLoading(false)
+                
+                if (response.success) {
+                    localStorage.setItem('token', response.student.token)
+                    setModalMessage('Login successful! Redirecting...')
+                    setIsSuccess(true)
+                    setShowModal(true)
+                    
+                    // Redirect after showing success message
+                    setTimeout(() => {
+                        router.push('/classroom')
+                    }, 1500)
+                } else {
+                    setModalMessage(response.message || 'Invalid OTP. Please try again.')
+                    setIsSuccess(false)
+                    setShowModal(true)
+                    setOtp('') // Clear the OTP field for retry
+                }
+            } catch (error) {
+                setIsLoading(false)
+                setModalMessage('Network error. Please try again.')
+                setIsSuccess(false)
                 setShowModal(true)
-                router.push('/classroom')
-            } else {
-                setModalMessage('Invalid OTP')
+            }
+        } else {
+            if (!otp) {
+                setOtpError('Please enter the OTP')
+            } else if (otp.length !== 4) {
+                setOtpError('Please enter a valid 4-digit OTP')
+            }
+        }
+    }
+
+    const handleResendOtp = async () => {
+        if (mobile && mobile.length === 10) {
+            setIsLoading(true)
+            setOtp('')
+            setOtpError('')
+            
+            try {
+                const response = await sendOtp(mobile)
+                setIsLoading(false)
+                
+                if (response.success) {
+                    setModalMessage('OTP resent successfully')
+                    setIsSuccess(true)
+                    setShowModal(true)
+                    
+                    setTimeout(() => {
+                        setShowModal(false)
+                    }, 2000)
+                } else {
+                    setModalMessage(response.message || 'Failed to resend OTP')
+                    setIsSuccess(false)
+                    setShowModal(true)
+                }
+            } catch (error) {
+                setIsLoading(false)
+                setModalMessage('Network error. Please try again.')
                 setIsSuccess(false)
                 setShowModal(true)
             }
@@ -169,6 +248,9 @@ const SignIn = () => {
                                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="otp">
                                     Enter OTP
                                 </label>
+                                <p className="text-sm text-gray-600 mb-3">
+                                    OTP sent to +91-{mobile}
+                                </p>
                                 <input
                                     className={`shadow-sm appearance-none border ${otpError ? 'border-red-500' : 'border-gray-300'} rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-[#106FB7] focus:border-transparent transition-all duration-300`}
                                     id="otp"
@@ -179,25 +261,53 @@ const SignIn = () => {
                                     placeholder="Enter 4-digit OTP"
                                     value={otp}
                                     onChange={handleOtpChange}
+                                    autoFocus
                                 />
                                 {otpError && <p className="text-red-500 text-xs italic mt-1">{otpError}</p>}
-                                <button
-                                    onClick={handleVerifyOtp}
-                                    className="mt-4 bg-gradient-to-r from-[#106FB7] to-[#2E8BC0] hover:from-[#2E8BC0] hover:to-[#106FB7] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full"
-                                    type="button"
-                                >
-                                    Verify OTP
-                                </button>
+                                <div className="flex flex-col space-y-3 mt-4">
+                                    <button
+                                        onClick={handleVerifyOtp}
+                                        disabled={isLoading}
+                                        className="bg-gradient-to-r from-[#106FB7] to-[#2E8BC0] hover:from-[#2E8BC0] hover:to-[#106FB7] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                        type="button"
+                                    >
+                                        {isLoading ? 'Verifying...' : 'Verify OTP'}
+                                    </button>
+                                    <div className="flex items-center justify-between">
+                                        <button
+                                            onClick={handleResendOtp}
+                                            disabled={isLoading}
+                                            className="text-[#106FB7] hover:text-[#2E8BC0] font-medium text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            type="button"
+                                        >
+                                            Resend OTP
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowOtpInput(false)
+                                                setOtp('')
+                                                setOtpError('')
+                                                setMobile('')
+                                                setMobileError('')
+                                            }}
+                                            className="text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors duration-200"
+                                            type="button"
+                                        >
+                                            Change Number
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                         <div className="flex flex-col space-y-6">
                             {!showOtpInput && (
                                 <>
                                     <button
-                                        className="bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ef5a2a] hover:to-[#fe9852] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto"
+                                        className="bg-gradient-to-r from-[#fe9852] to-[#ef5a2a] hover:from-[#ef5a2a] hover:to-[#fe9852] text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 shadow-md w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                         type="submit"
+                                        disabled={isLoading}
                                     >
-                                        Sign In
+                                        {isLoading ? 'Sending OTP...' : 'Send OTP'}
                                     </button>
                                     <div className="flex items-center justify-center">
                                         <div className="flex-grow border-t border-gray-300"></div>

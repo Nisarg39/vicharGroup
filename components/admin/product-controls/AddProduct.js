@@ -20,6 +20,7 @@ export default function AddProduct() {
     duration: '',
     pageParameters: '',
     image: '',
+    cart_url: '',
   })
 
   const [productsAvailable, setProductsAvailable] = useState([])
@@ -35,6 +36,7 @@ export default function AddProduct() {
     duration: details.duration,
     pageParameters: details.pageParameters,
     image: details.image,
+    cart_url: details.cart_url,
   }
 
   const validate = () => {
@@ -66,7 +68,7 @@ export default function AddProduct() {
         const response = await addProduct(productObject)
         if (response.success) {
           setMessage({ type: 'success', text: 'Product added successfully!' })
-          setDetails({ name: '', price: '', discountPrice: '', type: '', class: '', duration: '', pageParameters: '' })
+          setDetails({ name: '', price: '', discountPrice: '', type: '', class: '', duration: '', pageParameters: '', image: '', cart_url: '' })
         } else {
           setMessage({ type: 'error', text: response.message || 'Failed to add product' })
         }

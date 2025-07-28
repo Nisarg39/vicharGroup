@@ -22,6 +22,8 @@ import master_mcq_question from "../models/exam_portal/master_mcq_question"
 import TeacherExam from "../models/exam_portal/teacherExam"
 import DefaultNegativeMarkingRule from "../models/exam_portal/defaultNegativeMarkingRule"
 import NegativeMarkingRule from "../models/exam_portal/negativeMarkingRule"
+import HelpAndSupport from "../models/app_models/helpAndSupport"
+import FeelingConfused from "server_actions/models/app_models/feelingConsufed"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose"
 
@@ -497,7 +499,8 @@ export async function addProduct(details){
         class: details.class,
         duration: details.duration,
         pageParameters: details.pageParameters,
-        image: details.image
+        image: details.image,
+        cart_url: details.cart_url
     }
     try{
         await connectDB()
@@ -1542,6 +1545,190 @@ export async function updateBanner(details) {
     }
 }
 
+export async function showStudentAppSupport(page = 1) {
+    try {
+        await connectDB()
+        const limit = 10
+        const skip = (page - 1) * limit
+        const supportRequests = await HelpAndSupport.find({})
+            .populate({
+                path: 'student',
+                model: 'Student',
+                select: 'name email phone _id'
+            })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+            .sort({ createdAt: -1 })
+        const totalCount = await HelpAndSupport.countDocuments({})
+        const unseenCount = await HelpAndSupport.countDocuments({ seen: false })
+        const serializedSupportRequests = supportRequests.map(support => ({
+            _id: support._id.toString(),
+            ...support,
+            createdAt: support.createdAt?.toISOString(),
+            updatedAt: support.updatedAt?.toISOString()
+        }))
+        return {
+            success: true,
+            supportRequests: serializedSupportRequests,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
+            unseenCount
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching support requests"
+        }
+    }
+}
+
+export async function messageSeenHelpAndSupport(id) {
+    try {
+        await connectDB()
+        const support = await HelpAndSupport.findById(id)
+        if (!support) {
+            return {
+                success: false,
+                message: "Support request not found"
+            }
+        }
+        support.seen = true
+        await support.save()
+        return {
+            success: true,
+            message: "Message marked as seen successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error marking message as seen"
+        }
+    }
+}
+
+export async function contactedToggleHelpAndSupport(id) {
+    try {
+        await connectDB()
+        const support = await HelpAndSupport.findById(id)
+        if (!support) {
+            return {
+                success: false,
+                message: "Support request not found"
+            }
+        }
+        support.contacted = !support.contacted
+        await support.save()
+        return {
+            success: true,
+            message: "Contact status updated successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating contact status"
+        }
+    }
+}
+
+export async function showFeelingConsfusedData(page = 1) {
+    try {
+        await connectDB()
+        const limit = 10
+        const skip = (page - 1) * limit
+        const feelingConfusedData = await FeelingConfused.find({})
+            .populate({
+                path: 'student',
+                model: 'Student',
+                select: 'name email phone _id'
+            })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+            .sort({ createdAt: -1 })
+        const totalCount = await FeelingConfused.countDocuments({})
+        const unseenCount = await FeelingConfused.countDocuments({ seen: false })
+        const uncontactedCount = await FeelingConfused.countDocuments({ contacted: false })
+        const serializedFeelingConfusedData = feelingConfusedData.map(item => ({
+            _id: item._id.toString(),
+            ...item,
+            createdAt: item.createdAt?.toISOString(),
+            updatedAt: item.updatedAt?.toISOString()
+        }))
+        return {
+            success: true,
+            feelingConfusedData: serializedFeelingConfusedData,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
+            unseenCount,
+            uncontactedCount
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error fetching feeling confused data"
+        }
+    }
+}
+
+export async function messageSeenFeelingConfused(id) {
+    try {
+        await connectDB()
+        const feelingConfusedItem = await FeelingConfused.findById(id)
+        if (!feelingConfusedItem) {
+            return {
+                success: false,
+                message: "Feeling confused entry not found"
+            }
+        }
+        feelingConfusedItem.seen = true
+        await feelingConfusedItem.save()
+        return {
+            success: true,
+            message: "Message marked as seen successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error marking message as seen"
+        }
+    }
+}
+
+export async function contactedToggleFeelingConfused(id, followUpNote) {
+    try {
+        await connectDB()
+        const feelingConfusedItem = await FeelingConfused.findById(id)
+        if (!feelingConfusedItem) {
+            return {
+                success: false,
+                message: "Feeling confused entry not found"
+            }
+        }
+        feelingConfusedItem.contacted = true
+        if (followUpNote) {
+            feelingConfusedItem.followUpNote = followUpNote
+        }
+        await feelingConfusedItem.save()
+        return {
+            success: true,
+            message: "Contact status updated successfully"
+        }
+    } catch (error) {
+        console.log(error)
+        return {
+            success: false,
+            message: "Error updating contact status"
+        }
+    }
+}
 
 // // ------------------------- Exam Portal Controls -------------------------
 

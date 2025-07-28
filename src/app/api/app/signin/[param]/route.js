@@ -6,7 +6,9 @@ import {
     getStudentDetails,
     getChapterDetails,
     getSegments,
-    updateStudentDetails
+    updateStudentDetails,
+    studentAppSupport,
+    feelingConfusedMessage,
 } from '../../../../../../server_actions/actions/studentActions'
 
 import { showBanners } from "../../../../../../server_actions/actions/adminActions";
@@ -39,6 +41,8 @@ export async function POST(request, { params }) {
                 name: formData.get('name'),
                 email: formData.get('email'),
                 token: formData.get('token'),
+                interestedStream: formData.get('interestedStream'),
+                insterestedClass: formData.get('insterestedClass')
             })
             if(mandatoryDetailsResponse.success){
                 return NextResponse.json(mandatoryDetailsResponse)
@@ -95,6 +99,27 @@ export async function POST(request, { params }) {
                 return NextResponse.json(showBannersResponse)
             }
             return NextResponse.json(showBannersResponse)
+
+        case 'studentAppSupport':
+            const studentAppSupportResponse = await studentAppSupport({
+                message: formData.get('message'),
+                token: formData.get('token')
+            })
+            if(studentAppSupportResponse.success){
+                return NextResponse.json(studentAppSupportResponse)
+            }
+            return NextResponse.json(studentAppSupportResponse)
+        
+        case 'feelingConfusedMessage':
+            const feelingConfusedMessageResponse = await feelingConfusedMessage({
+                message: formData.get('message'),
+                token: formData.get('token'),
+                streamName: formData.get('streamName'),
+            })
+            if(feelingConfusedMessageResponse.success){
+                return NextResponse.json(feelingConfusedMessageResponse)
+            }
+            return NextResponse.json(feelingConfusedMessageResponse)
 
         default:
             return NextResponse.json({
