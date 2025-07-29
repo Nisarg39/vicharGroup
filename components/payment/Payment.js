@@ -545,14 +545,15 @@ function EnrollmentCard(props) {
     return (
       <div className="lg:col-span-1">
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 sticky top-24 w-full sm:w-[288px] md:w-full lg:w-[252px] xl:w-[288px] mx-auto overflow-hidden md:flex md:flex-row lg:flex-col">
-          <div className="relative w-full h-[180px] sm:h-[160px] md:h-[200px] md:w-1/2 lg:w-full">
+          {/* card image of the product in the payment card */}
+          {/* <div className="relative w-full h-[180px] sm:h-[160px] md:h-[200px] md:w-1/2 lg:w-full">
             <img
               src="/course-photo/testSeries.jpeg"
               alt="Course Preview"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          </div>
+          </div> */}
           <div className="p-4 sm:p-5 space-y-3 md:w-1/2 lg:w-full md:flex md:flex-col md:justify-center">
             <div className="bg-gray-50 rounded-2xl p-3 shadow-sm">
               <div className="flex items-center justify-center">
