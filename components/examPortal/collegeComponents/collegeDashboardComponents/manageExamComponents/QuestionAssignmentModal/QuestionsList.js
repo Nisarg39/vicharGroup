@@ -195,11 +195,26 @@ export default function QuestionsList({
                                     )}
 
                                     {/* Correct Answer */}
-                                    {(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) && (
+                                    {((question.correctAnswer || question.answer || question.correctOption || question.correct_answer) || (question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0)) && (
                                       <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-blue-900 mb-2">Correct Answer:</h4>
+                                        <h4 className="text-sm font-medium text-blue-900 mb-2">Correct Answer{question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 1 ? 's' : ''}:</h4>
                                         <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                          {question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
+                                          {question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0 ? (
+                                            <div className="space-y-1">
+                                              {question.multipleAnswer.map((answer, index) => (
+                                                <div key={index} className="text-sm text-green-800">
+                                                  <strong>{answer}:</strong>{' '}
+                                                  {question.options && ['A', 'B', 'C', 'D'].includes(answer) ? (
+                                                    <span dangerouslySetInnerHTML={{ 
+                                                      __html: question.options[['A', 'B', 'C', 'D'].indexOf(answer)] 
+                                                    }} />
+                                                  ) : (
+                                                    <span>{answer}</span>
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          ) : question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
                                             <div className="text-sm text-green-800">
                                               <strong>{question.correctAnswer || question.answer || question.correctOption || question.correct_answer}:</strong>{' '}
                                               <span dangerouslySetInnerHTML={{ 
@@ -353,12 +368,26 @@ export default function QuestionsList({
                           )}
 
                           {/* Correct Answer */}
-                          {(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) && (
+                          {((question.correctAnswer || question.answer || question.correctOption || question.correct_answer) || (question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0)) && (
                             <div className="mb-4">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Correct Answer:</h4>
+                              <h4 className="text-sm font-medium text-gray-900 mb-2">Correct Answer{question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 1 ? 's' : ''}:</h4>
                               <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                {/* Show option with its value if it's a letter option */}
-                                {question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
+                                {question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {question.multipleAnswer.map((answer, index) => (
+                                      <div key={index} className="text-sm text-green-800">
+                                        <strong>{answer}:</strong>{' '}
+                                        {question.options && ['A', 'B', 'C', 'D'].includes(answer) ? (
+                                          <span dangerouslySetInnerHTML={{ 
+                                            __html: question.options[['A', 'B', 'C', 'D'].indexOf(answer)] 
+                                          }} />
+                                        ) : (
+                                          <span>{answer}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
                                   <div className="text-sm text-green-800">
                                     <strong>{question.correctAnswer || question.answer || question.correctOption || question.correct_answer}:</strong>{' '}
                                     <span dangerouslySetInnerHTML={{ 
@@ -375,12 +404,12 @@ export default function QuestionsList({
                           )}
 
                           {/* Debug info - remove this once you confirm the correct field name */}
-                          {!question.correctAnswer && !question.answer && !question.correctOption && !question.correct_answer && (
+                          {!question.correctAnswer && !question.answer && !question.correctOption && !question.correct_answer && (!question.isMultipleAnswer || !question.multipleAnswer || question.multipleAnswer.length === 0) && (
                             <div className="mb-4">
                               <h4 className="text-sm font-medium text-gray-900 mb-2">Available Answer Fields (Debug):</h4>
                               <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                                {Object.keys(question).filter(key => key.toLowerCase().includes('answer') || key.toLowerCase().includes('correct')).map(key => (
-                                  <div key={key}>{key}: {question[key]}</div>
+                                {Object.keys(question).filter(key => key.toLowerCase().includes('answer') || key.toLowerCase().includes('correct') || key.toLowerCase().includes('multiple')).map(key => (
+                                  <div key={key}>{key}: {Array.isArray(question[key]) ? JSON.stringify(question[key]) : question[key]}</div>
                                 ))}
                               </div>
                             </div>

@@ -19,6 +19,30 @@ const negativeMarkingRules = {
         }
       },
       {
+        "name": "JEE Advanced",
+        "conductedBy": "IIT",
+        "markingScheme": {
+          "MCQ": {
+            "correct": 3,
+            "incorrect": -1,
+            "unanswered": 0,
+            "note": "Single correct option. -1 negative marking."
+          },
+          "MCMA": {
+            "correct": 4,
+            "incorrect": -2,
+            "unanswered": 0,
+            "note": "Multiple correct options. -2 negative marking when wrong options selected (latest JEE Advanced rules). Partial marks awarded for correct selections without wrong ones."
+          },
+          "Numerical": {
+            "correct": 4,
+            "incorrect": 0,
+            "unanswered": 0,
+            "note": "No negative marking for numerical questions."
+          }
+        }
+      },
+      {
         "name": "NEET",
         "conductedBy": "NTA",
         "markingScheme": {

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { updateExam, getApplicableNegativeMarkingRule } from '../../../../../server_actions/actions/examController/collegeActions';
+import { updateExam } from '../../../../../server_actions/actions/examController/collegeActions';
 import { toast } from 'react-hot-toast';
 
 export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, collegeData }) {
@@ -25,8 +25,7 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
     });
     
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [negativeMarkingRule, setNegativeMarkingRule] = useState(null);
-    const [loadingRule, setLoadingRule] = useState(false);
+    // Note: Negative marking rule selection removed - using admin defaults only
     
 
     // Initialize form data when exam changes
@@ -54,34 +53,7 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
         }
     }, [exam, isOpen]);
 
-    // Fetch applicable negative marking rule when exam details change
-    useEffect(() => {
-        const fetchNegativeMarkingRule = async () => {
-            if (!exam || !formData.stream || !formData.standard || !isOpen) return;
-            
-            setLoadingRule(true);
-            try {
-                // Get the first subject for rule calculation (or use the first one)
-                const firstSubject = formData.examSubject?.[0] || null;
-                const response = await getApplicableNegativeMarkingRule(
-                    collegeData._id, 
-                    formData.stream, 
-                    formData.standard, 
-                    firstSubject
-                );
-                
-                if (response.success) {
-                    setNegativeMarkingRule(response);
-                }
-            } catch (error) {
-                console.error('Error fetching negative marking rule:', error);
-            } finally {
-                setLoadingRule(false);
-            }
-        };
-
-        fetchNegativeMarkingRule();
-    }, [exam, formData.stream, formData.standard, formData.examSubject, isOpen, collegeData._id]);
+    // Note: Negative marking rule fetching removed - using admin defaults only
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -402,83 +374,12 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                 />
                             </div>
 
-                            {/* Negative Marking Information */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Negative Marking Information
-                                </label>
-                                
-                                {loadingRule ? (
-                                    <div className="p-4 border border-gray-300 rounded-lg bg-gray-50">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                            <span className="text-sm text-gray-600">Loading applicable rule...</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {/* Current Rule Display */}
-                                        {negativeMarkingRule && (
-                                            <div className={`p-4 border rounded-lg ${
-                                                negativeMarkingRule.source === 'college_specific' 
-                                                    ? 'border-blue-200 bg-blue-50' 
-                                                    : negativeMarkingRule.source === 'super_admin_default'
-                                                    ? 'border-purple-200 bg-purple-50'
-                                                    : 'border-gray-200 bg-gray-50'
-                                            }`}>
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center space-x-2 mb-2">
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                                negativeMarkingRule.source === 'college_specific'
-                                                                    ? 'bg-blue-100 text-blue-800'
-                                                                    : negativeMarkingRule.source === 'super_admin_default'
-                                                                    ? 'bg-purple-100 text-purple-800'
-                                                                    : 'bg-gray-100 text-gray-800'
-                                                            }`}>
-                                                                {negativeMarkingRule.source === 'college_specific' ? '🏫 College Rule' :
-                                                                 negativeMarkingRule.source === 'super_admin_default' ? '⚙️ Default Rule' :
-                                                                 '📝 No Rule'}
-                                                            </span>
-                                                            <span className="text-sm font-semibold text-gray-800">
-                                                                -{negativeMarkingRule.negativeMarks} marks per wrong answer
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-sm text-gray-600">{negativeMarkingRule.description}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        {/* Information Note */}
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                            <div className="flex items-start gap-2">
-                                                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <div className="text-sm text-blue-800">
-                                                    <p className="font-medium mb-1">Rule-Based Negative Marking</p>
-                                                    <p>This exam will use the negative marking rule shown above. To change negative marking, use the "Manage Negative Marking Rules" section in your dashboard.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Manage Rules Link */}
-                                        <div className="text-center py-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    onClose();
-                                                    // Note: You'll need to implement navigation to negative marking settings
-                                                    // This could be through a callback prop or navigation function
-                                                }}
-                                                className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
-                                            >
-                                                📋 Manage Negative Marking Rules
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                            {/* Note: Negative marking rule display removed - using admin defaults */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="text-sm text-blue-800">
+                                    <p className="font-medium mb-1">Default Negative Marking</p>
+                                    <p>This exam uses system default negative marking rules set by the administrator. These rules are applied automatically based on stream and subject.</p>
+                                </div>
                             </div>
 
                             <div>

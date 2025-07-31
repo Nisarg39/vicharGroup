@@ -23,6 +23,17 @@ const DefaultNegativeMarkingRuleSchema = new mongoose.Schema({
         required: false,
         default: 4, // Default for most competitive exams
     },
+    // MCMA Partial Marking Configuration
+    partialMarkingEnabled: {
+        type: Boolean,
+        default: false, // Enable partial marking for MCMA questions
+    },
+    partialMarkingRules: {
+        // Marks awarded for partial correct answers in MCMA
+        threeOutOfFour: { type: Number, default: 3 }, // 3 correct out of 4+
+        twoOutOfThree: { type: Number, default: 2 },  // 2 correct out of 3+
+        oneOutOfTwo: { type: Number, default: 1 },    // 1 correct out of 2+
+    },
     description: {
         type: String,
         required: false,

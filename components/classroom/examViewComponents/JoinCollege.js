@@ -179,19 +179,19 @@ export default function JoinCollege() {
     }
 
     return (
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100">
             {/* Header Section - More Compact */}
-            <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 rounded-xl mb-4 shadow-md">
-                    <BuildingOfficeIcon className="w-6 h-6 text-[#1d77bc]" />
+            <div className="text-center mb-6 sm:mb-8">
+                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 rounded-xl mb-3 sm:mb-4 shadow-md">
+                    <BuildingOfficeIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#1d77bc]" />
                 </div>
-                <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] mb-2">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] mb-2">
                     Join Your College
                 </h2>
-                <p className="text-gray-600 text-base max-w-xl mx-auto leading-relaxed">
+                <p className="text-gray-600 text-sm sm:text-base max-w-xl mx-auto leading-relaxed px-2">
                     Connect with your institution and unlock exclusive features
                 </p>
-                <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500">
+                <div className="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                         <span>Secure Connection</span>
@@ -208,22 +208,22 @@ export default function JoinCollege() {
             </div>
 
             {/* Request Count Indicator */}
-            <div className="max-w-3xl mx-auto mb-6">
-                <div className="flex items-center justify-between bg-gradient-to-r from-[#1d77bc]/5 to-[#2d8bd4]/5 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-[#1d77bc]/10 flex items-center justify-center">
-                            <BuildingOfficeIcon className="h-4 w-4 text-[#1d77bc]" />
+            <div className="max-w-3xl mx-auto mb-4 sm:mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gradient-to-r from-[#1d77bc]/5 to-[#2d8bd4]/5 rounded-xl p-3 sm:p-4 gap-3 sm:gap-0">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-[#1d77bc]/10 flex items-center justify-center flex-shrink-0">
+                            <BuildingOfficeIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#1d77bc]" />
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">
                             College Join Requests
                         </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-center sm:justify-end">
                         <div className="flex items-center">
                             {[...Array(5)].map((_, index) => (
                                 <div
                                     key={index}
-                                    className={`h-2 w-8 rounded-full mx-0.5 ${
+                                    className={`h-1.5 sm:h-2 w-6 sm:w-8 rounded-full mx-0.5 ${
                                         index < requestStatuses.length
                                             ? 'bg-[#1d77bc]'
                                             : 'bg-gray-200'
@@ -231,7 +231,7 @@ export default function JoinCollege() {
                                 />
                             ))}
                         </div>
-                        <span className="text-sm font-medium text-gray-600 ml-3">
+                        <span className="text-xs sm:text-sm font-medium text-gray-600 ml-2 sm:ml-3">
                             {requestStatuses.length}/5
                         </span>
                     </div>
@@ -240,49 +240,49 @@ export default function JoinCollege() {
 
             {/* College Request Status Section */}
             {loadingStatus ? (
-                <div className="flex justify-center my-8">
+                <div className="flex justify-center my-6 sm:my-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1d77bc]"></div>
                 </div>
             ) : requestStatuses.length > 0 && (
-                <div className="max-w-3xl mx-auto mb-12">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-6 border border-blue-200">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <BuildingOfficeIcon className="w-5 h-5 text-[#1d77bc]" />
+                <div className="max-w-3xl mx-auto mb-8 sm:mb-12">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 sm:p-6 border border-blue-200">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+                            <BuildingOfficeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#1d77bc]" />
                             Your College Join Requests
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             {requestStatuses.map((request, index) => (
                                 <div key={index} 
-                                    className="bg-white rounded-xl p-4 border border-blue-100 hover:shadow-md transition-all">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 flex items-center justify-center">
+                                    className="bg-white rounded-xl p-3 sm:p-4 border border-blue-100 hover:shadow-md transition-all">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#1d77bc]/10 to-[#2d8bd4]/10 flex items-center justify-center flex-shrink-0">
                                                 {request.college?.collegeLogo ? (
                                                     <img 
                                                         src={request.college.collegeLogo} 
                                                         alt={request.college.collegeName}
-                                                        className="h-10 w-10 rounded-full object-cover"
+                                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    <BuildingOfficeIcon className="h-6 w-6 text-[#1d77bc]" />
+                                                    <BuildingOfficeIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#1d77bc]" />
                                                 )}
                                             </div>
-                                            <div>
-                                                <h4 className="font-semibold text-gray-800">
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="font-semibold text-gray-800 text-sm sm:text-base truncate">
                                                     {request.college?.collegeName}
                                                 </h4>
-                                                <p className="text-sm text-gray-500">
+                                                <p className="text-xs sm:text-sm text-gray-500">
                                                     Code: {request.college?.collegeCode}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                        <div className="text-left sm:text-right flex-shrink-0">
+                                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
                                                 request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                 request.status === 'approved' ? 'bg-green-100 text-green-800' :
                                                 'bg-red-100 text-red-800'
                                             }`}>
-                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 sm:mr-2 ${
                                                     request.status === 'pending' ? 'bg-yellow-500' :
                                                     request.status === 'approved' ? 'bg-green-500' :
                                                     'bg-red-500'
@@ -290,14 +290,14 @@ export default function JoinCollege() {
                                                 {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                                             </span>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Sent on: {new Date(request.createdAt).toLocaleDateString()}
+                                                Sent: {new Date(request.createdAt).toLocaleDateString()}
                                             </p>
                                         </div>
                                     </div>
                                     {request.message && (
-                                        <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                                        <div className="mt-3 text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg p-2 sm:p-3">
                                             <p className="font-medium text-gray-700 mb-1">Your Message:</p>
-                                            {request.message}
+                                            <p className="break-words">{request.message}</p>
                                         </div>
                                     )}
                                 </div>
@@ -378,22 +378,22 @@ export default function JoinCollege() {
                                 value={collegeCode}
                                 onChange={(e) => setCollegeCode(e.target.value)}
                                 placeholder="Enter your college code"
-                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm"
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#1d77bc]/20 focus:border-[#1d77bc]"
                                 onKeyPress={(e) => e.key === 'Enter' && handleJoinCollege()}
                             />
                         </div>
                         {response && !response.success && (
                             <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg">
-                                <p className="text-sm text-red-600 flex items-center gap-2">
-                                    <ExclamationCircleIcon className="w-4 h-4" />
-                                    {response.message || "College not found. Please check the code and try again."}
+                                <p className="text-sm text-red-600 flex items-start gap-2">
+                                    <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                    <span className="break-words">{response.message || "College not found. Please check the code and try again."}</span>
                                 </p>
                             </div>
                         )}
                         <button
                             onClick={handleJoinCollege}
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 shadow-md"
+                            className="w-full bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all"
                         >
                             {loading ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -411,21 +411,21 @@ export default function JoinCollege() {
                 <div className="relative">
                     <button 
                         onClick={() => setShowSearch(true)}
-                        className="absolute right-0 -top-12 flex items-center gap-1.5 text-sm text-[#1d77bc] hover:text-[#2d8bd4] transition-colors"
+                        className="absolute right-0 -top-8 sm:-top-12 flex items-center gap-1.5 text-xs sm:text-sm text-[#1d77bc] hover:text-[#2d8bd4] transition-colors"
                     >
-                        <ArrowRightIcon className="w-4 h-4 rotate-180" />
+                        <ArrowRightIcon className="w-3 h-3 sm:w-4 sm:h-4 rotate-180" />
                         Search Another College
                     </button>
                     {/* College Details - More Compact */}
                     {foundCollege && (
-                        <div className="mt-6 overflow-hidden">
+                        <div className="mt-4 sm:mt-6 overflow-hidden">
                             {/* Status Banner */}
-                            <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] p-6">
+                            <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] p-4 sm:p-6">
                                 <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,rgba(255,255,255,0.6))]" />
-                                <div className="relative flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                                         {/* iPhone Camera Lens Style Avatar */}
-                                        <div className="relative h-20 w-20 flex-shrink-0">
+                                        <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0">
                                             {/* Outer ring with gradient */}
                                             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 to-white/10 p-0.5">
                                                 <div className="h-full w-full rounded-full bg-gradient-to-br from-white/20 to-transparent p-0.5">
@@ -467,9 +467,9 @@ export default function JoinCollege() {
                                             </div>
                                         </div>
                                         
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white mb-1">{foundCollege.collegeName}</h3>
-                                            <p className="text-sm text-blue-100 mb-1">Code: {foundCollege.collegeCode}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{foundCollege.collegeName}</h3>
+                                            <p className="text-xs sm:text-sm text-blue-100 mb-1">Code: {foundCollege.collegeCode}</p>
                                             <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
                                                 foundCollege.isActive 
                                                     ? 'bg-green-500/20 text-green-100' 
@@ -486,35 +486,35 @@ export default function JoinCollege() {
                             </div>
 
                             {/* Details Grid */}
-                            <div className="rounded-b-2xl border border-t-0 border-blue-100 bg-white p-6">
-                                <div className="grid gap-6 md:grid-cols-2">
+                            <div className="rounded-b-2xl border border-t-0 border-blue-100 bg-white p-4 sm:p-6">
+                                <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
                                     {/* Location Card */}
-                                    <div className="group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 transition-all hover:shadow-md">
+                                    <div className="group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 sm:p-4 transition-all hover:shadow-md">
                                         <div className="mb-2 flex items-center gap-2">
-                                            <div className="rounded-lg bg-[#1d77bc]/10 p-2">
-                                                <BuildingOfficeIcon className="h-4 w-4 text-[#1d77bc]" />
+                                            <div className="rounded-lg bg-[#1d77bc]/10 p-1.5 sm:p-2">
+                                                <BuildingOfficeIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#1d77bc]" />
                                             </div>
-                                            <h4 className="font-medium text-gray-700">Location</h4>
+                                            <h4 className="font-medium text-gray-700 text-sm sm:text-base">Location</h4>
                                         </div>
-                                        <p className="text-sm text-gray-600">{foundCollege.collegeLocation || 'Not specified'}</p>
+                                        <p className="text-xs sm:text-sm text-gray-600 break-words">{foundCollege.collegeLocation || 'Not specified'}</p>
                                     </div>
 
                                     {/* Contact Info Card */}
-                                    <div className="group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 transition-all hover:shadow-md">
+                                    <div className="group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 sm:p-4 transition-all hover:shadow-md">
                                         <div className="mb-2 flex items-center gap-2">
-                                            <div className="rounded-lg bg-[#1d77bc]/10 p-2">
-                                                <UserGroupIcon className="h-4 w-4 text-[#1d77bc]" />
+                                            <div className="rounded-lg bg-[#1d77bc]/10 p-1.5 sm:p-2">
+                                                <UserGroupIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#1d77bc]" />
                                             </div>
-                                            <h4 className="font-medium text-gray-700">Contact</h4>
+                                            <h4 className="font-medium text-gray-700 text-sm sm:text-base">Contact</h4>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-sm text-gray-600">{foundCollege.collegeEmail}</p>
+                                            <p className="text-xs sm:text-sm text-gray-600 break-words">{foundCollege.collegeEmail}</p>
                                             {foundCollege.collegeWebsite && (
                                                 <a 
                                                     href={foundCollege.collegeWebsite}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-sm text-[#1d77bc] hover:underline"
+                                                    className="text-xs sm:text-sm text-[#1d77bc] hover:underline break-words inline-block"
                                                 >
                                                     Visit Website
                                                 </a>
@@ -523,45 +523,45 @@ export default function JoinCollege() {
                                     </div>
 
                                     {/* Exam Statistics Card */}
-                                    <div className="col-span-2 group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-4 transition-all hover:shadow-md">
-                                        <div className="mb-4 flex items-center gap-2">
-                                            <div className="rounded-lg bg-[#1d77bc]/10 p-2">
-                                                <AcademicCapIcon className="h-4 w-4 text-[#1d77bc]" />
+                                    <div className="col-span-full group rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 p-3 sm:p-4 transition-all hover:shadow-md">
+                                        <div className="mb-3 sm:mb-4 flex items-center gap-2">
+                                            <div className="rounded-lg bg-[#1d77bc]/10 p-1.5 sm:p-2">
+                                                <AcademicCapIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#1d77bc]" />
                                             </div>
-                                            <h4 className="font-medium text-gray-700">Exam Overview</h4>
+                                            <h4 className="font-medium text-gray-700 text-sm sm:text-base">Exam Overview</h4>
                                         </div>
 
-                                        <div className="grid md:grid-cols-4 gap-4">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                                             {/* Total Exams */}
-                                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                                <div className="text-3xl font-bold text-[#1d77bc] mb-1">
+                                            <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
+                                                <div className="text-xl sm:text-3xl font-bold text-[#1d77bc] mb-1">
                                                     {exams.length}
                                                 </div>
-                                                <div className="text-sm text-gray-600">Total Exams</div>
+                                                <div className="text-xs sm:text-sm text-gray-600">Total Exams</div>
                                             </div>
 
                                             {/* Active Exams */}
-                                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                                <div className="text-3xl font-bold text-[#1d77bc] mb-1">
+                                            <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
+                                                <div className="text-xl sm:text-3xl font-bold text-[#1d77bc] mb-1">
                                                     {exams.filter(exam => exam.examStatus === 'active').length}
                                                 </div>
-                                                <div className="text-sm text-gray-600">Active Exams</div>
+                                                <div className="text-xs sm:text-sm text-gray-600">Active Exams</div>
                                             </div>
 
                                             {/* Practice Exams */}
-                                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                                <div className="text-3xl font-bold text-[#1d77bc] mb-1">
+                                            <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
+                                                <div className="text-xl sm:text-3xl font-bold text-[#1d77bc] mb-1">
                                                     {exams.filter(exam => exam.examAvailability === 'practice').length}
                                                 </div>
-                                                <div className="text-sm text-gray-600">Practice Exams</div>
+                                                <div className="text-xs sm:text-sm text-gray-600">Practice Exams</div>
                                             </div>
 
                                             {/* Upcoming Exams */}
-                                            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                                <div className="text-3xl font-bold text-[#1d77bc] mb-1">
+                                            <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
+                                                <div className="text-xl sm:text-3xl font-bold text-[#1d77bc] mb-1">
                                                     {exams.filter(exam => new Date(exam.startTime) > new Date()).length}
                                                 </div>
-                                                <div className="text-sm text-gray-600">Upcoming Exams</div>
+                                                <div className="text-xs sm:text-sm text-gray-600">Upcoming Exams</div>
                                             </div>
                                         </div>
                                     </div>
@@ -569,19 +569,19 @@ export default function JoinCollege() {
 
                                 {/* NEW: Class Selection */}
                                 {foundCollege.allocatedClasses && foundCollege.allocatedClasses.length > 0 && (
-                                    <div className="mt-6 mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <div className="mt-4 sm:mt-6 mb-3 sm:mb-4">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                             Select Class <span className="text-red-500">*</span>
                                         </label>
                                         <RadioGroup
                                             value={allocatedClasses[0] || ""}
                                             onValueChange={val => setAllocatedClasses(val ? [val] : [])}
-                                            className="flex flex-wrap gap-3"
+                                            className="flex flex-wrap gap-2 sm:gap-3"
                                         >
                                             {foundCollege.allocatedClasses.map((className, idx) => (
-                                                <div key={className} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                <div key={className} className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200 cursor-pointer">
                                                     <RadioGroupItem value={className} id={`class-radio-${idx}`} />
-                                                    <label htmlFor={`class-radio-${idx}`} className="text-sm text-gray-700 cursor-pointer">{className}</label>
+                                                    <label htmlFor={`class-radio-${idx}`} className="text-xs sm:text-sm text-gray-700 cursor-pointer">{className}</label>
                                                 </div>
                                             ))}
                                         </RadioGroup>
@@ -589,13 +589,13 @@ export default function JoinCollege() {
                                 )}
                                 {/* NEW: Streams Selection */}
                                 {foundCollege.allocatedStreams && foundCollege.allocatedStreams.length > 0 && (
-                                    <div className="mt-6 mb-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <div className="mt-4 sm:mt-6 mb-3 sm:mb-4">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                             Select Streams <span className="text-red-500">*</span>
                                         </label>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex flex-wrap gap-2 sm:gap-3">
                                             {foundCollege.allocatedStreams.map((stream, idx) => (
-                                                <label key={stream} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer">
+                                                <label key={stream} className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200 cursor-pointer">
                                                     <Checkbox
                                                         checked={allocatedStreams.includes(stream)}
                                                         onCheckedChange={checked => {
@@ -607,23 +607,23 @@ export default function JoinCollege() {
                                                         }}
                                                         id={`stream-checkbox-${idx}`}
                                                     />
-                                                    <span className="text-sm text-gray-700">{stream}</span>
+                                                    <span className="text-xs sm:text-sm text-gray-700">{stream}</span>
                                                 </label>
                                             ))}
                                         </div>
                                     </div>
                                 )}
                                 {/* Join Button */}
-                                <div className="mt-6 space-y-4">
-                                    <div className="rounded-lg border border-gray-200 p-4">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+                                    <div className="rounded-lg border border-gray-200 p-3 sm:p-4">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                             Message <span className="text-red-500">*</span>
                                         </label>
                                         <textarea
                                             value={requestMessage}
                                             onChange={(e) => setRequestMessage(e.target.value)}
                                             placeholder="Write a brief message to introduce yourself... (required)"
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm min-h-[100px]"
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs sm:text-sm min-h-[80px] sm:min-h-[100px] focus:ring-2 focus:ring-green-500/20 focus:border-green-500 resize-none"
                                             required
                                         />
                                     </div>
@@ -631,14 +631,14 @@ export default function JoinCollege() {
                                     <button 
                                         onClick={handleSendRequest}
                                         disabled={loading}
-                                        className="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 py-3 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl hover:translate-y-[-1px] focus:ring-2 focus:ring-green-500/50 active:shadow-md hover:from-green-600 hover:to-green-700"
+                                        className="w-full rounded-xl bg-gradient-to-r from-green-500 to-green-600 py-3 text-xs sm:text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl hover:translate-y-[-1px] focus:ring-2 focus:ring-green-500/50 active:shadow-md hover:from-green-600 hover:to-green-700 disabled:opacity-60"
                                     >
                                         <div className="flex items-center justify-center gap-2">
                                             {loading ? (
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                                             ) : (
                                                 <>
-                                                    <CheckCircleIcon className="h-5 w-5" />
+                                                    <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                                                     <span>Send Join Request</span>
                                                 </>
                                             )}
@@ -652,15 +652,15 @@ export default function JoinCollege() {
             )}
 
             {/* Benefits Grid */}
-            <div className="mt-12">
-                <h3 className="text-2xl font-bold text-center text-gray-800 mb-2">
+            <div className="mt-8 sm:mt-12">
+                <h3 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-2">
                     Why Join Your College?
                 </h3>
-                <p className="text-center text-gray-600 text-base mb-8">
+                <p className="text-center text-gray-600 text-sm sm:text-base mb-6 sm:mb-8 px-2">
                     Unlock exclusive features for your academic journey
                 </p>
                 
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[
                         {
                             icon: AcademicCapIcon,
@@ -686,15 +686,15 @@ export default function JoinCollege() {
                     ].map((benefit, index) => (
                         <div 
                             key={index} 
-                            className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 group"
+                            className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 sm:p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 group"
                         >
-                            <div className={`w-12 h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-all duration-300`}>
-                                <benefit.icon className={`w-6 h-6 ${benefit.color}`} />
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${benefit.gradient} rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-md group-hover:scale-110 transition-all duration-300`}>
+                                <benefit.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${benefit.color}`} />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">
+                            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-2">
                                 {benefit.title}
                             </h3>
-                            <p className="text-gray-600 text-sm">
+                            <p className="text-gray-600 text-xs sm:text-sm">
                                 {benefit.description}
                             </p>
                         </div>
@@ -703,21 +703,54 @@ export default function JoinCollege() {
             </div>
 
             {/* Features Section */}
-            <div className="mt-8 bg-gradient-to-r from-[#1d77bc]/5 via-[#2d8bd4]/5 to-[#2d8bd4]/5 rounded-xl p-6 backdrop-blur-sm border border-white/20">
+            <div className="mt-6 sm:mt-8 bg-gradient-to-r from-[#1d77bc]/5 via-[#2d8bd4]/5 to-[#2d8bd4]/5 rounded-xl p-4 sm:p-6 backdrop-blur-sm border border-white/20">
                 <div className="text-center">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
                         Ready to Get Started?
                     </h3>
-                    <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs text-gray-500">
                         {['Instant Access', 'Secure Platform', '24/7 Support'].map((feature, index) => (
                             <div key={index} className="flex items-center gap-1">
-                                <CheckCircleIcon className="w-4 h-4 text-[#1d77bc]" />
+                                <CheckCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 text-[#1d77bc]" />
                                 <span>{feature}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+
+            {/* Warning Modal */}
+            {showWarning && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 max-w-sm sm:max-w-md w-full shadow-2xl mx-4">
+                        <div className="text-center">
+                            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full mb-4 sm:mb-6 shadow-lg">
+                                <ExclamationCircleIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                            </div>
+                            
+                            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Final Request Warning</h3>
+                            <p className="text-gray-600 leading-relaxed mb-6 sm:mb-8 text-sm sm:text-base px-2">
+                                This will be your 5th and final college join request. After this, you won't be able to send any more requests. Are you sure you want to proceed?
+                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    onClick={() => setShowWarning(false)}
+                                    className="flex-1 bg-gray-100 text-gray-700 py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-medium hover:bg-gray-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleFinalRequest}
+                                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all"
+                                >
+                                    Send Final Request
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

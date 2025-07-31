@@ -171,7 +171,7 @@ export default function DefaultNegativeMarkingRules({ onBack }) {
     const streamOptions = ['JEE', 'NEET', 'MHT-CET'];
     const standardOptions = ['11', '12'];
     const subjectOptions = ['Physics', 'Chemistry', 'Mathematics', 'Biology'];
-    const questionTypeOptions = ['MCQ', 'Numerical'];
+    const questionTypeOptions = ['MCQ', 'MCMA', 'Numerical'];
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">

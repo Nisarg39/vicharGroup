@@ -22,6 +22,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState({})
     const [markedQuestions, setMarkedQuestions] = useState(new Set())
+    const [visitedQuestions, setVisitedQuestions] = useState(new Set())
     const [timeLeft, setTimeLeft] = useState(exam?.examDurationMinutes * 60 || 0) // in seconds
     const [isExamStarted, setIsExamStarted] = useState(false)
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
@@ -88,7 +89,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             if (savedProgress) {
                 const progress = JSON.parse(savedProgress);
                 setAnswers(progress.answers || {});
-                setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+                
+                // Fix: Restore selected subject first, then set question index
+                if (progress.selectedSubject) {
+                    setSelectedSubject(progress.selectedSubject);
+                }
+                
+                // Reset to 0 to ensure proper loading, then set to saved index after subject is set
+                setCurrentQuestionIndex(0);
+                
+                // Use setTimeout to ensure subject change completes first
+                setTimeout(() => {
+                    setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+                }, 100);
+                
                 setMarkedQuestions(new Set(progress.markedQuestions || []));
                 setStartTime(progress.startTime || Date.now());
                 // Calculate timeLeft based on startTime and duration
@@ -110,7 +124,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             const progress = {
                 answers,
                 currentQuestionIndex,
+                selectedSubject, // Save selected subject
                 markedQuestions: Array.from(markedQuestions),
+                visitedQuestions: Array.from(visitedQuestions),
                 timeLeft,
                 startTime: startTime || Date.now(),
                 lastSaved: new Date().toISOString()
@@ -120,7 +136,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         } catch (error) {
             console.error('Error saving exam progress:', error);
         }
-    }, [answers, currentQuestionIndex, markedQuestions, timeLeft, progressKey, startTime]);
+    }, [answers, currentQuestionIndex, selectedSubject, markedQuestions, visitedQuestions, timeLeft, progressKey, startTime]);
 
     // 1. On mount, always check for saved progress and restore answers, currentQuestionIndex, markedQuestions, startTime, and timeLeft before starting the timer.
     useEffect(() => {
@@ -128,7 +144,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (savedProgress) {
             const progress = JSON.parse(savedProgress);
             setAnswers(progress.answers || {});
-            setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+            
+            // Fix: Restore selected subject first, then set question index
+            if (progress.selectedSubject) {
+                setSelectedSubject(progress.selectedSubject);
+            }
+            
+            // Reset to 0 to ensure proper loading, then set to saved index after subject is set
+            setCurrentQuestionIndex(0);
+            
+            // Use setTimeout to ensure subject change completes first
+            setTimeout(() => {
+                setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+            }, 100);
+            
             setMarkedQuestions(new Set(progress.markedQuestions || []));
             setStartTime(progress.startTime || Date.now());
             // Calculate timeLeft based on startTime and duration
@@ -142,13 +171,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Mark initial question as visited when exam starts or when navigating
+    useEffect(() => {
+        if (isExamStarted && !visitedQuestions.has(currentQuestionIndex)) {
+            setVisitedQuestions(prev => new Set([...prev, currentQuestionIndex]));
+        }
+    }, [isExamStarted, currentQuestionIndex, visitedQuestions]);
+
     // 2. On every answer change and question navigation, always call saveExamProgress
     useEffect(() => {
         if (isExamStarted) {
             saveExamProgress();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [answers, currentQuestionIndex, isExamStarted]);
+    }, [answers, currentQuestionIndex, visitedQuestions, markedQuestions, isExamStarted]);
 
     // 3. When starting a new exam, only reset state if there is no saved progress
     const startExam = () => {
@@ -187,19 +223,21 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     }, [isExamStarted, startTime, exam.examDurationMinutes]);
 
     // --- FULLSCREEN LOGIC START ---
-    // Helper to enter fullscreen
-    const requestFullscreen = useCallback(() => {
-        const elem = mainExamRef.current;
-        if (elem && elem.requestFullscreen) {
-            elem.requestFullscreen();
-        } else if (elem && elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
-        } else if (elem && elem.mozRequestFullScreen) {
-            elem.mozRequestFullScreen();
-        } else if (elem && elem.msRequestFullscreen) {
-            elem.msRequestFullscreen();
+    const [warningDialog, setWarningDialog] = useState(false);
+
+    // Function to request full-screen mode (exactly like reference)
+    const enterFullScreen = () => {
+        const element = document.documentElement; // Whole document
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.mozRequestFullScreen) { // Firefox
+            element.mozRequestFullScreen();
+        } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) { // IE/Edge
+            element.msRequestFullscreen();
         }
-    }, []);
+    };
 
     // Helper to exit fullscreen
     const exitFullscreen = useCallback(() => {
@@ -214,35 +252,85 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, []);
 
-    // On exam start/continue, enter fullscreen
+    // On exam start/continue, enter fullscreen and hide navigation
     useEffect(() => {
         if (isExamStarted) {
-            requestFullscreen();
+            enterFullScreen();
+            
+            // Add exam-mode class to body for global navigation hiding
+            document.body.classList.add('exam-mode');
+            
+            // Hide navigation elements during exam
+            const navElements = document.querySelectorAll('nav, .navbar, .navigation, [role="navigation"]');
+            navElements.forEach(nav => {
+                nav.style.display = 'none';
+            });
+            
+            // Hide header/top navigation if it exists
+            const headerElements = document.querySelectorAll('header, .header, .top-nav');
+            headerElements.forEach(header => {
+                header.style.display = 'none';
+            });
+            
+            // Hide any sidebar or menu elements
+            const sidebarElements = document.querySelectorAll('.sidebar, .menu, .drawer, [role="menu"]');
+            sidebarElements.forEach(sidebar => {
+                sidebar.style.display = 'none';
+            });
         }
-    }, [isExamStarted, requestFullscreen]);
-
-    // Listen for fullscreenchange: if exited, warn and force re-entry
-    useEffect(() => {
-        function handleFullscreenChange() {
-            const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            if (!isFull && isExamStarted && !examCompletedRef.current) {
-                toast.error("You must stay in fullscreen during the exam! Returning to fullscreen...");
-                setTimeout(() => {
-                    requestFullscreen();
-                }, 500);
-            }
-        }
-        document.addEventListener("fullscreenchange", handleFullscreenChange);
-        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-        document.addEventListener("mozfullscreenchange", handleFullscreenChange);
-        document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+        
+        // Cleanup function to restore navigation when exam ends
         return () => {
-            document.removeEventListener("fullscreenchange", handleFullscreenChange);
-            document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
-            document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
-            document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+            // Remove exam-mode class from body
+            document.body.classList.remove('exam-mode');
+            
+            if (examCompletedRef.current) {
+                const navElements = document.querySelectorAll('nav, .navbar, .navigation, [role="navigation"]');
+                navElements.forEach(nav => {
+                    nav.style.display = '';
+                });
+                
+                const headerElements = document.querySelectorAll('header, .header, .top-nav');
+                headerElements.forEach(header => {
+                    header.style.display = '';
+                });
+                
+                const sidebarElements = document.querySelectorAll('.sidebar, .menu, .drawer, [role="menu"]');
+                sidebarElements.forEach(sidebar => {
+                    sidebar.style.display = '';
+                });
+            }
         };
-    }, [isExamStarted, requestFullscreen]);
+    }, [isExamStarted]);
+
+
+    // Out of focus detection (exactly like reference)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false) {
+                setWarningDialog(true);
+            } else {
+                setWarningDialog(false);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        document.addEventListener('fullscreenchange', handleVisibilityChange);
+        window.addEventListener("resize", handleVisibilityChange);
+        window.addEventListener("focus", handleVisibilityChange);
+        window.addEventListener("blur", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('fullscreenchange', handleVisibilityChange);
+            window.removeEventListener("resize", handleVisibilityChange);
+            window.removeEventListener("focus", handleVisibilityChange);
+            window.removeEventListener("blur", handleVisibilityChange);
+        };
+    }, [isExamStarted]);
+
+
+
 
     // Block navigation away
     useEffect(() => {
@@ -292,7 +380,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             score,
             totalMarks,
             timeTaken: (exam.examDurationMinutes * 60) - timeLeft,
-            completedAt: new Date().toISOString()
+            completedAt: new Date().toISOString(),
+            visitedQuestions: Array.from(visitedQuestions),
+            markedQuestions: Array.from(markedQuestions)
         }
 
         // Clear saved progress
@@ -452,63 +542,133 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     return (
         <div
             ref={mainExamRef}
-            className="min-h-screen bg-white flex flex-col"
+            className={`bg-gray-50 ${isExamStarted ? 'exam-mode' : ''}`}
         >
-            {/* Header */}
-            <ExamHeader
-                exam={exam}
-                student={student}
-                isOnline={isOnline}
-                timeLeft={timeLeft}
-                answeredQuestions={answeredQuestions}
-                totalQuestions={totalQuestions}
-                progressPercentage={progressPercentage}
-                collegeDetails={collegeDetails}
-            />
-
-            <div className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 flex flex-col min-h-0">
-                {/* Subject Tabs */}
-                {allSubjects.length > 1 && (
-                    <div className="mb-4 animate-slideUp" style={{animationDelay: '0.1s'}}>
-                        <Tabs value={selectedSubject} onValueChange={setSelectedSubject} className="w-full">
-                            <TabsList className="bg-white rounded-2xl shadow-lg border border-gray-200 p-2 gap-2">
-                                {allSubjects.map(subject => {
-                                    const count = (questions || []).filter(q => q.subject === subject).length;
-                                    return (
-                                        <TabsTrigger 
-                                            key={subject} 
-                                            value={subject} 
-                                            className="capitalize px-4 py-2 rounded-xl font-medium transition-all duration-300 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-gray-100 text-sm"
-                                        >
-                                            {subject} ({count})
-                                        </TabsTrigger>
-                                    );
-                                })}
-                            </TabsList>
-                        </Tabs>
+            {/* Warning Dialog */}
+            {warningDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+                    <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-red-600 mb-4">⚠️ Warning</h3>
+                        <p className="text-gray-700 mb-4">
+                            You have exited fullscreen mode or the exam window has lost focus. 
+                            Please return to fullscreen mode to continue your exam safely.
+                        </p>
+                        <button
+                            onClick={enterFullScreen}
+                            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+                        >
+                            Return to Fullscreen
+                        </button>
                     </div>
-                )}
+                </div>
+            )}
+            
+            {/* Header */}
+            <div className="w-full">
+                <ExamHeader
+                    exam={exam}
+                    student={student}
+                    isOnline={isOnline}
+                    timeLeft={timeLeft}
+                    answeredQuestions={answeredQuestions}
+                    totalQuestions={totalQuestions}
+                    progressPercentage={progressPercentage}
+                    collegeDetails={collegeDetails}
+                />
+            </div>
+
+            {/* Subject Tabs */}
+            {allSubjects.length > 1 && (
+                <div className="w-full px-3 py-2 bg-white border-b border-gray-200">
+                    <Tabs value={selectedSubject} onValueChange={setSelectedSubject} className="w-full">
+                        <TabsList className="w-full bg-gray-100 rounded-lg p-1 grid grid-flow-col auto-cols-fr gap-1">
+                            {allSubjects.map(subject => {
+                                const count = (questions || []).filter(q => q.subject === subject).length;
+                                return (
+                                    <TabsTrigger 
+                                        key={subject} 
+                                        value={subject} 
+                                        className="capitalize px-2 py-1.5 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                                    >
+                                        <span className="hidden sm:inline">{subject}</span>
+                                        <span className="sm:hidden">{subject.slice(0, 4)}</span>
+                                        <span className="ml-1">({count})</span>
+                                    </TabsTrigger>
+                                );
+                            })}
+                        </TabsList>
+                    </Tabs>
+                </div>
+            )}
+            
+            {/* Mobile Layout - Simple and Clean */}
+            <div className="lg:hidden">
+                {/* Question Display */}
+                <div className="bg-white mx-3 mt-3 rounded-xl shadow-sm border border-gray-200">
+                    <div className="p-4">
+                        <QuestionDisplay
+                            currentQuestion={currentQuestion}
+                            currentQuestionIndex={currentQuestionIndex}
+                            totalQuestions={totalQuestions}
+                            markedQuestions={markedQuestions}
+                            userAnswer={answers[currentQuestion?._id]}
+                            onAnswerChange={handleAnswerChange}
+                            onMultipleAnswerChange={handleMultipleAnswerChange}
+                        />
+                    </div>
+                </div>
                 
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 min-h-0 animate-fadeIn" style={{animationDelay: '0.2s'}}>
-                    {/* Main Content */}
-                    <div className="lg:col-span-3 flex flex-col min-h-0 order-2 lg:order-1">
-                        <VicharCard className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100">
-                                <QuestionDisplay
-                                    currentQuestion={currentQuestion}
-                                    currentQuestionIndex={currentQuestionIndex}
-                                    totalQuestions={totalQuestions}
-                                    markedQuestions={markedQuestions}
-                                    userAnswer={answers[currentQuestion?._id]}
-                                    onAnswerChange={handleAnswerChange}
-                                    onMultipleAnswerChange={handleMultipleAnswerChange}
-                                />
+                {/* Navigation Buttons - Always at bottom */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-3 z-40 mt-4">
+                    <ExamNavigation
+                        currentQuestionIndex={currentQuestionIndex}
+                        totalQuestions={totalQuestions}
+                        markedQuestions={markedQuestions}
+                        onPrevious={handlePrevious}
+                        onNext={handleNext}
+                        onToggleMarked={handleToggleMarked}
+                        onSave={handleSave}
+                        onSubmit={handleSubmit}
+                        VicharButton={VicharButton}
+                        showSubmitButton={showSubmitButton}
+                    />
+                </div>
+                
+                {/* Question Navigator */}
+                <div className="bg-white mx-3 mt-4 mb-20 rounded-xl shadow-sm border border-gray-200">
+                    <QuestionNavigator
+                        questions={subjectQuestions}
+                        answers={answers}
+                        markedQuestions={markedQuestions}
+                        currentQuestionIndex={currentQuestionIndex}
+                        onGoToQuestion={goToQuestion}
+                    />
+                </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden lg:block">
+                <div className="max-w-7xl mx-auto px-6 py-6">
+                    <div className="grid grid-cols-12 gap-6">
+                        {/* Main Content Area */}
+                        <div className="col-span-8 space-y-4">
+                            {/* Question Display */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                                <div className="p-6">
+                                    <QuestionDisplay
+                                        currentQuestion={currentQuestion}
+                                        currentQuestionIndex={currentQuestionIndex}
+                                        totalQuestions={totalQuestions}
+                                        markedQuestions={markedQuestions}
+                                        userAnswer={answers[currentQuestion?._id]}
+                                        onAnswerChange={handleAnswerChange}
+                                        onMultipleAnswerChange={handleMultipleAnswerChange}
+                                    />
+                                </div>
                             </div>
-                        </VicharCard>
-                        
-                        {/* Navigation - Always visible at bottom */}
-                        <div className="mt-4 animate-slideUp" style={{animationDelay: '0.3s'}}>
-                            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4">
+                            
+                            {/* Navigation Controls */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                                 <ExamNavigation
                                     currentQuestionIndex={currentQuestionIndex}
                                     totalQuestions={totalQuestions}
@@ -523,51 +683,97 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 />
                             </div>
                         </div>
-                    </div>
-                    
-                    {/* Sidebar - Question Navigator */}
-                    <div className="lg:col-span-1 flex flex-col min-h-0 order-1 lg:order-2 animate-slideUp" style={{animationDelay: '0.4s'}}>
-                        <QuestionNavigator
-                            questions={subjectQuestions}
-                            answers={answers}
-                            markedQuestions={markedQuestions}
-                            currentQuestionIndex={currentQuestionIndex}
-                            onGoToQuestion={goToQuestion}
-                        />
+                        
+                        {/* Sidebar - Question Navigator */}
+                        <div className="col-span-4">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-6">
+                                <QuestionNavigator
+                                    questions={subjectQuestions}
+                                    answers={answers}
+                                    markedQuestions={markedQuestions}
+                                    currentQuestionIndex={currentQuestionIndex}
+                                    onGoToQuestion={goToQuestion}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <style jsx>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
+            <style jsx global>{`
+                /* Hide ALL navigation elements during exam - including specific Navbar component */
+                body.exam-mode nav,
+                body.exam-mode nav.bg-white,
+                body.exam-mode .navbar,
+                body.exam-mode .navigation,
+                body.exam-mode [role="navigation"],
+                body.exam-mode header,
+                body.exam-mode .header,
+                body.exam-mode .top-nav,
+                body.exam-mode .sidebar,
+                body.exam-mode .menu,
+                body.exam-mode .drawer,
+                body.exam-mode [role="menu"],
+                body.exam-mode .app-bar,
+                body.exam-mode .toolbar,
+                body.exam-mode .breadcrumb,
+                body.exam-mode .breadcrumbs,
+                /* Target the specific Navbar structure */
+                body.exam-mode nav > div.container,
+                body.exam-mode nav > div > div.flex {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                    pointer-events: none !important;
                 }
-                @keyframes slideUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
+                
+                /* Ensure exam container takes full screen */
+                .exam-mode {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 99999;
+                    overflow-y: auto;
+                    background: #f9fafb;
                 }
-                .animate-fadeIn {
-                    animation: fadeIn 0.6s ease-out forwards;
+                
+                /* Hide scrollbars during exam for cleaner look */
+                body.exam-mode {
+                    overflow: hidden;
                 }
-                .animate-slideUp {
-                    animation: slideUp 0.6s ease-out forwards;
-                    opacity: 0;
+                
+                /* Force hide any remaining navigation elements */
+                body.exam-mode * {
+                    max-width: 100% !important;
                 }
-                /* Custom Scrollbar */
-                .scrollbar-thin {
-                    scrollbar-width: thin;
+                
+                body.exam-mode nav *,
+                body.exam-mode .navbar *,
+                body.exam-mode header * {
+                    display: none !important;
                 }
-                .scrollbar-thumb-blue-300::-webkit-scrollbar-thumb {
-                    background-color: #93c5fd;
-                    border-radius: 9999px;
-                }
-                .scrollbar-track-gray-100::-webkit-scrollbar-track {
-                    background-color: #f3f4f6;
-                    border-radius: 9999px;
-                }
-                .scrollbar-thin::-webkit-scrollbar {
-                    width: 6px;
+                
+                /* Mobile optimizations */
+                @media (max-width: 1024px) {
+                    /* Smooth scrolling */
+                    * {
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    
+                    /* Prevent zoom on inputs */
+                    input, select, textarea {
+                        font-size: 16px;
+                    }
+                    
+                    /* Better touch targets */
+                    button {
+                        min-height: 44px;
+                        min-width: 44px;
+                    }
                 }
             `}</style>
 

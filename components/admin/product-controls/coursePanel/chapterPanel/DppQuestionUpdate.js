@@ -127,14 +127,12 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
         }, 3000)
     }
     const handleOptionChange = (option, value) => {
-        const convertedValue = handleLatexConversion(value)
-        setOptions(prev => ({...prev, [option]: convertedValue}))
+        setOptions(prev => ({...prev, [option]: value}))
     }
 
-    // Add this new handler for question text
+    // Handle question text changes without real-time conversion to avoid cursor issues  
     const handleQuestionTextChange = (e) => {
-        const convertedValue = handleLatexConversion(e.target.value)
-        setQuestionText(convertedValue)
+        setQuestionText(e.target.value)
     }
 
     const handleImageUrlChange = (option) => {
@@ -299,7 +297,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                     
                     <div className="mb-4">
                         <span className="font-bold mr-2">{serialNumber || 'Q.'})</span>
-                        {renderFormattedText(questionText)}
+                        {renderFormattedText(handleLatexConversion(questionText))}
                     </div>
 
                     {/* Updated image preview section */}
@@ -321,7 +319,7 @@ export default function DppQuestionUpdate({dpp, question, updateQuestion}) {
                                     {imageUrls[option] ? (
                                         <img src={options[option]} alt={`Option ${option}`} className="max-w-full h-auto" />
                                     ) : (
-                                        <div>{renderFormattedText(options[option])}</div>
+                                        <div>{renderFormattedText(handleLatexConversion(options[option]))}</div>
                                     )}
                                 </div>
                             ))}

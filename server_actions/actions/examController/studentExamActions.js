@@ -8,7 +8,6 @@ import ExamResult from "../../models/exam_portal/examResult";
 // Import models that are referenced in populate operations
 import MasterMcqQuestion from "../../models/exam_portal/master_mcq_question";
 import College from "../../models/exam_portal/college";
-import NegativeMarkingRule from "../../models/exam_portal/negativeMarkingRule";
 import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegativeMarkingRule";
 
 
@@ -17,51 +16,10 @@ import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegative
 // Helper function to get the appropriate negative marking rule for an exam
 async function getNegativeMarkingRuleForExam(exam) {
   try {
-    // Priority order: College-specific rule > College default > Super admin default > Exam's negativeMarks field
+    // Priority order: Super admin default > Exam's negativeMarks field
+    // Note: College-specific rules have been removed - only admin-controlled default rules are used
     
-    // 1. Try to find college-specific rule (most specific first: subject > standard > stream)
-    const collegeRules = await NegativeMarkingRule.find({
-      college: exam.college,
-      stream: exam.stream,
-      isActive: true
-    }).sort({ priority: -1 });
-
-    // Find the most specific matching rule
-    for (const rule of collegeRules) {
-      // Check for exact match with subject and standard
-      if (rule.subject && rule.standard) {
-        if (exam.examSubject.includes(rule.subject) && rule.standard === exam.standard) {
-          return {
-            source: "college_specific",
-            negativeMarks: rule.negativeMarks,
-            description: rule.description || `College rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
-            ruleId: rule._id
-          };
-        }
-      }
-      // Check for standard-specific rule (no subject)
-      else if (!rule.subject && rule.standard) {
-        if (rule.standard === exam.standard) {
-          return {
-            source: "college_specific",
-            negativeMarks: rule.negativeMarks,
-            description: rule.description || `College rule: ${rule.stream} > ${rule.standard}th`,
-            ruleId: rule._id
-          };
-        }
-      }
-      // Check for stream-wide rule (no subject or standard)
-      else if (!rule.subject && !rule.standard) {
-        return {
-          source: "college_specific",
-          negativeMarks: rule.negativeMarks,
-          description: rule.description || `College rule: ${rule.stream}`,
-          ruleId: rule._id
-        };
-      }
-    }
-
-    // 2. Try to find super admin default rule
+    // 1. Try to find super admin default rule
     const defaultRules = await DefaultNegativeMarkingRule.find({
       stream: exam.stream,
       isActive: true
@@ -101,7 +59,7 @@ async function getNegativeMarkingRuleForExam(exam) {
       }
     }
 
-    // 3. Fallback to exam's negativeMarks field
+    // 2. Fallback to exam's negativeMarks field
     return {
       source: "exam_specific",
       negativeMarks: exam.negativeMarks || 0,
@@ -119,6 +77,175 @@ async function getNegativeMarkingRuleForExam(exam) {
       description: "Fallback to exam setting",
       ruleId: null,
       defaultRuleId: null
+    };
+  }
+}
+
+// Enhanced helper function to get negative marking rule for a specific question type
+async function getNegativeMarkingRuleForQuestion(exam, question) {
+  try {
+    // Determine question type
+    let questionType = 'MCQ'; // Default
+    if (question.userInputAnswer) {
+      questionType = 'Numerical';
+    } else if (question.isMultipleAnswer) {
+      questionType = 'MCMA';
+    }
+
+    // Priority order for rule matching:
+    // 1. Question type + Subject + Standard specific
+    // 2. Question type + Subject specific
+    // 3. Question type + Standard specific  
+    // 4. Question type specific
+    // 5. Subject + Standard specific
+    // 6. Subject specific
+    // 7. Standard specific
+    // 8. Stream-wide rule
+    // 9. Exam's negativeMarks field
+
+    const defaultRules = await DefaultNegativeMarkingRule.find({
+      stream: exam.stream,
+      isActive: true
+    }).sort({ priority: -1 });
+
+    // Get question's subject if available
+    const questionSubject = question.subject;
+
+    for (const rule of defaultRules) {
+      // 1. Question type + Subject + Standard specific (highest priority)
+      if (rule.questionType === questionType && rule.subject && rule.standard) {
+        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 2. Question type + Subject specific
+      else if (rule.questionType === questionType && rule.subject && !rule.standard) {
+        if (questionSubject === rule.subject) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.subject}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 3. Question type + Standard specific
+      else if (rule.questionType === questionType && !rule.subject && rule.standard) {
+        if (rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.standard}th`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 4. Question type specific (stream-wide)
+      else if (rule.questionType === questionType && !rule.subject && !rule.standard) {
+        return {
+          source: "super_admin_default",
+          negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
+          description: rule.description || `${questionType} rule: ${rule.stream}`,
+          defaultRuleId: rule._id,
+          partialMarkingEnabled: rule.partialMarkingEnabled,
+          partialMarkingRules: rule.partialMarkingRules
+        };
+      }
+      // 5. Subject + Standard specific (no question type)
+      else if (!rule.questionType && rule.subject && rule.standard) {
+        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Subject rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 6. Subject specific (no question type)
+      else if (!rule.questionType && rule.subject && !rule.standard) {
+        if (questionSubject === rule.subject) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Subject rule: ${rule.stream} > ${rule.subject}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 7. Standard specific (no question type, no subject)
+      else if (!rule.questionType && !rule.subject && rule.standard) {
+        if (rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Standard rule: ${rule.stream} > ${rule.standard}th`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 8. Stream-wide rule (no question type, no subject, no standard)
+      else if (!rule.questionType && !rule.subject && !rule.standard) {
+        return {
+          source: "super_admin_default",
+          negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
+          description: rule.description || `Stream rule: ${rule.stream}`,
+          defaultRuleId: rule._id,
+          partialMarkingEnabled: rule.partialMarkingEnabled,
+          partialMarkingRules: rule.partialMarkingRules
+        };
+      }
+    }
+
+    // 9. Fallback to exam's negativeMarks field
+    return {
+      source: "exam_specific",
+      negativeMarks: exam.negativeMarks || 0,
+      positiveMarks: null,
+      description: exam.negativeMarks > 0 ? `Exam-specific: -${exam.negativeMarks} marks per wrong answer` : "No negative marking",
+      ruleId: null,
+      defaultRuleId: null,
+      partialMarkingEnabled: false,
+      partialMarkingRules: null
+    };
+
+  } catch (error) {
+    console.error("Error getting negative marking rule for question:", error);
+    // Fallback to exam's negativeMarks
+    return {
+      source: "exam_specific",
+      negativeMarks: exam.negativeMarks || 0,
+      positiveMarks: null,
+      description: "Fallback to exam setting",
+      ruleId: null,
+      defaultRuleId: null,
+      partialMarkingEnabled: false,
+      partialMarkingRules: null
     };
   }
 }
@@ -253,7 +380,9 @@ export async function submitExamResult(examData) {
       totalMarks,
       timeTaken,
       completedAt,
-      isOfflineSubmission = false
+      isOfflineSubmission = false,
+      visitedQuestions = [],
+      markedQuestions = []
     } = examData;
 
     // 1. Validate exam data
@@ -309,20 +438,24 @@ export async function submitExamResult(examData) {
       return answer;
     };
 
-    // 3. Get negative marking rule for this exam
-    const negativeMarkingRule = await getNegativeMarkingRuleForExam(exam);
-
-    // 4. Calculate detailed score with negative marking
+    // 3. Calculate detailed score with question-specific negative marking
     let finalScore = 0;
     let correctAnswersCount = 0;
     let incorrectAnswers = 0;
     let unattempted = 0;
     const questionAnalysis = [];
 
-    exam.examQuestions.forEach((question) => {
+    // Process each question with its specific negative marking rule
+    for (const question of exam.examQuestions) {
       const userAnswer = answers[question._id];
       const questionMarks = question.marks || 4;
-      const negativeMarks = negativeMarkingRule.negativeMarks;
+      
+      // Get question-specific negative marking rule
+      const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, question);
+      const negativeMarks = questionNegativeMarkingRule.negativeMarks;
+      
+      // Get admin-configured positive marks (fallback to question.marks or 4)
+      const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || questionMarks || 4;
 
       if (!userAnswer || (Array.isArray(userAnswer) && userAnswer.length === 0)) {
         unattempted++;
@@ -333,36 +466,83 @@ export async function submitExamResult(examData) {
           marks: 0,
           userAnswer: null,
           correctAnswer: correctAnswer,
+          negativeMarkingRule: questionNegativeMarkingRule.description,
         });
       } else if (question.isMultipleAnswer) {
+        // MCMA (Multiple Choice Multiple Answer) logic - JEE Advanced Rules
         const questionCorrectAnswers = question.multipleAnswer || [];
         const normalizedUserAnswer = normalizeAnswer(userAnswer, question);
         const normalizedCorrectAnswers = normalizeAnswer(questionCorrectAnswers, question);
-        const isCorrect = Array.isArray(normalizedUserAnswer) &&
-          normalizedUserAnswer.length === normalizedCorrectAnswers.length &&
-          normalizedUserAnswer.every((ans) => normalizedCorrectAnswers.includes(ans));
-        if (isCorrect) {
-          finalScore += questionMarks;
-          correctAnswersCount++;
-          questionAnalysis.push({
-            questionId: question._id,
-            status: "correct",
-            marks: questionMarks,
-            userAnswer: normalizedUserAnswer,
-            correctAnswer: normalizedCorrectAnswers,
-          });
-        } else {
-          finalScore -= negativeMarks;
+        
+        // Analyze user's selections
+        const correctSelected = normalizedUserAnswer.filter(ans => normalizedCorrectAnswers.includes(ans));
+        const wrongSelected = normalizedUserAnswer.filter(ans => !normalizedCorrectAnswers.includes(ans));
+        const totalCorrectOptions = normalizedCorrectAnswers.length;
+        const correctSelectedCount = correctSelected.length;
+        
+        let marksAwarded = 0;
+        let status = "";
+        
+        // JEE Advanced MCMA Marking Scheme:
+        if (normalizedUserAnswer.length === 0) {
+          // Zero Marks: 0 if no options are chosen
+          marksAwarded = 0;
+          status = "unattempted";
+          unattempted++;
+        } else if (wrongSelected.length > 0) {
+          // Negative Marks: Use admin-configured rule for MCMA wrong selections
+          marksAwarded = -negativeMarks; // Use admin-configured negative marking
+          status = "incorrect";
           incorrectAnswers++;
-          questionAnalysis.push({
-            questionId: question._id,
-            status: "incorrect",
-            marks: -negativeMarks,
-            userAnswer: normalizedUserAnswer,
-            correctAnswer: normalizedCorrectAnswers,
-          });
+        } else if (correctSelectedCount === totalCorrectOptions) {
+          // Full Marks: Use admin-configured positive marks if ALL correct options chosen
+          marksAwarded = adminPositiveMarks; // Use admin-configured positive marks
+          status = "correct";
+          correctAnswersCount++;
+        } else if (correctSelectedCount > 0) {
+          // Partial Marks: Use admin-configured partial marking rules
+          if (questionNegativeMarkingRule.partialMarkingEnabled && questionNegativeMarkingRule.partialMarkingRules) {
+            // Use admin-configured partial marking rules
+            if (totalCorrectOptions >= 4 && correctSelectedCount === 3) {
+              marksAwarded = questionNegativeMarkingRule.partialMarkingRules.threeOutOfFour || 3;
+            } else if (totalCorrectOptions >= 3 && correctSelectedCount === 2) {
+              marksAwarded = questionNegativeMarkingRule.partialMarkingRules.twoOutOfThree || 2;
+            } else if (totalCorrectOptions >= 2 && correctSelectedCount === 1) {
+              marksAwarded = questionNegativeMarkingRule.partialMarkingRules.oneOutOfTwo || 1;
+            } else {
+              // Proportional based on admin positive marks for other scenarios
+              marksAwarded = Math.floor((correctSelectedCount / totalCorrectOptions) * adminPositiveMarks);
+            }
+          } else {
+            // Fallback: If partial marking not configured, use proportional marking
+            marksAwarded = Math.floor((correctSelectedCount / totalCorrectOptions) * adminPositiveMarks);
+          }
+          status = "partially_correct";
+          // Don't increment correctAnswersCount for partial marks
+        } else {
+          // This shouldn't happen, but fallback
+          marksAwarded = 0;
+          status = "unattempted";
+          unattempted++;
         }
+        
+        finalScore += marksAwarded;
+        questionAnalysis.push({
+          questionId: question._id,
+          status: status,
+          marks: marksAwarded,
+          userAnswer: normalizedUserAnswer,
+          correctAnswer: normalizedCorrectAnswers,
+          negativeMarkingRule: questionNegativeMarkingRule.description,
+          mcmaDetails: {
+            totalCorrectOptions: totalCorrectOptions,
+            correctSelected: correctSelected.length,
+            wrongSelected: wrongSelected.length,
+            partialCredit: marksAwarded > 0 && marksAwarded < questionMarks
+          }
+        });
       } else {
+        // MCQ (Single Choice) or Numerical logic
         const normalizedUserAnswer = normalizeAnswer(userAnswer, question);
         const normalizedCorrectAnswer = normalizeAnswer(question.answer, question);
         if (normalizedUserAnswer === normalizedCorrectAnswer) {
@@ -374,6 +554,7 @@ export async function submitExamResult(examData) {
             marks: questionMarks,
             userAnswer: normalizedUserAnswer,
             correctAnswer: normalizedCorrectAnswer,
+            negativeMarkingRule: questionNegativeMarkingRule.description,
           });
         } else {
           finalScore -= negativeMarks;
@@ -384,10 +565,14 @@ export async function submitExamResult(examData) {
             marks: -negativeMarks,
             userAnswer: normalizedUserAnswer,
             correctAnswer: normalizedCorrectAnswer,
+            negativeMarkingRule: questionNegativeMarkingRule.description,
           });
         }
       }
-    });
+    }
+
+    // 4. Get exam-wide negative marking summary for legacy compatibility
+    const examNegativeMarkingRule = await getNegativeMarkingRuleForExam(exam);
 
     // 5. Create new exam result (do not overwrite)
     const examResult = new ExamResult({
@@ -395,6 +580,8 @@ export async function submitExamResult(examData) {
       student: studentId,
       attemptNumber: previousAttempts + 1,
       answers,
+      visitedQuestions,
+      markedQuestions,
       score: finalScore,
       totalMarks: exam.totalMarks || totalMarks,
       timeTaken,
@@ -408,11 +595,11 @@ export async function submitExamResult(examData) {
         accuracy: (correctAnswersCount / exam.examQuestions.length) * 100,
       },
       negativeMarkingInfo: {
-        ruleUsed: negativeMarkingRule.ruleId,
-        defaultRuleUsed: negativeMarkingRule.defaultRuleId,
-        negativeMarks: negativeMarkingRule.negativeMarks,
-        ruleDescription: negativeMarkingRule.description,
-        ruleSource: negativeMarkingRule.source
+        ruleUsed: null, // College-specific rules no longer exist
+        defaultRuleUsed: examNegativeMarkingRule.defaultRuleId,
+        negativeMarks: examNegativeMarkingRule.negativeMarks,
+        ruleDescription: "Question-specific rules applied (see questionAnalysis for details)",
+        ruleSource: examNegativeMarkingRule.source
       },
     });
     await examResult.save();
@@ -434,9 +621,9 @@ export async function submitExamResult(examData) {
         completedAt: examResult.completedAt,
         questionAnalysis, // Include questionAnalysis in immediate response
         negativeMarkingRule: {
-          negativeMarks: negativeMarkingRule.negativeMarks,
-          description: negativeMarkingRule.description,
-          source: negativeMarkingRule.source
+          negativeMarks: examNegativeMarkingRule.negativeMarks,
+          description: "Question-specific rules applied",
+          source: examNegativeMarkingRule.source
         },
       },
     };
@@ -591,9 +778,6 @@ export async function getStudentExamResult(studentId, examId) {
       path: "exam",
       select: "examName examSubject stream standard completedAt",
     }).populate({
-      path: "negativeMarkingInfo.ruleUsed",
-      select: "negativeMarks description stream standard subject college isActive"
-    }).populate({
       path: "negativeMarkingInfo.defaultRuleUsed", 
       select: "negativeMarks description stream standard subject examType isActive"  
     });
@@ -626,14 +810,7 @@ export async function getStudentExamResult(studentId, examId) {
         negativeMarks: resultObj.negativeMarkingInfo.negativeMarks,
         ruleDescription: resultObj.negativeMarkingInfo.ruleDescription,
         ruleSource: resultObj.negativeMarkingInfo.ruleSource,
-        ruleUsed: resultObj.negativeMarkingInfo.ruleUsed ? {
-          _id: resultObj.negativeMarkingInfo.ruleUsed._id,
-          negativeMarks: resultObj.negativeMarkingInfo.ruleUsed.negativeMarks,
-          description: resultObj.negativeMarkingInfo.ruleUsed.description,
-          stream: resultObj.negativeMarkingInfo.ruleUsed.stream,
-          standard: resultObj.negativeMarkingInfo.ruleUsed.standard,
-          subject: resultObj.negativeMarkingInfo.ruleUsed.subject
-        } : null,
+        ruleUsed: null, // College-specific rules no longer exist
         defaultRuleUsed: resultObj.negativeMarkingInfo.defaultRuleUsed ? {
           _id: resultObj.negativeMarkingInfo.defaultRuleUsed._id,
           negativeMarks: resultObj.negativeMarkingInfo.defaultRuleUsed.negativeMarks,
@@ -684,10 +861,6 @@ export async function getStudentExamResults(studentId) {
         select: "examName examSubject stream standard completedAt",
       })
       .populate({
-        path: "negativeMarkingInfo.ruleUsed",
-        select: "negativeMarks description stream standard subject college isActive"
-      })
-      .populate({
         path: "negativeMarkingInfo.defaultRuleUsed", 
         select: "negativeMarks description stream standard subject examType isActive"
       })
@@ -715,14 +888,7 @@ export async function getStudentExamResults(studentId) {
           negativeMarks: resultObj.negativeMarkingInfo.negativeMarks,
           ruleDescription: resultObj.negativeMarkingInfo.ruleDescription,
           ruleSource: resultObj.negativeMarkingInfo.ruleSource,
-          ruleUsed: resultObj.negativeMarkingInfo.ruleUsed ? {
-            _id: resultObj.negativeMarkingInfo.ruleUsed._id,
-            negativeMarks: resultObj.negativeMarkingInfo.ruleUsed.negativeMarks,
-            description: resultObj.negativeMarkingInfo.ruleUsed.description,
-            stream: resultObj.negativeMarkingInfo.ruleUsed.stream,
-            standard: resultObj.negativeMarkingInfo.ruleUsed.standard,
-            subject: resultObj.negativeMarkingInfo.ruleUsed.subject
-          } : null,
+          ruleUsed: null, // College-specific rules no longer exist
           defaultRuleUsed: resultObj.negativeMarkingInfo.defaultRuleUsed ? {
             _id: resultObj.negativeMarkingInfo.defaultRuleUsed._id,
             negativeMarks: resultObj.negativeMarkingInfo.defaultRuleUsed.negativeMarks,

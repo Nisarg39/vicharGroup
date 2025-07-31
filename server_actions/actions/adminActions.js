@@ -21,7 +21,6 @@ import College from "../models/exam_portal/college"
 import master_mcq_question from "../models/exam_portal/master_mcq_question"
 import TeacherExam from "../models/exam_portal/teacherExam"
 import DefaultNegativeMarkingRule from "../models/exam_portal/defaultNegativeMarkingRule"
-import NegativeMarkingRule from "../models/exam_portal/negativeMarkingRule"
 import HelpAndSupport from "../models/app_models/helpAndSupport"
 import FeelingConfused from "server_actions/models/app_models/feelingConsufed"
 import jwt from "jsonwebtoken"
@@ -305,15 +304,43 @@ export async function searchStudent(details){
             }
         }
 
+        const page = details.page || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
         const students = await Student.find(query)
-            .limit(10) // Limit results for better performance
-            .select('name phone email') // Select only needed fields
-            .lean(); // Convert to plain JavaScript objects
+            .populate({
+                path: 'cart',
+                model: 'Products',
+                select: 'name price discountPrice _id type'
+            })
+            .populate({
+                path: 'purchases',
+                model: 'Payment',
+                populate: {
+                    path: 'product',
+                    model: 'Products',
+                    select: 'name price discountPrice _id type'
+                }
+            })
+            .skip(skip)
+            .limit(limit)
+            .lean()
+            .sort({ createdAt: -1 });
+
+        const totalCount = await Student.countDocuments(query);
+        const serializedStudents = students.map(student => ({
+            _id: student._id.toString(),
+            ...student,
+        }));
 
         return {
             success: true,
             message: "Students found",
-            students: students
+            students: serializedStudents,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            totalCount,
         };
     } catch (error) {
         console.log(error)
@@ -1742,12 +1769,9 @@ export async function addCollege(details) {
         // Create the college first
         const college = await College.create(details)
         
-        // Apply default negative marking rules to the new college
-        await applyDefaultNegativeMarkingRules(college._id)
-        
         return {
             success: true,
-            message: "College added successfully with default negative marking rules",
+            message: "College added successfully",
             college: JSON.parse(JSON.stringify(college))
         }
     } catch (error) {
@@ -1759,45 +1783,6 @@ export async function addCollege(details) {
     }
 }
 
-// Helper function to apply default negative marking rules to a new college
-async function applyDefaultNegativeMarkingRules(collegeId) {
-    try {
-        // Get all active default rules
-        const defaultRules = await DefaultNegativeMarkingRule.find({ isActive: true })
-        
-        // Create college-specific rules based on default rules
-        const collegeRules = defaultRules.map(rule => ({
-            college: collegeId,
-            stream: rule.stream,
-            standard: rule.standard,
-            subject: rule.subject,
-            negativeMarks: rule.negativeMarks,
-            description: rule.description,
-            priority: rule.priority
-        }))
-        
-        if (collegeRules.length > 0) {
-            const createdRules = await NegativeMarkingRule.insertMany(collegeRules)
-            
-            // Update college with references to the created rules
-            await College.findByIdAndUpdate(
-                collegeId,
-                { 
-                    $push: { 
-                        negativeMarkingRules: { 
-                            $each: createdRules.map(rule => rule._id) 
-                        } 
-                    } 
-                }
-            )
-        }
-        
-        console.log(`Applied ${collegeRules.length} default negative marking rules to college ${collegeId}`)
-    } catch (error) {
-        console.error('Error applying default negative marking rules:', error)
-        // Don't throw error - college creation should still succeed
-    }
-}
 export async function showCollegeList(page = 1, limit = 10) {
     try {
         await connectDB()
@@ -2343,7 +2328,7 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
                     
                     // Determine if this is a subject-specific rule (like MHT-CET) or question type (like JEE)
                     const isSubject = ['Physics', 'Chemistry', 'Mathematics', 'Biology'].includes(key)
-                    const isQuestionType = ['MCQ', 'Numerical'].includes(key)
+                    const isQuestionType = ['MCQ', 'MCMA', 'Numerical'].includes(key)
                     
                     let stream = examName.includes('JEE') ? 'JEE' : 
                                 examName.includes('NEET') ? 'NEET' : 

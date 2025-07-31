@@ -20,6 +20,13 @@ const ExamResultSchema = new mongoose.Schema({
     of: mongoose.Schema.Types.Mixed, // Can be string, array, or any other type
     default: {},
   },
+  // Navigation tracking for NSE-style question states
+  visitedQuestions: [{
+    type: Number, // question index
+  }],
+  markedQuestions: [{
+    type: Number, // question index  
+  }],
   score: {
     type: Number,
     required: true,
@@ -50,7 +57,7 @@ const ExamResultSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ["correct", "incorrect", "unattempted"],
+      enum: ["correct", "incorrect", "unattempted", "partially_correct"],
       required: true,
     },
     marks: {
@@ -62,6 +69,15 @@ const ExamResultSchema = new mongoose.Schema({
     },
     correctAnswer: {
       type: mongoose.Schema.Types.Mixed, // Can be string or array
+    },
+    negativeMarkingRule: {
+      type: String, // Description of the negative marking rule applied
+    },
+    mcmaDetails: {
+      totalCorrectOptions: { type: Number },
+      correctSelected: { type: Number },
+      wrongSelected: { type: Number },
+      partialCredit: { type: Boolean }
     },
   }],
   statistics: {
@@ -84,10 +100,7 @@ const ExamResultSchema = new mongoose.Schema({
   },
   // Negative marking rule information used for this exam
   negativeMarkingInfo: {
-    ruleUsed: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "NegativeMarkingRule",
-    },
+    // Note: ruleUsed removed - college-specific rules no longer exist
     defaultRuleUsed: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "DefaultNegativeMarkingRule",
@@ -99,7 +112,7 @@ const ExamResultSchema = new mongoose.Schema({
     ruleDescription: String,
     ruleSource: {
       type: String,
-      enum: ["college_specific", "college_default", "super_admin_default", "exam_specific"],
+      enum: ["super_admin_default", "exam_specific"],
       default: "exam_specific"
     }
   },

@@ -67,14 +67,14 @@ export default function ExamHome({ examId }) {
                 return;
             }
         }
-        setCurrentView('exam');
+        setCurrentView('instructions');
     };
 
     // Handler for continue exam
     const handleContinueExam = () => {
         setShowContinuePrompt(false);
         setPendingExamStart(false);
-        setCurrentView('exam');
+        setCurrentView('instructions');
     };
 
     // Handler for start new exam
@@ -85,7 +85,7 @@ export default function ExamHome({ examId }) {
         }
         setShowContinuePrompt(false);
         setPendingExamStart(false);
-        setCurrentView('exam');
+        setCurrentView('instructions');
     };
 
     // Sync offline submissions
@@ -151,6 +151,10 @@ export default function ExamHome({ examId }) {
                 const updatedAttempts = await getAllExamAttempts(student._id, examId);
                 if (updatedAttempts.success) {
                     setAllAttempts(updatedAttempts.attempts);
+                    // Update hasAttempted state since we now have at least one attempt
+                    if (updatedAttempts.attempts.length > 0) {
+                        setHasAttempted(true);
+                    }
                 }
                 
                 // Show result if this was a recent submission
@@ -408,6 +412,8 @@ export default function ExamHome({ examId }) {
                 if (res.success) {
                     console.log("Setting attempts:", res.attempts);
                     setAllAttempts(res.attempts);
+                    // Update hasAttempted state based on actual attempts
+                    setHasAttempted(res.attempts.length > 0);
                 } else {
                     console.error("Failed to fetch attempts:", res.message);
                 }
@@ -415,6 +421,17 @@ export default function ExamHome({ examId }) {
         }
         fetchAttempts();
     }, [student?._id, examId, examResult]); // refetch after new attempt
+
+    // Refresh state when coming back to home view
+    useEffect(() => {
+        if (currentView === 'home' && student?._id && examId) {
+            // Small delay to ensure state is properly set before refreshing
+            const timeoutId = setTimeout(() => {
+                refreshExamState();
+            }, 100);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [currentView, student?._id, examId]);
 
     // Find the best attempt (highest score, if tie: earliest date)
     const bestAttempt = allAttempts.length > 0 ? allAttempts.reduce((best, curr) => {
@@ -424,9 +441,6 @@ export default function ExamHome({ examId }) {
         return best;
     }, null) : null;
 
-    const startExam = () => {
-        setCurrentView('instructions')
-    }
 
     const beginExam = () => {
         setCurrentView('exam')
@@ -436,6 +450,39 @@ export default function ExamHome({ examId }) {
         if (previousResult) {
             setExamResult(previousResult)
             setCurrentView('result')
+        }
+    }
+
+    // Function to refresh exam state when returning from result view
+    const refreshExamState = async () => {
+        if (student?._id && examId) {
+            try {
+                // Refresh attempts data
+                const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                if (updatedAttempts.success) {
+                    setAllAttempts(updatedAttempts.attempts);
+                    // Update hasAttempted state based on actual attempts
+                    setHasAttempted(updatedAttempts.attempts.length > 0);
+                }
+                
+                // Refresh previous attempt data
+                const result = await getStudentExamResult(student._id, examId);
+                if (result.success && result.result) {
+                    setPreviousResult({
+                        score: result.result.score,
+                        totalMarks: result.result.totalMarks,
+                        percentage: result.result.percentage,
+                        correctAnswers: result.result.statistics?.correctAnswers || 0,
+                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                        unattempted: result.result.statistics?.unattempted || 0,
+                        timeTaken: result.result.timeTaken,
+                        completedAt: result.result.completedAt,
+                        questionAnalysis: result.result.questionAnalysis || []
+                    });
+                }
+            } catch (error) {
+                console.error('Error refreshing exam state:', error);
+            }
         }
     }
 
@@ -470,6 +517,22 @@ export default function ExamHome({ examId }) {
                 const updatedAttempts = await getAllExamAttempts(student._id, examId);
                 if (updatedAttempts.success) {
                     setAllAttempts(updatedAttempts.attempts);
+                    // Update hasAttempted state since we now have at least one attempt
+                    setHasAttempted(true);
+                    // Update previous result state for the "View Previous Result" functionality
+                    if (updatedAttempts.attempts.length > 0) {
+                        setPreviousResult({
+                            score: result.result.score,
+                            totalMarks: result.result.totalMarks,
+                            percentage: result.result.percentage,
+                            correctAnswers: result.result.statistics?.correctAnswers || 0,
+                            incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                            unattempted: result.result.statistics?.unattempted || 0,
+                            timeTaken: result.result.timeTaken,
+                            completedAt: result.result.completedAt,
+                            questionAnalysis: result.result.questionAnalysis || []
+                        });
+                    }
                 }
                 
                 setCurrentView('result');
@@ -595,7 +658,10 @@ export default function ExamHome({ examId }) {
             <ExamResult 
                 result={examResult}
                 exam={exam}
-                onBack={() => setCurrentView('home')}
+                onBack={() => {
+                    refreshExamState(); // Refresh state before going back
+                    setCurrentView('home');
+                }}
                 onRetake={handleRetake}
                 allAttempts={allAttempts}
             />
@@ -608,7 +674,10 @@ export default function ExamHome({ examId }) {
             <ExamResult
                 result={selectedAttempt}
                 exam={exam}
-                onBack={() => setCurrentView('home')}
+                onBack={() => {
+                    refreshExamState(); // Refresh state before going back
+                    setCurrentView('home');
+                }}
                 onRetake={handleRetake}
                 allAttempts={allAttempts}
             />
@@ -653,7 +722,7 @@ export default function ExamHome({ examId }) {
                             {/* Exam Details */}
                             <div className="group">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-black bg-clip-text text-transparent">
                                         Exam Details
                                     </h2>
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
@@ -676,7 +745,7 @@ export default function ExamHome({ examId }) {
                             {/* Attempts Table */}
                             <div className="group">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-black bg-clip-text text-transparent">
                                         Your Attempts
                                     </h2>
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
@@ -695,7 +764,7 @@ export default function ExamHome({ examId }) {
                         <div className="lg:col-span-4 space-y-6 lg:space-y-8">
                             <div className="group">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                    <h2 className="text-2xl font-bold text-gray-900 bg-black bg-clip-text text-transparent">
                                         Offline & Sync
                                     </h2>
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>

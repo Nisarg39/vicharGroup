@@ -225,14 +225,12 @@ export default function DppQuestion({dpp, addedQuestion}){
       }
     };
 
-    // Add this function to handle real-time conversion
+    // Handle text change without real-time conversion to avoid cursor issues
     const handleTextChange = (value, field) => {
-      const convertedText = handleLatexConversion(value);
-      
       if (field === 'question') {
-        setQuestionText(convertedText);
+        setQuestionText(value);
       } else if (['A', 'B', 'C', 'D'].includes(field)) {
-        handleOptionChange(field, convertedText);
+        handleOptionChange(field, value);
       }
     };
 
@@ -326,7 +324,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                     
                     <div className="mb-4">
                         <span className="font-bold mr-2">{serialNumber || 'Q.'})</span>
-                        {renderFormattedText(convertLatexToFormattedText(questionText))}
+                        {renderFormattedText(convertLatexToFormattedText(handleLatexConversion(questionText)))}
                     </div>
                     
                     {/* Display question image if available */}
@@ -344,7 +342,7 @@ export default function DppQuestion({dpp, addedQuestion}){
                                     {imageUrls[option] ? (
                                         <img src={options[option]} alt={`Option ${option}`} className="max-w-full h-auto" />
                                     ) : (
-                                        <div>{renderFormattedText(convertLatexToFormattedText(options[option]))}</div>
+                                        <div>{renderFormattedText(convertLatexToFormattedText(handleLatexConversion(options[option])))}</div>
                                     )}
                                 </div>
                             ))}

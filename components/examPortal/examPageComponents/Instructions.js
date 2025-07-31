@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../ui/button"
 import { Badge } from "../../ui/badge"
 import { Checkbox } from "../../ui/checkbox"
-import { AlertTriangle, Clock, FileText, CheckCircle, ArrowLeft, Play } from "lucide-react"
+import { AlertTriangle, Clock, FileText, CheckCircle, ArrowLeft, Play, Target } from "lucide-react"
 
 export default function Instructions({ exam, onStart, onBack }) {
     const [hasReadInstructions, setHasReadInstructions] = useState(false)
@@ -108,6 +108,89 @@ export default function Instructions({ exam, onStart, onBack }) {
                                 <p className="text-xl font-bold text-indigo-800">
                                     {Array.isArray(exam?.examSubject) ? exam.examSubject.join(', ') : exam?.examSubject}
                                 </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Marking Scheme */}
+                <Card className="bg-white/80 backdrop-blur-2xl shadow-2xl border border-white/30 rounded-3xl overflow-hidden group hover:shadow-3xl transition-all duration-500 relative">
+                    {/* Background Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 via-transparent to-orange-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <CardHeader className="relative z-10 pb-4">
+                        <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3 group-hover:text-amber-900 transition-colors duration-300">
+                            <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-lg">
+                                <Target className="w-6 h-6 text-white" />
+                            </div>
+                            Marking Scheme
+                        </CardTitle>
+                        <CardDescription className="text-gray-600 text-base font-medium">Understanding how your answers will be evaluated</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Correct Answer */}
+                            <div className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-all duration-300">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                    <span className="text-green-900 font-bold text-lg">Correct Answer</span>
+                                </div>
+                                <p className="text-2xl font-bold text-green-800">+{exam?.positiveMarks || exam?.marks || 4}</p>
+                                <p className="text-sm text-green-700 mt-1">marks awarded</p>
+                            </div>
+
+                            {/* Incorrect Answer */}
+                            <div className="p-5 bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl border border-red-200/50 hover:shadow-md transition-all duration-300">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                    <span className="text-red-900 font-bold text-lg">Incorrect Answer</span>
+                                </div>
+                                <p className="text-2xl font-bold text-red-800">
+                                    {exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0')}
+                                </p>
+                                <p className="text-sm text-red-700 mt-1">marks deducted</p>
+                            </div>
+
+                            {/* Unanswered */}
+                            <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200/50 hover:shadow-md transition-all duration-300">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+                                    <span className="text-gray-900 font-bold text-lg">Unanswered</span>
+                                </div>
+                                <p className="text-2xl font-bold text-gray-800">0</p>
+                                <p className="text-sm text-gray-700 mt-1">no marks</p>
+                            </div>
+                        </div>
+
+                        {/* Additional Marking Info */}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-blue-500 rounded-lg">
+                                    <FileText className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-blue-900 mb-2">Important Marking Guidelines</h4>
+                                    <ul className="space-y-2 text-sm text-blue-800">
+                                        <li className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                            <span>Each question carries equal marks unless specified otherwise</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                            <span>Multiple choice questions: Only one correct answer unless marked as multiple correct</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                            <span>Numerical questions: Enter your answer as a number (usually no negative marking)</span>
+                                        </li>
+                                        {exam?.negativeMarks > 0 && (
+                                            <li className="flex items-start gap-2">
+                                                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                <span className="text-red-800 font-medium">Negative marking is applicable - choose your answers carefully</span>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </CardContent>

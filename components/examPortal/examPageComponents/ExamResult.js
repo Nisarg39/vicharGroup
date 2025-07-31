@@ -273,31 +273,103 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             </CardContent>
           </Card>
 
-          {/* Negative Marking Information */}
-          {result.negativeMarkingInfo && (
-            <Card className="mb-6 bg-white/95 border border-gray-100/80 shadow-xl rounded-2xl">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
-                  Negative Marking Scheme
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  Details about the negative marking rules applied to this exam
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          {/* Marking Scheme Information */}
+          <Card className="mb-6 bg-white/95 border border-gray-100/80 shadow-xl rounded-2xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Target className="w-5 h-5 text-amber-600" />
+                Marking Scheme Applied
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Details about the marking rules applied to this exam
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Marking Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Correct Answer */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span className="font-semibold text-orange-900">Applied Rule</span>
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="font-semibold text-green-900">Correct Answer</span>
+                    </div>
+                    <div className="text-2xl font-bold text-green-800">
+                      +{exam?.positiveMarks || exam?.marks || 4}
+                    </div>
+                    <div className="text-xs text-green-700">marks awarded</div>
+                  </div>
+
+                  {/* Incorrect Answer */}
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle className="w-5 h-5 text-red-600" />
+                      <span className="font-semibold text-red-900">Incorrect Answer</span>
+                    </div>
+                    <div className="text-2xl font-bold text-red-800">
+                      {result.negativeMarkingInfo?.negativeMarks 
+                        ? `-${result.negativeMarkingInfo.negativeMarks}` 
+                        : (exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0'))
+                      }
+                    </div>
+                    <div className="text-xs text-red-700">marks deducted</div>
+                  </div>
+
+                  {/* Unanswered */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-5 h-5 text-gray-600" />
+                      <span className="font-semibold text-gray-900">Unanswered</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-800">0</div>
+                    <div className="text-xs text-gray-700">no marks</div>
+                  </div>
+                </div>
+
+                {/* Score Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="font-semibold text-green-900">Total Marks Earned</span>
+                    </div>
+                    <div className="text-xl font-bold text-green-800">
+                      +{result.negativeMarkingInfo 
+                        ? (score + (incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)
+                        : (correctAnswers * (exam?.positiveMarks || exam?.marks || 4)).toString()
+                      } marks
+                    </div>
+                    <div className="text-sm text-green-700">From {correctAnswers} correct answers</div>
+                  </div>
+                  
+                  {(result.negativeMarkingInfo?.negativeMarks > 0 || incorrectAnswers > 0) && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                        <span className="font-semibold text-red-900">Total Marks Deducted</span>
+                      </div>
+                      <div className="text-xl font-bold text-red-800">
+                        -{result.negativeMarkingInfo 
+                          ? (incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)
+                          : '0'
+                        } marks
+                      </div>
+                      <div className="text-sm text-red-700">From {incorrectAnswers} incorrect answers</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rule Source Information */}
+                {result.negativeMarkingInfo && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-semibold text-blue-900">Applied Rule Details</span>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div><span className="font-medium text-gray-700">Negative Marks per Wrong Answer:</span> <span className="font-semibold text-orange-800">-{result.negativeMarkingInfo.negativeMarks}</span></div>
                       <div><span className="font-medium text-gray-700">Rule Source:</span> 
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {result.negativeMarkingInfo.ruleSource === 'college_specific' ? 'College Specific' : 
-                           result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'Default Rule' : 'Exam Specific'}
+                          {result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'System Default' : 'Exam Specific'}
                         </Badge>
                       </div>
                       {result.negativeMarkingInfo.ruleDescription && (
@@ -305,87 +377,38 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       )}
                     </div>
                   </div>
-                  
-                  {/* Show impact of negative marking */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <XCircle className="w-4 h-4 text-red-600" />
-                        <span className="font-medium text-red-900 text-sm">Marks Deducted</span>
-                      </div>
-                      <div className="text-lg font-bold text-red-800">
-                        -{(incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)} marks
-                      </div>
-                      <div className="text-xs text-red-700">From {incorrectAnswers} incorrect answers</div>
-                    </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="font-medium text-green-900 text-sm">Marks Earned</span>
-                      </div>
-                      <div className="text-lg font-bold text-green-800">
-                        +{(score + (incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)} marks
-                      </div>
-                      <div className="text-xs text-green-700">From {correctAnswers} correct answers</div>
-                    </div>
+                )}
+
+                {/* General Guidelines */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">Marking Guidelines</span>
                   </div>
-                  
-                  {/* Show comparison between college and default rules */}
-                  {result.negativeMarkingInfo.ruleSource === 'college_specific' && (result.negativeMarkingInfo.ruleUsed || result.negativeMarkingInfo.defaultRuleUsed) && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="font-medium text-blue-900 text-sm">Rule Comparison - College Customization</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
-                        {/* College Specific Rule */}
-                        {result.negativeMarkingInfo.ruleUsed && (
-                          <div className="bg-white border border-blue-300 rounded p-2">
-                            <div className="font-medium text-blue-900 text-xs mb-1">✓ Applied College Rule</div>
-                            <div className="text-xs space-y-1">
-                              <div><span className="font-medium">Negative Marks:</span> -{result.negativeMarkingInfo.ruleUsed.negativeMarks}</div>
-                              {result.negativeMarkingInfo.ruleUsed.description && (
-                                <div><span className="font-medium">Rule:</span> {result.negativeMarkingInfo.ruleUsed.description}</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Default System Rule */}
-                        {result.negativeMarkingInfo.defaultRuleUsed && (
-                          <div className="bg-gray-50 border border-gray-300 rounded p-2">
-                            <div className="font-medium text-gray-700 text-xs mb-1">Default System Rule</div>
-                            <div className="text-xs space-y-1 text-gray-600">
-                              <div><span className="font-medium">Negative Marks:</span> -{result.negativeMarkingInfo.defaultRuleUsed.negativeMarks}</div>
-                              {result.negativeMarkingInfo.defaultRuleUsed.description && (
-                                <div><span className="font-medium">Rule:</span> {result.negativeMarkingInfo.defaultRuleUsed.description}</div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-blue-800">
-                        <strong>Note:</strong> This exam uses your college's customized negative marking rules instead of the default system rules. 
-                        The comparison above shows how your college has tailored the assessment to match institutional standards.
-                      </p>
-                    </div>
-                  )}
-                  
-                  {result.negativeMarkingInfo.ruleSource !== 'college_specific' && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                        <span className="font-medium text-gray-900 text-sm">Standard System Rule</span>
-                      </div>
-                      <p className="text-xs text-gray-700">
-                        This exam uses the standard system negative marking rules. No college-specific customizations were applied.
-                      </p>
-                    </div>
-                  )}
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <span>Each question carries equal marks unless specified otherwise</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <span>Multiple choice questions: Only one correct answer unless marked as multiple correct</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
+                      <span>Numerical questions: Usually no negative marking applies</span>
+                    </li>
+                    {(result.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
+                      <li className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <span className="text-red-800 font-medium">Negative marking was applied to this exam</span>
+                      </li>
+                    )}
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Detailed Question Review */}
           {questionAnalysis.length > 0 && (
@@ -439,30 +462,100 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                               const isCorrectAnswer = Array.isArray(analysis.correctAnswer)
                                 ? analysis.correctAnswer.includes(optionKey)
                                 : analysis.correctAnswer === optionKey
+                              
+                              // Determine the status of this option
+                              let optionStatus = ''
+                              let statusColor = 'text-gray-700'
+                              let borderColor = 'border-gray-200'
+                              let bgColor = 'bg-white'
+                              let statusIcon = null
+                              
+                              if (isCorrectAnswer && isUserAnswer) {
+                                // User selected correct answer
+                                optionStatus = 'Correct Selection'
+                                statusColor = 'text-green-700'
+                                borderColor = 'border-green-400'
+                                bgColor = 'bg-green-50'
+                                statusIcon = <CheckCircle className="w-4 h-4 text-green-600" />
+                              } else if (isCorrectAnswer && !isUserAnswer) {
+                                // Correct answer but user didn't select
+                                optionStatus = 'Correct Answer (Missed)'
+                                statusColor = 'text-green-700'
+                                borderColor = 'border-green-300'
+                                bgColor = 'bg-green-25'
+                                statusIcon = <CheckCircle className="w-4 h-4 text-green-500" />
+                              } else if (!isCorrectAnswer && isUserAnswer) {
+                                // User selected wrong answer
+                                optionStatus = 'Wrong Selection'
+                                statusColor = 'text-red-700'
+                                borderColor = 'border-red-400'
+                                bgColor = 'bg-red-50'
+                                statusIcon = <XCircle className="w-4 h-4 text-red-600" />
+                              } else {
+                                // Neither correct nor selected
+                                optionStatus = ''
+                                statusColor = 'text-gray-700'
+                                borderColor = 'border-gray-200'
+                                bgColor = 'bg-white'
+                              }
+                              
                               return (
                                 <div
                                   key={optIndex}
-                                  className={`flex items-start gap-3 p-2 rounded-lg border-2 transition-colors duration-200 ${
-                                    isCorrectAnswer
-                                      ? 'border-green-400 bg-green-50'
-                                      : isUserAnswer && !isCorrectAnswer
-                                      ? 'border-red-300 bg-red-50'
-                                      : 'border-gray-200 bg-white'
-                                  }`}
+                                  className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-colors duration-200 ${borderColor} ${bgColor}`}
                                 >
                                   <div className="flex items-center gap-2">
                                     <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded">
                                       {optionKey}
                                     </span>
-                                    {isCorrectAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}
-                                    {isUserAnswer && !isCorrectAnswer && <XCircle className="w-4 h-4 text-red-600" />}
+                                    {statusIcon}
                                   </div>
-                                  <div className="flex-1 text-gray-700 text-sm" dangerouslySetInnerHTML={{ __html: option }} />
+                                  <div className="flex-1">
+                                    <div className={`text-sm ${statusColor}`} dangerouslySetInnerHTML={{ __html: option }} />
+                                    {optionStatus && (
+                                      <div className={`text-xs mt-1 font-medium ${statusColor}`}>
+                                        {optionStatus}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )
                             })}
                           </div>
                         )}
+                        
+                        {/* MCMA Analysis Summary */}
+                        {analysis.mcmaDetails && (
+                          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-xs font-medium text-blue-700 mb-2">MCMA Analysis:</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex justify-between">
+                                <span className="text-blue-600">Total Correct Options:</span>
+                                <span className="font-medium text-blue-800">{analysis.mcmaDetails.totalCorrectOptions}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-green-600">Correctly Selected:</span>
+                                <span className="font-medium text-green-800">{analysis.mcmaDetails.correctSelected}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-red-600">Wrong Selections:</span>
+                                <span className="font-medium text-red-800">{analysis.mcmaDetails.wrongSelected}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-purple-600">Partial Credit:</span>
+                                <span className="font-medium text-purple-800">{analysis.mcmaDetails.partialCredit ? 'Yes' : 'No'}</span>
+                              </div>
+                            </div>
+                            {analysis.negativeMarkingRule && (
+                              <div className="mt-2 pt-2 border-t border-blue-300">
+                                <p className="text-xs text-blue-600">
+                                  <strong>Rule Applied:</strong> {analysis.negativeMarkingRule}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         {/* User Input Answer */}
                         {question.userInputAnswer && (
                           <div className="mb-3">
@@ -554,62 +647,79 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             <strong>Incorrect:</strong> {result.incorrectAnswers} &nbsp;
             <strong>Unattempted:</strong> {result.unattempted}
           </div>
-          {result.negativeMarkingInfo && (
-            <div style={{ marginBottom: 8, padding: 8, border: '1px solid #ccc', borderRadius: 4 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>Negative Marking Scheme</h3>
-              <div><strong>Negative Marks per Wrong Answer:</strong> -{result.negativeMarkingInfo.negativeMarks}</div>
-              <div><strong>Rule Source:</strong> {
-                result.negativeMarkingInfo.ruleSource === 'college_specific' ? 'College Specific Rule' : 
-                result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'Default System Rule' : 'Exam Specific Rule'
-              }</div>
-              {result.negativeMarkingInfo.ruleDescription && (
-                <div><strong>Description:</strong> {result.negativeMarkingInfo.ruleDescription}</div>  
-              )}
-              <div><strong>Total Marks Deducted:</strong> -{(result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)} marks</div>
-              <div><strong>Total Marks Earned:</strong> +{(result.score + (result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)} marks</div>
+          <div style={{ marginBottom: 8, padding: 8, border: '1px solid #ccc', borderRadius: 4 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>Marking Scheme Applied</h3>
+            
+            {/* Marking Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <div style={{ padding: 6, backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 4 }}>
+                <div style={{ fontWeight: 'bold', color: '#166534', fontSize: 14 }}>Correct Answer</div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', color: '#15803d' }}>+{exam?.positiveMarks || exam?.marks || 4}</div>
+                <div style={{ fontSize: 12, color: '#166534' }}>marks awarded</div>
+              </div>
               
-              {/* Rule Comparison for College Customization */}
-              {result.negativeMarkingInfo.ruleSource === 'college_specific' && (result.negativeMarkingInfo.ruleUsed || result.negativeMarkingInfo.defaultRuleUsed) && (
-                <div style={{ marginTop: 8, padding: 6, border: '1px solid #bbb', borderRadius: 4, backgroundColor: '#f0f8ff' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>Rule Comparison - College Customization</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 }}>
-                    {result.negativeMarkingInfo.ruleUsed && (
-                      <div style={{ padding: 4, border: '1px solid #007acc', borderRadius: 3, backgroundColor: '#fff' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: 12 }}>✓ Applied College Rule</div>
-                        <div style={{ fontSize: 11 }}>
-                          <div>Negative Marks: -{result.negativeMarkingInfo.ruleUsed.negativeMarks}</div>
-                          {result.negativeMarkingInfo.ruleUsed.description && (
-                            <div>Rule: {result.negativeMarkingInfo.ruleUsed.description}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {result.negativeMarkingInfo.defaultRuleUsed && (
-                      <div style={{ padding: 4, border: '1px solid #999', borderRadius: 3, backgroundColor: '#f5f5f5' }}>
-                        <div style={{ fontWeight: 'bold', fontSize: 12, color: '#666' }}>Default System Rule</div>
-                        <div style={{ fontSize: 11, color: '#666' }}>
-                          <div>Negative Marks: -{result.negativeMarkingInfo.defaultRuleUsed.negativeMarks}</div>
-                          {result.negativeMarkingInfo.defaultRuleUsed.description && (
-                            <div>Rule: {result.negativeMarkingInfo.defaultRuleUsed.description}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 11, fontStyle: 'italic' }}>
-                    Note: This exam uses your college's customized negative marking rules instead of the default system rules. 
-                    The comparison above shows how your college has tailored the assessment to match institutional standards.
-                  </div>
+              <div style={{ padding: 6, backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 4 }}>
+                <div style={{ fontWeight: 'bold', color: '#991b1b', fontSize: 14 }}>Incorrect Answer</div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', color: '#dc2626' }}>
+                  {result.negativeMarkingInfo?.negativeMarks 
+                    ? `-${result.negativeMarkingInfo.negativeMarks}` 
+                    : (exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0'))
+                  }
                 </div>
-              )}
+                <div style={{ fontSize: 12, color: '#991b1b' }}>marks deducted</div>
+              </div>
               
-              {result.negativeMarkingInfo.ruleSource !== 'college_specific' && (
-                <div style={{ fontSize: 12, fontStyle: 'italic', marginTop: 4, color: '#666' }}>
-                  Note: This exam uses the standard system negative marking rules. No college-specific customizations were applied.
+              <div style={{ padding: 6, backgroundColor: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 4 }}>
+                <div style={{ fontWeight: 'bold', color: '#374151', fontSize: 14 }}>Unanswered</div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', color: '#6b7280' }}>0</div>
+                <div style={{ fontSize: 12, color: '#374151' }}>no marks</div>
+              </div>
+            </div>
+
+            {/* Score Breakdown */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <div>
+                <div><strong>Total Marks Earned:</strong> +{result.negativeMarkingInfo 
+                  ? (result.score + (result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)
+                  : (result.correctAnswers * (exam?.positiveMarks || exam?.marks || 4)).toString()
+                } marks</div>
+                <div style={{ fontSize: 12, color: '#166534' }}>From {result.correctAnswers} correct answers</div>
+              </div>
+              
+              {(result.negativeMarkingInfo?.negativeMarks > 0 || result.incorrectAnswers > 0) && (
+                <div>
+                  <div><strong>Total Marks Deducted:</strong> -{result.negativeMarkingInfo 
+                    ? (result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)
+                    : '0'
+                  } marks</div>
+                  <div style={{ fontSize: 12, color: '#991b1b' }}>From {result.incorrectAnswers} incorrect answers</div>
                 </div>
               )}
             </div>
-          )}
+
+            {/* Rule Source Information */}
+            {result.negativeMarkingInfo && (
+              <div style={{ marginBottom: 8 }}>
+                <div><strong>Rule Source:</strong> {
+                  result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'System Default Rule' : 'Exam Specific Rule'
+                }</div>
+                {result.negativeMarkingInfo.ruleDescription && (
+                  <div><strong>Description:</strong> {result.negativeMarkingInfo.ruleDescription}</div>  
+                )}
+              </div>
+            )}
+
+            {/* General Guidelines */}
+            <div style={{ fontSize: 12, color: '#666' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: 4, color: '#333' }}>Marking Guidelines:</div>
+              <div>• Each question carries equal marks unless specified otherwise</div>
+              <div>• Multiple choice questions: Only one correct answer unless marked as multiple correct</div>
+              <div>• Numerical questions: Usually no negative marking applies</div>
+              {(result.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
+                <div style={{ color: '#991b1b', fontWeight: 'bold' }}>• Negative marking was applied to this exam</div>
+              )}
+            </div>
+          </div>
           <hr style={{ margin: '16px 0' }} />
           <h2 style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>Question Review</h2>
           {questionAnalysis.map((qa, idx) => {
@@ -623,19 +733,54 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     const key = String.fromCharCode(65 + i)
                     const isUser = Array.isArray(qa.userAnswer) ? qa.userAnswer.includes(key) : qa.userAnswer === key
                     const isCorrect = Array.isArray(qa.correctAnswer) ? qa.correctAnswer.includes(key) : qa.correctAnswer === key
+                    
+                    let statusText = ''
+                    if (isCorrect && isUser) {
+                      statusText = ' ✓ (Correct Selection)'
+                    } else if (isCorrect && !isUser) {
+                      statusText = ' ✓ (Correct Answer - Missed)'
+                    } else if (!isCorrect && isUser) {
+                      statusText = ' ✗ (Wrong Selection)'
+                    }
+                    
                     return (
                       <div key={i} style={{
-                        padding: '2px 0',
+                        padding: '4px 0',
                         fontWeight: isCorrect ? 'bold' : undefined,
-                        color: isCorrect ? 'green' : isUser ? 'red' : undefined
+                        color: isCorrect && isUser ? 'green' : isCorrect ? '#4ade80' : isUser ? 'red' : '#333'
                       }}>
                         {key}. <span dangerouslySetInnerHTML={{ __html: opt }} />
-                        {isCorrect && ' (Correct)'}
-                        {isUser && !isCorrect && ' (Your Answer)'}
+                        {statusText}
                       </div>
                     )
                   })}
                 </div>
+                
+                {/* MCMA Analysis in PDF */}
+                {qa.mcmaDetails && (
+                  <div style={{ 
+                    fontSize: 12, 
+                    backgroundColor: '#f0f9ff', 
+                    border: '1px solid #bfdbfe', 
+                    borderRadius: 4, 
+                    padding: 8, 
+                    marginTop: 8 
+                  }}>
+                    <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: 4 }}>MCMA Analysis:</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                      <div><strong>Total Correct Options:</strong> {qa.mcmaDetails.totalCorrectOptions}</div>
+                      <div><strong>Correctly Selected:</strong> <span style={{ color: 'green' }}>{qa.mcmaDetails.correctSelected}</span></div>
+                      <div><strong>Wrong Selections:</strong> <span style={{ color: 'red' }}>{qa.mcmaDetails.wrongSelected}</span></div>
+                      <div><strong>Partial Credit:</strong> <span style={{ color: '#7c3aed' }}>{qa.mcmaDetails.partialCredit ? 'Yes' : 'No'}</span></div>
+                    </div>
+                    {qa.negativeMarkingRule && (
+                      <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid #bfdbfe' }}>
+                        <strong>Rule Applied:</strong> {qa.negativeMarkingRule}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {question.explanation && (
                   <div style={{ fontSize: 13, color: '#333', marginTop: 4 }}>
                     <strong>Solution:</strong> <span dangerouslySetInnerHTML={{ __html: question.explanation }} />

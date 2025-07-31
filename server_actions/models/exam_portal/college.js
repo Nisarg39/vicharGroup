@@ -74,14 +74,8 @@ const collegeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CollegeTeacher',
     }],
-    negativeMarkingRules: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'NegativeMarkingRule',
-    }],
-    globalNegativeMarks: {
-        type: Number,
-        default: 0, // Fallback default when no specific rules match
-    },
+    // Note: College-specific negative marking rules have been removed
+    // Colleges now use admin-controlled default rules only
 }, {
     timestamps: true
 });

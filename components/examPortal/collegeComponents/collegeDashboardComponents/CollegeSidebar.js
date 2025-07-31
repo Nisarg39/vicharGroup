@@ -8,7 +8,6 @@ import {
     AcademicCapIcon,
     UserCircleIcon,
     UserGroupIcon,
-    CalculatorIcon
 } from '@heroicons/react/24/outline'
 
 export default function CollegeSidebar({ onMenuSelect, collegeData }) {
@@ -51,12 +50,6 @@ export default function CollegeSidebar({ onMenuSelect, collegeData }) {
             icon: ChartPieIcon,
             path: '/college/reports'
         },
-        {
-            id: 'negative-marking',
-            label: 'Negative Marking',
-            icon: CalculatorIcon,
-            path: '/college/negative-marking'
-        }
     ]
 
     const handleItemClick = (itemId) => {

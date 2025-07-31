@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { fetchAllStudents, showProducts, assignProduct, searchStudent } from '../../server_actions/actions/adminActions';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -245,18 +245,11 @@ export default function EnrolledStudentsList() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 whitespace-nowrap">
-                                            <select 
-                                                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                                onChange={(e) => handleProductAssign(student._id, e.target.value)}
-                                                defaultValue=""
-                                            >
-                                                <option value="" disabled>Select Product</option>
-                                                {products.map((product) => (
-                                                    <option key={product._id} value={product._id}>
-                                                        {product.name}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <SearchableDropdown
+                                                products={products}
+                                                onSelect={(productId) => handleProductAssign(student._id, productId)}
+                                                placeholder="Select Product"
+                                            />
                                         </td>
                                         <td className="px-6 py-5 whitespace-nowrap">
                                             <button
@@ -405,6 +398,107 @@ function StudentDetails({ student, onClose }) {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function SearchableDropdown({ products, onSelect, placeholder }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const dropdownRef = useRef(null);
+
+    const filteredProducts = searchTerm.trim() 
+        ? products.filter(product =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : products;
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleSelect = (product) => {
+        setSelectedProduct(product);
+        setIsOpen(false);
+        setSearchTerm('');
+        onSelect(product._id);
+        
+        // Reset after a short delay for better UX
+        setTimeout(() => {
+            setSelectedProduct(null);
+        }, 2000);
+    };
+
+    return (
+        <div className="relative w-full" ref={dropdownRef}>
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
+                    selectedProduct ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-700'
+                }`}
+            >
+                <div className="flex items-center justify-between">
+                    <span className="truncate">
+                        {selectedProduct ? `✓ ${selectedProduct.name}` : placeholder}
+                    </span>
+                    <svg
+                        className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden">
+                    <div className="p-2 border-b border-gray-200">
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                        {filteredProducts.length > 0 ? (
+                            filteredProducts.map((product) => (
+                                <button
+                                    key={product._id}
+                                    onClick={() => handleSelect(product)}
+                                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-gray-100 last:border-b-0"
+                                >
+                                    <div className="flex flex-col">
+                                        <span className="font-medium truncate">{product.name}</span>
+                                        <span className="text-xs text-gray-500 capitalize">
+                                            {product.type}
+                                        </span>
+                                    </div>
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-3 py-4 text-center text-gray-500 text-sm">
+                                No products found for "{searchTerm}"
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

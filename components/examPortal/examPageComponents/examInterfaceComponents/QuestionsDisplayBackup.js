@@ -18,9 +18,9 @@ export default function QuestionDisplay({
 }) {
     if (!currentQuestion) {
         return (
-            <div className="p-3 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                <p className="text-gray-500 text-sm">Loading question...</p>
+            <div className="p-4 sm:p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading question...</p>
             </div>
         )
     }
@@ -28,43 +28,46 @@ export default function QuestionDisplay({
     const questionId = currentQuestion._id
 
     return (
-        <div className="p-3 space-y-3 bg-white">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
             {/* Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs font-semibold">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs sm:text-sm font-semibold">
                         Q{currentQuestionIndex + 1} of {totalQuestions}
                     </Badge>
                     {markedQuestions.has(currentQuestionIndex) && (
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs sm:text-sm">
                             <Flag className="w-3 h-3 mr-1" />
                             Marked
                         </Badge>
                     )}
                 </div>
-                <div className="text-xs text-gray-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">
                     {currentQuestion.marks || 4} marks
                 </div>
             </div>
 
             {/* Question */}
-            <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0">
+            <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start gap-2 sm:gap-3">
+                    <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full flex-shrink-0">
                         Q{currentQuestionIndex + 1}
                     </span>
-                    <div className="flex-1 min-w-0 text-sm text-gray-900 leading-snug break-words"
-                        dangerouslySetInnerHTML={{ __html: currentQuestion.question }}
-                    />
+                    <div className="flex-1 min-w-0">
+                        <div 
+                            className="text-base sm:text-lg text-gray-900 leading-relaxed break-words"
+                            dangerouslySetInnerHTML={{ __html: currentQuestion.question }}
+                        />
+                    </div>
                 </div>
 
                 {/* Question Type Badge */}
-                <div className="flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-purple-600 border-purple-200 text-[11px] px-2 py-0.5">
+                <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs">
                         {currentQuestion.isMultipleAnswer ? 'Multiple Choice' : 'Single Choice'}
                     </Badge>
                     {currentQuestion.difficultyLevel && (
-                        <Badge variant="outline" className="text-green-600 border-green-200 text-[11px] px-2 py-0.5">
+                        <Badge variant="outline" className="text-green-600 border-green-200 text-xs">
                             {currentQuestion.difficultyLevel}
                         </Badge>
                     )}
@@ -72,15 +75,15 @@ export default function QuestionDisplay({
             </div>
 
             {/* Options */}
-            {!currentQuestion.userInputAnswer && currentQuestion.options?.length > 0 && (
-                <div className="space-y-2">
+            {!currentQuestion.userInputAnswer && currentQuestion.options && currentQuestion.options.length > 0 && (
+                <div className="space-y-3">
                     {currentQuestion.isMultipleAnswer ? (
                         // Multiple choice
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {currentQuestion.options.map((option, index) => {
                                 const optionKey = String.fromCharCode(65 + index);
                                 return (
-                                    <div key={index} className="flex items-start gap-2 p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+                                    <div key={index} className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm">
                                         <Checkbox
                                             id={`option-${index}`}
                                             checked={Array.isArray(userAnswer) && userAnswer.includes(optionKey)}
@@ -91,9 +94,9 @@ export default function QuestionDisplay({
                                         />
                                         <Label 
                                             htmlFor={`option-${index}`}
-                                            className="flex-1 text-sm text-gray-800 cursor-pointer leading-snug break-words"
+                                            className="flex-1 text-gray-800 cursor-pointer leading-relaxed break-words"
                                         >
-                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-1 inline-block">
+                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded mr-2 inline-block">
                                                 {optionKey}
                                             </span>
                                             <span dangerouslySetInnerHTML={{ __html: option }} />
@@ -107,12 +110,12 @@ export default function QuestionDisplay({
                         <RadioGroup
                             value={userAnswer || ""}
                             onValueChange={(value) => onAnswerChange(questionId, value)}
-                            className="space-y-2"
+                            className="space-y-3"
                         >
                             {currentQuestion.options.map((option, index) => {
                                 const optionKey = String.fromCharCode(65 + index);
                                 return (
-                                    <div key={index} className="flex items-start gap-2 p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+                                    <div key={index} className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors shadow-sm">
                                         <RadioGroupItem
                                             value={optionKey}
                                             id={`option-${index}`}
@@ -120,9 +123,9 @@ export default function QuestionDisplay({
                                         />
                                         <Label 
                                             htmlFor={`option-${index}`}
-                                            className="flex-1 text-sm text-gray-800 cursor-pointer leading-snug break-words"
+                                            className="flex-1 text-gray-800 cursor-pointer leading-relaxed break-words"
                                         >
-                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-1 inline-block">
+                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded mr-2 inline-block">
                                                 {optionKey}
                                             </span>
                                             <span dangerouslySetInnerHTML={{ __html: option }} />
@@ -137,12 +140,12 @@ export default function QuestionDisplay({
 
             {/* Fallback for questions without options */}
             {!currentQuestion.userInputAnswer && (!currentQuestion.options || currentQuestion.options.length === 0) && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                        <span className="text-yellow-800 font-medium text-sm">Question Configuration Issue</span>
+                        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                        <span className="text-yellow-800 font-medium">Question Configuration Issue</span>
                     </div>
-                    <p className="text-yellow-700 text-xs mt-1">
+                    <p className="text-yellow-700 text-sm mt-2">
                         This question doesn't have options configured. Please contact your administrator.
                     </p>
                 </div>
@@ -150,7 +153,7 @@ export default function QuestionDisplay({
 
             {/* User Input Answer */}
             {currentQuestion.userInputAnswer && (
-                <div className="space-y-2 bg-white p-3 rounded-md border border-gray-200">
+                <div className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                     <Label htmlFor="user-answer" className="text-sm font-medium text-gray-800">
                         Your Answer
                     </Label>
@@ -159,10 +162,10 @@ export default function QuestionDisplay({
                         value={userAnswer || ""}
                         onChange={(e) => onAnswerChange(questionId, e.target.value)}
                         placeholder="Type your answer here..."
-                        className="min-h-[90px] resize-none bg-white border-gray-200 text-sm"
+                        className="min-h-[100px] resize-none bg-white border-gray-200"
                     />
                 </div>
             )}
         </div>
     )
-}
+} 

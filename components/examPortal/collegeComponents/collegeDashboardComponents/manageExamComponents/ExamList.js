@@ -1,7 +1,7 @@
 "use client";
 import { getTopics, data } from '../../../../../utils/examUtils/subject_Details';
 import React,{ useState, useEffect } from 'react';
-import { showExamList, getApplicableNegativeMarkingRule } from '../../../../../server_actions/actions/examController/collegeActions';
+import { showExamList } from '../../../../../server_actions/actions/examController/collegeActions';
 import QuestionAssignmentModal from './QuestionAssignmentModal';
 import EditExamModal from './EditExamModal';
 
@@ -30,8 +30,7 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
     const [editingExam, setEditingExam] = useState(null);
     const [updateStatus, setUpdateStatus] = useState({ show: false, type: '', message: '' });
     const [activeDropdown, setActiveDropdown] = useState(null);
-    const [examNegativeMarkingRules, setExamNegativeMarkingRules] = useState({});
-    const [loadingRules, setLoadingRules] = useState({});
+    // Note: Negative marking rule tracking removed - using admin defaults only
 
     const topics = getTopics(formData.stream, formData.subject, formData.standard);
 
@@ -112,32 +111,7 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
     const toggleExamDetails = async (examId) => {
         const newExpandedId = expandedExamId === examId ? null : examId;
         setExpandedExamId(newExpandedId);
-        
-        // Fetch negative marking rule when expanding an exam
-        if (newExpandedId && !examNegativeMarkingRules[examId]) {
-            const exam = exams.find(e => e._id === examId);
-            if (exam && exam.stream) {
-                setLoadingRules(prev => ({ ...prev, [examId]: true }));
-                try {
-                    const response = await getApplicableNegativeMarkingRule(
-                        collegeData._id,
-                        exam.stream,
-                        exam.standard,
-                        exam.examSubject?.[0] // Use first subject as reference
-                    );
-                    if (response.success) {
-                        setExamNegativeMarkingRules(prev => ({
-                            ...prev,
-                            [examId]: response
-                        }));
-                    }
-                } catch (error) {
-                    console.error('Error fetching negative marking rule for exam:', error);
-                } finally {
-                    setLoadingRules(prev => ({ ...prev, [examId]: false }));
-                }
-            }
-        }
+        // Note: Negative marking rule fetching removed - using admin defaults only
     };
 
     const handleAssignQuestions = (exam) => {
@@ -627,40 +601,17 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
                                                                                 <h5 className="text-sm font-semibold text-orange-900">Scoring</h5>
                                                                             </div>
                                                                             <div className="space-y-2">
-                                                                                <div className="flex flex-col space-y-1">
-                                                                                    <div className="flex justify-between items-center">
-                                                                                        <span className="text-xs text-orange-700">Negative Marks</span>
-                                                                                        {loadingRules[exam._id] ? (
-                                                                                            <div className="flex items-center space-x-1">
-                                                                                                <div className="animate-spin rounded-full h-3 w-3 border-b border-orange-600"></div>
-                                                                                                <span className="text-xs text-orange-600">Loading...</span>
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <span className="text-xs font-semibold text-orange-900">
-                                                                                                -{examNegativeMarkingRules[exam._id]?.negativeMarks || 0} marks
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                    {examNegativeMarkingRules[exam._id] && (
-                                                                                        <div className="flex items-center space-x-1">
-                                                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                                                                                                examNegativeMarkingRules[exam._id].source === 'college_specific'
-                                                                                                    ? 'bg-blue-100 text-blue-700'
-                                                                                                    : examNegativeMarkingRules[exam._id].source === 'super_admin_default'
-                                                                                                    ? 'bg-purple-100 text-purple-700'
-                                                                                                    : 'bg-gray-100 text-gray-700'
-                                                                                            }`}>
-                                                                                                {examNegativeMarkingRules[exam._id].source === 'college_specific' ? '🏫' :
-                                                                                                 examNegativeMarkingRules[exam._id].source === 'super_admin_default' ? '⚙️' :
-                                                                                                 '📝'}
-                                                                                            </span>
-                                                                                            <span className="text-xs text-orange-600">
-                                                                                                {examNegativeMarkingRules[exam._id].source === 'college_specific' ? 'College Rule' :
-                                                                                                 examNegativeMarkingRules[exam._id].source === 'super_admin_default' ? 'Default Rule' :
-                                                                                                 'No Rule'}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    )}
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-xs text-orange-700">Negative Marks</span>
+                                                                                    <span className="text-xs font-semibold text-orange-900">
+                                                                                        -{exam.negativeMarks || 0} marks
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-xs text-orange-700">Rule Source</span>
+                                                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                                                                        ⚙️ Admin Default
+                                                                                    </span>
                                                                                 </div>
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-xs text-orange-700">Success Rate</span>
