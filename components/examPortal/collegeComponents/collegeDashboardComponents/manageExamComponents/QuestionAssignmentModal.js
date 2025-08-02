@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import 'katex/dist/katex.min.css';
 import {
   fetchQuestionsForExam,
   assignQuestionsToExam,

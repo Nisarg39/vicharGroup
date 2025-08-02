@@ -735,9 +735,12 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                     {option}
                   </span>
                 </div>
-                <div dangerouslySetInnerHTML={{ 
-                  __html: previewContent[`option${option}`] || formData[`option${option}`] 
-                }} />
+                <div 
+                  className=""
+                                    dangerouslySetInnerHTML={{ 
+                    __html: previewContent[`option${option}`] || formData[`option${option}`] 
+                  }} 
+                />
               </div>
             ))}
           </div>

@@ -6,33 +6,34 @@ import { Clock, BookOpen, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-r
 
 export default function ExamStartScreen({ exam, totalQuestions, onStartExam, onBack }) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
-            <div className="max-w-4xl mx-auto">
-                <Card className="bg-white/90 backdrop-blur-xl shadow-xl border border-gray-100/60">
-                    <CardHeader className="p-4 sm:p-6">
-                        <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
-                            Ready to Start?
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-3 sm:p-4 flex items-center justify-center">
+            <div className="w-full max-w-2xl mx-auto">
+                <Card className="bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-100/60 rounded-2xl overflow-hidden">
+                    <CardHeader className="p-4 sm:p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                        <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
+                            {exam?.examName}
                         </CardTitle>
-                        <CardDescription className="text-center">
-                            Click the button below to begin your exam
+                        <CardDescription className="text-center text-blue-100 text-base sm:text-lg mt-2">
+                            Ready to begin your examination?
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                            <div className="p-4 bg-blue-50 rounded-xl">
-                                <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 mx-auto mb-2" />
-                                <p className="font-semibold text-blue-900 text-sm sm:text-base">{exam?.examDurationMinutes} minutes</p>
-                                <p className="text-xs sm:text-sm text-blue-700">Duration</p>
+                    <CardContent className="p-4 sm:p-6 space-y-6">
+                        {/* Exam Stats - Mobile Optimized */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl border border-blue-200">
+                                <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 mx-auto mb-3" />
+                                <p className="font-bold text-blue-900 text-lg sm:text-xl text-center">{exam?.examDurationMinutes} min</p>
+                                <p className="text-sm text-blue-700 text-center font-medium">Duration</p>
                             </div>
-                            <div className="p-4 bg-green-50 rounded-xl">
-                                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 mx-auto mb-2" />
-                                <p className="font-semibold text-green-900 text-sm sm:text-base">{totalQuestions} questions</p>
-                                <p className="text-xs sm:text-sm text-green-700">Total Questions</p>
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-2xl border border-green-200">
+                                <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 mx-auto mb-3" />
+                                <p className="font-bold text-green-900 text-lg sm:text-xl text-center">{totalQuestions}</p>
+                                <p className="text-sm text-green-700 text-center font-medium">Questions</p>
                             </div>
-                            <div className="p-4 bg-purple-50 rounded-xl">
-                                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 mx-auto mb-2" />
-                                <p className="font-semibold text-purple-900 text-sm sm:text-base">{exam?.totalMarks || 'TBD'} marks</p>
-                                <p className="text-xs sm:text-sm text-purple-700">Total Marks</p>
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-2xl border border-purple-200">
+                                <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-purple-600 mx-auto mb-3" />
+                                <p className="font-bold text-purple-900 text-lg sm:text-xl text-center">{exam?.totalMarks || totalQuestions * 4}</p>
+                                <p className="text-sm text-purple-700 text-center font-medium">Total Marks</p>
                             </div>
                         </div>
 
@@ -61,23 +62,38 @@ export default function ExamStartScreen({ exam, totalQuestions, onStartExam, onB
                                 )}
                             </>
                         ) : (
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                                {onBack && (
+                            <div className="space-y-4">
+                                {/* Important Instructions */}
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                    <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Important Instructions:</h4>
+                                    <ul className="text-sm text-yellow-700 space-y-1">
+                                        <li>• Ensure stable internet connection</li>
+                                        <li>• Do not refresh or close the browser</li>
+                                        <li>• Your progress will be auto-saved</li>
+                                        <li>• You can mark questions for review</li>
+                                    </ul>
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex flex-col gap-3">
                                     <Button 
-                                        onClick={onBack}
-                                        variant="outline"
-                                        className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg"
+                                        onClick={onStartExam}
+                                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 px-6 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-200 text-lg touch-action-manipulation active:scale-95"
                                     >
-                                        <ArrowLeft className="w-4 h-4 mr-2" />
-                                        Back to Dashboard
+                                        🚀 Start Exam Now
                                     </Button>
-                                )}
-                                <Button 
-                                    onClick={onStartExam}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-base sm:text-lg"
-                                >
-                                    Start Exam Now
-                                </Button>
+                                    
+                                    {onBack && (
+                                        <Button 
+                                            onClick={onBack}
+                                            variant="outline"
+                                            className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-6 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-base touch-action-manipulation active:scale-95"
+                                        >
+                                            <ArrowLeft className="w-4 h-4 mr-2" />
+                                            Back to Dashboard
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </CardContent>

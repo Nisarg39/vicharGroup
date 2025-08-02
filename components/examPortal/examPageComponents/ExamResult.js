@@ -11,8 +11,6 @@ import {
   Target,
   BarChart3,
   ArrowLeft,
-  Award,
-  TrendingUp,
   AlertCircle
 } from "lucide-react"
 import { useSelector } from "react-redux"
@@ -24,18 +22,34 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   let {
     score,
     totalMarks,
-    percentage,
     correctAnswers,
     incorrectAnswers,
     unattempted,
     timeTaken,
     completedAt,
-    questionAnalysis = []
+    questionAnalysis = [],
+    collegeDetails = null
   } = result
 
-  // Clamp score and percentage to valid ranges
+  // Clamp score to valid ranges
   score = Math.min(score, totalMarks)
-  let displayPercentage = Math.min(parseFloat(percentage), 100).toFixed(2)
+
+  // Get student info from Redux
+  const student = useSelector(state => state.login.studentDetails)
+
+  // Fallback: Try to get college details from student object if not in result
+  const finalCollegeDetails = collegeDetails || (() => {
+    if (student?.college && typeof student.college === 'object' && student.college.collegeName) {
+      return student.college;
+    } else if (exam?.college && typeof exam.college === 'object' && exam.college.collegeName) {
+      return exam.college;
+    } else if (student?.college && typeof student.college === 'string') {
+      return { collegeName: 'College', collegeCode: student.college };
+    } else if (exam?.college && typeof exam.college === 'string') {
+      return { collegeName: 'College', collegeCode: exam.college };
+    }
+    return null;
+  })();
 
   // Calculate safe values for accuracy, time efficiency, and completion rate
   const totalQuestions = (correctAnswers || 0) + (incorrectAnswers || 0) + (unattempted || 0)
@@ -50,26 +64,12 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const getPerformanceCategory = (percentage) => {
-    if (percentage >= 90) return { category: "Excellent", color: "text-green-600", bg: "bg-green-100", icon: Trophy }
-    if (percentage >= 80) return { category: "Very Good", color: "text-blue-600", bg: "bg-blue-100", icon: Award }
-    if (percentage >= 70) return { category: "Good", color: "text-purple-600", bg: "bg-purple-100", icon: TrendingUp }
-    if (percentage >= 60) return { category: "Average", color: "text-yellow-600", bg: "bg-yellow-100", icon: Target }
-    if (percentage >= 50) return { category: "Below Average", color: "text-orange-600", bg: "bg-orange-100", icon: AlertCircle }
-    return { category: "Poor", color: "text-red-600", bg: "bg-red-100", icon: XCircle }
-  }
 
   // Helper function to get question by ID
   const getQuestionById = (questionId) => {
     if (!exam?.examQuestions) return null
     return exam.examQuestions.find(q => q._id === questionId)
   }
-
-  const performance = getPerformanceCategory(parseFloat(displayPercentage))
-  const IconComponent = performance.icon
-
-  // Get student info from Redux
-  const student = useSelector(state => state.login.studentDetails)
 
   // Add print-specific CSS for clean PDF/print output
   useEffect(() => {
@@ -153,13 +153,12 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8 flex flex-col items-center" style={{ position: 'relative' }}>
       <div className="w-full max-w-3xl space-y-8">
         {/* Header & Actions */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-2">
-          <div className="flex-1" />
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-center gap-3 mb-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               onClick={onBack}
               variant="outline"
-              className="no-print font-semibold px-5 py-2 rounded-lg shadow-sm"
+              className="no-print font-semibold px-5 py-2 rounded-lg shadow-sm w-full sm:w-auto"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
@@ -167,7 +166,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             <Button
               onClick={() => window.print()}
               variant="default"
-              className="no-print bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg shadow-sm"
+              className="no-print bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg shadow-sm w-full sm:w-auto"
             >
               Print / Download PDF
             </Button>
@@ -176,18 +175,112 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         <div id="pdf-result-content">
           {/* Student, College, Exam Info */}
           <Card className="mb-6 bg-white/95 border border-gray-100/80 shadow-xl rounded-2xl">
-            <CardContent className="py-6 px-6 flex flex-col md:flex-row md:justify-between md:items-center gap-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">Exam Results</h1>
-                <p className="text-gray-600 font-medium">{exam?.examName}</p>
-                <p className="text-gray-500 text-sm">Date: {new Date(completedAt).toLocaleDateString()}</p>
+            <CardContent className="py-6 px-6">
+              {/* Header Section */}
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6 mb-6">
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">Exam Results</h1>
+                  <p className="text-gray-600 font-medium text-lg">{exam?.examName}</p>
+                  <p className="text-gray-500 text-sm">Date: {new Date(completedAt).toLocaleDateString()}</p>
+                </div>
+                
+                {/* College Logo Section */}
+                {finalCollegeDetails?.collegeLogo && (
+                  <div className="flex justify-center lg:justify-end">
+                    <img 
+                      src={finalCollegeDetails.collegeLogo} 
+                      alt={`${finalCollegeDetails?.collegeName || 'College'} Logo`}
+                      className="h-16 w-16 object-cover rounded-full border-2 border-gray-300 shadow-sm"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div><span className="font-semibold">Student:</span> {student?.name || "-"}</div>
-                <div><span className="font-semibold">Email:</span> {student?.email || "-"}</div>
-                {student?.rollNumber && <div><span className="font-semibold">Roll No:</span> {student.rollNumber}</div>}
-                {exam?.collegeName && <div><span className="font-semibold">College:</span> {exam.collegeName}</div>}
-                {exam?.collegeCode && <div><span className="font-semibold">College Code:</span> {exam.collegeCode}</div>}
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Student Information */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    Student Information
+                  </h3>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Name:</span>
+                      <span className="font-semibold text-gray-900">{student?.name || "-"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Email:</span>
+                      <span className="font-semibold text-gray-900">{student?.email || "-"}</span>
+                    </div>
+                    {student?.rollNumber && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Roll No:</span>
+                        <span className="font-semibold text-gray-900">{student.rollNumber}</span>
+                      </div>
+                    )}
+                    {student?.phoneNumber && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Phone:</span>
+                        <span className="font-semibold text-gray-900">{student.phoneNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* College Information */}
+                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+                  <h3 className="text-lg font-semibold text-green-900 mb-3 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                    College Information
+                  </h3>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    {finalCollegeDetails?.collegeName ? (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">College:</span>
+                        <span className="font-semibold text-gray-900 text-right">{finalCollegeDetails.collegeName}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">College:</span>
+                        <span className="text-gray-500">-</span>
+                      </div>
+                    )}
+                    {finalCollegeDetails?.collegeCode && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">College Code:</span>
+                        <span className="font-semibold text-gray-900">{finalCollegeDetails.collegeCode}</span>
+                      </div>
+                    )}
+                    {finalCollegeDetails?.collegeLocation && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Location:</span>
+                        <span className="font-semibold text-gray-900">{finalCollegeDetails.collegeLocation}</span>
+                      </div>
+                    )}
+                    {exam?.stream && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Stream:</span>
+                        <span className="font-semibold text-gray-900">{exam.stream}</span>
+                      </div>
+                    )}
+                    {exam?.department && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Department:</span>
+                        <span className="font-semibold text-gray-900">{exam.department}</span>
+                      </div>
+                    )}
+                    {exam?.academicYear && (
+                      <div className="flex justify-between">
+                        <span className="font-medium text-gray-600">Academic Year:</span>
+                        <span className="font-semibold text-gray-900">{exam.academicYear}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -196,49 +289,55 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
           <Card className="mb-6 bg-white/95 border border-gray-100/80 shadow-xl rounded-2xl">
             <CardHeader className="text-center pb-2">
               <div className="flex justify-center mb-3">
-                <div className={`p-4 rounded-full shadow ${performance.bg}`}> 
-                  <IconComponent className={`w-12 h-12 ${performance.color}`} />
+                <div className="p-4 rounded-full shadow bg-blue-100"> 
+                  <Trophy className="w-12 h-12 text-blue-600" />
                 </div>
               </div>
-              <CardTitle className={`text-2xl font-bold ${performance.color}`}>{performance.category}</CardTitle>
+              <CardTitle className="text-2xl font-bold text-blue-600">Exam Result</CardTitle>
               <CardDescription className="text-gray-700 mt-1">
                 You scored <span className="font-semibold text-gray-900">{score}</span> out of <span className="font-semibold text-gray-900">{totalMarks}</span> marks
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-4">
-                <div className="text-center">
-                  <div className="text-5xl font-extrabold text-gray-900 mb-1">{displayPercentage}%</div>
-                  <div className="text-sm text-gray-600">Percentage Score</div>
-                </div>
-                <div className="flex flex-row gap-4 md:flex-col md:gap-2">
-                  <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-green-900">{correctAnswers}</span>
-                    <span className="text-xs text-green-700">Correct</span>
+              <div className="flex flex-col items-center justify-center gap-6 mb-4">
+                {/* Correct/Incorrect/Unattempted badges - Mobile responsive grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+                  <div className="flex items-center justify-center gap-2 bg-green-50 px-3 py-3 rounded-lg min-h-[60px]">
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div className="text-center">
+                      <div className="font-semibold text-green-900 text-lg">{correctAnswers}</div>
+                      <div className="text-xs text-green-700">Correct</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
-                    <XCircle className="w-5 h-5 text-red-600" />
-                    <span className="font-semibold text-red-900">{incorrectAnswers}</span>
-                    <span className="text-xs text-red-700">Incorrect</span>
+                  <div className="flex items-center justify-center gap-2 bg-red-50 px-3 py-3 rounded-lg min-h-[60px]">
+                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <div className="text-center">
+                      <div className="font-semibold text-red-900 text-lg">{incorrectAnswers}</div>
+                      <div className="text-xs text-red-700">Incorrect</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-gray-600" />
-                    <span className="font-semibold text-gray-900">{unattempted}</span>
-                    <span className="text-xs text-gray-700">Unattempted</span>
+                  <div className="flex items-center justify-center gap-2 bg-gray-50 px-3 py-3 rounded-lg min-h-[60px]">
+                    <AlertCircle className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                    <div className="text-center">
+                      <div className="font-semibold text-gray-900 text-lg">{unattempted}</div>
+                      <div className="text-xs text-gray-700">Unattempted</div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row gap-4 justify-center">
-                <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
-                  <Clock className="w-5 h-5 text-blue-600" />
+              {/* Time and completion info - Mobile responsive */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="flex items-center justify-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
+                  <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
                   <span className="text-sm font-medium text-blue-900">Time Taken:</span>
                   <span className="text-sm text-blue-700">{formatTime(timeTaken)}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
-                  <BarChart3 className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-900">Completed On:</span>
-                  <span className="text-sm text-purple-700">{new Date(completedAt).toLocaleDateString()} at {new Date(completedAt).toLocaleTimeString()}</span>
+                <div className="flex items-center justify-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
+                  <BarChart3 className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                  <div className="flex flex-col sm:flex-row items-center gap-1">
+                    <span className="text-sm font-medium text-purple-900">Completed On:</span>
+                    <span className="text-sm text-purple-700 text-center sm:text-left">{new Date(completedAt).toLocaleDateString()} at {new Date(completedAt).toLocaleTimeString()}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -307,7 +406,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       <span className="font-semibold text-red-900">Incorrect Answer</span>
                     </div>
                     <div className="text-2xl font-bold text-red-800">
-                      {result.negativeMarkingInfo?.negativeMarks 
+                      {result?.negativeMarkingInfo?.negativeMarks 
                         ? `-${result.negativeMarkingInfo.negativeMarks}` 
                         : (exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0'))
                       }
@@ -334,7 +433,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       <span className="font-semibold text-green-900">Total Marks Earned</span>
                     </div>
                     <div className="text-xl font-bold text-green-800">
-                      +{result.negativeMarkingInfo 
+                      +{result?.negativeMarkingInfo 
                         ? (score + (incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)
                         : (correctAnswers * (exam?.positiveMarks || exam?.marks || 4)).toString()
                       } marks
@@ -342,14 +441,14 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="text-sm text-green-700">From {correctAnswers} correct answers</div>
                   </div>
                   
-                  {(result.negativeMarkingInfo?.negativeMarks > 0 || incorrectAnswers > 0) && (
+                  {(result?.negativeMarkingInfo?.negativeMarks > 0 || incorrectAnswers > 0) && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <XCircle className="w-5 h-5 text-red-600" />
                         <span className="font-semibold text-red-900">Total Marks Deducted</span>
                       </div>
                       <div className="text-xl font-bold text-red-800">
-                        -{result.negativeMarkingInfo 
+                        -{result?.negativeMarkingInfo 
                           ? (incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)
                           : '0'
                         } marks
@@ -360,7 +459,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 </div>
 
                 {/* Rule Source Information */}
-                {result.negativeMarkingInfo && (
+                {result?.negativeMarkingInfo && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -398,7 +497,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
                       <span>Numerical questions: Usually no negative marking applies</span>
                     </li>
-                    {(result.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
+                    {(result?.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
                       <li className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                         <span className="text-red-800 font-medium">Negative marking was applied to this exam</span>
@@ -511,7 +610,10 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                                     {statusIcon}
                                   </div>
                                   <div className="flex-1">
-                                    <div className={`text-sm ${statusColor}`} dangerouslySetInnerHTML={{ __html: option }} />
+                                    <div 
+                                      className={`text-sm ${statusColor} `}
+                                                                            dangerouslySetInnerHTML={{ __html: option }} 
+                                    />
                                     {optionStatus && (
                                       <div className={`text-xs mt-1 font-medium ${statusColor}`}>
                                         {optionStatus}
@@ -581,11 +683,11 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
           )}
         </div>
         {/* Actions */}
-        <div className="flex gap-4 justify-center mt-2">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-2">
           <Button
             onClick={onBack}
             variant="outline"
-            className="px-8 py-3 rounded-xl font-semibold"
+            className="px-8 py-3 rounded-xl font-semibold w-full sm:w-auto"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -599,14 +701,14 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             return canRetake ? (
               <Button
                 onClick={onRetake}
-                className="px-8 py-3 rounded-xl font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                className="px-8 py-3 rounded-xl font-semibold bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               >
                 Retake Exam
               </Button>
             ) : (
               <Button
                 disabled
-                className="px-8 py-3 rounded-xl font-semibold bg-gray-400 text-gray-600 cursor-not-allowed"
+                className="px-8 py-3 rounded-xl font-semibold bg-gray-400 text-gray-600 cursor-not-allowed w-full sm:w-auto text-xs sm:text-sm"
                 title={`You have reached the maximum allowed attempts (${allowed}) for this exam.`}
               >
                 Max Attempts Reached ({attempts}/{allowed})
@@ -630,22 +732,55 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         }}
       >
         <div style={{ fontFamily: 'Arial, sans-serif', color: '#222', padding: 0, maxWidth: 800 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Exam Results</h1>
-          <div style={{ marginBottom: 8 }}>
-            <strong>Exam:</strong> {exam?.examName}<br />
-            <strong>Date:</strong> {new Date(result.completedAt).toLocaleDateString()}<br />
-            <strong>Student:</strong> {student?.name || "-"}<br />
-            <strong>Email:</strong> {student?.email || "-"}<br />
-            {student?.rollNumber && (<><strong>Roll No:</strong> {student.rollNumber}<br /></>)}
-            {exam?.collegeName && (<><strong>College:</strong> {exam.collegeName}<br /></>)}
-            {exam?.collegeCode && (<><strong>College Code:</strong> {exam.collegeCode}<br /></>)}
+          {/* Header with College Logo */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>Exam Results</h1>
+              <div style={{ marginBottom: 4, fontSize: 18, fontWeight: 'bold', color: '#666' }}>{exam?.examName}</div>
+              <div style={{ fontSize: 14, color: '#999' }}>Date: {new Date(completedAt).toLocaleDateString()}</div>
+            </div>
+            {finalCollegeDetails?.collegeLogo && (
+              <div style={{ marginLeft: 16 }}>
+                <img 
+                  src={finalCollegeDetails.collegeLogo} 
+                  alt={`${finalCollegeDetails?.collegeName || 'College'} Logo`}
+                  style={{ height: 60, width: 60, objectFit: 'cover', border: '2px solid #d1d5db', borderRadius: '50%' }}
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Enhanced Information Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            {/* Student Information */}
+            <div style={{ padding: 12, backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 'bold', color: '#1e40af', marginBottom: 8 }}>Student Information</h3>
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                <div><strong>Name:</strong> {student?.name || "-"}</div>
+                <div><strong>Email:</strong> {student?.email || "-"}</div>
+                {student?.rollNumber && <div><strong>Roll No:</strong> {student.rollNumber}</div>}
+                {student?.phoneNumber && <div><strong>Phone:</strong> {student.phoneNumber}</div>}
+              </div>
+            </div>
+            
+            {/* College Information */}
+            <div style={{ padding: 12, backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 'bold', color: '#166534', marginBottom: 8 }}>College Information</h3>
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                <div><strong>College:</strong> {finalCollegeDetails?.collegeName || "-"}</div>
+                {finalCollegeDetails?.collegeCode && <div><strong>College Code:</strong> {finalCollegeDetails.collegeCode}</div>}
+                {finalCollegeDetails?.collegeLocation && <div><strong>Location:</strong> {finalCollegeDetails.collegeLocation}</div>}
+                {exam?.stream && <div><strong>Stream:</strong> {exam.stream}</div>}
+                {exam?.department && <div><strong>Department:</strong> {exam.department}</div>}
+                {exam?.academicYear && <div><strong>Academic Year:</strong> {exam.academicYear}</div>}
+              </div>
+            </div>
           </div>
           <div style={{ marginBottom: 8 }}>
-            <strong>Score:</strong> {result.score} / {result.totalMarks}<br />
-            <strong>Percentage:</strong> {result.percentage}%<br />
-            <strong>Correct:</strong> {result.correctAnswers} &nbsp;
-            <strong>Incorrect:</strong> {result.incorrectAnswers} &nbsp;
-            <strong>Unattempted:</strong> {result.unattempted}
+            <strong>Score:</strong> {score} / {totalMarks}<br />
+            <strong>Correct:</strong> {correctAnswers} &nbsp;
+            <strong>Incorrect:</strong> {incorrectAnswers} &nbsp;
+            <strong>Unattempted:</strong> {unattempted}
           </div>
           <div style={{ marginBottom: 8, padding: 8, border: '1px solid #ccc', borderRadius: 4 }}>
             <h3 style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>Marking Scheme Applied</h3>
@@ -661,7 +796,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               <div style={{ padding: 6, backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 4 }}>
                 <div style={{ fontWeight: 'bold', color: '#991b1b', fontSize: 14 }}>Incorrect Answer</div>
                 <div style={{ fontSize: 18, fontWeight: 'bold', color: '#dc2626' }}>
-                  {result.negativeMarkingInfo?.negativeMarks 
+                  {result?.negativeMarkingInfo?.negativeMarks 
                     ? `-${result.negativeMarkingInfo.negativeMarks}` 
                     : (exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0'))
                   }
@@ -679,26 +814,26 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             {/* Score Breakdown */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
               <div>
-                <div><strong>Total Marks Earned:</strong> +{result.negativeMarkingInfo 
-                  ? (result.score + (result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)
-                  : (result.correctAnswers * (exam?.positiveMarks || exam?.marks || 4)).toString()
+                <div><strong>Total Marks Earned:</strong> +{result?.negativeMarkingInfo 
+                  ? (score + (incorrectAnswers * result.negativeMarkingInfo.negativeMarks)).toFixed(1)
+                  : (correctAnswers * (exam?.positiveMarks || exam?.marks || 4)).toString()
                 } marks</div>
-                <div style={{ fontSize: 12, color: '#166534' }}>From {result.correctAnswers} correct answers</div>
+                <div style={{ fontSize: 12, color: '#166534' }}>From {correctAnswers} correct answers</div>
               </div>
               
-              {(result.negativeMarkingInfo?.negativeMarks > 0 || result.incorrectAnswers > 0) && (
+              {(result?.negativeMarkingInfo?.negativeMarks > 0 || incorrectAnswers > 0) && (
                 <div>
-                  <div><strong>Total Marks Deducted:</strong> -{result.negativeMarkingInfo 
-                    ? (result.incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)
+                  <div><strong>Total Marks Deducted:</strong> -{result?.negativeMarkingInfo 
+                    ? (incorrectAnswers * result.negativeMarkingInfo.negativeMarks).toFixed(1)
                     : '0'
                   } marks</div>
-                  <div style={{ fontSize: 12, color: '#991b1b' }}>From {result.incorrectAnswers} incorrect answers</div>
+                  <div style={{ fontSize: 12, color: '#991b1b' }}>From {incorrectAnswers} incorrect answers</div>
                 </div>
               )}
             </div>
 
             {/* Rule Source Information */}
-            {result.negativeMarkingInfo && (
+            {result?.negativeMarkingInfo && (
               <div style={{ marginBottom: 8 }}>
                 <div><strong>Rule Source:</strong> {
                   result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'System Default Rule' : 'Exam Specific Rule'
@@ -715,7 +850,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               <div>• Each question carries equal marks unless specified otherwise</div>
               <div>• Multiple choice questions: Only one correct answer unless marked as multiple correct</div>
               <div>• Numerical questions: Usually no negative marking applies</div>
-              {(result.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
+              {(result?.negativeMarkingInfo?.negativeMarks > 0 || exam?.negativeMarks > 0) && (
                 <div style={{ color: '#991b1b', fontWeight: 'bold' }}>• Negative marking was applied to this exam</div>
               )}
             </div>

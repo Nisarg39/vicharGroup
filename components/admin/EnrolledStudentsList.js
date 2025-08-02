@@ -406,6 +406,7 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const dropdownRef = useRef(null);
 
     const filteredProducts = searchTerm.trim() 
@@ -414,6 +415,33 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
           )
         : products;
 
+    const calculatePosition = () => {
+        if (dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const viewport = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+            
+            let left = rect.left;
+            let top = rect.bottom + window.scrollY;
+            let width = Math.max(rect.width, 300);
+            
+            // Adjust if dropdown would go off right edge
+            if (left + width > viewport.width) {
+                left = viewport.width - width - 20;
+            }
+            
+            // Ensure minimum left position
+            if (left < 10) {
+                left = 10;
+                width = Math.min(width, viewport.width - 20);
+            }
+            
+            setDropdownPosition({ top, left, width });
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -421,11 +449,22 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             }
         };
 
+        const handleResize = () => {
+            if (isOpen) {
+                calculatePosition();
+            }
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('scroll', handleResize);
+        
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', handleResize);
         };
-    }, []);
+    }, [isOpen]);
 
     const handleSelect = (product) => {
         setSelectedProduct(product);
@@ -439,11 +478,18 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
         }, 2000);
     };
 
+    const toggleDropdown = () => {
+        if (!isOpen) {
+            calculatePosition();
+        }
+        setIsOpen(!isOpen);
+    };
+
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleDropdown}
                 className={`w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
                     selectedProduct ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-700'
                 }`}
@@ -464,8 +510,16 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden">
-                    <div className="p-2 border-b border-gray-200">
+                <div 
+                    className="fixed z-[9999] bg-white border border-gray-300 rounded-md shadow-lg"
+                    style={{
+                        top: `${dropdownPosition.top}px`,
+                        left: `${dropdownPosition.left}px`,
+                        width: `${dropdownPosition.width}px`,
+                        maxHeight: '320px'
+                    }}
+                >
+                    <div className="p-3 border-b border-gray-200 bg-gray-50">
                         <input
                             type="text"
                             placeholder="Search products..."
@@ -475,24 +529,26 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
                             autoFocus
                         />
                     </div>
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
                         {filteredProducts.length > 0 ? (
                             filteredProducts.map((product) => (
-                                <button
+                                <div
                                     key={product._id}
                                     onClick={() => handleSelect(product)}
-                                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-gray-100 last:border-b-0"
+                                    className="block w-full px-4 py-3 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
                                 >
-                                    <div className="flex flex-col">
-                                        <span className="font-medium truncate">{product.name}</span>
-                                        <span className="text-xs text-gray-500 capitalize">
+                                    <div className="space-y-1">
+                                        <div className="font-medium text-gray-900 leading-tight" style={{ wordWrap: 'break-word', whiteSpace: 'normal' }}>
+                                            {product.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 capitalize">
                                             {product.type}
-                                        </span>
+                                        </div>
                                     </div>
-                                </button>
+                                </div>
                             ))
                         ) : (
-                            <div className="px-3 py-4 text-center text-gray-500 text-sm">
+                            <div className="px-4 py-6 text-center text-gray-500 text-sm">
                                 No products found for "{searchTerm}"
                             </div>
                         )}

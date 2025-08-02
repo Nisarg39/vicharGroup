@@ -1,11 +1,13 @@
 "use client"
 
+import 'katex/dist/katex.min.css';
 import { Badge } from "../../../ui/badge"
 import { RadioGroup, RadioGroupItem } from "../../../ui/radio-group"
 import { Checkbox } from "../../../ui/checkbox"
 import { Textarea } from "../../../ui/textarea"
 import { Label } from "../../../ui/label"
 import { Flag, AlertTriangle } from "lucide-react"
+
 
 export default function QuestionDisplay({ 
     currentQuestion, 
@@ -14,7 +16,9 @@ export default function QuestionDisplay({
     markedQuestions, 
     userAnswer, 
     onAnswerChange, 
-    onMultipleAnswerChange 
+    onMultipleAnswerChange,
+    currentSectionInfo,
+    isJeeExam
 }) {
     if (!currentQuestion) {
         return (
@@ -28,104 +32,141 @@ export default function QuestionDisplay({
     const questionId = currentQuestion._id
 
     return (
-        <div className="p-3 space-y-3 bg-white">
-            {/* Header Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs font-semibold">
-                        Q{currentQuestionIndex + 1} of {totalQuestions}
+        <div className="space-y-4 bg-transparent">
+            {/* Mobile-Optimized Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs font-semibold px-3 py-1">
+                        Q{currentQuestionIndex + 1}/{totalQuestions}
                     </Badge>
+                    {isJeeExam && currentSectionInfo && (
+                        <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs font-semibold px-3 py-1 bg-purple-50">
+                            Section {currentSectionInfo.sectionName}
+                        </Badge>
+                    )}
                     {markedQuestions.has(currentQuestionIndex) && (
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs">
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 text-xs px-2 py-1">
                             <Flag className="w-3 h-3 mr-1" />
                             Marked
                         </Badge>
                     )}
                 </div>
-                <div className="text-xs text-gray-600 font-medium">
-                    {currentQuestion.marks || 4} marks
+                <div className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {currentQuestion.marks || 4} pts
                 </div>
             </div>
 
-            {/* Question */}
-            <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0">
-                        Q{currentQuestionIndex + 1}
-                    </span>
-                    <div className="flex-1 min-w-0 text-sm text-gray-900 leading-snug break-words"
+            {/* Question Content */}
+            <div className="space-y-3">
+                <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="text-base sm:text-lg text-gray-900 leading-relaxed"
+                        style={{
+                            maxWidth: '100%',
+                            overflowWrap: 'break-word',
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal'
+                        }}
                         dangerouslySetInnerHTML={{ __html: currentQuestion.question }}
                     />
                 </div>
 
-                {/* Question Type Badge */}
-                <div className="flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-purple-600 border-purple-200 text-[11px] px-2 py-0.5">
-                        {currentQuestion.isMultipleAnswer ? 'Multiple Choice' : 'Single Choice'}
+                {/* Question Meta Info */}
+                <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs px-2 py-1">
+                        {currentQuestion.isMultipleAnswer ? 'Multiple Select' : 'Single Select'}
                     </Badge>
                     {currentQuestion.difficultyLevel && (
-                        <Badge variant="outline" className="text-green-600 border-green-200 text-[11px] px-2 py-0.5">
+                        <Badge variant="outline" className="text-green-600 border-green-200 text-xs px-2 py-1">
                             {currentQuestion.difficultyLevel}
+                        </Badge>
+                    )}
+                    {currentQuestion.subject && (
+                        <Badge variant="outline" className="text-gray-600 border-gray-200 text-xs px-2 py-1">
+                            {currentQuestion.subject}
                         </Badge>
                     )}
                 </div>
             </div>
 
-            {/* Options */}
+            {/* Answer Options - Mobile Optimized */}
             {!currentQuestion.userInputAnswer && currentQuestion.options?.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                     {currentQuestion.isMultipleAnswer ? (
-                        // Multiple choice
-                        <div className="space-y-2">
+                        // Multiple choice with better mobile touch targets
+                        <div className="space-y-2 sm:space-y-3">
                             {currentQuestion.options.map((option, index) => {
                                 const optionKey = String.fromCharCode(65 + index);
+                                const isSelected = Array.isArray(userAnswer) && userAnswer.includes(optionKey);
                                 return (
-                                    <div key={index} className="flex items-start gap-2 p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+                                    <div key={index} className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-4 rounded-xl border-2 transition-all duration-200 touch-action-manipulation ${
+                                        isSelected 
+                                            ? 'border-blue-500 bg-blue-50 shadow-md' 
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                    }`}>
                                         <Checkbox
                                             id={`option-${index}`}
-                                            checked={Array.isArray(userAnswer) && userAnswer.includes(optionKey)}
+                                            checked={isSelected}
                                             onCheckedChange={(checked) => 
                                                 onMultipleAnswerChange(questionId, optionKey, checked)
                                             }
-                                            className="mt-1 flex-shrink-0"
+                                            className="mt-0.5 flex-shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5"
                                         />
                                         <Label 
                                             htmlFor={`option-${index}`}
-                                            className="flex-1 text-sm text-gray-800 cursor-pointer leading-snug break-words"
+                                            className="flex-1 cursor-pointer tap-highlight-none"
                                         >
-                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-1 inline-block">
-                                                {optionKey}
-                                            </span>
-                                            <span dangerouslySetInnerHTML={{ __html: option }} />
+                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                                <span className={`text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md ${
+                                                    isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {optionKey}
+                                                </span>
+                                            </div>
+                                            <div 
+                                                className="text-sm sm:text-base text-gray-800 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: option }} 
+                                            />
                                         </Label>
                                     </div>
                                 )
                             })}
                         </div>
                     ) : (
-                        // Single choice
+                        // Single choice with better mobile touch targets
                         <RadioGroup
                             value={userAnswer || ""}
                             onValueChange={(value) => onAnswerChange(questionId, value)}
-                            className="space-y-2"
+                            className="space-y-2 sm:space-y-3"
                         >
                             {currentQuestion.options.map((option, index) => {
                                 const optionKey = String.fromCharCode(65 + index);
+                                const isSelected = userAnswer === optionKey;
                                 return (
-                                    <div key={index} className="flex items-start gap-2 p-3 rounded-md border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+                                    <div key={index} className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-4 rounded-xl border-2 transition-all duration-200 touch-action-manipulation ${
+                                        isSelected 
+                                            ? 'border-blue-500 bg-blue-50 shadow-md' 
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                    }`}>
                                         <RadioGroupItem
                                             value={optionKey}
                                             id={`option-${index}`}
-                                            className="mt-1 flex-shrink-0"
+                                            className="mt-0.5 flex-shrink-0 w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4"
                                         />
                                         <Label 
                                             htmlFor={`option-${index}`}
-                                            className="flex-1 text-sm text-gray-800 cursor-pointer leading-snug break-words"
+                                            className="flex-1 cursor-pointer tap-highlight-none"
                                         >
-                                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-1 inline-block">
-                                                {optionKey}
-                                            </span>
-                                            <span dangerouslySetInnerHTML={{ __html: option }} />
+                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                                <span className={`text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md ${
+                                                    isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                    {optionKey}
+                                                </span>
+                                            </div>
+                                            <div 
+                                                className="text-sm sm:text-base text-gray-800 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: option }} 
+                                            />
                                         </Label>
                                     </div>
                                 )
@@ -148,19 +189,22 @@ export default function QuestionDisplay({
                 </div>
             )}
 
-            {/* User Input Answer */}
+            {/* Text Input Answer - Mobile Optimized */}
             {currentQuestion.userInputAnswer && (
-                <div className="space-y-2 bg-white p-3 rounded-md border border-gray-200">
-                    <Label htmlFor="user-answer" className="text-sm font-medium text-gray-800">
-                        Your Answer
+                <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <Label htmlFor="user-answer" className="text-sm font-semibold text-gray-800">
+                        Type your answer below:
                     </Label>
                     <Textarea
                         id="user-answer"
                         value={userAnswer || ""}
                         onChange={(e) => onAnswerChange(questionId, e.target.value)}
-                        placeholder="Type your answer here..."
-                        className="min-h-[90px] resize-none bg-white border-gray-200 text-sm"
+                        placeholder="Enter your detailed answer here..."
+                        className="min-h-[120px] resize-none bg-white border-gray-300 text-base leading-relaxed focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                     />
+                    <div className="text-xs text-gray-500">
+                        Character count: {(userAnswer || '').length}
+                    </div>
                 </div>
             )}
         </div>

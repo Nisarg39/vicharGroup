@@ -23,16 +23,10 @@ export default function QuestionsList({
   totalQuestionsPerSubject = {}, // Object: { subject: count } for all questions in DB (for current filters)
   showSelectedQuestions = false // Whether to show selected questions from other pages
 }) {
-  const [expandedQuestions, setExpandedQuestions] = useState(new Set());
+  const [expandedQuestionId, setExpandedQuestionId] = useState(null);
 
-  const toggleExpanded = (questionId) => {
-    const newExpanded = new Set(expandedQuestions);
-    if (newExpanded.has(questionId)) {
-      newExpanded.delete(questionId);
-    } else {
-      newExpanded.add(questionId);
-    }
-    setExpandedQuestions(newExpanded);
+  const toggleQuestionDetails = (questionId) => {
+    setExpandedQuestionId(expandedQuestionId === questionId ? null : questionId);
   };
 
   // Assigned questions count by subject
@@ -41,7 +35,7 @@ export default function QuestionsList({
   return (
     <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-120px)] min-h-[600px]">
       {/* Questions list container */}
-      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
+      <div className="flex-1 overflow-y-auto px-4 min-h-[400px] max-h-[calc(100vh-200px)]">
         {loading ? (
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -85,20 +79,17 @@ export default function QuestionsList({
                         </p>
                       </div>
                       
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-4 mb-4">
                         {hiddenSelectedQuestions.map((question) => {
-                          const isExpanded = expandedQuestions.has(question._id);
+                          const isExpanded = expandedQuestionId === question._id;
                           return (
-                            <div
-                              key={`hidden-${question._id}`}
-                              className="border border-blue-300 bg-blue-50 rounded-lg transition-all duration-200 shadow-sm"
-                            >
-                              {/* Compact Header for Hidden Selected Questions */}
+                            <div key={`hidden-${question._id}`} className="bg-blue-50 rounded-lg p-4 hover:bg-blue-100 transition-colors">
+                              {/* Compact View */}
                               <div 
-                                className="flex items-center justify-between p-3 cursor-pointer hover:bg-blue-100 transition-colors"
-                                onClick={() => toggleExpanded(question._id)}
+                                className="flex items-center justify-between cursor-pointer"
+                                onClick={() => toggleQuestionDetails(question._id)}
                               >
-                                <div className="flex items-center space-x-3 flex-1">
+                                <div className="flex items-center gap-4">
                                   <input
                                     type="checkbox"
                                     checked={true}
@@ -110,136 +101,98 @@ export default function QuestionsList({
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                   />
                                   
-                                  <div className="flex items-center space-x-2 flex-1">
-                                    <span className="text-sm font-medium text-blue-900">Q{question.questionNumber}</span>
-                                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                      question.difficultyLevel === "Easy" ? "bg-green-100 text-green-800" :
-                                      question.difficultyLevel === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                                      "bg-red-100 text-red-800"
-                                    }`}>
-                                      {question.difficultyLevel}
-                                    </span>
-                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                      {question.marks} marks
-                                    </span>
-                                    {question.questionType && (
-                                      <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
-                                        {question.questionType}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Question Preview */}
-                                    <div className="flex-1 min-w-0">
-                                      <div 
-                                        className="text-sm text-blue-800 overflow-hidden"
-                                        style={{
-                                          display: '-webkit-box',
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: 'vertical',
-                                          maxHeight: '2.5rem'
-                                        }}
-                                        dangerouslySetInnerHTML={{ __html: question.question }}
-                                      />
+                                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                    Q{question.questionNumber}
+                                  </span>
+                                  
+                                  {/* Add Question Type Badge */}
+                                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                                    question.isMultipleAnswer 
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : question.userInputAnswer
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {question.isMultipleAnswer 
+                                      ? 'Multiple Correct'
+                                      : question.userInputAnswer
+                                      ? 'User Input'
+                                      : 'Single Choice'}
+                                  </span>
+
+                                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                                    question.difficultyLevel === 'Hard' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : question.difficultyLevel === 'Medium'
+                                      ? 'bg-yellow-100 text-yellow-800'  
+                                      : 'bg-green-100 text-green-800'
+                                  }`}>
+                                    {question.difficultyLevel}
+                                  </span>
+
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-gray-700" style={{overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.4em", maxHeight: "2.8em"}}>
+                                      <div dangerouslySetInnerHTML={{ __html: question.question }} />
                                     </div>
-                                    
-                                    <span className="text-xs text-blue-600 font-medium">{question.topic}</span>
                                   </div>
                                 </div>
-                                
-                                {/* Visual Indicator */}
-                                <div className="ml-3 p-1">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                    Marks: {question.marks}
+                                  </span>
                                   <svg 
-                                    className={`w-4 h-4 text-blue-500 transition-transform duration-200 ${
-                                      isExpanded ? 'rotate-180' : ''
-                                    }`} 
+                                    className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                                     fill="none" 
                                     stroke="currentColor" 
                                     viewBox="0 0 24 24"
                                   >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                   </svg>
                                 </div>
                               </div>
 
-                              {/* Expanded Content for Hidden Questions */}
+                              {/* Expanded Details */}
                               {isExpanded && (
-                                <div className="px-3 pb-3 border-t border-blue-200">
-                                  <div className="pt-3">
-                                    {/* Full Question */}
-                                    <div className="mb-4">
-                                      <h4 className="text-sm font-medium text-blue-900 mb-2">Question:</h4>
-                                      <div
-                                        className="text-sm text-blue-800 leading-relaxed"
-                                        dangerouslySetInnerHTML={{ __html: question.question }}
-                                      />
-                                    </div>
-
-                                    {/* Options */}
-                                    {question.options && question.options.length > 0 && (
-                                      <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-blue-900 mb-2">Options:</h4>
-                                        <div className="grid grid-cols-1 gap-2">
-                                          {question.options.map((option, index) => (
-                                            <div key={index} className="flex items-start space-x-2 p-2 bg-blue-100 rounded">
-                                              <span className="font-medium text-blue-700 mt-0.5 min-w-[20px]">
-                                                {String.fromCharCode(65 + index)}.
-                                              </span>
-                                              <span
-                                                className="text-sm text-blue-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: option }}
-                                              />
+                                <div className="mt-4 border-t pt-4">
+                                  <div className="bg-white rounded-xl shadow-sm p-4">
+                                    <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                                        <div className="text-sm font-medium text-gray-700 mb-2">Question</div>
+                                        <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                                      </div>
+                                      
+                                      {question.options && question.options.length > 0 && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                          {question.options.map((option, i) => (
+                                            <div key={i} className="bg-white rounded-lg p-3 shadow-sm">
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <span className={`w-6 h-6 rounded-full ${option === question.answer ? 'bg-green-500' : 'bg-[#1d77bc]'} text-white flex items-center justify-center text-sm`}>
+                                                  {String.fromCharCode(65 + i)}
+                                                </span>
+                                              </div>
+                                              <div dangerouslySetInnerHTML={{ __html: option }} />
                                             </div>
                                           ))}
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
 
-                                    {/* Correct Answer */}
-                                    {((question.correctAnswer || question.answer || question.correctOption || question.correct_answer) || (question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0)) && (
-                                      <div className="mb-4">
-                                        <h4 className="text-sm font-medium text-blue-900 mb-2">Correct Answer{question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 1 ? 's' : ''}:</h4>
-                                        <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                          {question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0 ? (
-                                            <div className="space-y-1">
-                                              {question.multipleAnswer.map((answer, index) => (
-                                                <div key={index} className="text-sm text-green-800">
-                                                  <strong>{answer}:</strong>{' '}
-                                                  {question.options && ['A', 'B', 'C', 'D'].includes(answer) ? (
-                                                    <span dangerouslySetInnerHTML={{ 
-                                                      __html: question.options[['A', 'B', 'C', 'D'].indexOf(answer)] 
-                                                    }} />
-                                                  ) : (
-                                                    <span>{answer}</span>
-                                                  )}
-                                                </div>
-                                              ))}
-                                            </div>
-                                          ) : question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
-                                            <div className="text-sm text-green-800">
-                                              <strong>{question.correctAnswer || question.answer || question.correctOption || question.correct_answer}:</strong>{' '}
-                                              <span dangerouslySetInnerHTML={{ 
-                                                __html: question.options[['A', 'B', 'C', 'D'].indexOf(question.correctAnswer || question.answer || question.correctOption || question.correct_answer)] 
-                                              }} />
-                                            </div>
-                                          ) : (
-                                            <span className="text-sm font-medium text-green-800">
-                                              {question.correctAnswer || question.answer || question.correctOption || question.correct_answer}
-                                            </span>
-                                          )}
+                                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                                        <div className="text-sm font-medium text-green-700 mb-2">
+                                          {question.isMultipleAnswer ? 'Correct Answers' : 'Correct Answer'}
                                         </div>
+                                        {question.isMultipleAnswer ? (
+                                          <div className="flex gap-2">
+                                            {question.multipleAnswer && question.multipleAnswer.map((ans, idx) => (
+                                              <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                Option {ans}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div dangerouslySetInnerHTML={{ __html: question.answer || question.correctAnswer || question.correctOption || question.correct_answer }} />
+                                        )}
                                       </div>
-                                    )}
-
-                                    {/* Explanation */}
-                                    {question.explanation && (
-                                      <div>
-                                        <h4 className="text-sm font-medium text-blue-900 mb-2">Explanation:</h4>
-                                        <div 
-                                          className="text-sm text-blue-800 leading-relaxed p-2 bg-blue-100 border border-blue-300 rounded"
-                                          dangerouslySetInnerHTML={{ __html: question.explanation }}
-                                        />
-                                      </div>
-                                    )}
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -254,27 +207,21 @@ export default function QuestionsList({
             )}
 
             {/* Current Page Questions */}
-            <div className="space-y-2 pb-4">
+            <div className="space-y-4">
               {questions.map((question) => {
-                const isExpanded = expandedQuestions.has(question._id);
+                const isExpanded = expandedQuestionId === question._id;
+                const isSelected = selectedQuestions.includes(question._id);
                 return (
-                  <div
-                    key={question._id}
-                    className={`border rounded-lg transition-all duration-200 ${
-                      selectedQuestions.includes(question._id)
-                        ? "border-gray-200 bg-blue-50 shadow-sm"
-                        : "border-gray-200 hover:border-gray-300 bg-white hover:shadow-sm"
-                    }`}
-                  >
-                    {/* Compact Header - Always Visible */}
+                  <div key={question._id} className={`${isSelected ? 'bg-blue-50' : 'bg-gray-50'} rounded-lg p-4 hover:bg-gray-100 transition-colors`}>
+                    {/* Compact View */}
                     <div 
-                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => toggleExpanded(question._id)}
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleQuestionDetails(question._id)}
                     >
-                      <div className="flex items-center space-x-3 flex-1">
+                      <div className="flex items-center gap-4">
                         <input
                           type="checkbox"
-                          checked={selectedQuestions.includes(question._id)}
+                          checked={isSelected}
                           onChange={(e) => {
                             e.stopPropagation();
                             handleQuestionToggle(question._id);
@@ -283,148 +230,98 @@ export default function QuestionsList({
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         
-                        <div className="flex items-center space-x-2 flex-1">
-                          <span className="text-sm font-medium text-gray-900">Q{question.questionNumber}</span>
-                          <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            question.difficultyLevel === "Easy" ? "bg-green-100 text-green-800" :
-                            question.difficultyLevel === "Medium" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-red-100 text-red-800"
-                          }`}>
-                            {question.difficultyLevel}
-                          </span>
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {question.marks} marks
-                          </span>
-                          {question.questionType && (
-                            <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
-                              {question.questionType}
-                            </span>
-                          )}
-                          
-                          {/* Full Question in Contracted Mode */}
-                          <div className="flex-1 min-w-0">
-                            <div 
-                              className="text-sm text-gray-700 overflow-hidden"
-                              style={{
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                maxHeight: '2.5rem'
-                              }}
-                              dangerouslySetInnerHTML={{ __html: question.question }}
-                            />
+                        <span className={`${isSelected ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'} text-xs font-medium px-2.5 py-0.5 rounded`}>
+                          Q{question.questionNumber}
+                        </span>
+                        
+                        {/* Add Question Type Badge */}
+                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                          question.isMultipleAnswer 
+                            ? 'bg-purple-100 text-purple-800'
+                            : question.userInputAnswer
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {question.isMultipleAnswer 
+                            ? 'Multiple Correct'
+                            : question.userInputAnswer
+                            ? 'User Input'
+                            : 'Single Choice'}
+                        </span>
+
+                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded ${
+                          question.difficultyLevel === 'Hard' 
+                            ? 'bg-red-100 text-red-800'
+                            : question.difficultyLevel === 'Medium'
+                            ? 'bg-yellow-100 text-yellow-800'  
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {question.difficultyLevel}
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-700" style={{overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.4em", maxHeight: "2.8em"}}>
+                            <div dangerouslySetInnerHTML={{ __html: question.question }} />
                           </div>
-                          
-                          <span className="text-xs text-gray-500 font-medium">{question.topic}</span>
                         </div>
                       </div>
-                      
-                      {/* Visual Indicator for Expand/Collapse */}
-                      <div className="ml-3 p-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          Marks: {question.marks}
+                        </span>
                         <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                            isExpanded ? 'rotate-180' : ''
-                          }`} 
+                          className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                           fill="none" 
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </div>
 
-                    {/* Expanded Content */}
+                    {/* Expanded Details */}
                     {isExpanded && (
-                      <div className="px-3 pb-3 border-t border-gray-100">
-                        <div className="pt-3">
-                          {/* Full Question */}
-                          <div className="mb-4">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Question:</h4>
-                            <div
-                              className="text-sm text-gray-700 leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: question.question }}
-                            />
-                          </div>
+                      <div className="mt-4 border-t pt-4">
+                        <div className="bg-white rounded-xl shadow-sm p-4">
+                          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-sm font-medium text-gray-700 mb-2">Question</div>
+                              <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                            </div>
+                            
+                            {question.options && question.options.length > 0 && (
+                              <div className="grid grid-cols-2 gap-3">
+                                {question.options.map((option, i) => (
+                                  <div key={i} className="bg-white rounded-lg p-3 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className={`w-6 h-6 rounded-full ${option === question.answer ? 'bg-green-500' : 'bg-[#1d77bc]'} text-white flex items-center justify-center text-sm`}>
+                                        {String.fromCharCode(65 + i)}
+                                      </span>
+                                    </div>
+                                    <div dangerouslySetInnerHTML={{ __html: option }} />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
-                          {/* Options */}
-                          {question.options && question.options.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Options:</h4>
-                              <div className="grid grid-cols-1 gap-2">
-                                {question.options.map((option, index) => (
-                                  <div key={index} className="flex items-start space-x-2 p-2 bg-gray-50 rounded">
-                                    <span className="font-medium text-gray-600 mt-0.5 min-w-[20px]">
-                                      {String.fromCharCode(65 + index)}.
+                            <div className="bg-white rounded-lg p-3 shadow-sm">
+                              <div className="text-sm font-medium text-green-700 mb-2">
+                                {question.isMultipleAnswer ? 'Correct Answers' : 'Correct Answer'}
+                              </div>
+                              {question.isMultipleAnswer ? (
+                                <div className="flex gap-2">
+                                  {question.multipleAnswer && question.multipleAnswer.map((ans, idx) => (
+                                    <span key={idx} className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                      Option {ans}
                                     </span>
-                                    <span
-                                      className="text-sm text-gray-700 leading-relaxed"
-                                      dangerouslySetInnerHTML={{ __html: option }}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div dangerouslySetInnerHTML={{ __html: question.answer || question.correctAnswer || question.correctOption || question.correct_answer }} />
+                              )}
                             </div>
-                          )}
-
-                          {/* Correct Answer */}
-                          {((question.correctAnswer || question.answer || question.correctOption || question.correct_answer) || (question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0)) && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Correct Answer{question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 1 ? 's' : ''}:</h4>
-                              <div className="p-3 bg-green-50 border border-green-200 rounded">
-                                {question.isMultipleAnswer && question.multipleAnswer && question.multipleAnswer.length > 0 ? (
-                                  <div className="space-y-1">
-                                    {question.multipleAnswer.map((answer, index) => (
-                                      <div key={index} className="text-sm text-green-800">
-                                        <strong>{answer}:</strong>{' '}
-                                        {question.options && ['A', 'B', 'C', 'D'].includes(answer) ? (
-                                          <span dangerouslySetInnerHTML={{ 
-                                            __html: question.options[['A', 'B', 'C', 'D'].indexOf(answer)] 
-                                          }} />
-                                        ) : (
-                                          <span>{answer}</span>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : question.options && ['A', 'B', 'C', 'D'].includes(question.correctAnswer || question.answer || question.correctOption || question.correct_answer) ? (
-                                  <div className="text-sm text-green-800">
-                                    <strong>{question.correctAnswer || question.answer || question.correctOption || question.correct_answer}:</strong>{' '}
-                                    <span dangerouslySetInnerHTML={{ 
-                                      __html: question.options[['A', 'B', 'C', 'D'].indexOf(question.correctAnswer || question.answer || question.correctOption || question.correct_answer)] 
-                                    }} />
-                                  </div>
-                                ) : (
-                                  <span className="text-sm font-medium text-green-800">
-                                    {question.correctAnswer || question.answer || question.correctOption || question.correct_answer}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Debug info - remove this once you confirm the correct field name */}
-                          {!question.correctAnswer && !question.answer && !question.correctOption && !question.correct_answer && (!question.isMultipleAnswer || !question.multipleAnswer || question.multipleAnswer.length === 0) && (
-                            <div className="mb-4">
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Available Answer Fields (Debug):</h4>
-                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                                {Object.keys(question).filter(key => key.toLowerCase().includes('answer') || key.toLowerCase().includes('correct') || key.toLowerCase().includes('multiple')).map(key => (
-                                  <div key={key}>{key}: {Array.isArray(question[key]) ? JSON.stringify(question[key]) : question[key]}</div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Explanation (if available) */}
-                          {question.explanation && (
-                            <div>
-                              <h4 className="text-sm font-medium text-gray-900 mb-2">Explanation:</h4>
-                              <div 
-                                className="text-sm text-gray-700 leading-relaxed p-2 bg-blue-50 border border-blue-200 rounded"
-                                dangerouslySetInnerHTML={{ __html: question.explanation }}
-                              />
-                            </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -438,87 +335,66 @@ export default function QuestionsList({
       
       {/* Pagination - Always visible at bottom */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
-          <div className="flex items-center">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{(pagination.currentPage - 1) * pagination.questionsPerPage + 1}</span> to{' '}
-              <span className="font-medium">
-                {Math.min(pagination.currentPage * pagination.questionsPerPage, pagination.totalQuestions)}
-              </span>{' '}
-              of <span className="font-medium">{pagination.totalQuestions}</span> questions
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col items-center mt-4">
+          <div className="flex justify-center items-center gap-2 flex-wrap">
             <button
               onClick={() => handlePageChange(pagination.currentPage - 1)}
               disabled={pagination.currentPage === 1}
-              className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
             >
               Previous
             </button>
-            
-            {/* Page Numbers */}
-            <div className="hidden md:flex space-x-1">
-              {(() => {
-                const pageNumbers = [];
-                const totalPages = pagination.totalPages;
-                const currentPage = pagination.currentPage;
-                
-                // Always show first page
-                pageNumbers.push(1);
-                
-                // Calculate range around current page
-                let start = Math.max(2, currentPage - 2);
-                let end = Math.min(totalPages - 1, currentPage + 2);
-                
-                // Add ellipsis after first page if needed
-                if (start > 2) {
-                  pageNumbers.push('...');
-                }
-                
-                // Add pages around current page
-                for (let i = start; i <= end; i++) {
-                  pageNumbers.push(i);
-                }
-                
-                // Add ellipsis before last page if needed
-                if (end < totalPages - 1) {
-                  pageNumbers.push('...');
-                }
-                
-                // Always show last page if more than 1 page
-                if (totalPages > 1) {
-                  pageNumbers.push(totalPages);
-                }
-                
-                return pageNumbers.map((pageNum, index) => 
-                  pageNum === '...' ? (
-                    <span key={`ellipsis-${index}`} className="px-3 py-1">...</span>
-                  ) : (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-1 text-sm font-medium rounded-md ${
-                        pagination.currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                );
-              })()}
-            </div>
-            
+            {pagination.currentPage > 3 && (
+              <>
+                <button
+                  onClick={() => handlePageChange(1)}
+                  className="px-3 py-1 rounded bg-gray-200"
+                >
+                  1
+                </button>
+                <span className="px-2">...</span>
+              </>
+            )}
+            {[...Array(5)].map((_, i) => {
+              const pageNum = pagination.currentPage - 2 + i
+              if (pageNum > 0 && pageNum <= pagination.totalPages) {
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1 rounded ${
+                      pagination.currentPage === pageNum 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              }
+              return null
+            })}
+            {pagination.currentPage < pagination.totalPages - 2 && (
+              <>
+                <span className="px-2">...</span>
+                <button
+                  onClick={() => handlePageChange(pagination.totalPages)}
+                  className="px-3 py-1 rounded bg-gray-200"
+                >
+                  {pagination.totalPages}
+                </button>
+              </>
+            )}
             <button
               onClick={() => handlePageChange(pagination.currentPage + 1)}
               disabled={pagination.currentPage === pagination.totalPages}
-              className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
             >
               Next
             </button>
+          </div>
+          <div className="text-center text-sm text-gray-500 mt-2">
+            Showing {((pagination.currentPage - 1) * pagination.questionsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.questionsPerPage, pagination.totalQuestions)} of {pagination.totalQuestions} questions
           </div>
         </div>
       )}

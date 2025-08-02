@@ -14,38 +14,52 @@ export default function ConfirmSubmitModal({
     if (!showConfirmSubmit) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <VicharCard className="bg-white/95 backdrop-blur-xl shadow-2xl border border-gray-100/60 max-w-md w-full">
-                <VicharCardHeader className="p-4 sm:p-6">
-                    <VicharCardTitle className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-                        Confirm Submission
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+            <VicharCard className="bg-white shadow-2xl border border-gray-200 max-w-sm sm:max-w-md w-full rounded-2xl overflow-hidden">
+                <VicharCardHeader className="p-4 sm:p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                    <VicharCardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-3">
+                        <AlertTriangle className="w-6 h-6 sm:w-7 sm:h-7" />
+                        Submit Exam?
                     </VicharCardTitle>
                 </VicharCardHeader>
-                <VicharCardContent className="p-4 sm:p-6 space-y-4">
-                    <p className="text-gray-700 text-sm sm:text-base">
-                        Are you sure you want to submit your exam? This action cannot be undone.
-                    </p>
-                    
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                        <p className="text-xs sm:text-sm text-yellow-800">
-                            <strong>Unanswered questions:</strong> {totalQuestions - answeredQuestions}
+                <VicharCardContent className="p-4 sm:p-6 space-y-5">
+                    <div className="text-center space-y-3">
+                        <p className="text-gray-800 text-base sm:text-lg font-medium">
+                            Are you ready to submit your exam?
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                            Once submitted, you cannot make any changes.
                         </p>
                     </div>
+                    
+                    {/* Progress Summary */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <p className="text-2xl font-bold text-green-600">{answeredQuestions}</p>
+                                <p className="text-xs text-green-700 font-medium">Answered</p>
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-orange-600">{totalQuestions - answeredQuestions}</p>
+                                <p className="text-xs text-orange-700 font-medium">Unanswered</p>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Action Buttons - Mobile Optimized */}
+                    <div className="space-y-3">
+                        <VicharButton
+                            onClick={onSubmit}
+                            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-action-manipulation"
+                        >
+                            🚀 Submit Final Exam
+                        </VicharButton>
                         <VicharButton
                             variant="outline"
                             onClick={onCancel}
-                            className="flex-1"
+                            className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-6 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 touch-action-manipulation"
                         >
-                            Cancel
-                        </VicharButton>
-                        <VicharButton
-                            onClick={onSubmit}
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            Submit Exam
+                            Continue Exam
                         </VicharButton>
                     </div>
                 </VicharCardContent>

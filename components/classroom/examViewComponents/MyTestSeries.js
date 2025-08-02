@@ -1,9 +1,9 @@
 "use client"
 import { useState, useEffect } from 'react'
-import { ClockIcon, DocumentTextIcon, CheckCircleIcon, ChartBarIcon, CalendarIcon, UserGroupIcon, BuildingOfficeIcon, ExclamationTriangleIcon, ArrowRightIcon, AcademicCapIcon, BookOpenIcon } from '@heroicons/react/24/outline'
+import { ClockIcon, DocumentTextIcon, CheckCircleIcon, ChartBarIcon, CalendarIcon, UserGroupIcon, BuildingOfficeIcon, ExclamationTriangleIcon, ArrowRightIcon, AcademicCapIcon, BookOpenIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import { useSelector } from 'react-redux'
 import { useRouter } from 'next/navigation'
-import { getEligibleExamsForStudent } from '../../../server_actions/actions/examController/studentExamActions'
+import { getEligibleExamsForStudent, getAllExamAttempts } from '../../../server_actions/actions/examController/studentExamActions'
 import toast from 'react-hot-toast'
 
 export default function MyTestSeries() {
@@ -15,6 +15,8 @@ export default function MyTestSeries() {
     const [error, setError] = useState(null)
     const [enrollments, setEnrollments] = useState([])
     const [activeTab, setActiveTab] = useState('scheduled') // 'scheduled' or 'practice'
+    const [examResults, setExamResults] = useState({}) // Store exam results by examId
+    const [loadingResults, setLoadingResults] = useState({})
 
     useEffect(() => {
         const fetchEligibleExams = async () => {
@@ -67,6 +69,76 @@ export default function MyTestSeries() {
 
     const handleTakeExam = (examId) => {
         window.open(`/exams/${examId}`, '_blank')
+    }
+
+    const checkExamResults = async (examId) => {
+        if (!student?._id || loadingResults[examId]) return null
+        
+        setLoadingResults(prev => ({ ...prev, [examId]: true }))
+        
+        try {
+            const result = await getAllExamAttempts(student._id, examId)
+            if (result.success && result.attempts && result.attempts.length > 0) {
+                // Store the most recent attempt
+                const latestAttempt = result.attempts[0]
+                setExamResults(prev => ({ 
+                    ...prev, 
+                    [examId]: {
+                        hasResults: true,
+                        latestAttempt,
+                        allAttempts: result.attempts
+                    }
+                }))
+                return latestAttempt
+            } else {
+                setExamResults(prev => ({ 
+                    ...prev, 
+                    [examId]: { hasResults: false }
+                }))
+                return null
+            }
+        } catch (error) {
+            console.error('Error checking exam results:', error)
+            setExamResults(prev => ({ 
+                ...prev, 
+                [examId]: { hasResults: false }
+            }))
+            return null
+        } finally {
+            setLoadingResults(prev => ({ ...prev, [examId]: false }))
+        }
+    }
+
+    const handleDownloadPDF = async (examId, examName) => {
+        if (!examResults[examId]?.hasResults) {
+            toast.error('No results available for this exam')
+            return
+        }
+
+        try {
+            const resultData = examResults[examId].latestAttempt
+            const examData = [...scheduledExams, ...practiceExams].find(e => e._id === examId)
+            
+            if (!resultData || !examData) {
+                toast.error('Exam data not found')
+                return
+            }
+
+            // Open the exam page with result view and print parameter
+            const params = new URLSearchParams({
+                view: 'result',
+                print: 'true'
+            })
+            
+            const resultUrl = `/exams/${examId}?${params.toString()}`
+            window.open(resultUrl, '_blank')
+            
+            toast.success('Opening result page for PDF download...')
+            
+        } catch (error) {
+            console.error('Error opening result page:', error)
+            toast.error('Failed to open result page')
+        }
     }
 
     const formatDateTime = (dateString) => {
@@ -276,9 +348,23 @@ export default function MyTestSeries() {
         })
     }
 
+    // Check for exam results for all exams
+    useEffect(() => {
+        if (student?._id && (scheduledExams.length > 0 || practiceExams.length > 0)) {
+            const allExams = [...scheduledExams, ...practiceExams]
+            allExams.forEach(exam => {
+                if (!examResults[exam._id] && !loadingResults[exam._id]) {
+                    checkExamResults(exam._id)
+                }
+            })
+        }
+    }, [scheduledExams.length, practiceExams.length, student?._id])
+
     // Helper function to render exam card
     const renderExamCard = (exam, isScheduled = true) => {
         const examStatus = isScheduled ? getScheduledExamStatus(exam) : getPracticeExamStatus(exam)
+        const hasResults = examResults[exam._id]?.hasResults
+        const isLoadingResults = loadingResults[exam._id]
         
         return (
             <div 
@@ -418,18 +504,40 @@ export default function MyTestSeries() {
                             <div className="text-gray-600 text-xs sm:text-sm">Class {exam.standard}</div>
                         </div>
 
-                        <button 
-                            onClick={() => handleTakeExam(exam._id)}
-                            disabled={!examStatus.canTake}
-                            className={`w-full sm:min-w-[140px] py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transform transition-all duration-200 shadow-lg text-xs sm:text-sm ${
-                                examStatus.canTake 
-                                    ? 'bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] hover:from-[#1d77bc]/90 hover:to-[#2d8bd4]/90 hover:scale-[1.02] cursor-pointer' 
-                                    : 'bg-gray-400 cursor-not-allowed opacity-60'
-                            }`}
-                        >
-                            <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <span className="truncate">{examStatus.canTake ? 'Take Exam' : examStatus.label}</span>
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                            {/* Download PDF Button - Show when results are available */}
+                            {hasResults && (
+                                <button 
+                                    onClick={() => handleDownloadPDF(exam._id, exam.examName)}
+                                    className="w-full sm:min-w-[120px] py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transform transition-all duration-200 shadow-lg text-xs sm:text-sm bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:scale-[1.02] cursor-pointer"
+                                >
+                                    <DocumentArrowDownIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="truncate">Download PDF</span>
+                                </button>
+                            )}
+                            
+                            {/* Loading indicator for results check */}
+                            {isLoadingResults && !hasResults && (
+                                <div className="w-full sm:min-w-[120px] py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg bg-gray-100 flex items-center justify-center gap-2">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b border-gray-500"></div>
+                                    <span className="text-xs text-gray-600">Checking...</span>
+                                </div>
+                            )}
+
+                            {/* Take Exam Button */}
+                            <button 
+                                onClick={() => handleTakeExam(exam._id)}
+                                disabled={!examStatus.canTake}
+                                className={`w-full sm:min-w-[140px] py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transform transition-all duration-200 shadow-lg text-xs sm:text-sm ${
+                                    examStatus.canTake 
+                                        ? 'bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] hover:from-[#1d77bc]/90 hover:to-[#2d8bd4]/90 hover:scale-[1.02] cursor-pointer' 
+                                        : 'bg-gray-400 cursor-not-allowed opacity-60'
+                                }`}
+                            >
+                                <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="truncate">{examStatus.canTake ? 'Take Exam' : examStatus.label}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

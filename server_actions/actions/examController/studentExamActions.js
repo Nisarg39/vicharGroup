@@ -401,6 +401,16 @@ export async function submitExamResult(examData) {
         message: "Exam not found",
       };
     }
+
+    // Fetch student details with college information
+    const student = await Student.findById(studentId).populate('college');
+    if (!student) {
+      return {
+        success: false,
+        message: "Student not found",
+      };
+    }
+
     const maxAttempts = exam.reattempt || 1;
     const previousAttempts = await ExamResult.countDocuments({ exam: examId, student: studentId });
     if (previousAttempts >= maxAttempts) {
@@ -607,6 +617,15 @@ export async function submitExamResult(examData) {
     exam.examResults.push(examResult._id);
     await exam.save();
 
+    // Extract college details
+    const collegeDetails = student.college ? {
+      collegeName: student.college.collegeName,
+      collegeCode: student.college.collegeCode,
+      collegeLogo: student.college.collegeLogo,
+      collegeLocation: student.college.collegeLocation
+    } : null;
+
+
     return {
       success: true,
       message: "Exam submitted successfully",
@@ -625,6 +644,7 @@ export async function submitExamResult(examData) {
           description: "Question-specific rules applied",
           source: examNegativeMarkingRule.source
         },
+        collegeDetails, // Add college details to result
       },
     };
   } catch (error) {
@@ -780,6 +800,12 @@ export async function getStudentExamResult(studentId, examId) {
     }).populate({
       path: "negativeMarkingInfo.defaultRuleUsed", 
       select: "negativeMarks description stream standard subject examType isActive"  
+    }).populate({
+      path: "student",
+      populate: {
+        path: "college",
+        select: "collegeName collegeCode collegeLogo collegeLocation"
+      }
     });
 
     if (!result) {
@@ -791,6 +817,16 @@ export async function getStudentExamResult(studentId, examId) {
 
     // Properly serialize result to avoid circular references
     const resultObj = result.toObject();
+    
+    // Extract college details
+    const collegeDetails = resultObj.student?.college ? {
+      collegeName: resultObj.student.college.collegeName,
+      collegeCode: resultObj.student.college.collegeCode,
+      collegeLogo: resultObj.student.college.collegeLogo,
+      collegeLocation: resultObj.student.college.collegeLocation
+    } : null;
+
+    
     const cleanResult = {
       _id: resultObj._id,
       exam: resultObj.exam,
@@ -821,6 +857,7 @@ export async function getStudentExamResult(studentId, examId) {
           examType: resultObj.negativeMarkingInfo.defaultRuleUsed.examType
         } : null
       } : null,
+      collegeDetails, // Add college details to result
     };
 
     return {
@@ -918,7 +955,7 @@ export async function getStudentExamResults(studentId) {
 
 export async function getAllExamAttempts(studentId, examId) {
   try {
-    console.log("getAllExamAttempts called with:", { studentId, examId });
+    // console.log("getAllExamAttempts called with:", { studentId, examId });
     await connectDB();
     if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(examId)) {
       console.log("Invalid IDs provided");

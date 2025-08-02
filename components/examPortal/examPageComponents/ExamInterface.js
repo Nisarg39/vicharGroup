@@ -45,31 +45,155 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [startTime, setStartTime] = useState(null);
 
     // --- SUBJECTWISE FILTERING ---
-    // Get all unique subjects from questions
-    const allSubjects = Array.from(new Set((questions || []).map(q => q.subject))).filter(Boolean);
-    const [selectedSubject, setSelectedSubject] = useState(allSubjects[0] || "");
+    // Check if this is a JEE exam
+    const isJeeExam = exam?.stream?.toLowerCase().includes('jee');
+    
+    // Check if this is a CET exam
+    const isCetExam = exam?.stream?.toLowerCase().includes('cet');
+    
+    // Get all unique subjects from questions with competitive exam ordering (Physics, Chemistry, then others alphabetically)
+    const allSubjects = (() => {
+        const uniqueSubjects = Array.from(new Set((questions || []).map(q => q.subject))).filter(Boolean);
+        const priorityOrder = ['Physics', 'Chemistry'];
+        const orderedSubjects = [];
+        
+        // Add priority subjects first if they exist
+        priorityOrder.forEach(subject => {
+            if (uniqueSubjects.includes(subject)) {
+                orderedSubjects.push(subject);
+            }
+        });
+        
+        // Add remaining subjects alphabetically
+        const remainingSubjects = uniqueSubjects
+            .filter(subject => !priorityOrder.includes(subject))
+            .sort();
+        
+        return [...orderedSubjects, ...remainingSubjects];
+    })();
+    const [selectedSubject, setSelectedSubject] = useState(() => {
+        // For CET exams, start with the first available (unlocked) subject
+        if (isCetExam) {
+            const availableSubject = allSubjects.find(subject => {
+                const restrictedSubjects = ['Biology', 'Maths', 'Mathematics'];
+                return !restrictedSubjects.some(restricted => 
+                    subject.toLowerCase().includes(restricted.toLowerCase())
+                );
+            });
+            return availableSubject || allSubjects[0] || "";
+        }
+        return allSubjects[0] || "";
+    });
 
     // When switching subject tabs, reset currentQuestionIndex to 0
     useEffect(() => {
         setCurrentQuestionIndex(0);
     }, [selectedSubject]);
 
-    // Filter questions by selected subject
-    const subjectQuestions = (questions || []).filter(q => q.subject === selectedSubject);
+    // Prevent switching to locked subjects in CET exams
+    const handleSubjectChange = (newSubject) => {
+        if (isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[newSubject]?.isLocked) {
+            const remainingTime = Math.ceil(cetAccess.subjectAccess[newSubject].remainingTime / 1000 / 60);
+            toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
+            return;
+        }
+        setSelectedSubject(newSubject);
+    };
+
+    // Filter and organize questions by selected subject
+    // For JEE exams, organize by sections (A before B)
+    const subjectQuestions = (() => {
+        const filtered = (questions || []).filter(q => q.subject === selectedSubject);
+        
+        if (isJeeExam) {
+            // Sort by section: Section A (1) before Section B (2), then by questionNumber
+            return filtered.sort((a, b) => {
+                // First sort by section (1 = Section A, 2 = Section B)
+                const sectionA = a.section || 1; // Default to section 1 if null
+                const sectionB = b.section || 1;
+                
+                if (sectionA !== sectionB) {
+                    return sectionA - sectionB;
+                }
+                
+                // Within same section, sort by question number
+                return (a.questionNumber || 0) - (b.questionNumber || 0);
+            });
+        }
+        
+        return filtered;
+    })();
     const currentQuestion = subjectQuestions && subjectQuestions.length > 0 ? subjectQuestions[currentQuestionIndex] : null;
     const totalQuestions = subjectQuestions ? subjectQuestions.length : 0;
     const answeredQuestions = Object.keys(answers).filter(qid => subjectQuestions.some(q => q._id === qid)).length;
     const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+
+    // Get current section information for JEE exams
+    const getCurrentSectionInfo = () => {
+        if (!isJeeExam || !currentQuestion) return null;
+        
+        const section = currentQuestion.section || 1;
+        const sectionName = section === 1 ? 'A' : 'B';
+        
+        // Count questions in each section for current subject
+        const sectionAQuestions = subjectQuestions.filter(q => (q.section || 1) === 1);
+        const sectionBQuestions = subjectQuestions.filter(q => (q.section || 1) === 2);
+        
+        // Find position within current section
+        const currentSectionQuestions = section === 1 ? sectionAQuestions : sectionBQuestions;
+        const positionInSection = currentSectionQuestions.findIndex(q => q._id === currentQuestion._id) + 1;
+        
+        return {
+            section,
+            sectionName,
+            positionInSection,
+            totalInSection: currentSectionQuestions.length,
+            sectionACount: sectionAQuestions.length,
+            sectionBCount: sectionBQuestions.length
+        };
+    };
+
+    const currentSectionInfo = getCurrentSectionInfo();
+
+    // CET exam time-based subject access logic
+    const getCetSubjectAccess = () => {
+        if (!isCetExam || !startTime) return { allUnlocked: true };
+        
+        const currentTime = Date.now();
+        const timeElapsed = currentTime - startTime; // in milliseconds
+        const ninetyMinutes = 90 * 60 * 1000; // 90 minutes in milliseconds
+        
+        // Bio and Maths subjects are locked for first 90 minutes
+        const restrictedSubjects = ['Biology', 'Maths', 'Mathematics'];
+        const isTimeExpired = timeElapsed >= ninetyMinutes;
+        
+        const subjectAccess = {};
+        allSubjects.forEach(subject => {
+            const isRestricted = restrictedSubjects.some(restricted => 
+                subject.toLowerCase().includes(restricted.toLowerCase())
+            );
+            subjectAccess[subject] = {
+                isLocked: isRestricted && !isTimeExpired,
+                remainingTime: isRestricted && !isTimeExpired ? ninetyMinutes - timeElapsed : 0
+            };
+        });
+        
+        return {
+            allUnlocked: isTimeExpired,
+            subjectAccess,
+            totalWaitTime: ninetyMinutes,
+            timeElapsed
+        };
+    };
+
+    const cetAccess = getCetSubjectAccess();
 
     // For submit button logic
     const totalQuestionsAll = (questions || []).length;
     const answeredQuestionsAll = Object.keys(answers).filter(qid => (questions || []).some(q => q._id === qid)).length;
     const isLastSubject = allSubjects[allSubjects.length - 1] === selectedSubject;
     const isLastQuestion = currentQuestionIndex === (subjectQuestions.length - 1);
-    // Only show submit button if:
-    // (a) On last subject tab AND last question of that subject, OR
-    // (b) At least half of all questions are answered AND on last subject tab
-    const showSubmitButton = isLastSubject && (isLastQuestion || (answeredQuestionsAll >= Math.ceil(totalQuestionsAll / 2)));
+    // Submit button is now always available throughout the exam
 
     // Debug logging
     useEffect(() => {
@@ -177,6 +301,70 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             setVisitedQuestions(prev => new Set([...prev, currentQuestionIndex]));
         }
     }, [isExamStarted, currentQuestionIndex, visitedQuestions]);
+
+    // Force re-render every minute for CET exam time updates and check for unlocked subjects
+    const [, forceUpdate] = useState({});
+    const [previouslyLockedSubjects, setPreviouslyLockedSubjects] = useState(new Set());
+    
+    useEffect(() => {
+        if (isCetExam && isExamStarted) {
+            const interval = setInterval(() => {
+                const currentAccess = getCetSubjectAccess();
+                
+                // Check if any previously locked subjects are now unlocked
+                if (currentAccess.subjectAccess) {
+                    const currentlyLocked = new Set();
+                    const newlyUnlocked = [];
+                    
+                    Object.entries(currentAccess.subjectAccess).forEach(([subject, access]) => {
+                        if (access.isLocked) {
+                            currentlyLocked.add(subject);
+                        } else if (previouslyLockedSubjects.has(subject)) {
+                            newlyUnlocked.push(subject);
+                        }
+                    });
+                    
+                    // Show notification for newly unlocked subjects
+                    if (newlyUnlocked.length > 0) {
+                        toast.success(`🔓 ${newlyUnlocked.join(' & ')} ${newlyUnlocked.length > 1 ? 'are' : 'is'} now available!`);
+                    }
+                    
+                    setPreviouslyLockedSubjects(currentlyLocked);
+                }
+                
+                forceUpdate({});
+            }, 60000); // Update every minute
+            
+            return () => clearInterval(interval);
+        }
+    }, [isCetExam, isExamStarted, previouslyLockedSubjects]);
+
+    // Initialize locked subjects on exam start
+    useEffect(() => {
+        if (isCetExam && isExamStarted && cetAccess.subjectAccess) {
+            const lockedSubjects = new Set();
+            Object.entries(cetAccess.subjectAccess).forEach(([subject, access]) => {
+                if (access.isLocked) {
+                    lockedSubjects.add(subject);
+                }
+            });
+            setPreviouslyLockedSubjects(lockedSubjects);
+        }
+    }, [isCetExam, isExamStarted]);
+
+    // Check if current subject is locked and switch to available subject
+    useEffect(() => {
+        if (isCetExam && isExamStarted && cetAccess.subjectAccess && cetAccess.subjectAccess[selectedSubject]?.isLocked) {
+            // Find first available subject
+            const availableSubject = allSubjects.find(subject => 
+                !cetAccess.subjectAccess[subject]?.isLocked
+            );
+            if (availableSubject && availableSubject !== selectedSubject) {
+                setSelectedSubject(availableSubject);
+                toast.info(`Switched to ${availableSubject} - ${selectedSubject} is still locked`);
+            }
+        }
+    }, [isCetExam, isExamStarted, selectedSubject, cetAccess.subjectAccess, allSubjects]);
 
     // 2. On every answer change and question navigation, always call saveExamProgress
     useEffect(() => {
@@ -307,6 +495,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Out of focus detection (exactly like reference)
     useEffect(() => {
         const handleVisibilityChange = () => {
+            // Don't show warning if exam is completed
+            if (examCompletedRef.current) {
+                setWarningDialog(false);
+                return;
+            }
+            
             if (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false) {
                 setWarningDialog(true);
             } else {
@@ -335,7 +529,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Block navigation away
     useEffect(() => {
         function handleBeforeUnload(e) {
-            if (isExamStarted) {
+            if (isExamStarted && !examCompletedRef.current) {
                 e.preventDefault();
                 e.returnValue = "Are you sure you want to leave? Your exam will be lost.";
                 return e.returnValue;
@@ -350,6 +544,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // On exam submit, exit fullscreen
     const submitExam = () => {
         examCompletedRef.current = true;
+        setWarningDialog(false); // Close warning dialog
         exitFullscreen();
         // Calculate score (basic implementation)
         let score = 0
@@ -430,9 +625,35 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         })
     }
 
-    // Navigate to specific question
-    const goToQuestion = (index) => {
-        setCurrentQuestionIndex(index);
+    
+    // Helper function to get global question index from subject-relative index
+    const getGlobalQuestionIndex = (subjectRelativeIndex, subject) => {
+        const subjectQuestions = (questions || []).filter(q => q.subject === subject);
+        if (subjectQuestions.length === 0) return 0;
+        
+        const targetQuestion = subjectQuestions[subjectRelativeIndex];
+        if (!targetQuestion) return 0;
+        
+        return questions.findIndex(q => q._id === targetQuestion._id);
+    }
+    
+    // Handle navigation from QuestionNavigator (receives global index)
+    const handleNavigatorGoToQuestion = (globalIndex) => {
+        const targetQuestion = questions[globalIndex];
+        if (!targetQuestion) return;
+        
+        // Switch to the subject of the target question
+        if (targetQuestion.subject !== selectedSubject) {
+            setSelectedSubject(targetQuestion.subject);
+        }
+        
+        // Find the subject-relative index
+        const subjectQuestions = (questions || []).filter(q => q.subject === targetQuestion.subject);
+        const subjectRelativeIndex = subjectQuestions.findIndex(q => q._id === targetQuestion._id);
+        
+        if (subjectRelativeIndex !== -1) {
+            setCurrentQuestionIndex(subjectRelativeIndex);
+        }
     }
 
     // Auto-submit when time expires
@@ -474,16 +695,35 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     }
 
     const handleNext = () => {
-        setCurrentQuestionIndex(prev => Math.min(totalQuestions - 1, prev + 1))
+        if (currentQuestionIndex < totalQuestions - 1) {
+            // Move to next question in current subject
+            setCurrentQuestionIndex(prev => prev + 1)
+        } else {
+            // At last question of current subject, check if there's a next subject
+            const currentSubjectIndex = allSubjects.indexOf(selectedSubject)
+            if (currentSubjectIndex < allSubjects.length - 1) {
+                // Move to first question of next subject
+                const nextSubject = allSubjects[currentSubjectIndex + 1]
+                setSelectedSubject(nextSubject)
+                setCurrentQuestionIndex(0)
+            }
+        }
     }
 
     const handleToggleMarked = () => {
-        toggleMarkedQuestion(currentQuestionIndex)
+        const globalIndex = getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)
+        toggleMarkedQuestion(globalIndex)
     }
 
-    const handleSave = () => {
-        saveExamProgress()
-        toast.success("Progress saved!")
+    const handleClear = () => {
+        if (currentQuestion && currentQuestion._id) {
+            setAnswers(prev => {
+                const newAnswers = { ...prev }
+                delete newAnswers[currentQuestion._id]
+                return newAnswers
+            })
+            toast.success("Selection cleared!")
+        }
     }
 
     const handleSubmit = () => {
@@ -577,123 +817,183 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 />
             </div>
 
-            {/* Subject Tabs */}
+            {/* Subject Tabs - Mobile Optimized */}
             {allSubjects.length > 1 && (
-                <div className="w-full px-3 py-2 bg-white border-b border-gray-200">
-                    <Tabs value={selectedSubject} onValueChange={setSelectedSubject} className="w-full">
-                        <TabsList className="w-full bg-gray-100 rounded-lg p-1 grid grid-flow-col auto-cols-fr gap-1">
+                <div className="w-full px-2 sm:px-3 py-2 bg-white border-b border-gray-200">
+                    <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
+                        <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
                                 const count = (questions || []).filter(q => q.subject === subject).length;
+                                
+                                // Check if subject is locked for CET exams
+                                const isLocked = isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[subject]?.isLocked;
+                                const remainingTime = isLocked ? Math.ceil(cetAccess.subjectAccess[subject].remainingTime / 1000 / 60) : 0;
+                                
+                                // For JEE exams, show section breakdown
+                                let sectionInfo = null;
+                                if (isJeeExam) {
+                                    const subjectQs = (questions || []).filter(q => q.subject === subject);
+                                    const sectionACount = subjectQs.filter(q => (q.section || 1) === 1).length;
+                                    const sectionBCount = subjectQs.filter(q => (q.section || 1) === 2).length;
+                                    if (sectionBCount > 0) {
+                                        sectionInfo = `A:${sectionACount} B:${sectionBCount}`;
+                                    }
+                                }
+                                
                                 return (
                                     <TabsTrigger 
                                         key={subject} 
                                         value={subject} 
-                                        className="capitalize px-2 py-1.5 rounded-md font-medium text-xs sm:text-sm transition-all duration-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                                        disabled={isLocked}
+                                        className={`capitalize px-2 sm:px-3 py-2 sm:py-2.5 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 min-h-[40px] flex flex-col items-center justify-center ${
+                                            isLocked 
+                                                ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400' 
+                                                : 'data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-blue-50 data-[state=active]:hover:bg-blue-600'
+                                        }`}
                                     >
-                                        <span className="hidden sm:inline">{subject}</span>
-                                        <span className="sm:hidden">{subject.slice(0, 4)}</span>
-                                        <span className="ml-1">({count})</span>
+                                        <span className="truncate text-center flex items-center gap-1">
+                                            {isLocked && <span>🔒</span>}
+                                            {subject}
+                                        </span>
+                                        <span className="text-[10px] sm:text-xs opacity-80">
+                                            {isLocked ? `${remainingTime}min` : (sectionInfo || `(${count})`)}
+                                        </span>
                                     </TabsTrigger>
                                 );
                             })}
                         </TabsList>
                     </Tabs>
+                    
+                    {/* JEE Section Progress Info */}
+                    {isJeeExam && currentSectionInfo && currentSectionInfo.sectionBCount > 0 && (
+                        <div className="mt-2 text-center">
+                            <p className="text-xs text-gray-600">
+                                Section {currentSectionInfo.sectionName}: Question {currentSectionInfo.positionInSection} of {currentSectionInfo.totalInSection}
+                                {currentSectionInfo.section === 1 && (
+                                    <span className="text-purple-600 font-medium"> • Section B will follow</span>
+                                )}
+                            </p>
+                        </div>
+                    )}
+                    
+                    {/* CET Time Restriction Info */}
+                    {isCetExam && !cetAccess.allUnlocked && (
+                        <div className="mt-2 text-center">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                <p className="text-xs text-amber-700 font-medium">
+                                    🔒 Bio & Maths papers will unlock in {Math.ceil((cetAccess.totalWaitTime - cetAccess.timeElapsed) / 1000 / 60)} minutes
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
             
-            {/* Mobile Layout - Simple and Clean */}
-            <div className="lg:hidden">
-                {/* Question Display */}
-                <div className="bg-white mx-3 mt-3 rounded-xl shadow-sm border border-gray-200">
-                    <div className="p-4">
-                        <QuestionDisplay
-                            currentQuestion={currentQuestion}
-                            currentQuestionIndex={currentQuestionIndex}
-                            totalQuestions={totalQuestions}
+            {/* Mobile Layout - Optimized for Phones */}
+            <div className="lg:hidden flex flex-col h-screen">
+                {/* Main Content Area - Scrollable */}
+                <div className="flex-1 overflow-y-auto pb-safe" style={{paddingBottom: 'calc(160px + env(safe-area-inset-bottom))'}}>
+                    {/* Question Display */}
+                    <div className="bg-white mx-2 mt-2 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="p-3 sm:p-4">
+                            <QuestionDisplay
+                                currentQuestion={currentQuestion}
+                                currentQuestionIndex={currentQuestionIndex}
+                                totalQuestions={totalQuestions}
+                                markedQuestions={markedQuestions}
+                                userAnswer={answers[currentQuestion?._id]}
+                                onAnswerChange={handleAnswerChange}
+                                onMultipleAnswerChange={handleMultipleAnswerChange}
+                                currentSectionInfo={currentSectionInfo}
+                                isJeeExam={isJeeExam}
+                            />
+                        </div>
+                    </div>
+                    
+                    {/* Question Navigator - Collapsible */}
+                    <div className="bg-white mx-2 mt-3 mb-4 rounded-2xl shadow-sm border border-gray-100">
+                        <QuestionNavigator
+                            questions={questions}
+                            answers={answers}
                             markedQuestions={markedQuestions}
-                            userAnswer={answers[currentQuestion?._id]}
-                            onAnswerChange={handleAnswerChange}
-                            onMultipleAnswerChange={handleMultipleAnswerChange}
+                            currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                            onGoToQuestion={handleNavigatorGoToQuestion}
+                            isCetExam={isCetExam}
+                            cetAccess={cetAccess}
                         />
                     </div>
                 </div>
                 
-                {/* Navigation Buttons - Always at bottom */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-3 z-40 mt-4">
-                    <ExamNavigation
-                        currentQuestionIndex={currentQuestionIndex}
-                        totalQuestions={totalQuestions}
-                        markedQuestions={markedQuestions}
-                        onPrevious={handlePrevious}
-                        onNext={handleNext}
-                        onToggleMarked={handleToggleMarked}
-                        onSave={handleSave}
-                        onSubmit={handleSubmit}
-                        VicharButton={VicharButton}
-                        showSubmitButton={showSubmitButton}
-                    />
-                </div>
-                
-                {/* Question Navigator */}
-                <div className="bg-white mx-3 mt-4 mb-20 rounded-xl shadow-sm border border-gray-200">
-                    <QuestionNavigator
-                        questions={subjectQuestions}
-                        answers={answers}
-                        markedQuestions={markedQuestions}
-                        currentQuestionIndex={currentQuestionIndex}
-                        onGoToQuestion={goToQuestion}
-                    />
-                </div>
+                {/* Sticky Navigation - Mobile Only */}
+                <ExamNavigation
+                    currentQuestionIndex={currentQuestionIndex}
+                    totalQuestions={totalQuestions}
+                    markedQuestions={markedQuestions}
+                    onPrevious={handlePrevious}
+                    onNext={handleNext}
+                    onToggleMarked={handleToggleMarked}
+                    onClear={handleClear}
+                    onSubmit={handleSubmit}
+                    VicharButton={VicharButton}
+                    isOnLastSubject={isLastSubject}
+                />
             </div>
 
-            {/* Desktop Layout */}
-            <div className="hidden lg:block">
-                <div className="max-w-7xl mx-auto px-6 py-6">
-                    <div className="grid grid-cols-12 gap-6">
-                        {/* Main Content Area */}
-                        <div className="col-span-8 space-y-4">
-                            {/* Question Display */}
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                                <div className="p-6">
-                                    <QuestionDisplay
-                                        currentQuestion={currentQuestion}
+            {/* Desktop Layout - Fixed Height to Prevent Scrolling */}
+            <div className="hidden lg:flex lg:flex-col lg:h-screen lg:overflow-hidden">
+                {/* Desktop Content Container with Proper Height Management */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="max-w-7xl mx-auto px-6 py-4 flex-1 flex flex-col min-h-0">
+                        <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
+                            {/* Main Content Area - Scrollable */}
+                            <div className="col-span-8 flex flex-col min-h-0">
+                                {/* Question Display - Flexible Height */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0 mb-4">
+                                    <div className="p-6 flex-1 overflow-y-auto">
+                                        <QuestionDisplay
+                                            currentQuestion={currentQuestion}
+                                            currentQuestionIndex={currentQuestionIndex}
+                                            totalQuestions={totalQuestions}
+                                            markedQuestions={markedQuestions}
+                                            userAnswer={answers[currentQuestion?._id]}
+                                            onAnswerChange={handleAnswerChange}
+                                            onMultipleAnswerChange={handleMultipleAnswerChange}
+                                            currentSectionInfo={currentSectionInfo}
+                                            isJeeExam={isJeeExam}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {/* Navigation Controls - Fixed at Bottom */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex-shrink-0">
+                                    <ExamNavigation
                                         currentQuestionIndex={currentQuestionIndex}
                                         totalQuestions={totalQuestions}
                                         markedQuestions={markedQuestions}
-                                        userAnswer={answers[currentQuestion?._id]}
-                                        onAnswerChange={handleAnswerChange}
-                                        onMultipleAnswerChange={handleMultipleAnswerChange}
-                                    />
+                                        onPrevious={handlePrevious}
+                                        onNext={handleNext}
+                                        onToggleMarked={handleToggleMarked}
+                                        onClear={handleClear}
+                                        onSubmit={handleSubmit}
+                                        VicharButton={VicharButton}
+                                        isOnLastSubject={isLastSubject}
+                                                />
                                 </div>
                             </div>
                             
-                            {/* Navigation Controls */}
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                                <ExamNavigation
-                                    currentQuestionIndex={currentQuestionIndex}
-                                    totalQuestions={totalQuestions}
-                                    markedQuestions={markedQuestions}
-                                    onPrevious={handlePrevious}
-                                    onNext={handleNext}
-                                    onToggleMarked={handleToggleMarked}
-                                    onSave={handleSave}
-                                    onSubmit={handleSubmit}
-                                    VicharButton={VicharButton}
-                                    showSubmitButton={showSubmitButton}
-                                />
-                            </div>
-                        </div>
-                        
-                        {/* Sidebar - Question Navigator */}
-                        <div className="col-span-4">
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-6">
-                                <QuestionNavigator
-                                    questions={subjectQuestions}
-                                    answers={answers}
-                                    markedQuestions={markedQuestions}
-                                    currentQuestionIndex={currentQuestionIndex}
-                                    onGoToQuestion={goToQuestion}
-                                />
+                            {/* Sidebar - Question Navigator - Fixed Height */}
+                            <div className="col-span-4 flex flex-col min-h-0">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0">
+                                    <QuestionNavigator
+                                        questions={questions}
+                                        answers={answers}
+                                        markedQuestions={markedQuestions}
+                                        currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                                        onGoToQuestion={handleNavigatorGoToQuestion}
+                                        isCetExam={isCetExam}
+                                        cetAccess={cetAccess}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -762,17 +1062,52 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     /* Smooth scrolling */
                     * {
                         -webkit-overflow-scrolling: touch;
+                        scroll-behavior: smooth;
                     }
                     
                     /* Prevent zoom on inputs */
                     input, select, textarea {
                         font-size: 16px;
+                        -webkit-appearance: none;
+                        border-radius: 8px;
                     }
                     
                     /* Better touch targets */
                     button {
                         min-height: 44px;
                         min-width: 44px;
+                        touch-action: manipulation;
+                    }
+                    
+                    /* Safe area support for notched devices */
+                    .safe-area-bottom {
+                        padding-bottom: env(safe-area-inset-bottom);
+                    }
+                    
+                    .pb-safe {
+                        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+                    }
+                    
+                    /* Exam container optimizations */
+                    .exam-mode {
+                        height: 100vh;
+                        height: 100dvh; /* Dynamic viewport height */
+                    }
+                    
+                    /* Better scrolling performance */
+                    .overflow-y-auto {
+                        overflow-y: scroll;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    
+                    /* Reduce layout shifts */
+                    .rounded-2xl {
+                        border-radius: 16px;
+                    }
+                    
+                    /* Improve tap responsiveness */
+                    .tap-highlight-none {
+                        -webkit-tap-highlight-color: transparent;
                     }
                 }
             `}</style>
@@ -780,8 +1115,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             {/* Confirm Submit Modal */}
             <ConfirmSubmitModal
                 showConfirmSubmit={showConfirmSubmit}
-                totalQuestions={totalQuestions}
-                answeredQuestions={answeredQuestions}
+                totalQuestions={totalQuestionsAll}
+                answeredQuestions={answeredQuestionsAll}
                 onCancel={handleCancelSubmit}
                 onSubmit={handleConfirmSubmit}
                 VicharButton={VicharButton}

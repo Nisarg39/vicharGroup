@@ -287,8 +287,10 @@ export default function QuestionsList({ subjects }) {
                     {question.difficultyLevel}
                   </span>
 
-                  <div className="text-sm font-medium text-gray-700 line-clamp-1">
-                    <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-700" style={{overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.4em", maxHeight: "2.8em"}}>
+                      <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -367,7 +369,10 @@ export default function QuestionsList({ subjects }) {
                                 {String.fromCharCode(65 + i)}
                               </span>
                             </div>
-                            <div dangerouslySetInnerHTML={{ __html: option }} />
+                            <div 
+                              className=""
+                                                            dangerouslySetInnerHTML={{ __html: option }} 
+                            />
                           </div>
                         ))}
                       </div>

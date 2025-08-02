@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import { useSelector, useDispatch } from "react-redux"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
@@ -27,6 +27,7 @@ import { VicharTable } from "../../ui/vichar-table";
 
 export default function ExamHome({ examId }) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const dispatch = useDispatch()
     const student = useSelector(state => state.login.studentDetails)
     const [exam, setExam] = useState(null)
@@ -367,6 +368,9 @@ export default function ExamHome({ examId }) {
 
     useEffect(() => {
         const isSignedIn = localStorage.getItem("token")
+        const viewParam = searchParams.get('view')
+        const printParam = searchParams.get('print')
+        
         if(!isSignedIn){
             toast.error("Please sign in to access this page")
             localStorage.setItem("examIdRedirect", `${examId}`)
@@ -380,6 +384,11 @@ export default function ExamHome({ examId }) {
                     // Check previous attempt immediately after getting student details
                     checkPreviousAttempt()
                     checkEligibility(studentDetail.student)
+                    
+                    // Handle result view after student is loaded
+                    if (viewParam === 'result') {
+                        handleDirectResultView(studentDetail.student, printParam === 'true')
+                    }
                 } else {
                     localStorage.removeItem('token')
                     router.push('/login')
@@ -391,9 +400,15 @@ export default function ExamHome({ examId }) {
             // Check previous attempt immediately if student is already loaded
             checkPreviousAttempt()
             checkEligibility(student)
+            
+            // Handle result view if student is already loaded
+            if (viewParam === 'result') {
+                handleDirectResultView(student, printParam === 'true')
+            }
+            
             setIsLoading(false)
         }
-    }, [examId]) // Added examId dependency to ensure it runs when examId changes
+    }, [examId, searchParams]) // Added searchParams dependency
 
     // Additional useEffect to ensure checkPreviousAttempt runs when student is loaded
     useEffect(() => {
@@ -599,6 +614,49 @@ export default function ExamHome({ examId }) {
             setCurrentView('result');
         } else {
             toast.error('No results found for this exam');
+        }
+    };
+
+    // Handler for direct result view from URL parameters
+    const handleDirectResultView = async (studentData, autoPrint = false) => {
+        try {
+            const result = await getAllExamAttempts(studentData._id, examId);
+            if (result.success && result.attempts && result.attempts.length > 0) {
+                // Get the latest attempt
+                const latestAttempt = result.attempts[0];
+                
+                // Convert to the format expected by ExamResult component
+                const formattedResult = {
+                    score: latestAttempt.score,
+                    totalMarks: latestAttempt.totalMarks,
+                    percentage: latestAttempt.percentage,
+                    correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                    incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                    unattempted: latestAttempt.statistics?.unattempted || 0,
+                    timeTaken: latestAttempt.timeTaken,
+                    completedAt: latestAttempt.completedAt,
+                    questionAnalysis: latestAttempt.questionAnalysis || [],
+                    negativeMarkingInfo: latestAttempt.negativeMarkingInfo
+                };
+                
+                setExamResult(formattedResult);
+                setAllAttempts(result.attempts);
+                setCurrentView('result');
+                
+                // Auto-trigger print if requested
+                if (autoPrint) {
+                    setTimeout(() => {
+                        window.print();
+                    }, 2000); // Give time for the component to render
+                }
+            } else {
+                toast.error('No exam results found');
+                setCurrentView('home');
+            }
+        } catch (error) {
+            console.error('Error loading exam result:', error);
+            toast.error('Failed to load exam result');
+            setCurrentView('home');
         }
     };
 
