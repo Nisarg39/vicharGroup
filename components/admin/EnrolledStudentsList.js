@@ -234,7 +234,7 @@ export default function EnrolledStudentsList() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {Object.values(students).map((student, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
+                                    <tr key={index} className="hover:bg-gray-50 transition-colors duration-200" style={{ zIndex: Object.values(students).length - index }}>
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{(currentPage - 1) * 10 + index + 1}</td>
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{student.name}</td>
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">+91 {student.phone}</td>
@@ -244,12 +244,14 @@ export default function EnrolledStudentsList() {
                                                 {student.isVerified ? 'Verified' : 'Not Verified'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 whitespace-nowrap">
-                                            <SearchableDropdown
-                                                products={products}
-                                                onSelect={(productId) => handleProductAssign(student._id, productId)}
-                                                placeholder="Select Product"
-                                            />
+                                        <td className="px-6 py-5 whitespace-nowrap relative" style={{ zIndex: Object.values(students).length - index + 100 }}>
+                                            <div className="relative">
+                                                <SearchableDropdown
+                                                    products={products}
+                                                    onSelect={(productId) => handleProductAssign(student._id, productId)}
+                                                    placeholder="Select Product"
+                                                />
+                                            </div>
                                         </td>
                                         <td className="px-6 py-5 whitespace-nowrap">
                                             <button
@@ -406,7 +408,6 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const dropdownRef = useRef(null);
 
     const filteredProducts = searchTerm.trim() 
@@ -415,33 +416,6 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
           )
         : products;
 
-    const calculatePosition = () => {
-        if (dropdownRef.current) {
-            const rect = dropdownRef.current.getBoundingClientRect();
-            const viewport = {
-                width: window.innerWidth,
-                height: window.innerHeight
-            };
-            
-            let left = rect.left;
-            let top = rect.bottom + window.scrollY;
-            let width = Math.max(rect.width, 300);
-            
-            // Adjust if dropdown would go off right edge
-            if (left + width > viewport.width) {
-                left = viewport.width - width - 20;
-            }
-            
-            // Ensure minimum left position
-            if (left < 10) {
-                left = 10;
-                width = Math.min(width, viewport.width - 20);
-            }
-            
-            setDropdownPosition({ top, left, width });
-        }
-    };
-
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -449,22 +423,11 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             }
         };
 
-        const handleResize = () => {
-            if (isOpen) {
-                calculatePosition();
-            }
-        };
-
         document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('scroll', handleResize);
-        
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('scroll', handleResize);
         };
-    }, [isOpen]);
+    }, []);
 
     const handleSelect = (product) => {
         setSelectedProduct(product);
@@ -478,21 +441,14 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
         }, 2000);
     };
 
-    const toggleDropdown = () => {
-        if (!isOpen) {
-            calculatePosition();
-        }
-        setIsOpen(!isOpen);
-    };
-
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <button
                 type="button"
-                onClick={toggleDropdown}
-                className={`w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
+                onClick={() => setIsOpen(!isOpen)}
+                className={`relative w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
                     selectedProduct ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-700'
-                }`}
+                } ${isOpen ? 'z-[1]' : 'z-[20]'}`}
             >
                 <div className="flex items-center justify-between">
                     <span className="truncate">
@@ -510,35 +466,27 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             </button>
 
             {isOpen && (
-                <div 
-                    className="fixed z-[9999] bg-white border border-gray-300 rounded-md shadow-lg"
-                    style={{
-                        top: `${dropdownPosition.top}px`,
-                        left: `${dropdownPosition.left}px`,
-                        width: `${dropdownPosition.width}px`,
-                        maxHeight: '320px'
-                    }}
-                >
+                <div className="absolute z-[9999] right-0 min-w-[350px] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-80 overflow-hidden backdrop-blur-sm">
                     <div className="p-3 border-b border-gray-200 bg-gray-50">
                         <input
                             type="text"
                             placeholder="Search products..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
                             autoFocus
                         />
                     </div>
-                    <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
+                    <div className="max-h-64 overflow-y-auto bg-white">
                         {filteredProducts.length > 0 ? (
                             filteredProducts.map((product) => (
                                 <div
                                     key={product._id}
                                     onClick={() => handleSelect(product)}
-                                    className="block w-full px-4 py-3 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
+                                    className="block w-full px-4 py-3 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer bg-white"
                                 >
                                     <div className="space-y-1">
-                                        <div className="font-medium text-gray-900 leading-tight" style={{ wordWrap: 'break-word', whiteSpace: 'normal' }}>
+                                        <div className="font-medium text-gray-900 leading-tight break-words">
                                             {product.name}
                                         </div>
                                         <div className="text-xs text-gray-500 capitalize">
@@ -548,7 +496,7 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
                                 </div>
                             ))
                         ) : (
-                            <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                            <div className="px-4 py-6 text-center text-gray-500 text-sm bg-white">
                                 No products found for "{searchTerm}"
                             </div>
                         )}
