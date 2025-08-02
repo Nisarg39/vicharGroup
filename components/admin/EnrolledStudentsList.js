@@ -114,15 +114,23 @@ export default function EnrolledStudentsList() {
         }
     };
 
-    const handleProductAssign = async (studentId, product) => {
+    const handleProductAssign = async (studentId, productId, productName, productType, studentName) => {
+        // Show confirmation dialog
+        const confirmAssignment = window.confirm(
+            `Are you sure you want to assign "${productName}" (${productType}) to ${studentName}?\n\nThis action will add the product to the student's account.`
+        );
+        
+        if (!confirmAssignment) {
+            return; // User cancelled, don't proceed with assignment
+        }
+
         // Handle product assignment logic here
-        // console.log(`Assigning ${product} to student ${studentId}`);
         const data = {
             amountPaid: 0,
             initialDiscountAmount: 0,
             couponDiscount: 0,
             paymentStatus: "success",
-            productId: product,
+            productId: productId,
             studentId: studentId, 
             razorpay_order_id: "dummy_order_id_by_admin",
             razorpay_payment_id: "dummy_payment_id_by_admin",
@@ -219,7 +227,7 @@ export default function EnrolledStudentsList() {
                             <>Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalCount)} of {totalCount} students</>
                         )}
                     </div>
-                    <div className="overflow-x-auto shadow-lg rounded-lg mx-4">
+                    <div className="overflow-x-auto overflow-y-visible shadow-lg rounded-lg mx-4">
                         <table className="min-w-full bg-white border-collapse">
                             <thead className="bg-gray-100">
                                 <tr>
@@ -248,7 +256,7 @@ export default function EnrolledStudentsList() {
                                             <div className="relative">
                                                 <SearchableDropdown
                                                     products={products}
-                                                    onSelect={(productId) => handleProductAssign(student._id, productId)}
+                                                    onSelect={(productId, productName, productType) => handleProductAssign(student._id, productId, productName, productType, student.name)}
                                                     placeholder="Select Product"
                                                 />
                                             </div>
@@ -408,6 +416,7 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
     const dropdownRef = useRef(null);
 
     const filteredProducts = searchTerm.trim() 
@@ -416,6 +425,15 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
           )
         : products;
 
+    const calculateDropdownPosition = () => {
+        if (dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const top = rect.bottom + window.scrollY;
+            const right = window.innerWidth - rect.right;
+            setDropdownPosition({ top, right });
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -423,17 +441,28 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             }
         };
 
+        const handleScroll = () => {
+            if (isOpen) {
+                calculateDropdownPosition();
+            }
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('scroll', handleScroll, true);
+        window.addEventListener('resize', handleScroll);
+        
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', handleScroll);
         };
-    }, []);
+    }, [isOpen]);
 
     const handleSelect = (product) => {
         setSelectedProduct(product);
         setIsOpen(false);
         setSearchTerm('');
-        onSelect(product._id);
+        onSelect(product._id, product.name, product.type);
         
         // Reset after a short delay for better UX
         setTimeout(() => {
@@ -441,11 +470,18 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
         }, 2000);
     };
 
+    const handleToggleDropdown = () => {
+        if (!isOpen) {
+            calculateDropdownPosition();
+        }
+        setIsOpen(!isOpen);
+    };
+
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggleDropdown}
                 className={`relative w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
                     selectedProduct ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-700'
                 } ${isOpen ? 'z-[1]' : 'z-[20]'}`}
@@ -466,7 +502,13 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
             </button>
 
             {isOpen && (
-                <div className="absolute z-[9999] right-0 min-w-[350px] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-80 overflow-hidden backdrop-blur-sm">
+                <div 
+                    className="fixed z-[9999] min-w-[350px] bg-white border border-gray-300 rounded-md shadow-xl max-h-80 overflow-hidden backdrop-blur-sm"
+                    style={{
+                        top: `${dropdownPosition.top}px`,
+                        right: `${dropdownPosition.right}px`
+                    }}
+                >
                     <div className="p-3 border-b border-gray-200 bg-gray-50">
                         <input
                             type="text"
