@@ -7,7 +7,7 @@ import 'katex/dist/katex.min.css';
 import axios from 'axios';
 // Quill will be imported dynamically to avoid SSR issues
 import { getTopics } from '../../../../../utils/examUtils/subject_Details';
-import { addExamQuestion, updateExamQuestion } from '../../../../../server_actions/actions/adminActions';
+import { addExamQuestion, updateExamQuestion, getPredefinedMarks } from '../../../../../server_actions/actions/adminActions';
 
 // Dynamic import for ReactQuill with better error handling
 const ReactQuill = dynamic(() => import('react-quill'), {
@@ -74,6 +74,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
   // Add error handling
   const [quillError, setQuillError] = useState(null);
   const [topics, setTopics] = useState([]); // Added topics state
+  const [markingInfo, setMarkingInfo] = useState(null); // Store marking rule information
 
 //   console.log(subjects)
   const [formData, setFormData] = useState({
@@ -421,6 +422,47 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
   }, [formData.stream, formData.subject, formData.standard]);
 
+  // Auto-populate marks when stream, subject, or question type changes
+  useEffect(() => {
+    const fetchPredefinedMarks = async () => {
+      if (formData.stream && formData.subject && !questionToEdit) {
+        try {
+          // Determine question type based on form data
+          let questionType = 'MCQ'; // Default
+          if (formData.userInputAnswer) {
+            questionType = 'Numerical';
+          } else if (formData.isMultipleAnswer) {
+            questionType = 'MCMA';
+          }
+
+          const result = await getPredefinedMarks({
+            stream: formData.stream,
+            subject: formData.subject,
+            standard: formData.standard || null,
+            questionType: questionType
+          });
+
+          if (result.success && result.marks) {
+            setFormData(prev => ({
+              ...prev,
+              marks: result.marks.toString()
+            }));
+            setMarkingInfo({
+              marks: result.marks,
+              source: result.ruleSource,
+              ruleId: result.ruleId,
+              questionType: questionType // Store question type for reference
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching predefined marks:', error);
+        }
+      }
+    };
+
+    fetchPredefinedMarks();
+  }, [formData.stream, formData.subject, formData.standard, formData.userInputAnswer, formData.isMultipleAnswer, questionToEdit]);
+
   const [uploadedQuestionUrl, setUploadedQuestionUrl] = useState(null);
 
   const [isUploading, setIsUploading] = useState(false);
@@ -639,14 +681,18 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
 
   // Clear dependent fields when parent selection changes
   const handleStreamChange = (e) => {
+    const newStream = e.target.value;
     setFormData({
       ...formData,
-      stream: e.target.value,
+      stream: newStream,
       subject: '',
       user: '',
       standard: '',
       section: '',
-      topic: ''
+      topic: '',
+      // Reset question type fields when switching streams
+      userInputAnswer: false, // Reset numerical questions when changing stream
+      isMultipleAnswer: false // Also reset MCMA to ensure clean state
     });
   };
 
@@ -881,31 +927,49 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
             <div className="flex flex-col gap-3">
               {/* Question Type Toggles */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3 mr-6">
-                  <input
-                    type="checkbox"
-                    id="userInputToggle"
-                    checked={formData.userInputAnswer}
-                    onChange={(e) => setFormData({...formData, userInputAnswer: e.target.checked, isMultipleAnswer: false})}
-                    className="w-4 h-4 text-[#1d77bc] rounded focus:ring-[#1d77bc]"
-                  />
-                  <label htmlFor="userInputToggle" className="text-sm text-gray-700 font-medium">
-                    User Input Answer
-                  </label>
-                </div>
+                {/* Show User Input Answer only for JEE */}
+                {formData.stream === 'JEE' && (
+                  <div className="flex items-center gap-3 mr-6">
+                    <input
+                      type="checkbox"
+                      id="userInputToggle"
+                      checked={formData.userInputAnswer}
+                      onChange={(e) => setFormData({...formData, userInputAnswer: e.target.checked, isMultipleAnswer: false})}
+                      className="w-4 h-4 text-[#1d77bc] rounded focus:ring-[#1d77bc]"
+                    />
+                    <label htmlFor="userInputToggle" className="text-sm text-gray-700 font-medium">
+                      Numerical Answer (NAT)
+                    </label>
+                    <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">JEE Only</span>
+                  </div>
+                )}
                 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="multipleAnswerToggle"
-                    checked={formData.isMultipleAnswer}
-                    onChange={(e) => setFormData({...formData, isMultipleAnswer: e.target.checked, userInputAnswer: false})}
-                    className="w-4 h-4 text-[#1d77bc] rounded focus:ring-[#1d77bc]"
-                  />
-                  <label htmlFor="multipleAnswerToggle" className="text-sm text-gray-700 font-medium">
-                    Multiple Correct Options
-                  </label>
-                </div>
+                {/* Show Multiple Correct Options only for JEE */}
+                {formData.stream === 'JEE' && (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="multipleAnswerToggle"
+                      checked={formData.isMultipleAnswer}
+                      onChange={(e) => setFormData({...formData, isMultipleAnswer: e.target.checked, userInputAnswer: false})}
+                      className="w-4 h-4 text-[#1d77bc] rounded focus:ring-[#1d77bc]"
+                    />
+                    <label htmlFor="multipleAnswerToggle" className="text-sm text-gray-700 font-medium">
+                      Multiple Correct Options (MCMA)
+                    </label>
+                    <span className="text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">JEE Only</span>
+                  </div>
+                )}
+
+                {/* Show message for NEET and MHT-CET */}
+                {(formData.stream === 'NEET' || formData.stream === 'MHT-CET') && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">
+                      📝 {formData.stream} uses only Multiple Choice Questions (MCQ) format
+                    </span>
+                    <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded-full">Standard MCQ</span>
+                  </div>
+                )}
               </div>
 
               {/* Answer Selection */}
@@ -956,14 +1020,21 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Marks</label>
-                  <input
-
-                    type="number"
-                    placeholder="Enter marks"
-                    className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={formData.marks}
-                    onChange={(e) => setFormData({...formData, marks: e.target.value})}
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="Enter marks"
+                      className="w-full border rounded-lg p-3 bg-gray-50 text-gray-600 cursor-not-allowed"
+                      value={formData.marks}
+                      disabled={true}
+                      readOnly={true}
+                    />
+                    {markingInfo && (
+                      <div className="mt-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                        <span className="font-medium">Auto-filled ({markingInfo.questionType}):</span> {markingInfo.source}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

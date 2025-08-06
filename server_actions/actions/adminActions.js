@@ -21,6 +21,7 @@ import College from "../models/exam_portal/college"
 import master_mcq_question from "../models/exam_portal/master_mcq_question"
 import TeacherExam from "../models/exam_portal/teacherExam"
 import DefaultNegativeMarkingRule from "../models/exam_portal/defaultNegativeMarkingRule"
+import QuestionSelectionScheme from "../models/exam_portal/questionSelectionScheme"
 import HelpAndSupport from "../models/app_models/helpAndSupport"
 import FeelingConfused from "server_actions/models/app_models/feelingConsufed"
 import jwt from "jsonwebtoken"
@@ -2404,6 +2405,423 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
         return {
             success: false,
             message: `Failed to migrate: ${error.message}`
+        }
+    }
+}
+
+// Get predefined marks for a question based on stream, subject, and standard
+export async function getPredefinedMarks(questionData) {
+    try {
+        await connectDB()
+        
+        const { stream, subject, standard, questionType = 'MCQ' } = questionData
+        
+        if (!stream || !subject) {
+            return {
+                success: false,
+                message: "Stream and subject are required",
+                marks: 4 // Default fallback
+            }
+        }
+        
+        // Priority order for rule matching (same as in studentExamActions.js):
+        // 1. Question type + Subject + Standard specific
+        // 2. Question type + Subject specific  
+        // 3. Question type + Standard specific
+        // 4. Question type specific
+        // 5. Subject + Standard specific
+        // 6. Subject specific
+        // 7. Standard specific
+        // 8. Stream-wide rule
+        
+        const rules = await DefaultNegativeMarkingRule.find({
+            stream: stream,
+            isActive: true
+        }).sort({ priority: -1 })
+        
+        for (const rule of rules) {
+            // 1. Question type + Subject + Standard specific (highest priority)
+            if (rule.questionType === questionType && rule.subject && rule.standard) {
+                if (subject === rule.subject && standard && rule.standard === standard) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `${questionType} rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 2. Question type + Subject specific
+            else if (rule.questionType === questionType && rule.subject && !rule.standard) {
+                if (subject === rule.subject) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `${questionType} rule: ${rule.stream} > ${rule.subject}`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 3. Question type + Standard specific
+            else if (rule.questionType === questionType && !rule.subject && rule.standard) {
+                if (standard && rule.standard === standard) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `${questionType} rule: ${rule.stream} > ${rule.standard}th`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 4. Question type specific (stream-wide)
+            else if (rule.questionType === questionType && !rule.subject && !rule.standard) {
+                return {
+                    success: true,
+                    marks: rule.positiveMarks,
+                    ruleSource: `${questionType} rule: ${rule.stream}`,
+                    ruleId: rule._id
+                }
+            }
+            // 5. Subject + Standard specific (no question type)
+            else if (!rule.questionType && rule.subject && rule.standard) {
+                if (subject === rule.subject && standard && rule.standard === standard) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `Subject rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 6. Subject specific (no question type)
+            else if (!rule.questionType && rule.subject && !rule.standard) {
+                if (subject === rule.subject) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `Subject rule: ${rule.stream} > ${rule.subject}`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 7. Standard specific (no question type, no subject)
+            else if (!rule.questionType && !rule.subject && rule.standard) {
+                if (standard && rule.standard === standard) {
+                    return {
+                        success: true,
+                        marks: rule.positiveMarks,
+                        ruleSource: `Standard rule: ${rule.stream} > ${rule.standard}th`,
+                        ruleId: rule._id
+                    }
+                }
+            }
+            // 8. Stream-wide rule (no question type, no subject, no standard)
+            else if (!rule.questionType && !rule.subject && !rule.standard) {
+                return {
+                    success: true,
+                    marks: rule.positiveMarks,
+                    ruleSource: `Stream rule: ${rule.stream}`,
+                    ruleId: rule._id
+                }
+            }
+        }
+        
+        // Default fallback if no rules match
+        return {
+            success: true,
+            marks: 4, // Default marks
+            ruleSource: "Default (no specific rule found)",
+            ruleId: null
+        }
+        
+    } catch (error) {
+        console.error("Error getting predefined marks:", error)
+        return {
+            success: false,
+            message: "Error fetching marking scheme",
+            marks: 4 // Default fallback
+        }
+    }
+}
+
+// Question Selection Scheme Functions
+export async function createQuestionSelectionScheme(schemeData) {
+    try {
+        console.log("=== CREATE QUESTION SELECTION SCHEME START ===")
+        console.log("1. Connecting to database...")
+        await connectDB()
+        console.log("2. Database connected successfully")
+        
+        console.log("3. Received scheme data:", JSON.stringify(schemeData, null, 2))
+        
+        // Validate the data structure
+        if (!schemeData.schemeName) {
+            console.error("Validation failed: Scheme name is missing")
+            throw new Error("Scheme name is required")
+        }
+        if (!schemeData.examType) {
+            console.error("Validation failed: Exam type is missing")
+            throw new Error("Exam type is required")
+        }
+        if (!schemeData.subjectRules || schemeData.subjectRules.length === 0) {
+            console.error("Validation failed: Subject rules are missing")
+            throw new Error("Subject rules are required")
+        }
+        
+        console.log("4. Basic validation passed")
+        
+        // Log validation details
+        console.log("5. Validating totals:")
+        console.log("   - Total scheme questions:", schemeData.totalSchemeQuestions)
+        const calculatedTotal = schemeData.subjectRules.reduce((sum, rule) => {
+            console.log(`   - Rule for ${rule.subject} Class ${rule.standard}: ${rule.totalQuestions} questions`)
+            return sum + rule.totalQuestions
+        }, 0)
+        console.log("   - Calculated total from rules:", calculatedTotal)
+        
+        // Ensure all numeric fields are numbers (not strings)
+        const processedSchemeData = {
+            ...schemeData,
+            totalSchemeQuestions: parseInt(schemeData.totalSchemeQuestions) || 0,
+            subjectRules: schemeData.subjectRules.map(rule => ({
+                ...rule,
+                totalQuestions: parseInt(rule.totalQuestions) || 0,
+                difficultyDistribution: {
+                    easy: parseInt(rule.difficultyDistribution?.easy) || 0,
+                    medium: parseInt(rule.difficultyDistribution?.medium) || 0,
+                    hard: parseInt(rule.difficultyDistribution?.hard) || 0
+                },
+                ...(rule.sectionDistribution && {
+                    sectionDistribution: {
+                        sectionA: parseInt(rule.sectionDistribution?.sectionA) || 0,
+                        sectionB: parseInt(rule.sectionDistribution?.sectionB) || 0
+                    }
+                })
+            }))
+        }
+        
+        console.log("6. Processed data for database:", JSON.stringify(processedSchemeData, null, 2))
+        
+        console.log("7. Creating scheme in database...")
+        const newScheme = await QuestionSelectionScheme.create(processedSchemeData)
+        
+        console.log("8. Scheme created successfully with ID:", newScheme._id)
+        console.log("=== CREATE QUESTION SELECTION SCHEME END ===")
+        
+        return {
+            success: true,
+            message: "Question selection scheme created successfully",
+            data: newScheme
+        }
+    } catch (error) {
+        console.error("=== ERROR IN CREATE QUESTION SELECTION SCHEME ===")
+        console.error("Error type:", error.name)
+        console.error("Error message:", error.message)
+        console.error("Error stack:", error.stack)
+        
+        // Check if it's a MongoDB validation error
+        if (error.name === 'ValidationError') {
+            console.error("MongoDB Validation Error Details:", error.errors)
+            const validationMessages = Object.keys(error.errors || {}).map(key => 
+                `${key}: ${error.errors[key].message}`
+            ).join(', ')
+            return {
+                success: false,
+                message: `Validation failed: ${validationMessages}`,
+                data: null
+            }
+        }
+        
+        // Check if it's a duplicate key error
+        if (error.code === 11000) {
+            console.error("Duplicate key error:", error.keyPattern)
+            return {
+                success: false,
+                message: "A scheme with this name already exists",
+                data: null
+            }
+        }
+        
+        return {
+            success: false,
+            message: error.message || "Failed to create question selection scheme",
+            data: null
+        }
+    }
+}
+
+export async function getAllQuestionSelectionSchemes(filters = {}) {
+    try {
+        console.log("=== GET ALL QUESTION SELECTION SCHEMES START ===")
+        await connectDB()
+        console.log("Connected to database")
+        
+        const query = {}
+        if (filters.examType) query.examType = filters.examType
+        if (filters.isActive !== undefined) query.isActive = filters.isActive
+        
+        console.log("Query filters:", query)
+        const schemes = await QuestionSelectionScheme.find(query)
+            .sort({ createdAt: -1 })
+            .lean()
+        
+        console.log(`Found ${schemes.length} schemes`)
+        console.log("=== GET ALL QUESTION SELECTION SCHEMES END ===")
+        
+        return {
+            success: true,
+            message: "Question selection schemes fetched successfully",
+            data: schemes
+        }
+    } catch (error) {
+        console.error("=== ERROR IN GET ALL QUESTION SELECTION SCHEMES ===")
+        console.error("Error:", error)
+        return {
+            success: false,
+            message: "Failed to fetch question selection schemes",
+            data: []
+        }
+    }
+}
+
+export async function getQuestionSelectionSchemeById(schemeId) {
+    try {
+        await connectDB()
+        
+        const scheme = await QuestionSelectionScheme.findById(schemeId).lean()
+        
+        if (!scheme) {
+            return {
+                success: false,
+                message: "Question selection scheme not found",
+                data: null
+            }
+        }
+        
+        return {
+            success: true,
+            message: "Question selection scheme fetched successfully",
+            data: scheme
+        }
+    } catch (error) {
+        console.error("Error fetching question selection scheme:", error)
+        return {
+            success: false,
+            message: "Failed to fetch question selection scheme",
+            data: null
+        }
+    }
+}
+
+export async function updateQuestionSelectionScheme(schemeId, updateData) {
+    try {
+        await connectDB()
+        
+        const updatedScheme = await QuestionSelectionScheme.findByIdAndUpdate(
+            schemeId,
+            updateData,
+            { new: true, runValidators: true }
+        ).lean()
+        
+        if (!updatedScheme) {
+            return {
+                success: false,
+                message: "Question selection scheme not found",
+                data: null
+            }
+        }
+        
+        return {
+            success: true,
+            message: "Question selection scheme updated successfully",
+            data: updatedScheme
+        }
+    } catch (error) {
+        console.error("Error updating question selection scheme:", error)
+        return {
+            success: false,
+            message: error.message || "Failed to update question selection scheme",
+            data: null
+        }
+    }
+}
+
+export async function deleteQuestionSelectionScheme(schemeId) {
+    try {
+        await connectDB()
+        
+        const deletedScheme = await QuestionSelectionScheme.findByIdAndDelete(schemeId)
+        
+        if (!deletedScheme) {
+            return {
+                success: false,
+                message: "Question selection scheme not found"
+            }
+        }
+        
+        return {
+            success: true,
+            message: "Question selection scheme deleted successfully"
+        }
+    } catch (error) {
+        console.error("Error deleting question selection scheme:", error)
+        return {
+            success: false,
+            message: "Failed to delete question selection scheme"
+        }
+    }
+}
+
+export async function toggleQuestionSelectionSchemeStatus(schemeId) {
+    try {
+        await connectDB()
+        
+        const scheme = await QuestionSelectionScheme.findById(schemeId)
+        
+        if (!scheme) {
+            return {
+                success: false,
+                message: "Question selection scheme not found"
+            }
+        }
+        
+        scheme.isActive = !scheme.isActive
+        await scheme.save()
+        
+        return {
+            success: true,
+            message: `Question selection scheme ${scheme.isActive ? 'activated' : 'deactivated'} successfully`,
+            data: scheme
+        }
+    } catch (error) {
+        console.error("Error toggling question selection scheme status:", error)
+        return {
+            success: false,
+            message: "Failed to toggle question selection scheme status"
+        }
+    }
+}
+
+export async function getActiveSchemesByExamType(examType) {
+    try {
+        await connectDB()
+        
+        const schemes = await QuestionSelectionScheme.find({
+            examType,
+            isActive: true
+        }).lean()
+        
+        return {
+            success: true,
+            message: "Active question selection schemes fetched successfully",
+            data: schemes
+        }
+    } catch (error) {
+        console.error("Error fetching active schemes:", error)
+        return {
+            success: false,
+            message: "Failed to fetch active question selection schemes",
+            data: []
         }
     }
 }

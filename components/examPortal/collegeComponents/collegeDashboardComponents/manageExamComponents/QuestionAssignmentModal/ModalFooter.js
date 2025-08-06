@@ -74,6 +74,10 @@ export default function ModalFooter({
   examSubjects = [],
   calculateTotalMarks,
   examStream,
+  // Scheme-related props
+  selectedScheme = null,
+  schemeValidation = null,
+  schemeMode = false,
 }) {
   // For all questions in DB, we need the full question list for current filters
   // Assigned difficulty breakdown
@@ -252,6 +256,57 @@ export default function ModalFooter({
         </div>
         {/* Divider */}
         <div className="border-t border-gray-100 my-1" />
+
+        {/* Scheme Validation Status */}
+        {selectedScheme && schemeValidation && (
+          <div className="px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg mb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className={`p-1 rounded-full ${schemeValidation.isCompliant ? 'bg-green-500' : 'bg-red-500'}`}>
+                    {schemeValidation.isCompliant ? (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className={`text-sm font-medium ${schemeValidation.isCompliant ? 'text-green-800' : 'text-red-800'}`}>
+                    {selectedScheme.schemeName}: {schemeValidation.isCompliant ? 'Compliant' : 'Non-Compliant'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600">
+                  {schemeValidation.totalValidation.selected} / {schemeValidation.totalValidation.required} questions
+                </div>
+              </div>
+              {!schemeValidation.isCompliant && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-red-600 font-medium">
+                    {schemeValidation.subjectValidation.filter(sv => !sv.isCompliant).length} subjects need adjustment
+                  </span>
+                </div>
+              )}
+            </div>
+            {!schemeValidation.isCompliant && (
+              <div className="mt-2 text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                <div className="font-medium mb-1">Issues found:</div>
+                {schemeValidation.subjectValidation
+                  .filter(sv => !sv.isCompliant)
+                  .slice(0, 2) // Show only first 2 issues to save space
+                  .map((sv, index) => (
+                    <div key={index}>• {sv.subject}: {sv.errors[0]}</div>
+                  ))}
+                {schemeValidation.subjectValidation.filter(sv => !sv.isCompliant).length > 2 && (
+                  <div>• ...and {schemeValidation.subjectValidation.filter(sv => !sv.isCompliant).length - 2} more issues</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 3 & 4. QuickStatsBar and Action Buttons in a single row */}
         <div className="flex flex-row items-center gap-4 w-full overflow-x-auto">
           <QuickStatsBar selectedQuestions={selectedQuestions} questions={questions} />

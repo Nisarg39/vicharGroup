@@ -9,6 +9,7 @@ import EnrolledStudent from "../../models/exam_portal/enrolledStudent"
 import ExamResult from "../../models/exam_portal/examResult"
 import CollegeTeacher from "../../models/exam_portal/collegeTeacher"
 import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegativeMarkingRule"
+import QuestionSelectionScheme from "../../models/exam_portal/questionSelectionScheme"
 import jwt from "jsonwebtoken"
 import { collegeAuth } from "../../middleware/collegeAuth"
 import { data as markingData } from "../../../utils/examUtils/subject_Details.js"
@@ -3413,5 +3414,450 @@ function getWeekKey(date) {
     const pastDaysOfYear = (date - startOfYear) / 86400000
     const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7)
     return `${year}-W${String(weekNumber).padStart(2, '0')}`
+}
+
+// Get available question selection schemes for an exam type
+export async function getAvailableSchemes(examType) {
+    try {
+        await connectDB()
+        
+        const schemes = await QuestionSelectionScheme.find({
+            examType: examType,
+            isActive: true
+        }).lean()
+        
+        return {
+            success: true,
+            data: schemes
+        }
+    } catch (error) {
+        console.error('Error fetching schemes:', error)
+        return {
+            success: false,
+            message: error.message || "Failed to fetch question selection schemes"
+        }
+    }
+}
+
+// Apply a question selection scheme to auto-select questions
+export async function applyQuestionSelectionScheme(examId, schemeId) {
+    try {
+        await connectDB()
+        
+        // Get exam and scheme details
+        const [exam, scheme] = await Promise.all([
+            Exam.findById(examId),
+            QuestionSelectionScheme.findById(schemeId)
+        ])
+        
+        if (!exam) {
+            return {
+                success: false,
+                message: "Exam not found"
+            }
+        }
+        
+        if (!scheme || !scheme.isActive) {
+            return {
+                success: false,
+                message: "Question selection scheme not found or inactive"
+            }
+        }
+        
+        // Validate scheme is compatible with exam
+        if (scheme.examType !== exam.stream) {
+            return {
+                success: false,
+                message: `Scheme is for ${scheme.examType} but exam is for ${exam.stream}`
+            }
+        }
+        
+        const selectedQuestions = []
+        const selectionSummary = []
+        let totalSelected = 0
+        
+        // Process each subject rule in the scheme
+        for (const rule of scheme.subjectRules) {
+            const subjectResult = await selectQuestionsForSubjectRule(
+                rule,
+                exam.stream,
+                exam.standard,
+                exam.section,
+                scheme.fallbackStrategy,
+                scheme.minimumPoolSize
+            )
+            
+            if (subjectResult.success) {
+                selectedQuestions.push(...subjectResult.questions)
+                totalSelected += subjectResult.questions.length
+                selectionSummary.push({
+                    subject: rule.subject,
+                    requested: rule.totalQuestions,
+                    selected: subjectResult.questions.length,
+                    breakdown: subjectResult.breakdown
+                })
+            } else {
+                return {
+                    success: false,
+                    message: `Failed to select questions for ${rule.subject}: ${subjectResult.message}`,
+                    partialResults: selectionSummary
+                }
+            }
+        }
+        
+        // Update scheme usage statistics
+        await QuestionSelectionScheme.findByIdAndUpdate(schemeId, {
+            $inc: { 
+                'usageStats.timesUsed': 1,
+                'usageStats.successfulApplications': totalSelected > 0 ? 1 : 0
+            },
+            $set: { 'usageStats.lastUsedAt': new Date() }
+        })
+        
+        return {
+            success: true,
+            message: `Successfully selected ${totalSelected} questions using ${scheme.schemeName}`,
+            data: {
+                selectedQuestions: selectedQuestions.map(q => q._id.toString()),
+                selectionSummary,
+                totalSelected,
+                schemeUsed: {
+                    id: scheme._id,
+                    name: scheme.schemeName,
+                    totalRequested: scheme.totalSchemeQuestions
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error applying question selection scheme:', error)
+        return {
+            success: false,
+            message: error.message || "Failed to apply question selection scheme"
+        }
+    }
+}
+
+// Helper function to select questions for a specific subject rule
+async function selectQuestionsForSubjectRule(rule, stream, examStandard, examSection, fallbackStrategy, minimumPoolSize) {
+    const selectedQuestions = []
+    const breakdown = {
+        byDifficulty: { easy: 0, medium: 0, hard: 0 },
+        byStandard: { '11': 0, '12': 0 },
+        bySection: { sectionA: 0, sectionB: 0 }
+    }
+    
+    try {
+        // Check if rule is for specific standard only
+        const isStandardSpecific = rule.standard === "11" || rule.standard === "12"
+        
+        // Check if all difficulty values are 0 (meaning no difficulty restrictions)
+        const hasNoDifficultyRestriction = 
+            rule.difficultyDistribution.easy === 0 && 
+            rule.difficultyDistribution.medium === 0 && 
+            rule.difficultyDistribution.hard === 0
+        
+        if (hasNoDifficultyRestriction) {
+            // Select questions without difficulty restrictions
+            const questions = await selectQuestionsByFilters({
+                stream,
+                subject: rule.subject,
+                standard: isStandardSpecific ? rule.standard : undefined,
+                difficultyLevel: undefined, // No difficulty restriction
+                section: examSection,
+                excludeIds: selectedQuestions.map(q => q._id),
+                limit: rule.totalQuestions,
+                fallbackStrategy,
+                minimumPoolSize
+            })
+            
+            selectedQuestions.push(...questions)
+            
+            // Update breakdown based on actual questions selected
+            questions.forEach(q => {
+                if (q.difficultyLevel) {
+                    const diffKey = q.difficultyLevel.toLowerCase()
+                    if (breakdown.byDifficulty[diffKey] !== undefined) {
+                        breakdown.byDifficulty[diffKey] += 1
+                    }
+                }
+                if (q.standard && breakdown.byStandard[q.standard]) {
+                    breakdown.byStandard[q.standard] += 1
+                }
+            })
+        } else {
+            // Process each difficulty level (original logic with modifications)
+            const difficulties = [
+                { level: 'Easy', needed: rule.difficultyDistribution.easy },
+                { level: 'Medium', needed: rule.difficultyDistribution.medium },
+                { level: 'Hard', needed: rule.difficultyDistribution.hard }
+            ]
+            
+            // Filter out difficulties with 0 needed (no restriction for that difficulty)
+            const activeDifficulties = difficulties.filter(d => d.needed > 0)
+            
+            for (const difficulty of activeDifficulties) {
+                // Check if this is a standard-specific rule
+                if (isStandardSpecific) {
+                    const questions = await selectQuestionsByFilters({
+                        stream,
+                        subject: rule.subject,
+                        standard: rule.standard,
+                        difficultyLevel: difficulty.level,
+                        section: examSection,
+                        excludeIds: selectedQuestions.map(q => q._id),
+                        limit: difficulty.needed,
+                        fallbackStrategy,
+                        minimumPoolSize
+                    })
+                    
+                    selectedQuestions.push(...questions)
+                    breakdown.byDifficulty[difficulty.level.toLowerCase()] += questions.length
+                    breakdown.byStandard[rule.standard] += questions.length
+                } else {
+                    // Further distribute by standard (11th/12th)
+                    const std11Needed = Math.round((rule.standard11Questions / rule.totalQuestions) * difficulty.needed)
+                    const std12Needed = difficulty.needed - std11Needed
+                    
+                    // Select from standard 11
+                    if (std11Needed > 0) {
+                        const std11Questions = await selectQuestionsByFilters({
+                            stream,
+                            subject: rule.subject,
+                            standard: "11",
+                            difficultyLevel: difficulty.level,
+                            section: examSection,
+                            excludeIds: selectedQuestions.map(q => q._id),
+                            limit: std11Needed,
+                            fallbackStrategy,
+                            minimumPoolSize
+                        })
+                        
+                        selectedQuestions.push(...std11Questions)
+                        breakdown.byDifficulty[difficulty.level.toLowerCase()] += std11Questions.length
+                        breakdown.byStandard['11'] += std11Questions.length
+                    }
+                    
+                    // Select from standard 12
+                    if (std12Needed > 0) {
+                        const std12Questions = await selectQuestionsByFilters({
+                            stream,
+                            subject: rule.subject,
+                            standard: "12",
+                            difficultyLevel: difficulty.level,
+                            section: examSection,
+                            excludeIds: selectedQuestions.map(q => q._id),
+                            limit: std12Needed,
+                            fallbackStrategy,
+                            minimumPoolSize
+                        })
+                        
+                        selectedQuestions.push(...std12Questions)
+                        breakdown.byDifficulty[difficulty.level.toLowerCase()] += std12Questions.length
+                        breakdown.byStandard['12'] += std12Questions.length
+                    }
+                }
+            }
+        }
+        
+        return {
+            success: true,
+            questions: selectedQuestions,
+            breakdown
+        }
+        
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message,
+            questions: selectedQuestions,
+            breakdown
+        }
+    }
+}
+
+// Helper function to select questions by specific filters with fallback strategy
+async function selectQuestionsByFilters({ 
+    stream, 
+    subject, 
+    standard, 
+    difficultyLevel, 
+    section, 
+    excludeIds = [], 
+    limit, 
+    fallbackStrategy, 
+    minimumPoolSize 
+}) {
+    const baseQuery = {
+        stream,
+        subject,
+        _id: { $nin: excludeIds }
+    }
+    
+    // Build query based on provided filters
+    let query = { ...baseQuery }
+    
+    // Only add filters if they are defined and not meant to be unrestricted
+    if (standard !== undefined) {
+        query.standard = standard
+    }
+    
+    if (difficultyLevel !== undefined) {
+        query.difficultyLevel = difficultyLevel
+    }
+    
+    if (section && (section === 'Section A' || section === 'Section B' || section === 1 || section === 2)) {
+        query.section = section === 'Section A' ? 1 : section === 'Section B' ? 2 : section
+    }
+    
+    let questions = await master_mcq_question.find(query).limit(limit).lean()
+    
+    // Apply fallback strategy if not enough questions found
+    if (questions.length < Math.min(limit, minimumPoolSize)) {
+        switch (fallbackStrategy) {
+            case 'RELAX_DIFFICULTY':
+                // Remove difficulty constraint
+                delete query.difficultyLevel
+                questions = await master_mcq_question.find(query).limit(limit).lean()
+                break
+                
+            case 'RELAX_STANDARD':
+                // Remove standard constraint
+                delete query.standard
+                questions = await master_mcq_question.find(query).limit(limit).lean()
+                break
+                
+            case 'RELAX_TOPIC':
+                // Remove section constraint
+                delete query.section
+                questions = await master_mcq_question.find(query).limit(limit).lean()
+                break
+                
+            case 'MANUAL_SELECTION':
+                // Return partial results for manual selection
+                break
+        }
+    }
+    
+    return questions
+}
+
+// Get scheme validation status for current selections
+export async function validateSchemeCompliance(examId, schemeId, currentSelections = []) {
+    try {
+        await connectDB()
+        
+        const [exam, scheme] = await Promise.all([
+            Exam.findById(examId),
+            QuestionSelectionScheme.findById(schemeId)
+        ])
+        
+        if (!exam || !scheme) {
+            return {
+                success: false,
+                message: "Exam or scheme not found"
+            }
+        }
+        
+        // Get details of currently selected questions
+        const selectedQuestions = await master_mcq_question.find({
+            _id: { $in: currentSelections }
+        }).lean()
+        
+        const validation = {
+            isCompliant: true,
+            subjectValidation: [],
+            totalValidation: {
+                required: scheme.totalSchemeQuestions,
+                selected: selectedQuestions.length,
+                difference: selectedQuestions.length - scheme.totalSchemeQuestions
+            }
+        }
+        
+        // Validate each subject rule
+        for (const rule of scheme.subjectRules) {
+            const subjectQuestions = selectedQuestions.filter(q => q.subject === rule.subject)
+            const subjectValidation = {
+                subject: rule.subject,
+                isCompliant: true,
+                errors: [],
+                warnings: [],
+                breakdown: {
+                    total: {
+                        required: rule.totalQuestions,
+                        selected: subjectQuestions.length,
+                        difference: subjectQuestions.length - rule.totalQuestions
+                    },
+                    byDifficulty: {},
+                    byStandard: {}
+                }
+            }
+            
+            // Check difficulty distribution
+            const diffCounts = { easy: 0, medium: 0, hard: 0 }
+            subjectQuestions.forEach(q => {
+                const level = (q.difficultyLevel || 'Easy').toLowerCase()
+                if (diffCounts[level] !== undefined) diffCounts[level]++
+            })
+            
+            ['easy', 'medium', 'hard'].forEach(level => {
+                const required = rule.difficultyDistribution[level]
+                const selected = diffCounts[level]
+                subjectValidation.breakdown.byDifficulty[level] = {
+                    required,
+                    selected,
+                    difference: selected - required
+                }
+                
+                if (selected !== required) {
+                    subjectValidation.isCompliant = false
+                    subjectValidation.errors.push(
+                        `${level.charAt(0).toUpperCase() + level.slice(1)}: need ${required}, have ${selected}`
+                    )
+                }
+            })
+            
+            // Check standard distribution
+            const stdCounts = { '11': 0, '12': 0 }
+            subjectQuestions.forEach(q => {
+                if (stdCounts[q.standard]) stdCounts[q.standard]++
+            })
+            
+            ['11', '12'].forEach(std => {
+                const required = std === '11' ? rule.standard11Questions : rule.standard12Questions
+                const selected = stdCounts[std]
+                subjectValidation.breakdown.byStandard[std] = {
+                    required,
+                    selected,
+                    difference: selected - required
+                }
+                
+                if (selected !== required) {
+                    subjectValidation.isCompliant = false
+                    subjectValidation.errors.push(
+                        `Class ${std}: need ${required}, have ${selected}`
+                    )
+                }
+            })
+            
+            if (!subjectValidation.isCompliant) {
+                validation.isCompliant = false
+            }
+            
+            validation.subjectValidation.push(subjectValidation)
+        }
+        
+        return {
+            success: true,
+            data: validation
+        }
+        
+    } catch (error) {
+        console.error('Error validating scheme compliance:', error)
+        return {
+            success: false,
+            message: error.message || "Failed to validate scheme compliance"
+        }
+    }
 }
 

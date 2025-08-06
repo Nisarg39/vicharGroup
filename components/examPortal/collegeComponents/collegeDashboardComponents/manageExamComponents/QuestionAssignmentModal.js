@@ -7,12 +7,16 @@ import {
   assignQuestionsToExam,
   getExamQuestions,
   getQuestionCountsPerSubject,
+  getAvailableSchemes,
+  applyQuestionSelectionScheme,
+  validateSchemeCompliance,
 } from "../../../../../server_actions/actions/examController/collegeActions";
 import { getTopics, data } from "../../../../../utils/examUtils/subject_Details";
 import ModalHeader from './QuestionAssignmentModal/ModalHeader';
 import ModalFilters from './QuestionAssignmentModal/ModalFilters';
 import QuestionsList from './QuestionAssignmentModal/QuestionsList';
 import ModalFooter from './QuestionAssignmentModal/ModalFooter';
+import SchemePanel from './QuestionAssignmentModal/SchemePanel';
 
 // Utility function to calculate marks based on exam stream and question subjects using the official marking scheme
 const calculateTotalMarks = (selectedQuestionIds, questions, examStream) => {
@@ -74,6 +78,14 @@ export default function QuestionAssignmentModal({
   const [allSelectedQuestions, setAllSelectedQuestions] = useState([]);
   const [topics, setTopics] = useState({});
   const [totalQuestionsPerSubject, setTotalQuestionsPerSubject] = useState({});
+  
+  // Scheme-related state
+  const [availableSchemes, setAvailableSchemes] = useState([]);
+  const [selectedScheme, setSelectedScheme] = useState(null);
+  const [schemeMode, setSchemeMode] = useState(false); // Toggle between manual and scheme-based selection
+  const [applyingScheme, setApplyingScheme] = useState(false);
+  const [schemeValidation, setSchemeValidation] = useState(null);
+  const [showSchemePanel, setShowSchemePanel] = useState(false);
 
   // Add this state for showing selected questions
   // Add this function to reset filters
@@ -94,6 +106,78 @@ export default function QuestionAssignmentModal({
   // Add this function to get selected question details
   const getSelectedQuestionDetails = () => {
     return questions.filter((q) => selectedQuestions.includes(q._id));
+  };
+
+  // Fetch available schemes for the exam type
+  const fetchAvailableSchemes = useCallback(async () => {
+    if (!exam?.stream) return;
+    
+    try {
+      const response = await getAvailableSchemes(exam.stream);
+      if (response.success) {
+        setAvailableSchemes(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch schemes:", error);
+    }
+  }, [exam?.stream]);
+
+  // Apply selected scheme to auto-select questions
+  const handleApplyScheme = async () => {
+    if (!selectedScheme || !exam?._id) return;
+    
+    setApplyingScheme(true);
+    try {
+      const response = await applyQuestionSelectionScheme(exam._id, selectedScheme._id);
+      if (response.success) {
+        // Update selected questions with scheme results
+        setSelectedQuestions(response.data.selectedQuestions);
+        
+        // Refresh the assigned questions to get full details
+        await fetchAssignedQuestions();
+        
+        // Show success message with details
+        alert(`Successfully applied ${response.data.schemeUsed.name}: Selected ${response.data.totalSelected} questions`);
+        
+        // Switch back to manual mode for fine-tuning
+        setSchemeMode(false);
+        
+        // Validate compliance
+        await validateCurrentSelection();
+      } else {
+        alert(`Failed to apply scheme: ${response.message}`);
+      }
+    } catch (error) {
+      console.error("Failed to apply scheme:", error);
+      alert("Failed to apply selection scheme");
+    }
+    setApplyingScheme(false);
+  };
+
+  // Validate current selection against selected scheme
+  const validateCurrentSelection = useCallback(async () => {
+    if (!selectedScheme || !exam?._id || selectedQuestions.length === 0) {
+      setSchemeValidation(null);
+      return;
+    }
+
+    try {
+      const response = await validateSchemeCompliance(exam._id, selectedScheme._id, selectedQuestions);
+      if (response.success) {
+        setSchemeValidation(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to validate scheme compliance:", error);
+    }
+  }, [selectedScheme, exam?._id, selectedQuestions]);
+
+  // Toggle scheme mode
+  const handleToggleSchemeMode = () => {
+    setSchemeMode(!schemeMode);
+    setShowSchemePanel(!schemeMode);
+    if (!schemeMode && availableSchemes.length === 0) {
+      fetchAvailableSchemes();
+    }
   };
 
   // State to store all selected questions with full details
@@ -319,8 +403,20 @@ export default function QuestionAssignmentModal({
   useEffect(() => {
     if (isOpen && exam) {
       fetchSubjectCounts();
+      fetchAvailableSchemes();
     }
-  }, [isOpen, exam, fetchSubjectCounts]);
+  }, [isOpen, exam, fetchSubjectCounts, fetchAvailableSchemes]);
+
+  // Validate scheme compliance when selections change
+  useEffect(() => {
+    if (selectedScheme && selectedQuestions.length > 0) {
+      const debounceTimer = setTimeout(() => {
+        validateCurrentSelection();
+      }, 500);
+      
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [selectedQuestions, validateCurrentSelection, selectedScheme]);
 
   // Now, after all hooks, you can have early returns
   if (!isOpen) return null;
@@ -338,7 +434,56 @@ export default function QuestionAssignmentModal({
     >
       <div className="relative h-full w-full bg-white flex flex-col overflow-hidden">
         {/* Header */}
-        <ModalHeader exam={exam} onClose={onClose} />
+        <div className="flex-shrink-0">
+          <ModalHeader exam={exam} onClose={onClose} />
+          
+          {/* Scheme Toggle Button */}
+          <div className="px-6 py-2 bg-gray-50 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h2 className="text-sm font-medium text-gray-700">Question Selection Mode</h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleToggleSchemeMode}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                      schemeMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {schemeMode ? 'Scheme Mode' : 'Manual Mode'}
+                  </button>
+                  {!schemeMode && availableSchemes.length > 0 && (
+                    <button
+                      onClick={handleToggleSchemeMode}
+                      className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700"
+                    >
+                      Use Selection Scheme
+                    </button>
+                  )}
+                </div>
+              </div>
+              {selectedQuestions.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">{selectedQuestions.length}</span> questions selected
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Scheme Panel */}
+          <SchemePanel
+            availableSchemes={availableSchemes}
+            selectedScheme={selectedScheme}
+            setSelectedScheme={setSelectedScheme}
+            schemeValidation={schemeValidation}
+            onApplyScheme={handleApplyScheme}
+            applyingScheme={applyingScheme}
+            showSchemePanel={showSchemePanel}
+            onToggleSchemeMode={handleToggleSchemeMode}
+          />
+        </div>
+
         {/* Main Content Area with Sidebar Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar for Filters */}
@@ -382,6 +527,10 @@ export default function QuestionAssignmentModal({
                 examSubjects={exam?.examSubject || []}
                 calculateTotalMarks={calculateTotalMarks}
                 examStream={exam?.stream}
+                // Scheme-related props
+                selectedScheme={selectedScheme}
+                schemeValidation={schemeValidation}
+                schemeMode={schemeMode}
               />
             </div>
           </div>

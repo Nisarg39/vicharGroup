@@ -79,7 +79,7 @@ export default function ModalFilters({ exam, filters, handleFilterChange }) {
           </select>
         </div>
 
-        {/* Section Filter - only show for JEE stream */}
+        {/* Section Filter - only show for JEE stream which has Section A and Section B */}
         {filters.stream === "JEE" && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
@@ -95,7 +95,7 @@ export default function ModalFilters({ exam, filters, handleFilterChange }) {
           </div>
         )}
 
-        {/* Question Type Filter */}
+        {/* Question Type Filter - show different options based on exam stream */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
           <select
@@ -106,7 +106,10 @@ export default function ModalFilters({ exam, filters, handleFilterChange }) {
             <option value="">All Types</option>
             <option value="MCSA">MCSA</option>
             <option value="MCMA">MCMA</option>
-            <option value="numerical">Numerical</option>
+            {/* Numerical questions are primarily for JEE */}
+            {filters.stream === "JEE" && (
+              <option value="numerical">Numerical</option>
+            )}
           </select>
         </div>
 

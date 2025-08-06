@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import CollegeControlHome from './CollegeControlHome';
 import { MdSchool } from 'react-icons/md';
-import { FaUniversity, FaQuestion } from 'react-icons/fa';
+import { FaUniversity, FaQuestion, FaTasks } from 'react-icons/fa';
 import PdfSmartCropTool from './PdfSmartCropTool';
 import { FaCrop } from 'react-icons/fa';
-import { MdCalculate } from 'react-icons/md';
+import { MdCalculate, MdPlaylistAdd } from 'react-icons/md';
 import QuestionsControlHome from './questionControls/QuestionsControlHome';
 import DefaultNegativeMarkingRules from './DefaultNegativeMarkingRules';
+import QuestionSelectionScheme from './QuestionSelectionScheme';
 
 export default function ExamPortalHome() {
   const [activeComponent, setActiveComponent] = useState('collegeControl');
@@ -19,44 +20,80 @@ export default function ExamPortalHome() {
           Exam Portal Administration
         </h1>
 
-        <div className="flex flex-wrap gap-4 mb-8">
-          <button 
-            className={`${activeComponent === 'collegeControl' ? 'bg-[#1d77bc]' : 'bg-[#1d77bc]/60'} text-white px-6 py-2.5 rounded-lg hover:bg-[#1d77bc]/90 transition-colors duration-200 flex items-center gap-2`}
-            onClick={() => setActiveComponent('collegeControl')}
-          >
-            <FaUniversity />
-            College Control
-          </button>
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-1 overflow-x-auto scrollbar-hide">
+            <button 
+              className={`${
+                activeComponent === 'collegeControl' 
+                  ? 'border-[#1d77bc] text-[#1d77bc] bg-blue-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              } whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 min-w-fit transition-all duration-200 rounded-t-lg`}
+              onClick={() => setActiveComponent('collegeControl')}
+            >
+              <FaUniversity className="text-base" />
+              <span className="hidden sm:inline">College Control</span>
+              <span className="sm:hidden">Colleges</span>
+            </button>
 
-          <button 
-            className={`${activeComponent === 'questionsControl' ? 'bg-[#2c9652]' : 'bg-[#2c9652]/60'} text-white px-6 py-2.5 rounded-lg hover:bg-[#2c9652]/90 transition-colors duration-200 flex items-center gap-2`}
-            onClick={() => setActiveComponent('questionsControl')}
-          >
-            <FaQuestion />
-            Questions Control
-          </button>
-          
-          <button 
-            className={`${activeComponent === 'smartCropTool' ? 'bg-[#9c27b0]' : 'bg-[#9c27b0]/60'} text-white px-6 py-2.5 rounded-lg hover:bg-[#9c27b0]/90 transition-colors duration-200 flex items-center gap-2`}
-            onClick={() => setActiveComponent('smartCropTool')}
-          >
-            <FaCrop />
-            Smart Crop Tool
-          </button>
+            <button 
+              className={`${
+                activeComponent === 'questionsControl' 
+                  ? 'border-[#2c9652] text-[#2c9652] bg-green-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              } whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 min-w-fit transition-all duration-200 rounded-t-lg`}
+              onClick={() => setActiveComponent('questionsControl')}
+            >
+              <FaTasks className="text-base" />
+              <span className="hidden sm:inline">Questions Control</span>
+              <span className="sm:hidden">Questions</span>
+            </button>
+            
+            <button 
+              className={`${
+                activeComponent === 'smartCropTool' 
+                  ? 'border-[#9c27b0] text-[#9c27b0] bg-purple-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              } whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 min-w-fit transition-all duration-200 rounded-t-lg`}
+              onClick={() => setActiveComponent('smartCropTool')}
+            >
+              <FaCrop className="text-base" />
+              <span className="hidden sm:inline">Smart Crop Tool</span>
+              <span className="sm:hidden">Crop</span>
+            </button>
 
-          <button 
-            className={`${activeComponent === 'negativeMarkingRules' ? 'bg-[#f44336]' : 'bg-[#f44336]/60'} text-white px-6 py-2.5 rounded-lg hover:bg-[#f44336]/90 transition-colors duration-200 flex items-center gap-2`}
-            onClick={() => setActiveComponent('negativeMarkingRules')}
-          >
-            <MdCalculate />
-            Default Negative Marking
-          </button>
+            <button 
+              className={`${
+                activeComponent === 'negativeMarkingRules' 
+                  ? 'border-[#f44336] text-[#f44336] bg-red-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              } whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 min-w-fit transition-all duration-200 rounded-t-lg`}
+              onClick={() => setActiveComponent('negativeMarkingRules')}
+            >
+              <MdCalculate className="text-base" />
+              <span className="hidden sm:inline">Default Negative Marking</span>
+              <span className="sm:hidden">Marking</span>
+            </button>
+
+            <button 
+              className={`${
+                activeComponent === 'questionSelectionScheme' 
+                  ? 'border-[#9c27b0] text-[#9c27b0] bg-purple-50/50' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              } whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm flex items-center gap-2 min-w-fit transition-all duration-200 rounded-t-lg`}
+              onClick={() => setActiveComponent('questionSelectionScheme')}
+            >
+              <MdPlaylistAdd className="text-base" />
+              <span className="hidden sm:inline">Question Selection Scheme</span>
+              <span className="sm:hidden">Selection</span>
+            </button>
+          </nav>
         </div>
 
         {activeComponent === 'collegeControl' && <CollegeControlHome />}
         {activeComponent === 'questionsControl' && <QuestionsControlHome />}
         {activeComponent === 'smartCropTool' && <PdfSmartCropTool />}
         {activeComponent === 'negativeMarkingRules' && <DefaultNegativeMarkingRules onBack={() => setActiveComponent('collegeControl')} />}
+        {activeComponent === 'questionSelectionScheme' && <QuestionSelectionScheme />}
       </div>
     </div>
   );
