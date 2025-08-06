@@ -77,8 +77,8 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
 
 //   console.log(subjects)
   const [formData, setFormData] = useState({
-    stream: questionToEdit?.stream || '',
-    subject: questionToEdit?.subject || '',
+    stream: questionToEdit?.stream || 'NEET',
+    subject: questionToEdit?.subject || (subjects && subjects.length > 0 ? subjects[0].value : ''),
     standard: questionToEdit?.standard || '',
     section: questionToEdit?.section || '',
     topic: questionToEdit?.topic || '',
@@ -399,6 +399,16 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     };
     getAdminToken();
   }, []);
+
+  // Set default subject when subjects are available and no question is being edited
+  useEffect(() => {
+    if (!questionToEdit && subjects && subjects.length > 0 && !formData.subject) {
+      setFormData(prev => ({
+        ...prev,
+        subject: subjects[0].value
+      }));
+    }
+  }, [subjects, questionToEdit, formData.subject]);
 
   useEffect(() => {
     const { stream, subject, standard } = formData;
@@ -960,15 +970,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
           </div>
         ) : (
           isQuillReady && (
-            <div key={`quill-${tabValue}`} className="min-h-[250px]">
-              <div className="mb-2 text-xs text-gray-500 flex items-center gap-2 bg-blue-50 p-2 rounded-lg">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
-                <span>
-                  <strong>Image Support:</strong> Paste images with <kbd className="px-1 py-0.5 bg-white rounded text-xs">Ctrl+V</kbd> or drag & drop image files directly into the editor
-                </span>
-              </div>
+            <div key={`quill-${tabValue}`} className="min-h-[300px]">
               <ReactQuill
                 ref={quillRef}
                 value={getCurrentEditorValue}
@@ -977,8 +979,8 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 theme="snow"
                 placeholder="Write your content here..."
                 preserveWhitespace={true}
-                style={{height: '200px'}}
-                className="bg-white [&_.ql-container]:!h-[150px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto transition-all duration-200"
+                style={{height: '350px'}}
+                className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto transition-all duration-200"
               />
             </div>
           )
@@ -986,7 +988,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       </div>
 
       {/* Fixed Bottom Save Button */}
-      <div className="sticky bottom-0 left-0 right-0 bg-white border-t shadow-md px-6 py-4 mt-8">
+      <div className="sticky bottom-0 left-0 right-0 bg-white border-t shadow-md px-6 py-4">
         <div className="max-w-screen-xl mx-auto flex justify-end items-center">
           <button 
             onClick={handleSubmit}

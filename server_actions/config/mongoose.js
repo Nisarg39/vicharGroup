@@ -33,7 +33,7 @@ export const connectDB = async () => {
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {
-           console.log('✅ MongoDB connected with connection pooling enabled');
+        //    console.log('✅ MongoDB connected with connection pooling enabled');
        });
        
        mongoose.connection.on('error', (err) => {
@@ -42,14 +42,14 @@ export const connectDB = async () => {
        });
        
        mongoose.connection.on('disconnected', () => {
-           console.log('⚠️ MongoDB disconnected');
+        //    console.log('⚠️ MongoDB disconnected');
            isConnected = false;
        });
 
        // Graceful shutdown handling
        process.on('SIGINT', async () => {
            await mongoose.connection.close();
-           console.log('MongoDB connection closed through app termination');
+        //    console.log('MongoDB connection closed through app termination');
            process.exit(0);
        });
 
