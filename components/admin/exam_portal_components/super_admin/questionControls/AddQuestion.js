@@ -112,61 +112,6 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
         try {
           const Quill = (await import('quill')).default;
           
-          // Register CustomClipboard here when Quill is available
-          if (!Quill.imports['modules/clipboard'] || !Quill.imports['modules/clipboard'].name?.includes('Custom')) {
-            const Clipboard = Quill.import('modules/clipboard');
-            
-            class CustomClipboard extends Clipboard {
-              onPaste(e) {
-                const clipboardData = e.clipboardData || window.clipboardData;
-                const items = clipboardData.items;
-                
-                for (const item of items) {
-                  if (item.type.startsWith('image')) {
-                    const file = item.getAsFile();
-                    this.uploadImage(file);
-                    e.preventDefault();
-                    return;
-                  }
-                }
-                super.onPaste(e);
-              }
-
-              async uploadImage(file) {
-                try {
-                  const fileName = `pasted_image_${Date.now()}.png`;
-                  const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${adminToken}`
-                    },
-                    body: JSON.stringify({
-                      fileName,
-                      type: 'questionImage'
-                    })
-                  });
-
-                  const data = await response.json();
-                  const preSignedURL = data.url;
-
-                  await fetch(preSignedURL, {
-                    method: 'PUT',
-                    body: file
-                  });
-
-                  const imageUrl = preSignedURL.split('?')[0];
-                  const range = this.quill.getSelection();
-                  this.quill.insertEmbed(range.index, 'image', imageUrl);
-                } catch (error) {
-                  console.error('Error uploading pasted image:', error);
-                }
-              }
-            }
-            
-            Quill.register('modules/clipboard', CustomClipboard);
-          }
-          
           // Check if ImageResize is already registered
           if (!Quill.imports['modules/imageResize']) {
             const ImageResize = (await import('quill-image-resize-module-react')).default;
@@ -187,6 +132,115 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       };
       
       initQuill();
+    }
+  }, [isQuillReady]);
+
+  // Register CustomClipboard when both Quill is ready and adminToken is available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isQuillReady && adminToken) {
+      const registerCustomClipboard = async () => {
+        try {
+          const Quill = (await import('quill')).default;
+          const Clipboard = Quill.import('modules/clipboard');
+          
+          // Check if we're on Windows (for drag-and-drop support)
+          const isWindows = navigator.platform.toLowerCase().includes('win');
+          
+          class CustomClipboard extends Clipboard {
+            constructor(quill, options) {
+              super(quill, options);
+              
+              // Add drag-and-drop support for Windows only
+              if (isWindows) {
+                this.setupWindowsDragDrop();
+              }
+            }
+
+            setupWindowsDragDrop() {
+              const container = this.quill.container;
+              
+              // Prevent default drag behaviors
+              const preventDefaults = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              };
+
+              container.addEventListener('dragenter', preventDefaults);
+              container.addEventListener('dragover', preventDefaults);
+              container.addEventListener('dragleave', preventDefaults);
+              
+              // Handle drop event for Windows
+              container.addEventListener('drop', (e) => {
+                preventDefaults(e);
+                
+                const files = Array.from(e.dataTransfer.files);
+                const imageFiles = files.filter(file => file.type.startsWith('image'));
+                
+                if (imageFiles.length > 0) {
+                  imageFiles.forEach(file => {
+                    this.uploadImage(file);
+                  });
+                }
+              });
+            }
+
+            onPaste(e) {
+              const clipboardData = e.clipboardData || window.clipboardData;
+              const items = clipboardData.items;
+              
+              for (const item of items) {
+                if (item.type.startsWith('image')) {
+                  const file = item.getAsFile();
+                  this.uploadImage(file);
+                  e.preventDefault();
+                  return;
+                }
+              }
+              super.onPaste(e);
+            }
+
+            async uploadImage(file) {
+              try {
+                const fileName = `image_${Date.now()}.png`;
+                const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                  },
+                  body: JSON.stringify({
+                    fileName: fileName,
+                    type: 'questionImage'
+                  })
+                });
+
+                const data = await response.json();
+                const preSignedURL = data.payload;
+
+                await fetch(preSignedURL, {
+                  method: 'PUT',
+                  body: file
+                });
+
+                const imageUrl = preSignedURL.split('?')[0];
+
+                // Insert the image into the editor
+                const range = this.quill.getSelection() || { index: this.quill.getLength() };
+                this.quill.insertEmbed(range.index, 'image', imageUrl);
+              } catch (error) {
+                console.error('Error uploading image:', error);
+              }
+            }
+          }
+          
+          Quill.register('modules/clipboard', CustomClipboard, true);
+          console.log(`CustomClipboard registered with admin token (Windows drag-drop: ${isWindows})`);
+        } catch (error) {
+          console.error('Error registering CustomClipboard:', error);
+        }
+      };
+      
+      registerCustomClipboard();
     }
   }, [isQuillReady, adminToken]);
 
@@ -248,44 +302,61 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
             this.quill.insertText(cursorPosition, value);
             this.quill.setSelection(cursorPosition + 1);
           },
-          image: function() {
-            if (typeof window === 'undefined') return; // Guard for SSR
+          image: function () {
             const input = document.createElement('input');
             input.setAttribute('type', 'file');
             input.setAttribute('accept', 'image/*');
             input.click();
 
-            input.onchange = () => {
+            input.onchange = async () => {
               const file = input.files[0];
               if (!file) return;
 
-              const reader = new FileReader();
-              reader.onload = (e) => {
+              if (!adminToken) {
+                console.error('Admin token not available for image upload');
+                return;
+              }
+
+              const fileName = file.name;
+
+              const payload = {
+                fileName: fileName,
+                type: "questionImage"
+              }
+
+              try {
+                const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                  },
+                  body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                const preSignedURL = data.payload;
+
+                await fetch(preSignedURL, {
+                  method: 'PUT',
+                  body: file
+                });
+
+                const imageUrl = preSignedURL.split('?')[0];
+
                 const editor = this.quill;
                 const range = editor.getSelection(true);
-              
-                // Create temporary image to get dimensions
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = function() {
-                  // Calculate scaled dimensions to fit editor width
-                  const maxWidth = editor.container.offsetWidth - 30; // Padding buffer
-                  const ratio = maxWidth / img.width;
-                  const width = Math.min(maxWidth, img.width);
-                  const height = img.height * ratio;
+                if (range) {
+                  editor.insertEmbed(range.index, 'image', imageUrl);
+                } else {
+                  editor.insertEmbed(editor.getLength(), 'image', imageUrl);
+                }
 
-                  // Insert image with calculated dimensions
-                  if (range) {
-                    editor.insertEmbed(range.index, 'image', e.target.result, 'user');
-                    editor.formatText(range.index, 1, {
-                      width: `${width}px`,
-                      height: `${height}px`
-                    });
-                    editor.setSelection(range.index + 1);
-                  }
-                };
-              };
-              reader.readAsDataURL(file);
+                // clear
+                input.value = '';
+              } catch (error) {
+                console.error('Error uploading image:', error);
+              }
             };
           }
         }
@@ -310,7 +381,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
 
     return baseModules;
-  }, [isQuillReady]);
+  }, [isQuillReady, adminToken]);
 
   useEffect(() => {
     const getAdminToken = async () => {
@@ -590,13 +661,16 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
 
   useEffect(() => {
     // Focus the editor when it's ready and we're on the question tab
-    if (isQuillReady && tabValue === 0 && quillRef.current) {
+    if (isQuillReady && quillRef.current) {
       const editor = quillRef.current.getEditor();
-      editor.focus();
       
-      // Place cursor at the end of existing content
-      const length = editor.getLength();
-      editor.setSelection(length, length);
+      if (tabValue === 0) {
+        editor.focus();
+        
+        // Place cursor at the end of existing content
+        const length = editor.getLength();
+        editor.setSelection(length, length);
+      }
     }
   }, [isQuillReady, tabValue]);
 
@@ -887,6 +961,14 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
         ) : (
           isQuillReady && (
             <div key={`quill-${tabValue}`} className="min-h-[250px]">
+              <div className="mb-2 text-xs text-gray-500 flex items-center gap-2 bg-blue-50 p-2 rounded-lg">
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <span>
+                  <strong>Image Support:</strong> Paste images with <kbd className="px-1 py-0.5 bg-white rounded text-xs">Ctrl+V</kbd> or drag & drop image files directly into the editor
+                </span>
+              </div>
               <ReactQuill
                 ref={quillRef}
                 value={getCurrentEditorValue}
@@ -896,7 +978,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 placeholder="Write your content here..."
                 preserveWhitespace={true}
                 style={{height: '200px'}}
-                className="bg-white [&_.ql-container]:!h-[150px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto"
+                className="bg-white [&_.ql-container]:!h-[150px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto transition-all duration-200"
               />
             </div>
           )

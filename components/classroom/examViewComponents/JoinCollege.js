@@ -31,10 +31,9 @@ export default function JoinCollege() {
             setLoadingStatus(true)
             try {
                 const token = localStorage.getItem('token')
-                const studentId = localStorage.getItem('studentId') // You'll need to store this on login
                 
                 const result = await collegeRequestStatus({
-                    studentId: studentId
+                    token: token
                 })
 
                 if (result.success) {
@@ -151,9 +150,9 @@ export default function JoinCollege() {
         // First check for updated request statuses
         setLoadingStatus(true)
         try {
-            const studentId = localStorage.getItem('studentId')
+            const token = localStorage.getItem('token')
             const result = await collegeRequestStatus({
-                studentId: studentId
+                token: token
             })
             
             if (result.success) {

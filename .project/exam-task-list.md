@@ -4,70 +4,6 @@
 
 ### **Priority: High**
 
-~~1. **Complete ExamList.js UI Layout Redesign**~~
-   - ~~Status: Completed ✅~~
-   - ~~Description: Fix UI layout issues in ExamList component by removing subjects from shrink view and implementing 3-dot menu for actions~~
-   - ~~Components Affected:~~
-     - ~~`components/examPortal/collegeComponents/collegeDashboardComponents/manageExamComponents/ExamList.js`~~
-   - ~~Technical Requirements:~~
-     - ~~Remove subjects column from shrink view (currently col-span-2 in grid layout)~~
-     - ~~Replace individual Edit and Assign Questions buttons with 3-dot dropdown menu~~
-     - ~~Add state management for dropdown visibility (useState for activeDropdown)~~
-     - ~~Implement click-outside-to-close functionality~~
-     - ~~Adjust responsive grid layout from 12-column to optimize space usage~~
-     - ~~Ensure changes persist correctly (previous MultiEdit attempt failed)~~
-     - ~~Maintain existing active exam indicators and expand/collapse functionality~~
-
-
-~~2. **Apply Negative Marking Scheme in Result Evaluation**~~
-   - ~~Status: Completed ✅~~
-   - ~~Description: Implement the negative marking calculation when evaluating student exam results~~
-   - ~~Components Affected:~~
-     - ~~ExamResult calculation logic~~
-     - ~~Student result display~~
-     - ~~Result analytics~~
-   - ~~Technical Requirements:~~
-     - ~~Update result calculation algorithm~~
-     - ~~Apply college-specific negative marking rules~~
-     - ~~Handle different question types (MCQ, Numerical)~~
-     - ~~Show the negative rules in results section in frontend and also in downloaded pdf which will show the default values which the super admin has as - current rules and show college negative marking rules for comparison and making student know that this is customised exam~~
-
-2. **Enhance PDF Result Export with Professional Design**
-   - Status: Pending
-   - Description: Create a polished, professional-looking PDF export for exam results with comprehensive exam information
-   - Components Affected:
-     - ExamResult.js PDF generation
-     - PDF styling and layout
-     - Result data presentation
-   - Technical Requirements:
-     - Professional header with college/institution branding
-     - Complete exam metadata (name, date, duration, total marks, subjects)
-     - Student information section
-     - Detailed score breakdown with visual elements
-     - Question-wise analysis with correct/incorrect indicators
-     - Negative marking scheme explanation with visual comparison
-     - Performance analytics and grade/category display
-     - Footer with generation timestamp and verification details
-     - Improved typography, spacing, and color scheme
-     - Ensure consistent formatting across different screen sizes
-     - Add college logo placeholder and exam certificate styling
-     - Include performance insights and recommendations section
-
-3. **Automated Actions for Exams**
-   - Status: Pending
-   - Description: Implement automation for common exam lifecycle actions to reduce manual work and errors
-   - Components Affected:
-     - Exam scheduling system
-     - Notification service
-     - Result publishing module
-   - Technical Requirements:
-     - Auto-start and auto-end exams based on scheduled time
-     - Auto-publish results once evaluation is complete
-     - Notify students before exam start and after result publication
-     - Auto-generate exam room codes for live sessions
-     - Flag inconsistent or late submissions for review
-     - Add admin-configurable toggles to enable/disable automation per exam
-
 3. **Improve Question Selection for Colleges**
    - Status: Pending
    - Description: Make the question selection process easier and more intuitive for college administrators
@@ -110,18 +46,6 @@
      - Validate rule compliance (e.g. time limits, unattempted behavior)
      - Ensure smooth UX and functional stability
      - Test how much images can be stored for offline exam
-
-6. **Show Result in College Portal**
-   - Status: Pending
-   - Description: Display student exam results within the college portal view for authorized college admins
-   - Components Affected:
-     - College dashboard
-     - Result viewer module
-     - Access control system
-   - Technical Requirements:
-     - Filter results by exam, batch, student
-     - Ensure only authorized colleges can view their student data
-     - Include summary metrics and PDF export option
 
 ### **Priority: Medium**
 

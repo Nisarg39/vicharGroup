@@ -97,6 +97,23 @@ const ExamResultSchema = new mongoose.Schema({
       type: Number, // percentage
       default: 0,
     },
+    // Additional detailed stats for performance analysis
+    totalQuestionsAttempted: {
+      type: Number,
+      default: 0,
+    },
+    markedForReview: {
+      type: Number,
+      default: 0,
+    },
+    changedAnswers: {
+      type: Number,
+      default: 0,
+    },
+    averageTimePerQuestion: {
+      type: Number, // in seconds
+      default: 0,
+    },
   },
   // Negative marking rule information used for this exam
   negativeMarkingInfo: {
@@ -116,6 +133,146 @@ const ExamResultSchema = new mongoose.Schema({
       default: "exam_specific"
     }
   },
+  // Subject-wise performance tracking
+  subjectPerformance: [{
+    subject: {
+      type: String,
+      required: true,
+    },
+    totalQuestions: {
+      type: Number,
+      required: true,
+    },
+    attempted: {
+      type: Number,
+      default: 0,
+    },
+    correct: {
+      type: Number,
+      default: 0,
+    },
+    incorrect: {
+      type: Number,
+      default: 0,
+    },
+    unanswered: {
+      type: Number,
+      default: 0,
+    },
+    marks: {
+      type: Number,
+      default: 0,
+    },
+    totalMarks: {
+      type: Number,
+      required: true,
+    },
+    timeSpent: {
+      type: Number, // in seconds
+      default: 0,
+    },
+    accuracy: {
+      type: Number, // percentage
+      default: 0,
+    },
+    difficultyBreakdown: {
+      easy: {
+        attempted: { type: Number, default: 0 },
+        correct: { type: Number, default: 0 },
+      },
+      medium: {
+        attempted: { type: Number, default: 0 },
+        correct: { type: Number, default: 0 },
+      },
+      hard: {
+        attempted: { type: Number, default: 0 },
+        correct: { type: Number, default: 0 },
+      },
+    },
+  }],
+  
+  // Comparative performance data
+  comparativeStats: {
+    classAverage: {
+      type: Number,
+      default: 0,
+    },
+    streamAverage: {
+      type: Number,
+      default: 0,
+    },
+    collegeAverage: {
+      type: Number,
+      default: 0,
+    },
+    percentileRank: {
+      type: Number,
+      default: 0,
+    },
+    rank: {
+      type: Number,
+      default: 0,
+    },
+    totalStudentsAppeared: {
+      type: Number,
+      default: 0,
+    },
+    betterThanPercentage: {
+      type: Number,
+      default: 0,
+    },
+    topScore: {
+      type: Number,
+      default: 0,
+    },
+    bottomScore: {
+      type: Number,
+      default: 0,
+    },
+  },
+  
+  // Performance insights and recommendations
+  performanceInsights: {
+    strengths: [{
+      type: String,
+    }],
+    improvements: [{
+      type: String,
+    }],
+    recommendations: [{
+      type: String,
+    }],
+    studyPattern: {
+      type: String,
+    },
+    performanceCategory: {
+      type: String,
+      enum: ["Outstanding", "Excellent", "Good", "Average", "Below Average", "Needs Improvement"],
+      default: "Average",
+    },
+  },
+  
+  // PDF report metadata
+  pdfReport: {
+    generated: {
+      type: Boolean,
+      default: false,
+    },
+    generatedAt: {
+      type: Date,
+    },
+    filePath: {
+      type: String,
+    },
+    downloadCount: {
+      type: Number,
+      default: 0,
+    },
+    lastDownloaded: {
+      type: Date,
+    },
+  },
+  
   // Additional metadata
   deviceInfo: {
     userAgent: String,

@@ -628,7 +628,15 @@ export async function feelingConfusedMessage(details){
 export async function collegeRequestStatus(details){
     try {
         await connectDB()
-        const collegeRequest = await StudentRequest.find({studentId: details.studentId})
+        const middleware = await verifyStudentMiddleware(details.token)
+        if(!middleware.success){
+            return {
+                message: "Student verification failed",
+                success: false,
+                collegeRequest: null
+            }
+        }
+        const collegeRequest = await StudentRequest.find({student: middleware.student._id})
         .populate('college')
         .lean()
         if(!collegeRequest){

@@ -72,6 +72,8 @@ export default function ModalFooter({
   handleQuestionToggle,
   getSelectedQuestionDetails,
   examSubjects = [],
+  calculateTotalMarks,
+  examStream,
 }) {
   // For all questions in DB, we need the full question list for current filters
   // Assigned difficulty breakdown
@@ -140,10 +142,13 @@ export default function ModalFooter({
                   </div>
                   <span className="text-sm text-green-700 font-medium">
                     Total Marks: <span className="font-bold text-green-800">
-                      {selectedQuestions.reduce((total, questionId) => {
-                        const question = questions.find((q) => q._id === questionId);
-                        return total + (question?.marks || 4);
-                      }, 0)}
+                      {calculateTotalMarks ? 
+                        calculateTotalMarks(selectedQuestions, allSelectedQuestions, examStream) : 
+                        selectedQuestions.reduce((total, questionId) => {
+                          const question = allSelectedQuestions.find((q) => q._id === questionId);
+                          return total + (question?.marks || 4);
+                        }, 0)
+                      }
                     </span>
                   </span>
                 </div>

@@ -502,86 +502,101 @@ export default function ExamHome({ examId }) {
     }
 
     const handleExamComplete = async (examData) => {
-        const submission = {
-            examId,
-            studentId: student._id,
-            answers: examData.answers,
-            score: examData.score,
-            timeTaken: examData.timeTaken,
-            completedAt: new Date().toISOString(),
-            timestamp: Date.now()
-        };
-
-        if (isOnline) {
-            // Submit immediately if online
-            const result = await submitExamResult({
+        try {
+            const submission = {
                 examId,
                 studentId: student._id,
                 answers: examData.answers,
                 score: examData.score,
-                totalMarks: exam?.totalMarks || 0,
-                timeTaken: examData.timeTaken || 0,
+                timeTaken: examData.timeTaken,
                 completedAt: new Date().toISOString(),
-                isOfflineSubmission: false
-            });
+                timestamp: Date.now()
+            };
 
-            if (result.success) {
-                setExamResult(result.result);
+            if (isOnline) {
+                // Submit immediately if online
+                console.log('Submitting exam result:', {
+                    examId,
+                    studentId: student._id,
+                    answerCount: Object.keys(examData.answers).length,
+                    score: examData.score
+                });
                 
-                // IMMEDIATELY refresh attempts after submission to validate reattempt logic
-                const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                if (updatedAttempts.success) {
-                    setAllAttempts(updatedAttempts.attempts);
-                    // Update hasAttempted state since we now have at least one attempt
-                    setHasAttempted(true);
-                    // Update previous result state for the "View Previous Result" functionality
-                    if (updatedAttempts.attempts.length > 0) {
-                        setPreviousResult({
-                            score: result.result.score,
-                            totalMarks: result.result.totalMarks,
-                            percentage: result.result.percentage,
-                            correctAnswers: result.result.statistics?.correctAnswers || 0,
-                            incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                            unattempted: result.result.statistics?.unattempted || 0,
-                            timeTaken: result.result.timeTaken,
-                            completedAt: result.result.completedAt,
-                            questionAnalysis: result.result.questionAnalysis || []
-                        });
+                const result = await submitExamResult({
+                    examId,
+                    studentId: student._id,
+                    answers: examData.answers,
+                    score: examData.score,
+                    totalMarks: exam?.totalMarks || 0,
+                    timeTaken: examData.timeTaken || 0,
+                    completedAt: new Date().toISOString(),
+                    isOfflineSubmission: false
+                });
+                
+                console.log('Submit result:', result);
+
+                if (result.success) {
+                    setExamResult(result.result);
+                    
+                    // IMMEDIATELY refresh attempts after submission to validate reattempt logic
+                    const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                    if (updatedAttempts.success) {
+                        setAllAttempts(updatedAttempts.attempts);
+                        // Update hasAttempted state since we now have at least one attempt
+                        setHasAttempted(true);
+                        // Update previous result state for the "View Previous Result" functionality
+                        if (updatedAttempts.attempts.length > 0) {
+                            setPreviousResult({
+                                score: result.result.score,
+                                totalMarks: result.result.totalMarks,
+                                percentage: result.result.percentage,
+                                correctAnswers: result.result.statistics?.correctAnswers || 0,
+                                incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                                unattempted: result.result.statistics?.unattempted || 0,
+                                timeTaken: result.result.timeTaken,
+                                completedAt: result.result.completedAt,
+                                questionAnalysis: result.result.questionAnalysis || []
+                            });
+                        }
                     }
-                }
-                
-                setCurrentView('result');
-                toast.success('Exam submitted successfully!');
-                // Remove any pending offline submission for this exam (if it exists)
-                const updatedSubmissions = offlineSubmissions.filter(sub => sub.examId !== examId);
-                setOfflineSubmissions(updatedSubmissions);
-                if (updatedSubmissions.length === 0) {
-                    localStorage.removeItem('offline_submissions');
+                    
+                    setCurrentView('result');
+                    toast.success('Exam submitted successfully!');
+                    // Remove any pending offline submission for this exam (if it exists)
+                    const updatedSubmissions = offlineSubmissions.filter(sub => sub.examId !== examId);
+                    setOfflineSubmissions(updatedSubmissions);
+                    if (updatedSubmissions.length === 0) {
+                        localStorage.removeItem('offline_submissions');
+                    } else {
+                        localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
+                    }
                 } else {
+                    toast.error('Failed to submit exam: ' + result.message);
+                    setCurrentView('home');
+                }
+            } else {
+                // Add to offlineSubmissions only if offline
+                const existingSubmission = offlineSubmissions.find(sub => sub.examId === examId);
+                if (existingSubmission) {
+                    // Replace the existing submission with the new one
+                    const updatedSubmissions = offlineSubmissions.map(sub =>
+                        sub.examId === examId ? submission : sub
+                    );
+                    setOfflineSubmissions(updatedSubmissions);
+                    localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
+                } else {
+                    // Add new submission
+                    const updatedSubmissions = [...offlineSubmissions, submission];
+                    setOfflineSubmissions(updatedSubmissions);
                     localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
                 }
-            } else {
-                toast.error('Failed to submit exam: ' + result.message);
+                toast.success('Exam completed! Will sync when connection is restored.');
                 setCurrentView('home');
             }
-        } else {
-            // Add to offlineSubmissions only if offline
-            const existingSubmission = offlineSubmissions.find(sub => sub.examId === examId);
-            if (existingSubmission) {
-                // Replace the existing submission with the new one
-                const updatedSubmissions = offlineSubmissions.map(sub =>
-                    sub.examId === examId ? submission : sub
-                );
-                setOfflineSubmissions(updatedSubmissions);
-                localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
-            } else {
-                // Add new submission
-                const updatedSubmissions = [...offlineSubmissions, submission];
-                setOfflineSubmissions(updatedSubmissions);
-                localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
-            }
-            toast.success('Exam completed! Will sync when connection is restored.');
-            setCurrentView('home');
+        } catch (error) {
+            console.error('Error submitting exam:', error);
+            toast.error('An error occurred while submitting the exam. Please try again.');
+            // Don't change the view on error, stay on exam page
         }
     };
 

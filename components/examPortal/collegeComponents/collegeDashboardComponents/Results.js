@@ -1,17 +1,80 @@
+"use client"
+
+import { useState } from 'react'
+import ResultsOverview from './collegeResultsComponents/ResultsOverview'
+import ExamResultsList from './collegeResultsComponents/ExamResultsList'
+import StudentResultsList from './collegeResultsComponents/StudentResultsList'
+import StudentPerformanceView from './collegeResultsComponents/StudentPerformanceView'
+import ExamStudentStats from './collegeResultsComponents/ExamStudentStats'
+
 export default function Results() {
+    const [currentView, setCurrentView] = useState('overview')
+    const [navigationData, setNavigationData] = useState({})
+
+    const handleNavigate = (view, data = {}) => {
+        setCurrentView(view)
+        setNavigationData(data)
+    }
+
+    const handleBack = () => {
+        // Navigate back to previous view based on current view
+        switch (currentView) {
+            case 'exams':
+            case 'students':
+                setCurrentView('overview')
+                break
+            case 'examStudentStats':
+                setCurrentView('exams')
+                break
+            case 'studentDetails':
+            case 'studentAnalytics':
+                setCurrentView('students')
+                break
+            default:
+                setCurrentView('overview')
+        }
+        setNavigationData({})
+    }
+
+    const renderCurrentView = () => {
+        switch (currentView) {
+            case 'overview':
+                return <ResultsOverview onNavigate={handleNavigate} />
+            
+            case 'exams':
+                return <ExamResultsList onNavigate={handleNavigate} onBack={handleBack} />
+            
+            case 'examStudentStats':
+                return (
+                    <ExamStudentStats 
+                        examId={navigationData.examId}
+                        examData={navigationData.examData}
+                        onNavigate={handleNavigate} 
+                        onBack={handleBack} 
+                    />
+                )
+            
+            case 'students':
+                return <StudentResultsList onNavigate={handleNavigate} onBack={handleBack} />
+            
+            case 'studentDetails':
+            case 'studentAnalytics':
+                return (
+                    <StudentPerformanceView 
+                        studentId={navigationData.studentId}
+                        onNavigate={handleNavigate} 
+                        onBack={handleBack} 
+                    />
+                )
+            
+            default:
+                return <ResultsOverview onNavigate={handleNavigate} />
+        }
+    }
+
     return (
-        <main className="p-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-800">Exam Results</h2>
-                </div>
-                <div className="p-6">
-                    <div className="space-y-4">
-                        {/* Add results content here */}
-                        <p className="text-gray-500">View and analyze exam results here.</p>
-                    </div>
-                </div>
-            </div>
-        </main>
+        <div className="w-full min-h-screen">
+            {renderCurrentView()}
+        </div>
     );
 }

@@ -13,6 +13,37 @@ export default function Instructions({ exam, onStart, onBack }) {
 
     const canStart = hasReadInstructions && hasAgreedToTerms
 
+    // Get marking information from the preview rules provided by server
+    const getMarkingInfo = () => {
+        // Check if we have marking rule preview from server
+        if (exam?.markingRulePreview?.hasMarkingRules) {
+            return {
+                positiveMarks: exam.markingRulePreview.positiveMarks,
+                negativeMarks: exam.markingRulePreview.negativeMarks,
+                hasSpecificRules: true,
+                ruleDescription: exam.markingRulePreview.ruleDescription,
+                ruleSource: exam.markingRulePreview.ruleSource,
+                stream: exam?.stream || "",
+                totalMarks: exam?.totalMarks || null
+            }
+        }
+        
+        // Fallback to exam-specific marking if available
+        const hasExamSpecificMarking = !!(exam?.positiveMarks || exam?.marks) || exam?.negativeMarks !== undefined
+        
+        return {
+            positiveMarks: exam?.positiveMarks || exam?.marks || null,
+            negativeMarks: exam?.negativeMarks !== undefined ? exam.negativeMarks : null,
+            hasSpecificRules: hasExamSpecificMarking,
+            ruleDescription: "Exam-specific marking",
+            ruleSource: "exam_specific",
+            stream: exam?.stream || "",
+            totalMarks: exam?.totalMarks || null
+        }
+    }
+
+    const markingInfo = getMarkingInfo()
+
     const examInstructions = [
         "Read each question carefully before answering",
         "You cannot go back to previous questions once answered",
@@ -128,52 +159,85 @@ export default function Instructions({ exam, onStart, onBack }) {
                         <CardDescription className="text-gray-600 text-base font-medium">Understanding how your answers will be evaluated</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6 relative z-10">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Correct Answer */}
-                            <div className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                                    <span className="text-green-900 font-bold text-lg">Correct Answer</span>
+                        {markingInfo.hasSpecificRules ? (
+                            // Show specific marking info if available
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Correct Answer */}
+                                <div className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                        <span className="text-green-900 font-bold text-lg">Correct Answer</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-green-800">+{markingInfo.positiveMarks}</p>
+                                    <p className="text-sm text-green-700 mt-1">marks awarded</p>
                                 </div>
-                                <p className="text-2xl font-bold text-green-800">+{exam?.positiveMarks || exam?.marks || 4}</p>
-                                <p className="text-sm text-green-700 mt-1">marks awarded</p>
-                            </div>
 
-                            {/* Incorrect Answer */}
-                            <div className="p-5 bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl border border-red-200/50 hover:shadow-md transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                                    <span className="text-red-900 font-bold text-lg">Incorrect Answer</span>
+                                {/* Incorrect Answer */}
+                                <div className="p-5 bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl border border-red-200/50 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                        <span className="text-red-900 font-bold text-lg">Incorrect Answer</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-red-800">
+                                        {markingInfo.negativeMarks !== null ? markingInfo.negativeMarks : 'As per admin rules'}
+                                    </p>
+                                    <p className="text-sm text-red-700 mt-1">marks deducted</p>
                                 </div>
-                                <p className="text-2xl font-bold text-red-800">
-                                    {exam?.negativeMarks !== undefined ? exam.negativeMarks : (exam?.stream?.toLowerCase().includes('jee') ? '-1' : '0')}
-                                </p>
-                                <p className="text-sm text-red-700 mt-1">marks deducted</p>
-                            </div>
 
-                            {/* Unanswered */}
-                            <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200/50 hover:shadow-md transition-all duration-300">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
-                                    <span className="text-gray-900 font-bold text-lg">Unanswered</span>
+                                {/* Unanswered */}
+                                <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200/50 hover:shadow-md transition-all duration-300">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+                                        <span className="text-gray-900 font-bold text-lg">Unanswered</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-gray-800">0</p>
+                                    <p className="text-sm text-gray-700 mt-1">no marks</p>
                                 </div>
-                                <p className="text-2xl font-bold text-gray-800">0</p>
-                                <p className="text-sm text-gray-700 mt-1">no marks</p>
                             </div>
-                        </div>
+                        ) : (
+                            // Show generic message when no specific rules available
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50">
+                                <div className="text-center">
+                                    <div className="p-3 bg-blue-500 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                        <Target className="w-8 h-8 text-white" />
+                                    </div>
+                                    <h4 className="font-bold text-blue-900 mb-3 text-lg">Marking Scheme</h4>
+                                    <p className="text-blue-800 text-base mb-4">
+                                        This exam will be evaluated according to the marking rules configured by the system administrator.
+                                    </p>
+                                    <div className="bg-white/60 rounded-xl p-4 border border-blue-200/50">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Stream:</span>
+                                                <span className="font-medium text-gray-900">{markingInfo.stream || 'Not specified'}</span>
+                                            </div>
+                                            {markingInfo.totalMarks && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Total Marks:</span>
+                                                    <span className="font-medium text-gray-900">{markingInfo.totalMarks}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="text-blue-700 text-sm mt-4">
+                                        <strong>Note:</strong> The exact marking details will be displayed in your result after exam completion.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
-                        {/* Additional Marking Info */}
+                        {/* Important Guidelines */}
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50">
                             <div className="flex items-start gap-3">
                                 <div className="p-2 bg-blue-500 rounded-lg">
                                     <FileText className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-blue-900 mb-2">Important Marking Guidelines</h4>
+                                    <h4 className="font-bold text-blue-900 mb-2">Important Guidelines</h4>
                                     <ul className="space-y-2 text-sm text-blue-800">
                                         <li className="flex items-start gap-2">
                                             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                                            <span>Each question carries equal marks unless specified otherwise</span>
+                                            <span>Marking scheme is configured by system administrators based on exam type and subject</span>
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
@@ -181,14 +245,40 @@ export default function Instructions({ exam, onStart, onBack }) {
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                                            <span>Numerical questions: Enter your answer as a number (usually no negative marking)</span>
+                                            <span>Numerical questions: Enter your answer as a number</span>
                                         </li>
-                                        {exam?.negativeMarks > 0 && (
+                                        {markingInfo.hasSpecificRules && markingInfo.negativeMarks !== null && (
+                                            <>
+                                                {markingInfo.negativeMarks < 0 && (
+                                                    <li className="flex items-start gap-2">
+                                                        <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                        <span className="text-red-800 font-medium">Negative marking is applicable - choose your answers carefully</span>
+                                                    </li>
+                                                )}
+                                                {markingInfo.negativeMarks === 0 && (
+                                                    <li className="flex items-start gap-2">
+                                                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                        <span className="text-green-800 font-medium">No negative marking - attempt all questions without penalty</span>
+                                                    </li>
+                                                )}
+                                            </>
+                                        )}
+                                        {markingInfo.hasSpecificRules && markingInfo.ruleDescription && (
                                             <li className="flex items-start gap-2">
-                                                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                                                <span className="text-red-800 font-medium">Negative marking is applicable - choose your answers carefully</span>
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                <span><strong>Rule Applied:</strong> {markingInfo.ruleDescription}</span>
                                             </li>
                                         )}
+                                        {markingInfo.hasSpecificRules && markingInfo.ruleSource && (
+                                            <li className="flex items-start gap-2">
+                                                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                <span><strong>Source:</strong> {markingInfo.ruleSource === 'super_admin_default' ? 'System Default Rules' : 'Exam-Specific Rules'}</span>
+                                            </li>
+                                        )}
+                                        <li className="flex items-start gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                            <span>The complete marking breakdown will be shown in your exam result</span>
+                                        </li>
                                     </ul>
                                 </div>
                             </div>

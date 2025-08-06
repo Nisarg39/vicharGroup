@@ -29,11 +29,15 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
   const [selectedStreams, setSelectedStreams] = useState([]); // NEW: for streams
   const [selectedClass, setSelectedClass] = useState([]); // Now an array for multi-select
 
+
   const getAllSubjects = () => {
     const subjects = new Set();
     ['JEE', 'NEET', 'MHT-CET'].forEach(stream => {
       Object.keys(data[stream] || {}).forEach(subject => {
-        subjects.add(subject);
+        // Skip positiveMarking and negativeMarking keys, only get subjects
+        if (subject !== 'positiveMarking' && subject !== 'negativeMarking') {
+          subjects.add(subject);
+        }
       });
     });
     return Array.from(subjects);
@@ -47,11 +51,15 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
     const subjects = new Set();
     streams.forEach(stream => {
       Object.keys(data[stream] || {}).forEach(subject => {
-        subjects.add(subject);
+        // Skip positiveMarking and negativeMarking keys, only get subjects
+        if (subject !== 'positiveMarking' && subject !== 'negativeMarking') {
+          subjects.add(subject);
+        }
       });
     });
     return Array.from(subjects);
   };
+
 
   const validateField = (name, value) => {
     switch (name) {
@@ -151,7 +159,7 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
       updatedStreams = [...selectedStreams, stream];
     }
     setSelectedStreams(updatedStreams);
-    // Auto-select subjects for selected streams
+    // Auto-select subjects for selected streams (but allow manual override)
     const autoSubjects = getSubjectsForStreams(updatedStreams);
     setSelectedSubjects(autoSubjects);
   };
@@ -213,8 +221,8 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
       collegeLogo: newCollege.collegeLogo,
       password: newCollege.password,
       isActive: newCollege.isActive,
-      allocatedStreams: selectedStreams, // NEW
-      allocatedClasses: selectedClass, // Now an array
+      allocatedStreams: selectedStreams,
+      allocatedClasses: selectedClass,
       allocatedSubjects: selectedSubjects
     };
 
@@ -239,8 +247,8 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
       });
       setImagePreview('');
       setSelectedSubjects([]);
-      setSelectedStreams([]); // NEW
-      setSelectedClass([]); // NEW
+      setSelectedStreams([]);
+      setSelectedClass([]);
       if (onAddCollege) {
         await onAddCollege();
       }
@@ -523,34 +531,53 @@ export default function AddCollege({ onAddCollege, setShowAddForm }) {
               )}
             </div>
           )}
-          {/* Allocated Subjects (auto-checked for selected streams) */}
+          {/* Allocated Subjects (auto-selected based on streams, but manually adjustable) */}
           <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Allocated Subjects
             </label>
-            <div className="grid grid-cols-3 gap-4">
-              {getAllSubjects().map((subject) => (
-                <div key={subject} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={subject}
-                    name={subject}
-                    value={subject}
-                    checked={selectedSubjects.includes(subject)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedSubjects([...selectedSubjects, subject]);
-                      } else {
-                        setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
-                      }
-                    }}
-                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                  />
-                  <label htmlFor={subject} className="ml-2 text-sm text-gray-700">
-                    {subject}
-                  </label>
-                </div>
-              ))}
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              {!selectedStreams.length ? (
+                <p className="text-sm text-gray-500 italic">Please select streams first to see available subjects</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-4 mb-3">
+                    {getAllSubjects().map((subject) => (
+                      <div key={subject} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={subject}
+                          name={subject}
+                          value={subject}
+                          checked={selectedSubjects.includes(subject)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSubjects([...selectedSubjects, subject]);
+                            } else {
+                              setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                        />
+                        <label htmlFor={subject} className="ml-2 text-sm text-gray-700">
+                          {subject}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="text-xs text-blue-800">
+                        <p className="font-medium">Note:</p>
+                        <p>Subjects are auto-selected based on streams, but you can manually adjust them. Marking rules will be applied automatically by the system based on the selected streams.</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div>

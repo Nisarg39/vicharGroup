@@ -9,6 +9,10 @@ import ExamResult from "../../models/exam_portal/examResult";
 import MasterMcqQuestion from "../../models/exam_portal/master_mcq_question";
 import College from "../../models/exam_portal/college";
 import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegativeMarkingRule";
+// Import caching utilities
+import { getCachedExam, getCachedEligibility, getCachedQuestions, clearExamCache } from "../../utils/cache";
+// Import retry handler
+import { retryExamSubmission, withRetry } from "../../utils/retryHandler";
 
 
 // im getting error - Error: Maximum call stack size exceeded this has happened to me alot of times in this project and to solve it use JSON.parse(JSON.stringify(exam)) wherever needed
@@ -32,6 +36,7 @@ async function getNegativeMarkingRuleForExam(exam) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
             description: rule.description || `Default rule: ${rule.stream} > ${rule.standard}th > ${rule.subject}`,
             defaultRuleId: rule._id
           };
@@ -43,6 +48,7 @@ async function getNegativeMarkingRuleForExam(exam) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
             description: rule.description || `Default rule: ${rule.stream} > ${rule.standard}th`,
             defaultRuleId: rule._id
           };
@@ -53,6 +59,7 @@ async function getNegativeMarkingRuleForExam(exam) {
         return {
           source: "super_admin_default",
           negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
           description: rule.description || `Default rule: ${rule.stream}`,
           defaultRuleId: rule._id
         };
@@ -63,6 +70,7 @@ async function getNegativeMarkingRuleForExam(exam) {
     return {
       source: "exam_specific",
       negativeMarks: exam.negativeMarks || 0,
+      positiveMarks: exam.positiveMarks || exam.marks || 4, // Use exam's positive marks or default to 4
       description: exam.negativeMarks > 0 ? `Exam-specific: -${exam.negativeMarks} marks per wrong answer` : "No negative marking",
       ruleId: null,
       defaultRuleId: null
@@ -74,6 +82,7 @@ async function getNegativeMarkingRuleForExam(exam) {
     return {
       source: "exam_specific",
       negativeMarks: exam.negativeMarks || 0,
+      positiveMarks: exam.positiveMarks || exam.marks || 4, // Use exam's positive marks or default to 4
       description: "Fallback to exam setting",
       ruleId: null,
       defaultRuleId: null
@@ -255,12 +264,30 @@ export async function checkExamEligibility(details) {
    * checkExamEligibility(details)
    * Flow:
    * 1. Validate examId and studentId
-   * 2. Fetch the exam and check if it exists
-   * 3. Check if the exam is active (status: 'active' or 'scheduled')
-   * 4. Fetch the student's enrollment in the college
-   * 5. Check if the student is enrolled, allocated the subject, and in the correct class
-   * 6. Return eligibility result
+   * 2. Check cache for eligibility result
+   * 3. Fetch the exam and check if it exists
+   * 4. Check if the exam is active (status: 'active' or 'scheduled')
+   * 5. Fetch the student's enrollment in the college
+   * 6. Check if the student is enrolled, allocated the subject, and in the correct class
+   * 7. Cache successful eligibility results
+   * 8. Return eligibility result
    */
+  
+  // Try to get cached eligibility first
+  const cachedResult = await getCachedEligibility(
+    details.examId,
+    details.studentId,
+    async () => {
+      // This function is only called if not in cache
+      return await checkExamEligibilityUncached(details);
+    }
+  );
+  
+  return cachedResult;
+}
+
+// Uncached version of checkExamEligibility
+async function checkExamEligibilityUncached(details) {
   try {
     await connectDB();
 
@@ -278,11 +305,13 @@ export async function checkExamEligibility(details) {
       };
     }
 
-    // 2. Fetch the exam and check if it exists
-    const exam = await Exam.findById(details.examId)
-      .populate("college")
-      .populate("examQuestions")
-      .lean();
+    // 2. Fetch the exam with caching
+    const exam = await getCachedExam(details.examId, async () => {
+      return await Exam.findById(details.examId)
+        .populate("college")
+        .populate("examQuestions")
+        .lean();
+    });
     
     if (!exam) {
       return {
@@ -315,11 +344,9 @@ export async function checkExamEligibility(details) {
     const enrolledStudent = await EnrolledStudent.findOne({
       college: college._id,
       student: details.studentId,
-    });
+    }).lean(); // Added .lean() for performance
 
     // 5. Check if the student is enrolled by checking the allocated stream and class
-    // console.log(exam)
-    // console.log(enrolledStudent)
     const isStreamMatch = enrolledStudent?.allocatedStreams.includes(exam.stream);
     const isClassMatch =
       enrolledStudent?.class === `${exam.standard}` ||
@@ -337,11 +364,26 @@ export async function checkExamEligibility(details) {
       };
     }
 
-    // 6. Return eligibility result
+    // 6. Get preview of marking rules that would be applied to this exam
+    const previewMarkingRules = await getNegativeMarkingRuleForExam(exam);
+    
+    // Add marking rules to exam object for Instructions component
+    const examWithMarkingRules = {
+      ...exam,
+      markingRulePreview: {
+        positiveMarks: previewMarkingRules.positiveMarks,
+        negativeMarks: previewMarkingRules.negativeMarks,
+        ruleDescription: previewMarkingRules.description,
+        ruleSource: previewMarkingRules.source,
+        hasMarkingRules: true
+      }
+    };
+
+    // 7. Return eligibility result
     return {
       success: true,
       message: "You are eligible to give this exam",
-      exam: exam,
+      exam: examWithMarkingRules,
     };
   } catch (error) {
     console.error("Error checking exam eligibility:", error);
@@ -360,15 +402,28 @@ export async function checkExamEligibility(details) {
 
 export async function submitExamResult(examData) {
   /**
-   * submitExamResult(examData)
+   * submitExamResult(examData) - WITH RETRY LOGIC
    * Flow:
-   * 1. Validate exam data
-   * 2. Check attempt limit for this student and exam
-   * 3. Calculate final score with negative marking
-   * 4. Store new exam result (do not overwrite)
-   * 5. Update exam statistics
-   * 6. Return submission result
+   * 1. Use retry wrapper for submission
+   * 2. Validate exam data
+   * 3. Check attempt limit for this student and exam
+   * 4. Calculate final score with negative marking
+   * 5. Store new exam result (do not overwrite)
+   * 6. Update exam statistics
+   * 7. Return submission result
+   * 
+   * Retry Logic:
+   * - 4 retry attempts with exponential backoff
+   * - Failed submissions are queued for manual recovery
+   * - Students are notified if submission is queued
    */
+  
+  // Wrap the entire submission in retry logic
+  return await retryExamSubmission(submitExamResultInternal, examData);
+}
+
+// Internal function that does the actual submission
+async function submitExamResultInternal(examData) {
   try {
     await connectDB();
 
@@ -584,7 +639,54 @@ export async function submitExamResult(examData) {
     // 4. Get exam-wide negative marking summary for legacy compatibility
     const examNegativeMarkingRule = await getNegativeMarkingRuleForExam(exam);
 
-    // 5. Create new exam result (do not overwrite)
+    // 5. Calculate subject-wise performance
+    const subjectPerformance = {};
+    
+    exam.examQuestions.forEach((question, index) => {
+      const subject = question.subject || 'Unknown';
+      const questionResult = questionAnalysis[index];
+      
+      if (!subjectPerformance[subject]) {
+        subjectPerformance[subject] = {
+          subject: subject,
+          totalQuestions: 0,
+          attempted: 0,
+          correct: 0,
+          incorrect: 0,
+          unanswered: 0,
+          marks: 0,
+          totalMarks: 0,
+          timeSpent: 0,
+          accuracy: 0
+        };
+      }
+      
+      const subjectStats = subjectPerformance[subject];
+      subjectStats.totalQuestions++;
+      subjectStats.totalMarks += question.marks || 4;
+      
+      if (questionResult.status === 'correct' || questionResult.status === 'partially_correct') {
+        subjectStats.attempted++;
+        subjectStats.correct++;
+        subjectStats.marks += questionResult.marks;
+      } else if (questionResult.status === 'incorrect') {
+        subjectStats.attempted++;
+        subjectStats.incorrect++;
+        subjectStats.marks += questionResult.marks; // This will be negative for incorrect answers
+      } else {
+        subjectStats.unanswered++;
+      }
+    });
+    
+    // Calculate accuracy and percentage for each subject
+    Object.values(subjectPerformance).forEach(subject => {
+      subject.accuracy = subject.attempted > 0 ? 
+        Math.round((subject.correct / subject.attempted) * 100 * 100) / 100 : 0;
+      subject.percentage = subject.totalMarks > 0 ? 
+        Math.round((subject.marks / subject.totalMarks) * 100 * 100) / 100 : 0;
+    });
+
+    // 6. Create new exam result (do not overwrite)
     const examResult = new ExamResult({
       exam: examId,
       student: studentId,
@@ -603,7 +705,9 @@ export async function submitExamResult(examData) {
         incorrectAnswers,
         unattempted,
         accuracy: (correctAnswersCount / exam.examQuestions.length) * 100,
+        totalQuestionsAttempted: correctAnswersCount + incorrectAnswers,
       },
+      subjectPerformance: Object.values(subjectPerformance),
       negativeMarkingInfo: {
         ruleUsed: null, // College-specific rules no longer exist
         defaultRuleUsed: examNegativeMarkingRule.defaultRuleId,
@@ -613,7 +717,7 @@ export async function submitExamResult(examData) {
       },
     });
     await examResult.save();
-    // 6. Update exam with result
+    // 7. Update exam with result
     exam.examResults.push(examResult._id);
     await exam.save();
 
@@ -965,7 +1069,7 @@ export async function getAllExamAttempts(studentId, examId) {
       .sort({ completedAt: -1 })
       .lean();
     
-    console.log("Found", results.length, "results from database");
+    // console.log("Found", results.length, "results from database");
     
     // Simple serialization without population for now
     const cleanResults = results.map((result, i) => {
@@ -988,7 +1092,7 @@ export async function getAllExamAttempts(studentId, examId) {
       };
     });
     
-    console.log("Returning", cleanResults.length, "clean results");
+    // console.log("Returning", cleanResults.length, "clean results");
     return {
       success: true,
       attempts: cleanResults,

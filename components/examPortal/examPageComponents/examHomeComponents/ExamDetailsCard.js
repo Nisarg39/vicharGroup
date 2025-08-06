@@ -1,10 +1,11 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../ui/card"
 import { Button } from "../../../ui/button"
 import { Badge } from "../../../ui/badge"
 import { Separator } from "../../../ui/separator"
-import { Clock, AlertCircle, Play, BarChart3, BookOpen, Award, WifiOff } from "lucide-react"
+import { Clock, AlertCircle, Play, BarChart3, BookOpen, Award, WifiOff, Timer } from "lucide-react"
 
 export default function ExamDetailsCard({ 
     exam, 
@@ -17,9 +18,102 @@ export default function ExamDetailsCard({
     onViewPreviousResult,
     isEligible // NEW: eligibility prop
 }) {
+    // State for countdown timers
+    const [currentTime, setCurrentTime] = useState(new Date())
+
+    // Update current time every second for real-time countdowns
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(new Date())
+        }, 1000)
+
+        return () => clearInterval(interval)
+    }, [])
+
     if (!exam) return null
 
     const canRetake = exam && allAttempts.length < (exam.reattempt || 1)
+
+    // Format countdown time
+    const formatCountdown = (milliseconds) => {
+        if (milliseconds <= 0) return "00:00:00"
+        
+        const totalSeconds = Math.floor(milliseconds / 1000)
+        const days = Math.floor(totalSeconds / (24 * 3600))
+        const hours = Math.floor((totalSeconds % (24 * 3600)) / 3600)
+        const minutes = Math.floor((totalSeconds % 3600) / 60)
+        const seconds = totalSeconds % 60
+
+        if (days > 0) {
+            return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        } else {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        }
+    }
+
+    // Timing validation for scheduled exams with countdown
+    const getExamTimingStatus = () => {
+        // Only apply timing restrictions for scheduled exams
+        if (exam.examAvailability !== 'scheduled' || !exam.startTime || !exam.endTime) {
+            return { canStart: true, canContinue: true, message: null, countdown: null, countdownType: null }
+        }
+
+        const now = currentTime
+        const startTime = new Date(exam.startTime)
+        const endTime = new Date(exam.endTime)
+        const continueDeadline = new Date(endTime.getTime() + 30 * 60 * 1000) // 30 minutes after end time
+
+        // Check if exam hasn't started yet
+        if (now < startTime) {
+            const timeUntilStart = startTime.getTime() - now.getTime()
+            return {
+                canStart: false,
+                canContinue: false,
+                message: `Exam will start on ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString()}`,
+                countdown: formatCountdown(timeUntilStart),
+                countdownType: 'start',
+                countdownLabel: 'Time until exam starts'
+            }
+        }
+
+        // Check if exam has ended
+        if (now > endTime) {
+            // Allow continue exam only within 30 minutes of end time
+            const canContinue = now <= continueDeadline
+            if (canContinue) {
+                const timeUntilContinueDeadline = continueDeadline.getTime() - now.getTime()
+                return {
+                    canStart: false,
+                    canContinue: true,
+                    message: `Exam has ended. You can continue until ${continueDeadline.toLocaleTimeString()}`,
+                    countdown: formatCountdown(timeUntilContinueDeadline),
+                    countdownType: 'continue',
+                    countdownLabel: 'Time left to continue exam'
+                }
+            } else {
+                return {
+                    canStart: false,
+                    canContinue: false,
+                    message: `Exam ended on ${endTime.toLocaleDateString()} at ${endTime.toLocaleTimeString()}`,
+                    countdown: null,
+                    countdownType: null
+                }
+            }
+        }
+
+        // Exam is currently active
+        const timeUntilEnd = endTime.getTime() - now.getTime()
+        return {
+            canStart: true,
+            canContinue: true,
+            message: `Exam ends on ${endTime.toLocaleDateString()} at ${endTime.toLocaleTimeString()}`,
+            countdown: formatCountdown(timeUntilEnd),
+            countdownType: 'end',
+            countdownLabel: 'Time until exam ends'
+        }
+    }
+
+    const timingStatus = getExamTimingStatus()
 
     return (
         <Card className="bg-white/80 backdrop-blur-2xl shadow-2xl border border-white/30 rounded-3xl overflow-hidden group hover:shadow-3xl transition-all duration-500 relative">
@@ -85,6 +179,107 @@ export default function ExamDetailsCard({
                     </div>
                 </div>
 
+                {/* Exam Timing Information for Scheduled Exams */}
+                {exam.examAvailability === 'scheduled' && exam.startTime && exam.endTime && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-6 border border-indigo-100/50 backdrop-blur-sm">
+                        <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-3 text-lg">
+                            <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-md">
+                                <Clock className="w-5 h-5 text-white" />
+                            </div>
+                            Exam Schedule
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-white/70 rounded-xl p-4 border border-indigo-100/50">
+                                <p className="text-sm font-semibold text-indigo-900 mb-1">Start Time</p>
+                                <p className="text-base font-bold text-indigo-800">
+                                    {new Date(exam.startTime).toLocaleDateString()} at {new Date(exam.startTime).toLocaleTimeString()}
+                                </p>
+                            </div>
+                            <div className="bg-white/70 rounded-xl p-4 border border-indigo-100/50">
+                                <p className="text-sm font-semibold text-indigo-900 mb-1">End Time</p>
+                                <p className="text-base font-bold text-indigo-800">
+                                    {new Date(exam.endTime).toLocaleDateString()} at {new Date(exam.endTime).toLocaleTimeString()}
+                                </p>
+                            </div>
+                        </div>
+                        {timingStatus.message && (
+                            <div className={`mt-4 p-3 rounded-xl border ${
+                                timingStatus.canStart && timingStatus.canContinue 
+                                    ? 'bg-green-50 border-green-200 text-green-800' 
+                                    : !timingStatus.canStart && !timingStatus.canContinue 
+                                    ? 'bg-red-50 border-red-200 text-red-800'
+                                    : 'bg-orange-50 border-orange-200 text-orange-800'
+                            }`}>
+                                <p className="text-sm font-medium">{timingStatus.message}</p>
+                            </div>
+                        )}
+
+                        {/* Countdown Timer */}
+                        {timingStatus.countdown && (
+                            <div className={`mt-4 p-4 rounded-xl border ${
+                                timingStatus.countdownType === 'start' 
+                                    ? 'bg-blue-50 border-blue-200' 
+                                    : timingStatus.countdownType === 'end' 
+                                    ? 'bg-green-50 border-green-200'
+                                    : 'bg-orange-50 border-orange-200'
+                            }`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${
+                                            timingStatus.countdownType === 'start' 
+                                                ? 'bg-blue-500' 
+                                                : timingStatus.countdownType === 'end' 
+                                                ? 'bg-green-500'
+                                                : 'bg-orange-500'
+                                        }`}>
+                                            <Timer className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm font-semibold mb-1 ${
+                                                timingStatus.countdownType === 'start' 
+                                                    ? 'text-blue-900' 
+                                                    : timingStatus.countdownType === 'end' 
+                                                    ? 'text-green-900'
+                                                    : 'text-orange-900'
+                                            }`}>
+                                                {timingStatus.countdownLabel}
+                                            </p>
+                                            <div className={`text-2xl font-bold font-mono ${
+                                                timingStatus.countdownType === 'start' 
+                                                    ? 'text-blue-800' 
+                                                    : timingStatus.countdownType === 'end' 
+                                                    ? 'text-green-800'
+                                                    : 'text-orange-800'
+                                            }`}>
+                                                {timingStatus.countdown}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Status indicator */}
+                                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                                        timingStatus.countdownType === 'start' 
+                                            ? 'bg-blue-100 text-blue-800' 
+                                            : timingStatus.countdownType === 'end' 
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-orange-100 text-orange-800'
+                                    }`}>
+                                        <div className={`w-2 h-2 rounded-full animate-pulse ${
+                                            timingStatus.countdownType === 'start' 
+                                                ? 'bg-blue-500' 
+                                                : timingStatus.countdownType === 'end' 
+                                                ? 'bg-green-500'
+                                                : 'bg-orange-500'
+                                        }`}></div>
+                                        {timingStatus.countdownType === 'start' && 'Starts Soon'}
+                                        {timingStatus.countdownType === 'end' && 'Active Now'}
+                                        {timingStatus.countdownType === 'continue' && 'Grace Period'}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Instructions Section */}
                 {exam.examInstructions && (
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl p-6 border border-gray-100/50 backdrop-blur-sm hover:shadow-md transition-all duration-300">
@@ -112,7 +307,14 @@ export default function ExamDetailsCard({
                     {hasUncompletedExam ? (
                         <Button
                             onClick={onContinueExam}
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-3 group/button transform hover:scale-105"
+                            disabled={!isEligible || !timingStatus.canContinue}
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-3 group/button transform hover:scale-105 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            title={!isEligible 
+                                ? 'You are not eligible to attempt this exam.' 
+                                : !timingStatus.canContinue 
+                                ? 'Exam is not available at this time.'
+                                : ''
+                            }
                         >
                             <div className="p-1 bg-white/20 rounded-lg group-hover/button:bg-white/30 transition-colors duration-300">
                                 <Play className="w-5 h-5" />
@@ -124,9 +326,14 @@ export default function ExamDetailsCard({
                             {canRetake ? (
                                 <Button 
                                     onClick={onStartExam}
+                                    disabled={!isEligible || !timingStatus.canStart}
                                     className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-3 group/button transform hover:scale-105 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:hover:scale-100"
-                                    disabled={!isEligible}
-                                    title={!isEligible ? 'You are not eligible to attempt this exam.' : ''}
+                                    title={!isEligible 
+                                        ? 'You are not eligible to attempt this exam.' 
+                                        : !timingStatus.canStart 
+                                        ? 'Exam is not available at this time.'
+                                        : ''
+                                    }
                                 >
                                     <div className="p-1 bg-white/20 rounded-lg group-hover/button:bg-white/30 transition-colors duration-300">
                                         <Play className="w-5 h-5" />
@@ -155,9 +362,14 @@ export default function ExamDetailsCard({
                     ) : (
                         <Button 
                             onClick={onStartExam}
+                            disabled={!isEligible || !timingStatus.canStart}
                             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center gap-3 group/button transform hover:scale-105 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:hover:scale-100"
-                            disabled={!isEligible}
-                            title={!isEligible ? 'You are not eligible to attempt this exam.' : ''}
+                            title={!isEligible 
+                                ? 'You are not eligible to attempt this exam.' 
+                                : !timingStatus.canStart 
+                                ? 'Exam is not available at this time.'
+                                : ''
+                            }
                         >
                             <div className="p-1 bg-white/20 rounded-lg group-hover/button:bg-white/30 transition-colors duration-300">
                                 <Play className="w-5 h-5" />

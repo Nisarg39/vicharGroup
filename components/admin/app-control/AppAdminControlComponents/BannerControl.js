@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import ImageUpload from "../../../common/ImageUpload"
+import AppBannerUpload from "../../../common/AppBannerUpload"
 import { addBanner, showBanners } from '../../../../server_actions/actions/adminActions'
 import ExistingBanners from './ExistingBanners'
 
@@ -92,7 +92,7 @@ export default function BannerControl() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Banner Image (16:9 ratio)
                     </label>
-                    <ImageUpload 
+                    <AppBannerUpload 
                         onImageUploaded={handleImageUploaded} 
                         aspectRatio={16 / 9}
                     />

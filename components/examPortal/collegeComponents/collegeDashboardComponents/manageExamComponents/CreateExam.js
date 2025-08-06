@@ -260,7 +260,9 @@ export default function CreateExam({ onBack, collegeData }) {
                                                             <p className="text-sm text-gray-500 italic">Please select a stream first</p>
                                                         ) : collegeData?.allocatedSubjects?.length > 0 ? (
                                                             <div className="grid grid-cols-2 gap-3">
-                                                                {collegeData.allocatedSubjects.map((subject) => (
+                                                                {collegeData.allocatedSubjects.filter(subject => 
+                                                                    subject !== 'positiveMarking' && subject !== 'negativeMarking'
+                                                                ).map((subject) => (
                                                                     <label key={subject} className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded transition-colors">
                                                                         <Checkbox
                                                                             checked={formData.examSubject.includes(subject)}
@@ -324,26 +326,6 @@ export default function CreateExam({ onBack, collegeData }) {
                                                 </FormItem>
                                             )} />
                                         )}
-                                        {/* Positive Marking Display */}
-                                        {formData.stream && data[formData.stream]?.positiveMarking && (
-                                            <div className="flex flex-col mb-2">
-                                                <label className="text-sm font-medium text-gray-700 mb-1">
-                                                    Positive Marking
-                                                </label>
-                                                <span className="text-xs text-green-600">
-                                                    {(() => {
-                                                        const pm = data[formData.stream].positiveMarking;
-                                                        if (formData.stream === 'MHT-CET' && formData.examSubject.length === 1) {
-                                                            const subj = formData.examSubject[0];
-                                                            const val = pm.value[subj] || pm.value[Object.keys(pm.value)[0]];
-                                                            return `+${val} for each correct answer in ${subj}`;
-                                                        }
-                                                        return pm.rule;
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {/* Note: Negative marking rule display removed - using admin defaults */}
                                         <div className="col-span-1 lg:col-span-2">
                                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                 <div className="flex items-start gap-2">

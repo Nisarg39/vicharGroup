@@ -1766,7 +1766,11 @@ export async function addCollege(details) {
     try {
         await connectDB()
         
-        // Create the college first
+        // Note: Subjects are now manually selected by super admin
+        // Marking rules will be applied automatically based on streams during exam creation
+        // No need to override allocatedSubjects here - use what super admin selected
+        
+        // Create the college with the selected subjects
         const college = await College.create(details)
         
         return {

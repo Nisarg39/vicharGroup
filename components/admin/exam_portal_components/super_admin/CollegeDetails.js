@@ -7,12 +7,15 @@ import { MdEmail, MdPhone, MdPerson, MdLocationOn, MdSchool, MdCalendarToday, Md
 import { FaGlobe, FaHashtag, FaMapMarkerAlt } from 'react-icons/fa';
 import { data } from '../../../../utils/examUtils/subject_Details';
 
-// Add this helper function
+// Helper to get all subjects
 const getAllSubjects = () => {
   const subjects = new Set();
   ['JEE', 'NEET', 'MHT-CET'].forEach(stream => {
     Object.keys(data[stream] || {}).forEach(subject => {
-      subjects.add(subject);
+      // Skip positiveMarking and negativeMarking keys, only get subjects
+      if (subject !== 'positiveMarking' && subject !== 'negativeMarking') {
+        subjects.add(subject);
+      }
     });
   });
   return Array.from(subjects);
@@ -61,12 +64,16 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
     }
 
     // Auto-select subjects for selected streams
-    // Gather all subjects for all selected streams
     const getSubjectsForStreams = (streams) => {
       const subjects = new Set();
       streams.forEach(str => {
-        Object.keys(data[str] || {}).forEach(subject => {
-          subjects.add(subject);
+        const streamData = data[str] || {};
+        Object.keys(streamData).forEach(key => {
+          // Skip positiveMarking and negativeMarking keys, only get subjects
+          if (key !== 'positiveMarking' && key !== 'negativeMarking' && 
+              typeof streamData[key] === 'object') {
+            subjects.add(key);
+          }
         });
       });
       return Array.from(subjects);
@@ -496,31 +503,44 @@ export default function CollegeDetails({ college, onClose, onUpdate }) {
             <p className="text-sm font-semibold text-gray-600">Allocated Subjects</p>
           </div>
           {isEditing ? (
-            <div className="grid grid-cols-3 gap-4">
-              {getAllSubjects().map((subject) => (
-                <div key={subject} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={subject}
-                    name={subject}
-                    value={subject}
-                    checked={editedCollege.allocatedSubjects?.includes(subject)}
-                    onChange={(e) => {
-                      const subjects = e.target.checked
-                        ? [...(editedCollege.allocatedSubjects || []), subject]
-                        : editedCollege.allocatedSubjects?.filter(s => s !== subject);
-                      setEditedCollege(prev => ({
-                        ...prev,
-                        allocatedSubjects: subjects
-                      }));
-                    }}
-                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                  />
-                  <label htmlFor={subject} className="ml-2 text-sm text-gray-700">
-                    {subject}
-                  </label>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-4">
+                {getAllSubjects().map((subject) => (
+                  <div key={subject} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={subject}
+                      name={subject}
+                      value={subject}
+                      checked={editedCollege.allocatedSubjects?.includes(subject)}
+                      onChange={(e) => {
+                        const subjects = e.target.checked
+                          ? [...(editedCollege.allocatedSubjects || []), subject]
+                          : editedCollege.allocatedSubjects?.filter(s => s !== subject);
+                        setEditedCollege(prev => ({
+                          ...prev,
+                          allocatedSubjects: subjects
+                        }));
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
+                    <label htmlFor={subject} className="ml-2 text-sm text-gray-700">
+                      {subject}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-xs text-blue-800">
+                    <p className="font-medium">Note:</p>
+                    <p>Subjects are auto-selected when you change streams above, but you can manually adjust them here. Marking rules are applied automatically by the system.</p>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">

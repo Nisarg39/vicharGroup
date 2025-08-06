@@ -186,7 +186,9 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                                     {/* Checkbox-style Subject Selection */}
                                     <div className="grid grid-cols-2 gap-3 p-4 border border-gray-300 rounded-lg bg-gray-50">
                                         {collegeData?.allocatedSubjects && collegeData.allocatedSubjects.length > 0 ? (
-                                            collegeData.allocatedSubjects.map((subject) => (
+                                            collegeData.allocatedSubjects.filter(subject => 
+                                                subject !== 'positiveMarking' && subject !== 'negativeMarking'
+                                            ).map((subject) => (
                                                 <label 
                                                     key={subject}
                                                     className="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors"

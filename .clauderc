@@ -1,0 +1,29 @@
+{
+  "allowlist": [
+    "npm run dev",
+    "npm run build", 
+    "npm run start",
+    "npm run lint",
+    "npm install",
+    "git status",
+    "git add",
+    "git commit",
+    "git diff",
+    "ls",
+    "find",
+    "grep",
+    "cat",
+    "mkdir",
+    "rm",
+    "cd"
+  ],
+  "model": "claude-3-5-sonnet-20241022",
+  "thinking": {
+    "enabled": true,
+    "mode": "auto"
+  },
+  "memory": {
+    "enabled": true,
+    "auto_save": true
+  }
+}

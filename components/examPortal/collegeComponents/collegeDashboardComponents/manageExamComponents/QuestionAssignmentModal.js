@@ -8,11 +8,38 @@ import {
   getExamQuestions,
   getQuestionCountsPerSubject,
 } from "../../../../../server_actions/actions/examController/collegeActions";
-import { getTopics } from "../../../../../utils/examUtils/subject_Details";
+import { getTopics, data } from "../../../../../utils/examUtils/subject_Details";
 import ModalHeader from './QuestionAssignmentModal/ModalHeader';
 import ModalFilters from './QuestionAssignmentModal/ModalFilters';
 import QuestionsList from './QuestionAssignmentModal/QuestionsList';
 import ModalFooter from './QuestionAssignmentModal/ModalFooter';
+
+// Utility function to calculate marks based on exam stream and question subjects using the official marking scheme
+const calculateTotalMarks = (selectedQuestionIds, questions, examStream) => {
+  let totalMarks = 0;
+  
+  selectedQuestionIds.forEach(questionId => {
+    const question = questions.find(q => q._id === questionId);
+    if (!question) return;
+    
+    // Get the marking scheme from the data structure
+    const markingScheme = data[examStream]?.positiveMarking;
+    
+    if (markingScheme && typeof markingScheme.value === 'object') {
+      // For exams like MHT-CET with subject-specific marking
+      const subjectMarks = markingScheme.value[question.subject];
+      totalMarks += subjectMarks || markingScheme.value.default || 1;
+    } else if (markingScheme && typeof markingScheme.value === 'number') {
+      // For exams like JEE/NEET with uniform marking
+      totalMarks += markingScheme.value;
+    } else {
+      // Fallback: 4 marks per question for other streams
+      totalMarks += 4;
+    }
+  });
+  
+  return totalMarks;
+};
 
 export default function QuestionAssignmentModal({
   exam,
@@ -353,6 +380,8 @@ export default function QuestionAssignmentModal({
                 handleQuestionToggle={handleQuestionToggle}
                 getSelectedQuestionDetails={getSelectedQuestionDetails}
                 examSubjects={exam?.examSubject || []}
+                calculateTotalMarks={calculateTotalMarks}
+                examStream={exam?.stream}
               />
             </div>
           </div>

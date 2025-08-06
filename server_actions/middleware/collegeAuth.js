@@ -23,10 +23,11 @@ export async function collegeAuth(details) {
         if (college) {
             return college
         } else {
+            console.log('❌ No college found with provided token')
             return null
         }
     } catch (error) {
-        console.log(error)
+        console.error('💥 CollegeAuth Error:', error)
         return {
             success: false,
             message: "Error"

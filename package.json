@@ -83,12 +83,14 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.174.0",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "^4.0.5"
   },
   "devDependencies": {
     "@types/node": "22.3.0",
     "@types/react": "18.3.3",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.2.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.41",

@@ -14,9 +14,10 @@ import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
 import { VicharCard } from "../../ui/vichar-card"
 import { VicharButton } from "../../ui/vichar-button"
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs"
-import { User, BookOpen, Info, Timer, CheckCircle, ListTodo, Star, Quote, Building2 } from "lucide-react"
+import { User, BookOpen, Info, Timer, CheckCircle, ListTodo, Star, Quote, Building2, Grid, X } from "lucide-react"
 import { useState as useStateReact } from "react"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
+import { autoSaveExamProgress, clearExamProgress } from "../../../server_actions/actions/examController/examAutoSave"
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -30,6 +31,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const timerRef = useRef(null)
     const autoSaveRef = useRef(null)
     const mainExamRef = useRef(null); // For fullscreen
+    const warningsShownRef = useRef(new Set()); // Track which warnings have been shown
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -37,6 +39,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Track if exam is completed to avoid fullscreen warning after submit
     const examCompletedRef = useRef(false);
+
+    // State for mobile floating question navigator
+    const [showMobileNavigator, setShowMobileNavigator] = useState(false);
 
     // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
@@ -243,7 +248,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     }, [progressKey, exam.examDurationMinutes]);
 
     // 4. Update saveExamProgress to save startTime
-    const saveExamProgress = useCallback(() => {
+    const saveExamProgress = useCallback(async () => {
         try {
             const progress = {
                 answers,
@@ -255,12 +260,36 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 startTime: startTime || Date.now(),
                 lastSaved: new Date().toISOString()
             };
+            
+            // Save to localStorage first (instant, offline-capable)
             localStorage.setItem(progressKey, JSON.stringify(progress));
             setExamProgress(progress);
+            
+            // Also save to server with retry logic (if online)
+            if (isOnline && isExamStarted) {
+                const serverProgress = {
+                    examId: exam._id,
+                    studentId: student._id,
+                    ...progress
+                };
+                
+                // Don't await - let it happen in background
+                autoSaveExamProgress(serverProgress)
+                    .then(result => {
+                        if (result.success) {
+                            console.log('✅ Progress saved to server');
+                        } else if (result.queued) {
+                            console.log('⚠️ Progress queued for retry');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Server save failed, using localStorage backup:', error);
+                    });
+            }
         } catch (error) {
             console.error('Error saving exam progress:', error);
         }
-    }, [answers, currentQuestionIndex, selectedSubject, markedQuestions, visitedQuestions, timeLeft, progressKey, startTime]);
+    }, [answers, currentQuestionIndex, selectedSubject, markedQuestions, visitedQuestions, timeLeft, progressKey, startTime, isOnline, isExamStarted, exam._id, student._id]);
 
     // 1. On mount, always check for saved progress and restore answers, currentQuestionIndex, markedQuestions, startTime, and timeLeft before starting the timer.
     useEffect(() => {
@@ -361,7 +390,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             );
             if (availableSubject && availableSubject !== selectedSubject) {
                 setSelectedSubject(availableSubject);
-                toast.info(`Switched to ${availableSubject} - ${selectedSubject} is still locked`);
+                toast(`Switched to ${availableSubject} - ${selectedSubject} is still locked`);
             }
         }
     }, [isCetExam, isExamStarted, selectedSubject, cetAccess.subjectAccess, allSubjects]);
@@ -386,11 +415,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             setTimeLeft((exam.examDurationMinutes || 0) * 60);
         }
         setIsExamStarted(true);
+        // Clear any previous warnings for this exam session
+        warningsShownRef.current.clear();
         saveExamProgress();
         toast.success("Exam started! Good luck!");
     };
 
-    // 6. Timer countdown: recalculate timeLeft based on startTime and duration
+    // 6. Timer countdown: recalculate timeLeft based on startTime and duration with warnings
     useEffect(() => {
         if (isExamStarted && startTime && timeLeft > 0) {
             timerRef.current = setInterval(() => {
@@ -398,6 +429,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 const now = Date.now();
                 const calculatedTimeLeft = Math.max(Math.floor((startTime + duration - now) / 1000), 0);
                 setTimeLeft(calculatedTimeLeft);
+                
+                // Show time warnings
+                const warnings = [
+                    { time: 300, message: "⚠️ 5 minutes remaining! Please review your answers.", type: "warning" }, // 5 minutes
+                    { time: 60, message: "🚨 1 minute remaining! Exam will auto-submit soon.", type: "error" }, // 1 minute
+                    { time: 30, message: "⏰ 30 seconds remaining! Auto-submit imminent.", type: "error" }, // 30 seconds
+                    { time: 10, message: "🔥 10 seconds remaining! Submitting now...", type: "error" } // 10 seconds
+                ];
+                
+                warnings.forEach(warning => {
+                    if (calculatedTimeLeft === warning.time && !warningsShownRef.current.has(warning.time)) {
+                        warningsShownRef.current.add(warning.time);
+                        if (warning.type === "error") {
+                            toast.error(warning.message, { duration: 4000 });
+                        } else {
+                            toast.warning(warning.message, { duration: 4000 });
+                        }
+                    }
+                });
+                
                 if (calculatedTimeLeft <= 0) {
                     handleAutoSubmit();
                 }
@@ -547,28 +598,29 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setWarningDialog(false); // Close warning dialog
         exitFullscreen();
         // Calculate score (basic implementation)
-        let score = 0
-        let totalMarks = 0
+        let score = 0;
+        let totalMarks = 0;
 
-        subjectQuestions.forEach(question => {
-            const userAnswer = answers[question._id]
+        // Calculate score for ALL questions, not just current subject
+        (questions || []).forEach(question => {
+            const userAnswer = answers[question._id];
             if (userAnswer) {
                 if (question.isMultipleAnswer) {
                     // Handle multiple answer questions
-                    const correctAnswers = question.multipleAnswer || []
+                    const correctAnswers = question.multipleAnswer || [];
                     const isCorrect = Array.isArray(userAnswer) && 
                         userAnswer.length === correctAnswers.length &&
-                        userAnswer.every(ans => correctAnswers.includes(ans))
-                    if (isCorrect) score += question.marks || 4
+                        userAnswer.every(ans => correctAnswers.includes(ans));
+                    if (isCorrect) score += question.marks || 4;
                 } else {
                     // Handle single answer questions
                     if (userAnswer === question.answer) {
-                        score += question.marks || 4
+                        score += question.marks || 4;
                     }
                 }
             }
-            totalMarks += question.marks || 4
-        })
+            totalMarks += question.marks || 4;
+        });
 
         const examData = {
             answers,
@@ -578,11 +630,19 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             completedAt: new Date().toISOString(),
             visitedQuestions: Array.from(visitedQuestions),
             markedQuestions: Array.from(markedQuestions)
-        }
+        };
 
         // Clear saved progress
         localStorage.removeItem(progressKey);
-        onComplete(examData)
+        
+        console.log('About to call onComplete with:', examData);
+        console.log('onComplete is:', onComplete, typeof onComplete);
+        
+        if (typeof onComplete === 'function') {
+            onComplete(examData);
+        } else {
+            console.error('onComplete is not a function:', onComplete);
+        }
     }
     // --- FULLSCREEN LOGIC END ---
 
@@ -658,8 +718,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Auto-submit when time expires
     const handleAutoSubmit = () => {
-        toast.error("Time's up! Submitting exam automatically...")
-        submitExam()
+        // Clear any existing timers
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+        if (autoSaveRef.current) {
+            clearInterval(autoSaveRef.current);
+        }
+        
+        toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
+            duration: 6000,
+            style: {
+                fontSize: '16px',
+                fontWeight: 'bold'
+            }
+        });
+        
+        // Small delay to ensure toast is visible before submission
+        setTimeout(() => {
+            submitExam();
+        }, 1000);
     }
 
     // 1. On mount, check for saved progress and show prompt if found
@@ -687,6 +765,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setTimeLeft(exam.examDurationMinutes * 60);
         setIsExamStarted(false);
         setShowContinuePrompt(false);
+        // Clear warning tracking for new exam
+        warningsShownRef.current.clear();
     };
 
     // Navigation handlers
@@ -823,22 +903,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
                         <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
-                                const count = (questions || []).filter(q => q.subject === subject).length;
-                                
                                 // Check if subject is locked for CET exams
                                 const isLocked = isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[subject]?.isLocked;
                                 const remainingTime = isLocked ? Math.ceil(cetAccess.subjectAccess[subject].remainingTime / 1000 / 60) : 0;
-                                
-                                // For JEE exams, show section breakdown
-                                let sectionInfo = null;
-                                if (isJeeExam) {
-                                    const subjectQs = (questions || []).filter(q => q.subject === subject);
-                                    const sectionACount = subjectQs.filter(q => (q.section || 1) === 1).length;
-                                    const sectionBCount = subjectQs.filter(q => (q.section || 1) === 2).length;
-                                    if (sectionBCount > 0) {
-                                        sectionInfo = `A:${sectionACount} B:${sectionBCount}`;
-                                    }
-                                }
                                 
                                 return (
                                     <TabsTrigger 
@@ -855,9 +922,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                             {isLocked && <span>🔒</span>}
                                             {subject}
                                         </span>
-                                        <span className="text-[10px] sm:text-xs opacity-80">
-                                            {isLocked ? `${remainingTime}min` : (sectionInfo || `(${count})`)}
-                                        </span>
+                                        {isLocked && (
+                                            <span className="text-[10px] sm:text-xs opacity-80">
+                                                {`${remainingTime}min`}
+                                            </span>
+                                        )}
                                     </TabsTrigger>
                                 );
                             })}
@@ -890,7 +959,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             )}
             
             {/* Mobile Layout - Optimized for Phones */}
-            <div className="lg:hidden flex flex-col h-screen">
+            <div className="lg:hidden flex flex-col h-screen relative transition-all duration-300">
                 {/* Main Content Area - Scrollable */}
                 <div className="flex-1 overflow-y-auto pb-safe" style={{paddingBottom: 'calc(160px + env(safe-area-inset-bottom))'}}>
                     {/* Question Display */}
@@ -909,22 +978,59 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             />
                         </div>
                     </div>
-                    
-                    {/* Question Navigator - Collapsible */}
-                    <div className="bg-white mx-2 mt-3 mb-4 rounded-2xl shadow-sm border border-gray-100">
-                        <QuestionNavigator
-                            questions={questions}
-                            answers={answers}
-                            markedQuestions={markedQuestions}
-                            currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
-                            onGoToQuestion={handleNavigatorGoToQuestion}
-                            isCetExam={isCetExam}
-                            cetAccess={cetAccess}
-                        />
-                    </div>
                 </div>
                 
-                {/* Sticky Navigation - Mobile Only */}
+                {/* Floating Question Navigator Button */}
+                <button
+                    onClick={() => setShowMobileNavigator(true)}
+                    className="fixed bottom-24 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 active:scale-95"
+                    title="Question Navigator"
+                >
+                    <Grid className="w-6 h-6" />
+                </button>
+            </div>
+            
+            {/* Mobile Question Navigator Overlay - Outside blurred container */}
+            {showMobileNavigator && (
+                <div className="fixed z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto lg:hidden" 
+                     style={{
+                         top: 0,
+                         left: 0,
+                         right: 0,
+                         bottom: 'calc(160px + env(safe-area-inset-bottom))'
+                     }}>
+                    <div className="bg-white rounded-2xl w-full max-w-md h-[75vh] flex flex-col relative">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowMobileNavigator(false)}
+                            className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center z-10 transition-colors"
+                            title="Close Navigator"
+                        >
+                            <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                        
+                        {/* Question Navigator Content */}
+                        <div className="flex-1 overflow-hidden min-h-0">
+                            <QuestionNavigator
+                                questions={questions}
+                                answers={answers}
+                                markedQuestions={markedQuestions}
+                                currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                                onGoToQuestion={(index) => {
+                                    handleNavigatorGoToQuestion(index);
+                                    setShowMobileNavigator(false);
+                                }}
+                                isCetExam={isCetExam}
+                                cetAccess={cetAccess}
+                                isMobileOverlay={true}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Sticky Navigation - Mobile Only */}
+            <div className="lg:hidden">
                 <ExamNavigation
                     currentQuestionIndex={currentQuestionIndex}
                     totalQuestions={totalQuestions}
@@ -943,13 +1049,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             <div className="hidden lg:flex lg:flex-col lg:h-screen lg:overflow-hidden">
                 {/* Desktop Content Container with Proper Height Management */}
                 <div className="flex-1 flex flex-col min-h-0">
-                    <div className="max-w-7xl mx-auto px-6 py-4 flex-1 flex flex-col min-h-0">
-                        <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
+                    <div className="max-w-7xl mx-auto px-4 py-3 flex-1 flex flex-col min-h-0">
+                        <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
                             {/* Main Content Area - Scrollable */}
                             <div className="col-span-8 flex flex-col min-h-0">
-                                {/* Question Display - Flexible Height */}
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0 mb-4">
-                                    <div className="p-6 flex-1 overflow-y-auto">
+                                {/* Question Display - Optimized Height */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-320px)] max-h-[600px] flex flex-col min-h-0 mb-3">
+                                    <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
                                         <QuestionDisplay
                                             currentQuestion={currentQuestion}
                                             currentQuestionIndex={currentQuestionIndex}
@@ -965,7 +1071,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 </div>
                                 
                                 {/* Navigation Controls - Fixed at Bottom */}
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex-shrink-0">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 lg:p-4 flex-shrink-0">
                                     <ExamNavigation
                                         currentQuestionIndex={currentQuestionIndex}
                                         totalQuestions={totalQuestions}
@@ -983,7 +1089,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             
                             {/* Sidebar - Question Navigator - Fixed Height */}
                             <div className="col-span-4 flex flex-col min-h-0">
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col min-h-0">
                                     <QuestionNavigator
                                         questions={questions}
                                         answers={answers}
