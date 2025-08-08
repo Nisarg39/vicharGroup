@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getTopics } from '../../../../../utils/examUtils/subject_Details'
 import { showQuestionsList, deleteExamQuestion } from '../../../../../server_actions/actions/adminActions'
 import AddQuestion from './AddQuestion'
@@ -15,7 +15,8 @@ export default function QuestionsList({ subjects }) {
     topic: '',
     page: 1,
     limit: 10,
-    difficultyLevel: ''
+    difficultyLevel: '',
+    searchTerm: ''
   })
   const [topics, setTopics] = useState([])
   const [questions, setQuestions] = useState([])
@@ -27,11 +28,44 @@ export default function QuestionsList({ subjects }) {
   })
   const [expandedQuestionId, setExpandedQuestionId] = useState(null)
   const [isTeacher, setIsTeacher] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
+  const debounceTimeoutRef = useRef(null)
 
   useEffect(() => {
     const teacherStatus = localStorage.getItem("isTeacher")
     if(teacherStatus !== null){
         setIsTeacher(true)
+    }
+  }, [])
+
+  // Debounced search function
+  const debouncedSearch = useCallback((searchValue) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current)
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        searchTerm: searchValue,
+        page: 1 // Reset to first page when searching
+      }))
+    }, 300) // 300ms debounce delay
+  }, [])
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value
+    setSearchInput(value)
+    debouncedSearch(value)
+  }
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -98,32 +132,38 @@ export default function QuestionsList({ subjects }) {
 
   // Clear dependent fields when parent selection changes
   const handleStreamChange = (e) => {
+    setSearchInput('') // Clear search input
     setFormData({
       ...formData,
       stream: e.target.value,
       subject: isTeacher ? formData.subject : '',
       standard: '',
       section: '',
-      topic: ''
+      topic: '',
+      searchTerm: '' // Clear search term
     })
   }
 
   const handleSubjectChange = (e) => {
+    setSearchInput('') // Clear search input
     setFormData({
       ...formData,
       subject: e.target.value,
       standard: '',
       section: '',
-      topic: ''
+      topic: '',
+      searchTerm: '' // Clear search term
     })
   }
 
   const handleStandardChange = (e) => {
+    setSearchInput('') // Clear search input
     setFormData({
       ...formData,
       standard: e.target.value,
       section: '',
-      topic: ''
+      topic: '',
+      searchTerm: '' // Clear search term
     })
   }
 
@@ -171,8 +211,39 @@ export default function QuestionsList({ subjects }) {
         </h1>
       </div>
 
-      {/* Filter Dropdowns */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4">
+      {/* Search and Filter Section */}
+      <div className="p-4 space-y-4">
+        {/* Search Input */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={handleSearchChange}
+            placeholder="Search questions by content, options, answer, or question number..."
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#2c9652] focus:border-transparent placeholder-gray-400"
+          />
+          {searchInput && (
+            <button
+              onClick={() => {
+                setSearchInput('')
+                setFormData(prev => ({ ...prev, searchTerm: '', page: 1 }))
+              }}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        
+        {/* Filter Dropdowns */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <select 
           value={formData.stream}
           onChange={handleStreamChange}
@@ -188,7 +259,7 @@ export default function QuestionsList({ subjects }) {
           value={formData.subject}
           onChange={handleSubjectChange}
           className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#2c9652] focus:border-transparent"
-          disabled={!formData.stream || isTeacher}
+          disabled={isTeacher}
         >
           <option value="">Select Subject</option>
           {subjects && subjects.length > 0 && subjects.map((subject) => (
@@ -245,12 +316,13 @@ export default function QuestionsList({ subjects }) {
           <option value="Medium">Medium</option>
           <option value="Hard">Hard</option>
         </select>
+        </div>
       </div>
 
       {/* Questions List */}
       <div className="flex-1 overflow-y-auto px-4 min-h-[400px] max-h-[calc(100vh-320px)]">
         <div className="space-y-4">
-          {questions.map((question, index) => (
+          {questions.map((question) => (
             <div key={question._id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
               {/* Compact View */}
               <div 

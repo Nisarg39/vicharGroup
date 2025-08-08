@@ -1982,6 +1982,27 @@ export async function showQuestionsList(questionData) {
         if (questionData.section) query.section = questionData.section;
         if (questionData.difficultyLevel) query.difficultyLevel = questionData.difficultyLevel;
         
+        // Add search functionality
+        if (questionData.searchTerm && questionData.searchTerm.trim()) {
+            const searchTerm = questionData.searchTerm.trim();
+            
+            // Check if search term is purely numeric (for questionNumber search)
+            const isNumeric = /^\d+$/.test(searchTerm);
+            
+            if (isNumeric) {
+                // If numeric, only search by question number (exact match)
+                query.questionNumber = parseInt(searchTerm);
+            } else {
+                // If not numeric, search in text fields only
+                const searchRegex = new RegExp(searchTerm, 'i'); // Case-insensitive regex
+                query.$or = [
+                    { question: searchRegex }, // Search in question content
+                    { options: { $elemMatch: { $regex: searchRegex } } }, // Search in any option
+                    { answer: searchRegex } // Search in answer field
+                ];
+            }
+        }
+        
         // Calculate pagination
         const page = questionData.page || 1;
         const limit = questionData.limit || 10;
