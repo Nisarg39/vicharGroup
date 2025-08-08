@@ -101,7 +101,7 @@ export default function QuestionsList({ subjects }) {
     setFormData({
       ...formData,
       stream: e.target.value,
-      subject: '',
+      subject: isTeacher ? formData.subject : '',
       standard: '',
       section: '',
       topic: ''
@@ -188,7 +188,7 @@ export default function QuestionsList({ subjects }) {
           value={formData.subject}
           onChange={handleSubjectChange}
           className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#2c9652] focus:border-transparent"
-          disabled={!formData.stream}
+          disabled={!formData.stream || isTeacher}
         >
           <option value="">Select Subject</option>
           {subjects && subjects.length > 0 && subjects.map((subject) => (

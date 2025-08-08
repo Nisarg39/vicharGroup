@@ -3559,10 +3559,18 @@ async function selectQuestionsForSubjectRule(rule, stream, examStandard, examSec
         
         if (hasNoDifficultyRestriction) {
             // Select questions without difficulty restrictions
+            // Use exam's standard if available, otherwise use rule's standard if specified
+            let standardToUse = undefined
+            if (examStandard === "11" || examStandard === "12") {
+                standardToUse = examStandard
+            } else if (isStandardSpecific) {
+                standardToUse = rule.standard
+            }
+            
             const questions = await selectQuestionsByFilters({
                 stream,
                 subject: rule.subject,
-                standard: isStandardSpecific ? rule.standard : undefined,
+                standard: standardToUse,
                 difficultyLevel: undefined, // No difficulty restriction
                 section: examSection,
                 excludeIds: selectedQuestions.map(q => q._id),
@@ -3615,46 +3623,66 @@ async function selectQuestionsForSubjectRule(rule, stream, examStandard, examSec
                     breakdown.byDifficulty[difficulty.level.toLowerCase()] += questions.length
                     breakdown.byStandard[rule.standard] += questions.length
                 } else {
-                    // Further distribute by standard (11th/12th)
-                    const std11Needed = Math.round((rule.standard11Questions / rule.totalQuestions) * difficulty.needed)
-                    const std12Needed = difficulty.needed - std11Needed
-                    
-                    // Select from standard 11
-                    if (std11Needed > 0) {
-                        const std11Questions = await selectQuestionsByFilters({
+                    // If exam has a specific standard, use that; otherwise distribute by standard
+                    if (examStandard === "11" || examStandard === "12") {
+                        // Exam is for a specific standard, only select from that standard
+                        const questions = await selectQuestionsByFilters({
                             stream,
                             subject: rule.subject,
-                            standard: "11",
+                            standard: examStandard,
                             difficultyLevel: difficulty.level,
                             section: examSection,
                             excludeIds: selectedQuestions.map(q => q._id),
-                            limit: std11Needed,
+                            limit: difficulty.needed,
                             fallbackStrategy,
                             minimumPoolSize
                         })
                         
-                        selectedQuestions.push(...std11Questions)
-                        breakdown.byDifficulty[difficulty.level.toLowerCase()] += std11Questions.length
-                        breakdown.byStandard['11'] += std11Questions.length
-                    }
-                    
-                    // Select from standard 12
-                    if (std12Needed > 0) {
-                        const std12Questions = await selectQuestionsByFilters({
-                            stream,
-                            subject: rule.subject,
-                            standard: "12",
-                            difficultyLevel: difficulty.level,
-                            section: examSection,
-                            excludeIds: selectedQuestions.map(q => q._id),
-                            limit: std12Needed,
-                            fallbackStrategy,
-                            minimumPoolSize
-                        })
+                        selectedQuestions.push(...questions)
+                        breakdown.byDifficulty[difficulty.level.toLowerCase()] += questions.length
+                        breakdown.byStandard[examStandard] += questions.length
+                    } else {
+                        // No specific exam standard, distribute by rule's standard distribution
+                        const std11Needed = Math.round((rule.standard11Questions / rule.totalQuestions) * difficulty.needed)
+                        const std12Needed = difficulty.needed - std11Needed
                         
-                        selectedQuestions.push(...std12Questions)
-                        breakdown.byDifficulty[difficulty.level.toLowerCase()] += std12Questions.length
-                        breakdown.byStandard['12'] += std12Questions.length
+                        // Select from standard 11
+                        if (std11Needed > 0) {
+                            const std11Questions = await selectQuestionsByFilters({
+                                stream,
+                                subject: rule.subject,
+                                standard: "11",
+                                difficultyLevel: difficulty.level,
+                                section: examSection,
+                                excludeIds: selectedQuestions.map(q => q._id),
+                                limit: std11Needed,
+                                fallbackStrategy,
+                                minimumPoolSize
+                            })
+                            
+                            selectedQuestions.push(...std11Questions)
+                            breakdown.byDifficulty[difficulty.level.toLowerCase()] += std11Questions.length
+                            breakdown.byStandard['11'] += std11Questions.length
+                        }
+                    
+                        // Select from standard 12
+                        if (std12Needed > 0) {
+                            const std12Questions = await selectQuestionsByFilters({
+                                stream,
+                                subject: rule.subject,
+                                standard: "12",
+                                difficultyLevel: difficulty.level,
+                                section: examSection,
+                                excludeIds: selectedQuestions.map(q => q._id),
+                                limit: std12Needed,
+                                fallbackStrategy,
+                                minimumPoolSize
+                            })
+                            
+                            selectedQuestions.push(...std12Questions)
+                            breakdown.byDifficulty[difficulty.level.toLowerCase()] += std12Questions.length
+                            breakdown.byStandard['12'] += std12Questions.length
+                        }
                     }
                 }
             }

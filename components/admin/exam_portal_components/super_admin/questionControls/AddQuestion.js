@@ -106,17 +106,55 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     setQuillError(null);
   }, [tabValue]);
   
-  // Initialize Quill modules only once
+  // Initialize Quill modules on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isQuillReady) {
+    if (typeof window !== 'undefined') {
       const initQuill = async () => {
         try {
           const Quill = (await import('quill')).default;
           
-          // Check if ImageResize is already registered
-          if (!Quill.imports['modules/imageResize']) {
-            const ImageResize = (await import('quill-image-resize-module-react')).default;
-            Quill.register('modules/imageResize', ImageResize);
+          // Add custom image resize functionality
+          if (typeof window !== 'undefined') {
+            // Custom image resize handler with persistent dimensions in HTML
+            window.addImageResizeHandlers = function(updatePreviewCallback) {
+              const images = document.querySelectorAll('.ql-editor img');
+              images.forEach(img => {
+                if (!img.dataset.resizable) {
+                  img.dataset.resizable = 'true';
+                  img.style.cursor = 'pointer';
+                  
+                  // Restore dimensions from HTML attributes if they exist
+                  if (img.getAttribute('width')) {
+                    img.style.width = img.getAttribute('width');
+                  }
+                  if (img.getAttribute('height')) {
+                    img.style.height = img.getAttribute('height');
+                  }
+                  
+                  img.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const currentWidth = parseInt(img.style.width) || img.naturalWidth;
+                    const sizes = ['25%', '50%', '75%', '100%'];
+                    const currentIndex = sizes.findIndex(size => img.style.width === size);
+                    const nextIndex = (currentIndex + 1) % sizes.length;
+                    
+                    // Set both style and HTML attributes to persist the size
+                    img.style.width = sizes[nextIndex];
+                    img.style.height = 'auto';
+                    img.setAttribute('width', sizes[nextIndex]);
+                    img.setAttribute('height', 'auto');
+                    
+                    // Trigger preview update immediately after image resize
+                    if (updatePreviewCallback) {
+                      // Use requestAnimationFrame to ensure DOM updates are complete
+                      requestAnimationFrame(() => {
+                        updatePreviewCallback();
+                      });
+                    }
+                  });
+                }
+              });
+            };
           }
           
           // Initialize KaTeX if not already done
@@ -134,7 +172,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       
       initQuill();
     }
-  }, [isQuillReady]);
+  }, []); // Empty dependency array - run only on mount
 
   // Register CustomClipboard when both Quill is ready and adminToken is available
   useEffect(() => {
@@ -245,7 +283,136 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
   }, [isQuillReady, adminToken]);
 
+  // Define processImages function first (before updatePreview that depends on it)
+  const processImages = useCallback(async (questionContent) => {
+    setIsUploading(true);
+    if (typeof window === 'undefined') {
+      setIsUploading(false);
+      return questionContent;
+    }
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(questionContent, 'text/html');
+    const images = doc.querySelectorAll('img');
+
+    for (const img of images) {
+      const src = img.getAttribute('src');
+      
+      // Preserve image dimensions
+      const width = img.getAttribute('width') || img.style.width;
+      const height = img.getAttribute('height') || img.style.height;
+      
+      if (src && src.startsWith('data:')) {
+        const mime = src.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/)[1];
+        const base64Data = src.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length).fill(0)
+          .map((_, i) => byteCharacters.charCodeAt(i));
+        const byteArray = new Uint8Array(byteNumbers);
+        const file = new Blob([byteArray], { type: mime });
+        const fileName = `image_${Date.now()}.png`;
+
+        const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify({
+            fileName,
+            type: 'questionImage'
+          })
+        });
+
+        const data = await response.json();
+        const preSignedURL = data.payload;
+
+        await fetch(preSignedURL, {
+          method: 'PUT',
+          body: file
+        });
+
+        const uploadedUrl = preSignedURL.split('?')[0];
+        img.setAttribute('src', uploadedUrl);
+      }
+      
+      // Restore dimensions after processing
+      if (width) {
+        img.setAttribute('width', width);
+        img.style.width = width;
+      }
+      if (height) {
+        img.setAttribute('height', height);
+        img.style.height = height;
+      }
+    }
+    setIsUploading(false);
+    return doc.body.innerHTML;
+  }, [adminToken]);
+
+  // Function to save current editor content before tab change
+  const saveCurrentEditorContent = useCallback(() => {
+    if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const currentContent = quill.root.innerHTML;
+      
+      setFormData(prev => {
+        const newData = { ...prev };
+        if (tabValue === 0) newData.question = currentContent;
+        else if (tabValue === 1) newData.optionA = currentContent;
+        else if (tabValue === 2) newData.optionB = currentContent;
+        else if (tabValue === 3) newData.optionC = currentContent;
+        else if (tabValue === 4) newData.optionD = currentContent;
+        return newData;
+      });
+    }
+  }, [tabValue]);
+
   // Create a stable change handler using useCallback
+  // Function to update preview content - simplified since live updates happen in handleQuillChange
+  const updatePreview = useCallback(async () => {
+    try {
+      // Get current content from the Quill editor
+      if (quillRef.current) {
+        const quill = quillRef.current.getEditor();
+        const currentContent = quill.root.innerHTML;
+        
+        // Update preview content immediately
+        setPreviewContent(prev => {
+          const newPreview = { ...prev };
+          if (tabValue === 0) newPreview.question = currentContent;
+          else if (tabValue === 1) newPreview.optionA = currentContent;
+          else if (tabValue === 2) newPreview.optionB = currentContent;
+          else if (tabValue === 3) newPreview.optionC = currentContent;
+          else if (tabValue === 4) newPreview.optionD = currentContent;
+          return newPreview;
+        });
+        
+        // Also sync with formData
+        setFormData(prev => {
+          const newData = { ...prev };
+          if (tabValue === 0) newData.question = currentContent;
+          else if (tabValue === 1) newData.optionA = currentContent;
+          else if (tabValue === 2) newData.optionB = currentContent;
+          else if (tabValue === 3) newData.optionC = currentContent;
+          else if (tabValue === 4) newData.optionD = currentContent;
+          return newData;
+        });
+      }
+    } catch (error) {
+      console.error('Error updating preview:', error);
+    }
+  }, [tabValue, quillRef]);
+
+  // Add resize handlers when tab changes or component loads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined' && window.addImageResizeHandlers && isQuillReady) {
+        window.addImageResizeHandlers(updatePreview);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [tabValue, isQuillReady, updatePreview]);
+
   const handleQuillChange = useCallback((content) => {
     setFormData(prev => {
       const newData = { ...prev };
@@ -254,9 +421,43 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       else if (tabValue === 2) newData.optionB = content;
       else if (tabValue === 3) newData.optionC = content;
       else if (tabValue === 4) newData.optionD = content;
+      
+      // Update preview content immediately for live preview
+      setPreviewContent(prevPreview => {
+        const updatedPreview = { ...prevPreview };
+        if (tabValue === 0) updatedPreview.question = content;
+        else if (tabValue === 1) updatedPreview.optionA = content;
+        else if (tabValue === 2) updatedPreview.optionB = content;
+        else if (tabValue === 3) updatedPreview.optionC = content;
+        else if (tabValue === 4) updatedPreview.optionD = content;
+        return updatedPreview;
+      });
+      
       return newData;
     });
-  }, [tabValue]);
+    
+    // Add image resize handlers after content change
+    setTimeout(() => {
+      if (typeof window !== 'undefined' && window.addImageResizeHandlers) {
+        window.addImageResizeHandlers(() => {
+          // Update preview when image is resized
+          if (quillRef.current) {
+            const quill = quillRef.current.getEditor();
+            const currentContent = quill.root.innerHTML;
+            setPreviewContent(prevPreview => {
+              const updatedPreview = { ...prevPreview };
+              if (tabValue === 0) updatedPreview.question = currentContent;
+              else if (tabValue === 1) updatedPreview.optionA = currentContent;
+              else if (tabValue === 2) updatedPreview.optionB = currentContent;
+              else if (tabValue === 3) updatedPreview.optionC = currentContent;
+              else if (tabValue === 4) updatedPreview.optionD = currentContent;
+              return updatedPreview;
+            });
+          }
+        });
+      }
+    }, 100);
+  }, [tabValue, quillRef]);
 
   // Get the current editor value based on tab
   const getCurrentEditorValue = useMemo(() => {
@@ -367,19 +568,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       }
     };
 
-    // Only add imageResize if we're on the client and Quill is ready
-    if (typeof window !== 'undefined' && isQuillReady) {
-      try {
-        const Quill = window.Quill || require('quill');
-        baseModules.imageResize = {
-          parchment: Quill.import('parchment'),
-          modules: ['Resize', 'DisplaySize'],
-          displaySize: true
-        };
-      } catch (error) {
-        console.log('Error setting up imageResize module:', error);
-      }
-    }
+    // Custom image resize functionality will be handled via click events
 
     return baseModules;
   }, [isQuillReady, adminToken]);
@@ -467,62 +656,13 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
 
   const [isUploading, setIsUploading] = useState(false);
 
-  const processImages = async (questionContent) => {
-    setIsUploading(true);
-    if (typeof window === 'undefined') {
-      setIsUploading(false);
-      return questionContent;
-    }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(questionContent, 'text/html');
-    const images = doc.querySelectorAll('img');
-
-    for (const img of images) {
-      const src = img.getAttribute('src');
-      if (src && src.startsWith('data:')) {
-        const mime = src.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/)[1];
-        const base64Data = src.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length).fill(0)
-          .map((_, i) => byteCharacters.charCodeAt(i));
-        const byteArray = new Uint8Array(byteNumbers);
-        const file = new Blob([byteArray], { type: mime });
-        const fileName = `image_${Date.now()}.png`;
-
-        const response = await fetch('https://api.drcexam.in/getPreSignedURL', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
-          },
-          body: JSON.stringify({
-            fileName,
-            type: 'questionImage'
-          })
-        });
-
-        const data = await response.json();
-        const preSignedURL = data.payload;
-
-        await fetch(preSignedURL, {
-          method: 'PUT',
-          body: file
-        });
-
-        const uploadedUrl = preSignedURL.split('?')[0];
-        img.setAttribute('src', uploadedUrl);
-      }
-    }
-    setIsUploading(false);
-    return doc.body.innerHTML;
-  };
 
   const [previewContent, setPreviewContent] = useState({
-    question: '',
-    optionA: '',
-    optionB: '', 
-    optionC: '',
-    optionD: ''
+    question: questionToEdit?.question || '',
+    optionA: questionToEdit?.options?.[0] || '',
+    optionB: questionToEdit?.options?.[1] || '', 
+    optionC: questionToEdit?.options?.[2] || '',
+    optionD: questionToEdit?.options?.[3] || ''
   });
 
   const validateForm = () => {
@@ -635,7 +775,41 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
       }
       
       if (result.success) {
-        alert(result.message);
+        const alertMessage = result.questionNumber 
+          ? `${result.message} - Question Number: ${result.questionNumber}`
+          : result.message;
+        alert(alertMessage);
+        
+        // Reset only editor fields after successful save
+        setFormData(prev => ({
+          ...prev,
+          question: '',
+          optionA: '',
+          optionB: '',
+          optionC: '',
+          optionD: '',
+          answer: '',
+          multipleAnswer: []
+        }));
+        
+        // Reset preview content
+        setPreviewContent({
+          question: '',
+          optionA: '',
+          optionB: '',
+          optionC: '',
+          optionD: ''
+        });
+        
+        // Clear the current Quill editor content
+        if (quillRef.current) {
+          const quill = quillRef.current.getEditor();
+          quill.setContents([]);
+        }
+        
+        // Reset to question tab
+        setTabValue(0);
+        
         if (typeof onUpdate === 'function') {
           onUpdate();
         }
@@ -730,11 +904,19 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
   }, [isQuillReady, tabValue]);
 
+  // Save current editor content before tab changes
+  useEffect(() => {
+    saveCurrentEditorContent();
+  }, [tabValue, saveCurrentEditorContent]);
+
   // Keyboard shortcut handler for tab switching
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Only trigger on Ctrl+Arrow or Ctrl+Number
       if (e.ctrlKey) {
+        // Save current content before switching
+        saveCurrentEditorContent();
+        
         // Ctrl+ArrowLeft/ArrowRight for previous/next tab
         if (e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -754,7 +936,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [saveCurrentEditorContent]);
 
   return (
     <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden">
@@ -887,7 +1069,10 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 ${tabValue === index 
                   ? 'bg-white text-[#1d77bc] shadow-sm' 
                   : 'text-gray-600 hover:bg-gray-100'}`}
-              onClick={() => setTabValue(index)}
+              onClick={() => {
+                saveCurrentEditorContent();
+                setTabValue(index);
+              }}
             >
               <span>{tab}</span>
               <span className="ml-2 text-xs text-gray-400 font-normal">Ctrl+{index + 1}</span>
@@ -1040,7 +1225,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
             </div>
           </div>
         ) : (
-          isQuillReady && (
+          isQuillReady ? (
             <div key={`quill-${tabValue}`} className="min-h-[300px]">
               <ReactQuill
                 ref={quillRef}
@@ -1051,8 +1236,15 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 placeholder="Write your content here..."
                 preserveWhitespace={true}
                 style={{height: '350px'}}
-                className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto transition-all duration-200"
+                className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto [&_.ql-editor_img]:cursor-pointer [&_.ql-editor_img]:border-2 [&_.ql-editor_img]:border-dashed [&_.ql-editor_img]:border-transparent hover:[&_.ql-editor_img]:border-blue-300 transition-all duration-200"
               />
+            </div>
+          ) : (
+            <div className="h-[400px] flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading editor...</p>
+              </div>
             </div>
           )
         )}

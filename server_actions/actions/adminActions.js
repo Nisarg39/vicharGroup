@@ -1956,8 +1956,9 @@ export async function addExamQuestion(questionData) {
         const question = await master_mcq_question.create(questionWithNumber);
         return {
             success: true,
-            message: "Question added successfully",
-            question: JSON.parse(JSON.stringify(question))
+            message: `Question added successfully`,
+            question: JSON.parse(JSON.stringify(question)),
+            questionNumber: nextNumber
         };
     } catch (error) {
         console.log(error);

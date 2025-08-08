@@ -2,188 +2,150 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
-
-This is a Next.js 14 educational platform for Vichar Group, featuring an exam portal, course management, and student enrollment system. The application includes both online and offline examination capabilities with advanced features like PWA support, offline data caching, and real-time synchronization.
-
 ## Development Commands
 
 ```bash
-# Development
-npm run dev          # Start development server at http://localhost:3000
+# Development server (port 3000)
+npm run dev
 
-# Production
-npm run build        # Build for production
-npm start           # Start production server
+# Production server
+npm start
 
-# Code Quality
-npm run lint        # Run ESLint for code quality checks
+# Linting (must pass before commits)
+npm run lint
 ```
 
 ## Project Architecture
 
-### Core Technologies
-- **Framework**: Next.js 14 with App Router
-- **Database**: MongoDB with Mongoose ODM
-- **State Management**: Redux Toolkit
-- **UI Framework**: Tailwind CSS + Radix UI components
-- **Authentication**: NextAuth.js
-- **Payment Processing**: Razorpay integration
+Next.js 14 exam portal with App Router, MongoDB, and offline capabilities.
+
+### Tech Stack
+- **Next.js 14** with App Router (`src/app/` directory)
+- **MongoDB** with Mongoose ODM
+- **NextAuth.js** for authentication (Google OAuth + JWT)
+- **Redux Toolkit** for state management
+- **Tailwind CSS** + Radix UI components
+- **Cloudinary** for image uploads
+- **Razorpay** for payments
+- **PWA** with offline exam support
 
 ### Directory Structure
-
 ```
+src/app/               # Next.js App Router pages
 components/
-├── admin/                    # Admin panel components
-├── examPortal/              # Exam system components
-│   ├── collegeComponents/   # College administration
-│   ├── examPageComponents/  # Student exam interface
-│   └── collegeTeacherComponent/ # Teacher portal
-├── classroom/               # Student dashboard
-├── home/                    # Landing page components
-├── ui/                      # Reusable UI components (Radix-based)
-└── common/                  # Shared utilities
+├── admin/            # Admin panel components
+├── examPortal/       # Exam interfaces
+├── classroom/        # Course management
+├── common/           # Shared components
+└── landing/          # Landing pages
 
 server_actions/
-├── actions/                 # Server action functions
-├── models/                  # Mongoose schemas
-├── config/                  # Database configuration
-└── middleware/             # Authentication middleware
-
-src/app/                     # Next.js App Router pages
-utils/                       # Utility functions
+├── actions/          # Server-side logic
+│   └── examController/
+├── models/           # Mongoose schemas
+│   └── exam_portal/
+├── middleware/       # Auth middleware
+└── config/           # Database config
 ```
 
-### Key Models and Schemas
+## Key Patterns
 
-**Exam Portal Models** (`server_actions/models/exam_portal/`):
-- `exam.js` - Exam configuration and metadata
-- `college.js` - College/institution management
-- `enrolledStudent.js` - Student enrollment data
-- `examResult.js` - Exam results and analytics
-- `master_mcq_question.js` - Question bank
-- `studentRequest.js` - Enrollment requests
+### Server Actions
+```javascript
+// Always follow this pattern
+export async function actionName(params) {
+  try {
+    await connectDB();
+    // Your logic here
+    return { success: true, message: "Success", data: result };
+  } catch (error) {
+    console.error("Error:", error);
+    return { success: false, message: "Error message", data: null };
+  }
+}
+```
 
-### Exam Portal Architecture
+### Database Operations
+- Always call `await connectDB()` first
+- Use `.lean()` for read-only queries
+- Convert ObjectIds to strings for client
+- Use proper indexes for performance
 
-The exam portal is the core feature with sophisticated offline capabilities:
+### Authentication
+- Multi-modal: Google OAuth, OTP, JWT
+- Role-based: Student, Teacher, Admin, College
+- Use `collegeAuth()` for college operations
+- Protected routes use NextAuth session
 
-#### Key Components:
-- **ExamInterface** (`components/examPortal/examPageComponents/ExamInterface.js`): Main exam taking interface with offline support
-- **QuestionAssignmentModal** (`components/examPortal/collegeComponents/collegeDashboardComponents/manageExamComponents/QuestionAssignmentModal.js`): Complex question selection system
-- **CollegeDashboard** - Administrative interface for colleges
+## Critical Features
 
-#### Offline Functionality:
-- Service Worker (`public/sw.js`) handles caching and background sync
-- IndexedDB storage for exam data and submissions
-- PWA manifest for app-like experience
-- Offline hook (`src/hooks/use-offline.js`) manages connectivity state
+### Offline Exam System
+- PWA with service worker (manifest at `/public/manifest.json`)
+- IndexedDB for offline storage
+- Auto-save every 30 seconds
+- Background sync for submissions
+- Handle network failures gracefully
 
-### State Management
+### Exam Portal Features
+- LaTeX rendering for math expressions (KaTeX)
+- Negative marking with custom rules
+- Question shuffling and navigation
+- Timed exams with auto-submission
+- Real-time progress tracking
 
-Redux store configuration in `lib/store.js` and `reduxStore/store.js`. Currently minimal but extensible for complex state management needs.
-
-### Authentication Flow
-
-- NextAuth.js configuration in `src/app/api/auth/[...nextauth]/route.js`
-- Role-based access: Students, College Admins, Teachers, Super Admins
-- JWT-based authentication with middleware protection
-
-### Database Connection
-
-MongoDB connection handled via `server_actions/config/mongoose.js` with connection pooling and error handling.
+### Image Handling
+- Cloudinary for uploads and transformations
+- Next.js Image component for optimization
+- Quill editor with image resize module
+- Lazy loading for performance
 
 ## Development Guidelines
 
-### Component Patterns
-- Use functional components with hooks
-- Implement proper error boundaries for exam interfaces
-- Follow the existing UI component patterns from `components/ui/`
-- Maintain responsive design with Tailwind CSS
+### Component Development
+- Functional components with hooks only
+- Loading states and error boundaries required
+- Use Radix UI for accessibility
+- Mobile-first with Tailwind CSS
+- Follow existing component patterns
 
-### Server Actions
-- All database operations go through `server_actions/actions/`
-- Use proper error handling and response formatting
-- Implement authentication middleware where required
+### State Management
+- Redux Toolkit for global state
+- Local state with useState/useEffect
+- Proper cleanup in useEffect
+- Consistent action patterns
 
-### Exam Portal Specific Considerations
+### Error Handling
+- Try-catch in all server actions
+- User-friendly error messages
+- Don't expose sensitive data
+- Log errors for debugging
 
-#### Question Management:
-- Questions stored in `master_mcq_question` collection
-- Support for LaTeX mathematical expressions (using KaTeX)
-- Image uploads and PDF handling for question content
-- Subject-wise categorization and filtering
+### Performance
+- Pagination for large datasets
+- Database query optimization
+- Bundle size monitoring
+- Image optimization required
 
-#### Offline Exam Features:
-- Auto-save functionality every 30 seconds
-- Local storage of exam progress with unique keys: `exam_progress_${examId}_${studentId}`
-- Background sync when connectivity is restored
-- Conflict resolution for duplicate submissions
+## BMAD Agent System
 
-#### Exam Flow:
-1. Student authentication and eligibility check
-2. Exam data caching for offline use
-3. Fullscreen mode enforcement during exam
-4. Real-time timer with auto-submission
-5. Result calculation and storage
+Use specialized agents for complex tasks:
+- `/analyst` - Requirements research
+- `/pm` - Product planning
+- `/architect` - System design
+- `/scrum` - Sprint planning
+- `/dev` - Implementation
+- `/qa` - Testing
+- `/ui` - UI components
+- `/structure` - Code organization
 
-### Security Considerations
-- Input validation for all form submissions
-- SQL injection prevention through Mongoose
-- XSS protection with proper sanitization
-- Role-based access control throughout the application
+See `.bmad-project.md` for detailed workflows.
 
-### Performance Optimizations
-- Next.js Image component for optimized images
-- Dynamic imports for large components
-- Lazy loading for exam questions
-- Efficient caching strategies for offline use
-
-## Special Features
-
-### PWA Capabilities
-- Installable web app
-- Service worker for offline functionality
-- Background synchronization
-- Push notification support (configured but implementation pending)
-
-### LaTeX Support
-- Mathematical expressions rendered with KaTeX
-- Support in question content and options
-- Proper escaping and sanitization
-
-### Payment Integration
-- Razorpay integration for course purchases
-- Order creation API at `/api/create-order/route.js`
-- Payment verification and enrollment automation
-
-### File Upload System
-- Cloudinary integration for image management
-- PDF processing capabilities
-- Smart cropping tools for question images
-
-## Testing and Debugging
-
-### Offline Testing
-1. Start exam while online to cache data
-2. Disconnect network
-3. Continue exam offline
-4. Verify auto-save functionality
-5. Reconnect and test sync
-
-### Common Debugging Points
-- Check browser console for service worker registration
-- Verify IndexedDB for cached exam data
-- Monitor network requests for API failures
-- Check localStorage for exam progress
-
-## Environment Setup
-
-Required environment variables:
-- `MONGODB_URI` - MongoDB connection string
-- `NEXTAUTH_SECRET` - NextAuth.js secret
-- `JWT_SECRET` - Custom JWT secret
-- `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` - Cloudinary config
-- Payment gateway credentials (Razorpay)
-
-The application supports both online and offline modes, with sophisticated caching and synchronization mechanisms designed for educational institutions requiring reliable exam delivery systems.
+## Testing Checklist
+1. Database connections
+2. Authentication flows
+3. Offline functionality
+4. Form validation
+5. Payment processing
+6. Image uploads
+7. Exam auto-save
+8. LaTeX rendering

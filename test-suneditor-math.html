@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunEditor Math Expression Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .math-content {
+            line-height: 2;
+        }
+        .se-math, .katex-expression {
+            display: inline-block;
+            margin: 2px;
+            padding: 2px;
+            background: #f9f9f9;
+            border: 1px dashed #ccc;
+        }
+        .se-math.rendered, .katex-expression.rendered {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .status.error {
+            background: #ffebee;
+        }
+    </style>
+</head>
+<body>
+    <h1>SunEditor Mathematical Expression Rendering Test</h1>
+    
+    <div class="status" id="status">Loading KaTeX...</div>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Original Quill Content (Input)</h2>
+            <div id="quill-content">
+                <p>A bead of mass m is attached to one end of a spring of natural length R and spring constant, K = <span class="ql-formula" data-value="\frac {(\sqrt3 +1)mg}R">Formula will be converted</span> mg R</p>
+                <p>Another example: <span class="ql-formula" data-value="x^2 + y^2 = r^2">Circle equation</span></p>
+                <p>Complex formula: <span class="ql-formula" data-value="\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}">Gaussian integral</span></p>
+            </div>
+            
+            <h3>Raw HTML:</h3>
+            <pre id="raw-input"></pre>
+        </div>
+        
+        <div class="panel">
+            <h2>Converted SunEditor Content (Output)</h2>
+            <div id="suneditor-content" class="math-content">
+                <!-- Converted content will appear here -->
+            </div>
+            
+            <h3>Converted HTML:</h3>
+            <pre id="raw-output"></pre>
+        </div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <h2>Test Additional Math Expressions</h2>
+        <div id="test-expressions" class="math-content">
+            <p>Test 1: <span class="se-math" data-latex="\frac{a+b}{c}">Loading...</span></p>
+            <p>Test 2: <span class="se-math" data-latex="\sqrt{x^2 + y^2}">Loading...</span></p>
+            <p>Test 3: <span class="se-math" data-latex="\sum_{i=1}^{n} i^2">Loading...</span></p>
+            <p>Test 4: <span class="se-math" data-latex="\int_a^b f(x)dx">Loading...</span></p>
+            <p>Test 5: Greek letters: <span class="se-math" data-latex="\alpha \beta \gamma \delta">Loading...</span></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script>
+        // Function to convert Quill formulas to SunEditor format
+        function convertQuillToSunEditor(content) {
+            if (!content) return '';
+            
+            // Convert Quill formula spans
+            let converted = content.replace(
+                /<span class="ql-formula"[^>]*data-value="([^"]+)"[^>]*>[\s\S]*?<\/span>/g,
+                (match, latex) => {
+                    // Clean up the LaTeX expression
+                    const cleanLatex = latex.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                    return `<span class="se-math katex-expression" data-latex="${cleanLatex}">[Math: ${cleanLatex}]</span>`;
+                }
+            );
+            
+            return converted;
+        }
+        
+        // Function to render all math expressions
+        function renderAllMathExpressions() {
+            document.querySelectorAll('.se-math, .katex-expression').forEach(el => {
+                if (el.dataset.latex && !el.classList.contains('rendered')) {
+                    try {
+                        const latex = el.dataset.latex;
+                        el.innerHTML = '';
+                        katex.render(latex, el, { 
+                            throwOnError: false,
+                            displayMode: false,
+                            output: 'html'
+                        });
+                        el.classList.add('rendered');
+                        el.style.border = 'none';
+                        el.style.background = 'transparent';
+                        el.style.padding = '0';
+                    } catch (err) {
+                        console.error('Render error:', err);
+                        el.textContent = `[Math Error: ${el.dataset.latex}]`;
+                        el.style.color = '#e74c3c';
+                    }
+                }
+            });
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                // Show raw input
+                const quillContent = document.getElementById('quill-content');
+                document.getElementById('raw-input').textContent = quillContent.innerHTML;
+                
+                // Convert Quill to SunEditor format
+                const converted = convertQuillToSunEditor(quillContent.innerHTML);
+                const suneditorContent = document.getElementById('suneditor-content');
+                suneditorContent.innerHTML = converted;
+                
+                // Show raw output
+                document.getElementById('raw-output').textContent = converted;
+                
+                // Render all math expressions
+                renderAllMathExpressions();
+                
+                statusEl.textContent = 'Successfully converted and rendered mathematical expressions!';
+                statusEl.classList.remove('error');
+            } catch (err) {
+                console.error('Error:', err);
+                statusEl.textContent = 'Error: ' + err.message;
+                statusEl.classList.add('error');
+            }
+        });
+    </script>
+</body>
+</html>
