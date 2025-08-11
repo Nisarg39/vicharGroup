@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs"
 import { User, BookOpen, Info, Timer, CheckCircle, ListTodo, Star, Quote, Building2, Grid, X } from "lucide-react"
 import { useState as useStateReact } from "react"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
-import { autoSaveExamProgress, clearExamProgress } from "../../../server_actions/actions/examController/examAutoSave"
+// Server auto-save removed - only saves locally until submission
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -29,7 +29,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
     const [examProgress, setExamProgress] = useState(null)
     const timerRef = useRef(null)
-    const autoSaveRef = useRef(null)
     const mainExamRef = useRef(null); // For fullscreen
     const warningsShownRef = useRef(new Set()); // Track which warnings have been shown
 
@@ -42,6 +41,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // State for mobile floating question navigator
     const [showMobileNavigator, setShowMobileNavigator] = useState(false);
+    const [warningCount, setWarningCount] = useState(0); // Track total warnings
 
     // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
@@ -200,16 +200,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const isLastQuestion = currentQuestionIndex === (subjectQuestions.length - 1);
     // Submit button is now always available throughout the exam
 
-    // Debug logging
-    useEffect(() => {
-        console.log('ExamInterface Debug:', {
-            questions: questions,
-            currentQuestionIndex,
-            currentQuestion,
-            totalQuestions,
-            exam
-        })
-    }, [questions, currentQuestionIndex, currentQuestion, totalQuestions, exam])
+    // Debug logging removed for security - do not log exam questions/answers
 
     // 3. Update loadExamProgress to restore startTime
     const loadExamProgress = useCallback(() => {
@@ -218,6 +209,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             if (savedProgress) {
                 const progress = JSON.parse(savedProgress);
                 setAnswers(progress.answers || {});
+                setWarningCount(progress.warningCount || 0); // Restore warning count
                 
                 // Fix: Restore selected subject first, then set question index
                 if (progress.selectedSubject) {
@@ -247,7 +239,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [progressKey, exam.examDurationMinutes]);
 
-    // 4. Update saveExamProgress to save startTime
+    // 4. Update saveExamProgress to save locally only
     const saveExamProgress = useCallback(async () => {
         try {
             const progress = {
@@ -258,38 +250,18 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 visitedQuestions: Array.from(visitedQuestions),
                 timeLeft,
                 startTime: startTime || Date.now(),
+                warningCount, // Save warning count
                 lastSaved: new Date().toISOString()
             };
             
-            // Save to localStorage first (instant, offline-capable)
+            // Save to localStorage only - no server calls during exam
             localStorage.setItem(progressKey, JSON.stringify(progress));
             setExamProgress(progress);
-            
-            // Also save to server with retry logic (if online)
-            if (isOnline && isExamStarted) {
-                const serverProgress = {
-                    examId: exam._id,
-                    studentId: student._id,
-                    ...progress
-                };
-                
-                // Don't await - let it happen in background
-                autoSaveExamProgress(serverProgress)
-                    .then(result => {
-                        if (result.success) {
-                            console.log('✅ Progress saved to server');
-                        } else if (result.queued) {
-                            console.log('⚠️ Progress queued for retry');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Server save failed, using localStorage backup:', error);
-                    });
-            }
+            // Progress saved locally
         } catch (error) {
             console.error('Error saving exam progress:', error);
         }
-    }, [answers, currentQuestionIndex, selectedSubject, markedQuestions, visitedQuestions, timeLeft, progressKey, startTime, isOnline, isExamStarted, exam._id, student._id]);
+    }, [answers, currentQuestionIndex, selectedSubject, markedQuestions, visitedQuestions, timeLeft, progressKey, startTime, warningCount]);
 
     // 1. On mount, always check for saved progress and restore answers, currentQuestionIndex, markedQuestions, startTime, and timeLeft before starting the timer.
     useEffect(() => {
@@ -297,6 +269,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (savedProgress) {
             const progress = JSON.parse(savedProgress);
             setAnswers(progress.answers || {});
+            setWarningCount(progress.warningCount || 0); // Restore warning count
             
             // Fix: Restore selected subject first, then set question index
             if (progress.selectedSubject) {
@@ -395,10 +368,24 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [isCetExam, isExamStarted, selectedSubject, cetAccess.subjectAccess, allSubjects]);
 
-    // 2. On every answer change and question navigation, always call saveExamProgress
+    // 2. Auto-save to localStorage only (no server calls during exam)
     useEffect(() => {
         if (isExamStarted) {
-            saveExamProgress();
+            // Save to localStorage only - no server calls until submission
+            const progress = {
+                answers,
+                currentQuestionIndex,
+                selectedSubject,
+                markedQuestions: Array.from(markedQuestions),
+                visitedQuestions: Array.from(visitedQuestions),
+                timeLeft,
+                startTime: startTime || Date.now(),
+                warningCount,
+                lastSaved: new Date().toISOString()
+            };
+            localStorage.setItem(progressKey, JSON.stringify(progress));
+            setExamProgress(progress);
+            // Progress saved locally
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [answers, currentQuestionIndex, visitedQuestions, markedQuestions, isExamStarted]);
@@ -468,13 +455,36 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const enterFullScreen = () => {
         const element = document.documentElement; // Whole document
         if (element.requestFullscreen) {
-            element.requestFullscreen();
+            element.requestFullscreen().then(() => {
+                // Only close dialog after successful fullscreen entry
+                setWarningDialog(false);
+                warningIssuedRef.current = false;
+            });
         } else if (element.mozRequestFullScreen) { // Firefox
             element.mozRequestFullScreen();
+            // For older browsers without promise support, close after a delay
+            setTimeout(() => {
+                if (document.fullscreenElement) {
+                    setWarningDialog(false);
+                    warningIssuedRef.current = false;
+                }
+            }, 100);
         } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
             element.webkitRequestFullscreen();
+            setTimeout(() => {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    setWarningDialog(false);
+                    warningIssuedRef.current = false;
+                }
+            }, 100);
         } else if (element.msRequestFullscreen) { // IE/Edge
             element.msRequestFullscreen();
+            setTimeout(() => {
+                if (document.fullscreenElement || document.msFullscreenElement) {
+                    setWarningDialog(false);
+                    warningIssuedRef.current = false;
+                }
+            }, 100);
         }
     };
 
@@ -544,8 +554,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
 
     // Out of focus detection (exactly like reference)
+    const warningIssuedRef = useRef(false); // Track if warning was already issued for current violation
+    
     useEffect(() => {
         const handleVisibilityChange = () => {
+            // Don't check for warnings if exam hasn't started yet
+            if (!isExamStarted) {
+                return;
+            }
+            
             // Don't show warning if exam is completed
             if (examCompletedRef.current) {
                 setWarningDialog(false);
@@ -553,17 +570,30 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             }
             
             if (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false) {
+                // Only increment warning count once per violation
+                if (!warningIssuedRef.current) {
+                    warningIssuedRef.current = true;
+                    setWarningCount(prev => {
+                        const newCount = prev + 1;
+                        // Warning issued - count incremented
+                        toast.error(`⚠️ Warning ${newCount}: Please stay in fullscreen mode`, { duration: 3000 });
+                        return newCount;
+                    });
+                }
                 setWarningDialog(true);
-            } else {
-                setWarningDialog(false);
             }
+            // Note: Dialog closing is now handled only by the enterFullScreen function
+            // This prevents the dialog from auto-dismissing when conditions change
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        document.addEventListener('fullscreenchange', handleVisibilityChange);
-        window.addEventListener("resize", handleVisibilityChange);
-        window.addEventListener("focus", handleVisibilityChange);
-        window.addEventListener("blur", handleVisibilityChange);
+        // Only add listeners if exam has started
+        if (isExamStarted) {
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            document.addEventListener('fullscreenchange', handleVisibilityChange);
+            window.addEventListener("resize", handleVisibilityChange);
+            window.addEventListener("focus", handleVisibilityChange);
+            window.addEventListener("blur", handleVisibilityChange);
+        }
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -629,14 +659,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             timeTaken: (exam.examDurationMinutes * 60) - timeLeft,
             completedAt: new Date().toISOString(),
             visitedQuestions: Array.from(visitedQuestions),
-            markedQuestions: Array.from(markedQuestions)
+            markedQuestions: Array.from(markedQuestions),
+            warnings: warningCount // Include warnings in submission
         };
 
         // Clear saved progress
         localStorage.removeItem(progressKey);
         
-        console.log('About to call onComplete with:', examData);
-        console.log('onComplete is:', onComplete, typeof onComplete);
+        // Calling onComplete with exam submission data
         
         if (typeof onComplete === 'function') {
             onComplete(examData);
@@ -722,9 +752,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
-        if (autoSaveRef.current) {
-            clearInterval(autoSaveRef.current);
-        }
+        // Auto-save removed - only local storage during exam
         
         toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
             duration: 6000,
@@ -868,10 +896,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             {warningDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
                     <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-                        <h3 className="text-lg font-semibold text-red-600 mb-4">⚠️ Warning</h3>
-                        <p className="text-gray-700 mb-4">
+                        <h3 className="text-lg font-semibold text-red-600 mb-4">
+                            ⚠️ Warning #{warningCount + 1}
+                        </h3>
+                        <p className="text-gray-700 mb-2">
                             You have exited fullscreen mode or the exam window has lost focus. 
                             Please return to fullscreen mode to continue your exam safely.
+                        </p>
+                        <p className="text-sm text-red-500 mb-4">
+                            Total warnings received: {warningCount}
                         </p>
                         <button
                             onClick={enterFullScreen}
@@ -1033,6 +1066,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             <div className="lg:hidden">
                 <ExamNavigation
                     currentQuestionIndex={currentQuestionIndex}
+                    currentGlobalIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
                     totalQuestions={totalQuestions}
                     markedQuestions={markedQuestions}
                     onPrevious={handlePrevious}
@@ -1074,6 +1108,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 lg:p-4 flex-shrink-0">
                                     <ExamNavigation
                                         currentQuestionIndex={currentQuestionIndex}
+                                        currentGlobalIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
                                         totalQuestions={totalQuestions}
                                         markedQuestions={markedQuestions}
                                         onPrevious={handlePrevious}

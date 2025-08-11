@@ -20,6 +20,10 @@ const ExamResultSchema = new mongoose.Schema({
     of: mongoose.Schema.Types.Mixed, // Can be string, array, or any other type
     default: {},
   },
+  warnings: {
+    type: Number,
+    default: 0,
+  },
   // Navigation tracking for NSE-style question states
   visitedQuestions: [{
     type: Number, // question index

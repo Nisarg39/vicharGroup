@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Flag, X, Send, ChevronDown, ChevronUp } from "lu
 
 export default function ExamNavigation({ 
     currentQuestionIndex, 
+    currentGlobalIndex,
     totalQuestions, 
     markedQuestions, 
     onPrevious, 
@@ -16,7 +17,7 @@ export default function ExamNavigation({
     isOnLastSubject
 }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const isMarked = markedQuestions.has(currentQuestionIndex);
+    const isMarked = markedQuestions.has(currentGlobalIndex);
     const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
     // Only disable Next button if on last question of last subject
     const shouldDisableNext = isLastQuestion && isOnLastSubject;

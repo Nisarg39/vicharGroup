@@ -1457,6 +1457,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                     status: 'completed', // All exam results are completed
                     timeSpent: examResult.timeTaken ? Math.round(examResult.timeTaken / 60) : null, // Convert seconds to minutes
                     submittedAt: examResult.completedAt,
+                    warnings: examResult.warnings || 0,
                     
                     // Detailed question analysis
                     correctAnswers,
@@ -1528,6 +1529,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                     status: 'registered',
                     timeSpent: null,
                     submittedAt: null,
+                    warnings: 0,
                     correctAnswers: 0,
                     wrongAnswers: 0,
                     notAttempted: 0,
@@ -1596,6 +1598,47 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
             }
         })
 
+        // Calculate percentiles for completed students
+        const completedStudents = studentsData.filter(s => s.status === 'completed')
+        const totalCompletedStudents = completedStudents.length
+
+        if (totalCompletedStudents > 1) {
+            completedStudents.forEach(student => {
+                // Count how many students scored lower than current student
+                const studentsWithLowerScores = completedStudents.filter(s => s.score < student.score).length
+                
+                // Calculate percentile: (number of students with lower scores / total students) * 100
+                const percentile = totalCompletedStudents > 1 ? 
+                    Math.max(0, Math.min(100, Math.round((studentsWithLowerScores / (totalCompletedStudents - 1)) * 100 * 100) / 100)) : 0
+                
+                student.percentile = percentile
+                
+                // Update comparative stats with percentile
+                if (student.comparativeStats) {
+                    student.comparativeStats.percentileRank = percentile
+                    student.comparativeStats.rank = student.rank
+                    student.comparativeStats.totalStudentsAppeared = totalCompletedStudents
+                    student.comparativeStats.betterThanPercentage = percentile
+                }
+            })
+        } else if (totalCompletedStudents === 1) {
+            // If only one student completed, they get 100th percentile
+            completedStudents[0].percentile = 100
+            if (completedStudents[0].comparativeStats) {
+                completedStudents[0].comparativeStats.percentileRank = 100
+                completedStudents[0].comparativeStats.rank = 1
+                completedStudents[0].comparativeStats.totalStudentsAppeared = 1
+                completedStudents[0].comparativeStats.betterThanPercentage = 100
+            }
+        }
+
+        // Set percentile to null for students who didn't complete
+        studentsData.forEach(student => {
+            if (student.status !== 'completed') {
+                student.percentile = null
+            }
+        })
+
         // Get unique subjects from exam subjects
         const examSubjects = exam.examSubject || []
         
@@ -1613,7 +1656,8 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                     studentName: student.name,
                     std: exam.standard,
                     total: student.score,
-                    percentage: student.percentage,
+                    percentile: student.percentile !== null && student.percentile !== undefined ? 
+                        student.percentile.toFixed(1) + 'th' : '-',
                     rank: student.rank
                 }
 

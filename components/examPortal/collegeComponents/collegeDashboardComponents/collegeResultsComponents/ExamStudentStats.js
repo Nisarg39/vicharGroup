@@ -34,6 +34,7 @@ import {
     Timer,
     X,
     RefreshCw,
+    AlertTriangle,
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { getExamStudentStats } from '../../../../../server_actions/actions/examController/collegeActions'
@@ -298,7 +299,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
         examInfo.subjects.forEach(subject => {
             mainHeaders.push(subject, '', '') // Subject name spans 3 columns
         })
-        mainHeaders.push('Total', 'Percentage', 'Rank')
+        mainHeaders.push('Total', 'Percentile', 'Rank')
 
         // Create sub-headers row for subject columns
         const subHeaders = ['', '', ''] // Empty cells for basic info columns
@@ -307,7 +308,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
         examInfo.subjects.forEach(() => {
             subHeaders.push('Correct Que', 'Wrong Que', 'Total Marks')
         })
-        subHeaders.push('', '', '') // Empty for Total, Percentage, Rank
+        subHeaders.push('', '', '') // Empty for Total, Percentile, Rank
 
         // Create student data rows
         const studentRows = studentsData.map(student => {
@@ -326,7 +327,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
 
             // Add totals
             row.push(student.total)
-            row.push(student.percentage)
+            row.push(student.percentile !== null && student.percentile !== undefined ? student.percentile.toFixed(1) + 'th' : '-')
             row.push(student.rank)
 
             return row
@@ -359,7 +360,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
 
         // Add widths for total columns
         colWidths.push({ wch: 10 }) // Total
-        colWidths.push({ wch: 12 })  // Percentage
+        colWidths.push({ wch: 12 })  // Percentile
         colWidths.push({ wch: 8 })  // Rank
 
         worksheet['!cols'] = colWidths
@@ -647,13 +648,19 @@ const ExamStudentStats = ({ examId, onBack }) => {
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                         <div className="flex items-center space-x-2">
                                             <Percent className="h-4 w-4" />
-                                            <span>Percentage</span>
+                                            <span>Percentile</span>
                                         </div>
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                         <div className="flex items-center space-x-2">
                                             <CheckCircle className="h-4 w-4" />
                                             <span>Status</span>
+                                        </div>
+                                    </th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                        <div className="flex items-center space-x-2">
+                                            <AlertTriangle className="h-4 w-4" />
+                                            <span>Warnings</span>
                                         </div>
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -673,7 +680,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {students.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-12 text-center">
+                                        <td colSpan="8" className="px-6 py-12 text-center">
                                             <div className="flex flex-col items-center">
                                                 <Search className="h-12 w-12 text-gray-400 mb-4" />
                                                 <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
@@ -784,15 +791,17 @@ const ExamStudentStats = ({ examId, onBack }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                {student.status === 'completed' && student.percentage !== null ? (
+                                                {student.status === 'completed' && student.percentile !== null && student.percentile !== undefined ? (
                                                     <div className={`px-3 py-1.5 rounded-full font-bold text-sm ${
-                                                        student.percentage >= 80 
+                                                        student.percentile >= 90 
                                                             ? 'bg-green-100 text-green-800' :
-                                                        student.percentage >= 60 
+                                                        student.percentile >= 75 
+                                                            ? 'bg-blue-100 text-blue-800' :
+                                                        student.percentile >= 50 
                                                             ? 'bg-yellow-100 text-yellow-800' 
                                                             : 'bg-red-100 text-red-800'
                                                     }`}>
-                                                        {student.percentage.toFixed(1)}%
+                                                        {student.percentile.toFixed(1)}th
                                                     </div>
                                                 ) : (
                                                     <span className="text-sm text-gray-500">-</span>
@@ -809,6 +818,26 @@ const ExamStudentStats = ({ examId, onBack }) => {
                                                 {student.status === 'registered' && <AlertCircle className="h-3 w-3 mr-1" />}
                                                 {student.status === 'completed' ? 'Completed' : 'Registered'}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center justify-center">
+                                                {student.status === 'completed' ? (
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                        student.warnings > 3
+                                                            ? 'bg-red-100 text-red-800 border border-red-200'
+                                                            : student.warnings > 1
+                                                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                                            : student.warnings === 0
+                                                            ? 'bg-green-100 text-green-800 border border-green-200'
+                                                            : 'bg-gray-100 text-gray-800 border border-gray-200'
+                                                    }`}>
+                                                        {student.warnings > 0 && <AlertTriangle className="h-3 w-3 mr-1" />}
+                                                        {student.warnings || 0}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-sm text-gray-500">-</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {student.timeSpent ? `${Math.round(student.timeSpent)} min` : '-'}

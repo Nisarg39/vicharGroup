@@ -437,7 +437,8 @@ async function submitExamResultInternal(examData) {
       completedAt,
       isOfflineSubmission = false,
       visitedQuestions = [],
-      markedQuestions = []
+      markedQuestions = [],
+      warnings = 0 // Extract warnings from exam data
     } = examData;
 
     // 1. Validate exam data
@@ -694,6 +695,7 @@ async function submitExamResultInternal(examData) {
       answers,
       visitedQuestions,
       markedQuestions,
+      warnings, // Save warnings count
       score: finalScore,
       totalMarks: exam.totalMarks || totalMarks,
       timeTaken,
@@ -742,6 +744,7 @@ async function submitExamResultInternal(examData) {
         unattempted,
         timeTaken,
         completedAt: examResult.completedAt,
+        warnings, // Include warnings in the result
         questionAnalysis, // Include questionAnalysis in immediate response
         negativeMarkingRule: {
           negativeMarks: examNegativeMarkingRule.negativeMarks,

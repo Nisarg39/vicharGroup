@@ -94,13 +94,13 @@ export default function ExamHome({ examId }) {
         if (!isOnline || offlineSubmissions.length === 0) return
 
         try {
-            console.log('Starting to sync offline submissions:', offlineSubmissions.length)
+            // Starting to sync offline submissions
             
             const successfulSubmissions = []
             const failedSubmissions = []
             
             for (const submission of offlineSubmissions) {
-                console.log('Submitting exam result:', submission.examId)
+                // Submitting exam result
                 
                 const result = await submitExamResult({
                     examId: submission.examId,
@@ -114,7 +114,7 @@ export default function ExamHome({ examId }) {
                 })
                 
                 if (result.success) {
-                    console.log('Exam submitted successfully:', result.result)
+                    // Exam submitted successfully
                     successfulSubmissions.push(submission)
                     // Store the result to show to the student
                     setExamResult(result.result)
@@ -122,7 +122,7 @@ export default function ExamHome({ examId }) {
                     console.error('Failed to submit exam:', result.message)
                     // Don't throw error for duplicate submissions, just log them
                     if (result.message.includes('already submitted')) {
-                        console.log('Exam already submitted, skipping:', submission.examId)
+                        // Exam already submitted, skipping
                         successfulSubmissions.push(submission) // Consider it "successful" since it's already in DB
                     } else {
                         failedSubmissions.push({ submission, error: result.message })
@@ -250,12 +250,12 @@ export default function ExamHome({ examId }) {
         if (!student?._id) return null
         
         try {
-            console.log('Fetching exam results for student:', student._id)
+            // Fetching exam results for student
             const results = await getStudentExamResults(student._id)
-            console.log('All exam results:', results)
+            // Retrieved exam results
             
             if (results.success && results.results.length > 0) {
-                console.log('Found', results.results.length, 'exam results')
+                // Found exam results
                 
                 // Find the result for this specific exam - try multiple matching strategies
                 let examResult = results.results.find(result => 
@@ -275,7 +275,7 @@ export default function ExamHome({ examId }) {
                     )
                 }
                 
-                console.log('Matched exam result:', examResult)
+                // Matched exam result
                 
                 if (examResult) {
                     return {
@@ -346,15 +346,12 @@ export default function ExamHome({ examId }) {
                 // Load questions if available
                 if (eligibility.exam.examQuestions) {
                     setExamQuestions(eligibility.exam.examQuestions)
-                    console.log('Questions set:', eligibility.exam.examQuestions.length, 'questions')
-                    console.log('First question sample:', eligibility.exam.examQuestions[0])
+                    // Questions loaded successfully
                 } else {
-                    console.log('No questions found in exam data')
+                    // No questions found in exam data
                 }
                 
-                console.log('Eligibility check result:', eligibility)
-                console.log('Exam data:', eligibility.exam)
-                console.log('Exam questions:', eligibility.exam.examQuestions)
+                // Eligibility check completed
             } else {
                 toast.error(eligibility.message)
                 setIsEligible(false); // NEW: set not eligible
@@ -421,11 +418,11 @@ export default function ExamHome({ examId }) {
     useEffect(() => {
         async function fetchAttempts() {
             if (student?._id && examId) {
-                console.log("Fetching attempts for student:", student._id, "exam:", examId);
+                // Fetching attempts for student and exam
                 const res = await getAllExamAttempts(student._id, examId);
-                console.log("getAllExamAttempts response:", res);
+                // Retrieved exam attempts response
                 if (res.success) {
-                    console.log("Setting attempts:", res.attempts);
+                    // Setting attempts data
                     setAllAttempts(res.attempts);
                     // Update hasAttempted state based on actual attempts
                     setHasAttempted(res.attempts.length > 0);
@@ -509,18 +506,14 @@ export default function ExamHome({ examId }) {
                 answers: examData.answers,
                 score: examData.score,
                 timeTaken: examData.timeTaken,
+                warnings: examData.warnings || 0, // Include warnings in submission
                 completedAt: new Date().toISOString(),
                 timestamp: Date.now()
             };
 
             if (isOnline) {
                 // Submit immediately if online
-                console.log('Submitting exam result:', {
-                    examId,
-                    studentId: student._id,
-                    answerCount: Object.keys(examData.answers).length,
-                    score: examData.score
-                });
+                // Submitting exam result to server
                 
                 const result = await submitExamResult({
                     examId,
@@ -529,11 +522,12 @@ export default function ExamHome({ examId }) {
                     score: examData.score,
                     totalMarks: exam?.totalMarks || 0,
                     timeTaken: examData.timeTaken || 0,
+                    warnings: examData.warnings || 0, // Include warnings
                     completedAt: new Date().toISOString(),
                     isOfflineSubmission: false
                 });
                 
-                console.log('Submit result:', result);
+                // Exam submission completed
 
                 if (result.success) {
                     setExamResult(result.result);

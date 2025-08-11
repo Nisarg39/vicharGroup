@@ -209,7 +209,7 @@ export default function QuestionNavigator({
                         )}
 
                         {/* Subject-wise Question Navigator */}
-                        {(showGrid || windowWidth >= 1024 || isMobileOverlay) && (
+                        {showGrid && (
                             <div className={isMobileOverlay ? "space-y-2" : "flex-1 overflow-y-auto"}>
                                 <div className={isMobileOverlay ? "space-y-2" : "space-y-2 p-1"}>
                                     {allSubjects.map(subject => {

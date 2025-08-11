@@ -28,7 +28,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     timeTaken,
     completedAt,
     questionAnalysis = [],
-    collegeDetails = null
+    collegeDetails = null,
+    warnings = 0 // Extract warnings from result
   } = result
 
   // Clamp score to valid ranges
@@ -735,7 +736,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Accuracy */}
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
@@ -780,7 +781,58 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   />
                   <span className="text-xs text-gray-500 mt-2 block">Questions attempted</span>
                 </div>
+
+                {/* Warnings */}
+                <div className={`rounded-xl p-4 ${warnings > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-medium text-gray-900">Warnings</span>
+                    <span className={`text-lg font-bold ${warnings > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {warnings}
+                    </span>
+                  </div>
+                  <div className={`w-full rounded-full h-2 ${warnings > 0 ? 'bg-red-200' : 'bg-green-200'}`}>
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${warnings > 0 ? 'bg-red-500' : 'bg-green-500'}`} 
+                      style={{ width: warnings > 0 ? `${Math.min(100, (warnings / 5) * 100)}%` : '100%' }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-500 mt-2 block">
+                    {warnings === 0 ? 'Perfect conduct!' : `${warnings} exam violation${warnings > 1 ? 's' : ''}`}
+                  </span>
+                </div>
               </div>
+
+              {/* Percentile Information */}
+              {result?.comparativeStats?.percentileRank !== null && result?.comparativeStats?.percentileRank !== undefined && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                      <Trophy className="w-5 h-5" />
+                      Your Performance Ranking
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-600">
+                          {result.comparativeStats.percentileRank.toFixed(1)}th
+                        </div>
+                        <div className="text-sm text-blue-800 font-medium">Percentile</div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          You scored better than {result.comparativeStats.percentileRank.toFixed(1)}% of students
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">
+                          #{result.comparativeStats.rank || '-'}
+                        </div>
+                        <div className="text-sm text-green-800 font-medium">Rank</div>
+                        <div className="text-xs text-green-600 mt-1">
+                          Out of {result.comparativeStats.totalStudentsAppeared || 0} students
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Additional Performance Metrics */}
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -1160,6 +1212,17 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                         )}
                       </>
                     )}
+                    {/* Warning System Explanation */}
+                    <li className="flex items-start gap-2">
+                      <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${warnings > 0 ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
+                      <span>
+                        <span className="font-medium">Warning System:</span> 
+                        {warnings === 0 
+                          ? ' You maintained perfect exam conduct with no violations' 
+                          : ` You received ${warnings} warning${warnings > 1 ? 's' : ''} for exam conduct violations (e.g., exiting fullscreen mode)`
+                        }
+                      </span>
+                    </li>
                   </ul>
                 </div>
               </div>
