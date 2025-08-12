@@ -1172,11 +1172,35 @@ export async function getEligibleExamsForStudent(studentId) {
         enrollment.class === `${exam.standard}` ||
         enrollment.class === `${exam.standard}th`;
 
+      // Check subject match - student should have all subjects required by the exam
+      let isSubjectMatch = true;
+      if (enrollment.allocatedSubjects && enrollment.allocatedSubjects.length > 0 && 
+          exam.examSubject && exam.examSubject.length > 0) {
+        // Check if all exam subjects are in student's allocated subjects
+        isSubjectMatch = exam.examSubject.every(examSubject => 
+          enrollment.allocatedSubjects.some(studentSubject => 
+            // Case-insensitive comparison and handle variations
+            studentSubject.toLowerCase() === examSubject.toLowerCase() ||
+            // Handle common abbreviations
+            (studentSubject.toLowerCase() === 'physics' && examSubject.toLowerCase() === 'phy') ||
+            (studentSubject.toLowerCase() === 'phy' && examSubject.toLowerCase() === 'physics') ||
+            (studentSubject.toLowerCase() === 'chemistry' && examSubject.toLowerCase() === 'chem') ||
+            (studentSubject.toLowerCase() === 'chem' && examSubject.toLowerCase() === 'chemistry') ||
+            (studentSubject.toLowerCase() === 'mathematics' && examSubject.toLowerCase() === 'math') ||
+            (studentSubject.toLowerCase() === 'math' && examSubject.toLowerCase() === 'mathematics') ||
+            (studentSubject.toLowerCase() === 'mathematics' && examSubject.toLowerCase() === 'maths') ||
+            (studentSubject.toLowerCase() === 'maths' && examSubject.toLowerCase() === 'mathematics') ||
+            (studentSubject.toLowerCase() === 'biology' && examSubject.toLowerCase() === 'bio') ||
+            (studentSubject.toLowerCase() === 'bio' && examSubject.toLowerCase() === 'biology')
+          )
+        );
+      }
+
       // Check if exam has questions
       const hasQuestions = exam.examQuestions && exam.examQuestions.length > 0;
 
-      // Include exam if stream and class match (regardless of questions for inactive exams)
-      if (isStreamMatch && isClassMatch) {
+      // Include exam if stream, class, and subjects match
+      if (isStreamMatch && isClassMatch && isSubjectMatch) {
         // Check if student has already exhausted attempts
         const maxAttempts = exam.reattempt || 1;
         const previousAttempts = await ExamResult.countDocuments({ 
@@ -1214,8 +1238,10 @@ export async function getEligibleExamsForStudent(studentId) {
             maxAttempts,
             isStreamMatch,
             isClassMatch,
+            isSubjectMatch,
             hasQuestions,
-            isActive: exam.examStatus === 'active'
+            isActive: exam.examStatus === 'active',
+            studentSubjects: enrollment.allocatedSubjects || []
           }
         });
       }

@@ -428,6 +428,16 @@ export default function MyTestSeries() {
                             </div>
                         </div>
 
+                        {/* Subject allocation info - show student's allocated subjects */}
+                        {exam.eligibility?.studentSubjects && exam.eligibility.studentSubjects.length > 0 && (
+                            <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                                <div className="text-xs sm:text-sm">
+                                    <span className="font-medium text-blue-700">Your Subjects: </span>
+                                    <span className="text-blue-600">{exam.eligibility.studentSubjects.join(', ')}</span>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Exam timing info - only for scheduled exams */}
                         {isScheduled && (exam.startTime || exam.endTime) && (
                             <div className="bg-gray-50 rounded-lg p-3 mb-4">
