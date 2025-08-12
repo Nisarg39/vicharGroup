@@ -47,6 +47,24 @@ const paymentSchema = new mongoose.Schema({
         enum: ["razorpay","cash"],
         default: "razorpay"
     },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    deletedAt: {
+        type: Date
+    },
+    deletedBy: {
+        type: String
+    },
+    deletionReason: {
+        type: String
+    },
+    deletionType: {
+        type: String,
+        enum: ["admin_removal", "refund", "error_correction"],
+        default: "admin_removal"
+    }
 }, { timestamps: true })
 
 const Payment = mongoose.models?.Payment || mongoose.model("Payment",paymentSchema)

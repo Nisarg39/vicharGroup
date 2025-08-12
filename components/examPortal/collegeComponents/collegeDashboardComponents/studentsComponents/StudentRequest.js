@@ -24,6 +24,8 @@ export default function StudentRequest({ collegeData }) {
     const [requestsPerPage] = useState(10)
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedStatus, setSelectedStatus] = useState({})
+    const [filterStream, setFilterStream] = useState('all')
+    const [filterStatus, setFilterStatus] = useState('all')
 
     const examTypes = ['NEET', 'JEE', 'MHT-CET']
     const classOptions = collegeData.allocatedClasses || []
@@ -341,18 +343,49 @@ export default function StudentRequest({ collegeData }) {
         setCurrentPage(1) // Reset to first page when searching
     }
 
+    const handleStreamFilterChange = (stream) => {
+        setFilterStream(stream)
+        setCurrentPage(1) // Reset to first page when filtering
+    }
+
+    const handleStatusFilterChange = (status) => {
+        setFilterStatus(status)
+        setCurrentPage(1) // Reset to first page when filtering
+    }
+
     const filteredRequests = requests.filter(request => {
-        if (!searchQuery) return true
+        // Search filter
+        if (searchQuery) {
+            const searchLower = searchQuery.toLowerCase()
+            const studentData = request.student
+            
+            const matchesSearch = (
+                studentData.name.toLowerCase().includes(searchLower) ||
+                studentData.email.toLowerCase().includes(searchLower) ||
+                (studentData.phone && studentData.phone.includes(searchQuery))
+            )
+            if (!matchesSearch) return false
+        }
         
-        const searchLower = searchQuery.toLowerCase()
-        const studentData = request.student
+        // Stream filter
+        if (filterStream !== 'all') {
+            const hasStream = request.allocatedStreams && request.allocatedStreams.includes(filterStream)
+            if (!hasStream) return false
+        }
         
-        return (
-            studentData.name.toLowerCase().includes(searchLower) ||
-            studentData.email.toLowerCase().includes(searchLower) ||
-            (studentData.phone && studentData.phone.includes(searchQuery))
-        )
+        // Status filter
+        if (filterStatus !== 'all') {
+            if (request.status !== filterStatus) return false
+        }
+        
+        return true
     })
+    
+    // Calculate paginated data
+    const paginatedRequests = filteredRequests.slice(
+        (currentPage - 1) * requestsPerPage,
+        currentPage * requestsPerPage
+    )
 
     // Toggle expand/collapse for a request
     const handleExpand = (requestId) => {
@@ -435,28 +468,119 @@ export default function StudentRequest({ collegeData }) {
                     </div>
                 </div>
 
-                {/* Search Section */}
+                {/* Search and Filter Section */}
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Search by name, email or phone..."
-                            value={searchQuery}
-                            onChange={handleSearch}
-                        />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                    <div className="space-y-4">
+                        {/* Search Bar */}
+                        <div className="relative">
+                            <input
+                                type="text"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Search by name, email or phone..."
+                                value={searchQuery}
+                                onChange={handleSearch}
+                            />
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        {/* Filter Options */}
+                        <div className="flex flex-wrap gap-4">
+                            {/* Stream Filter */}
+                            <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium text-gray-700">Stream:</label>
+                                <select
+                                    value={filterStream}
+                                    onChange={(e) => handleStreamFilterChange(e.target.value)}
+                                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    <option value="all">All Streams</option>
+                                    {streamOptions.map(stream => (
+                                        <option key={stream} value={stream}>{stream}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            
+                            {/* Status Filter */}
+                            <div className="flex items-center space-x-2">
+                                <label className="text-sm font-medium text-gray-700">Status:</label>
+                                <select
+                                    value={filterStatus}
+                                    onChange={(e) => handleStatusFilterChange(e.target.value)}
+                                    className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                >
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                            
+                            {/* Active Filters Display */}
+                            {(filterStream !== 'all' || filterStatus !== 'all') && (
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-500">Active filters:</span>
+                                    {filterStream !== 'all' && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {filterStream}
+                                            <button
+                                                onClick={() => handleStreamFilterChange('all')}
+                                                className="ml-1 hover:text-blue-900"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
+                                    {filterStatus !== 'all' && (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {filterStatus}
+                                            <button
+                                                onClick={() => handleStatusFilterChange('all')}
+                                                className="ml-1 hover:text-green-900"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Requests List */}
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-100/50">
+                    {filteredRequests.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h3 className="mt-2 text-sm font-medium text-gray-900">No requests found</h3>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {searchQuery || filterStream !== 'all' || filterStatus !== 'all' 
+                                    ? 'Try adjusting your filters or search query'
+                                    : 'No student requests available'}
+                            </p>
+                            {(searchQuery || filterStream !== 'all' || filterStatus !== 'all') && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('')
+                                        setFilterStream('all')
+                                        setFilterStatus('all')
+                                        setCurrentPage(1)
+                                    }}
+                                    className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+                                >
+                                    Clear all filters
+                                </button>
+                            )}
+                        </div>
+                    ) : (
                     <div className="divide-y divide-gray-200">
-                        {filteredRequests.map((request) => (
+                        {paginatedRequests.map((request) => (
                             <div key={request._id} className="p-4">
                                 <div 
                                     className="flex items-center justify-between cursor-pointer"
@@ -509,6 +633,14 @@ export default function StudentRequest({ collegeData }) {
                                                 Student Assignment Details
                                             </h4>
                                             <div className="space-y-6">
+                                                {/* Show student's message */}
+                                                {request.message && (
+                                                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                                        <div className="text-sm font-medium text-blue-900 mb-1">Student Message:</div>
+                                                        <div className="text-sm text-blue-800">{request.message}</div>
+                                                    </div>
+                                                )}
+                                                
                                                 {/* Show student's requested class and streams */}
                                                 <div className="mb-4">
                                                     <div className="text-xs text-gray-500 mb-1">Student Requested:</div>
@@ -689,22 +821,34 @@ export default function StudentRequest({ collegeData }) {
                             </div>
                         ))}
                     </div>
+                    )}
                 </div>
 
                 {/* Pagination */}
-                {pagination && (
+                {filteredRequests.length > 0 && (
                     <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
                         <div className="px-4 py-3 sm:px-6">
                             <div className="text-sm text-gray-700 text-center mb-4">
-                                Showing {((currentPage - 1) * requestsPerPage) + 1} to{' '}
-                                {Math.min(currentPage * requestsPerPage, filteredRequests.length)} of{' '}
-                                {filteredRequests.length} results
+                                {filteredRequests.length > 0 ? (
+                                    <>
+                                        Showing {Math.min(((currentPage - 1) * requestsPerPage) + 1, filteredRequests.length)} to{' '}
+                                        {Math.min(currentPage * requestsPerPage, filteredRequests.length)} of{' '}
+                                        {filteredRequests.length} results
+                                        {(filterStream !== 'all' || filterStatus !== 'all' || searchQuery) && (
+                                            <span className="text-gray-500"> (filtered)</span>
+                                        )}
+                                    </>
+                                ) : (
+                                    'No results found'
+                                )}
                             </div>
-                            <PaginationControls 
-                                currentPage={currentPage}
-                                totalPages={Math.ceil(filteredRequests.length / requestsPerPage)}
-                                onPageChange={handlePageChange}
-                            />
+                            {filteredRequests.length > requestsPerPage && (
+                                <PaginationControls 
+                                    currentPage={currentPage}
+                                    totalPages={Math.ceil(filteredRequests.length / requestsPerPage)}
+                                    onPageChange={handlePageChange}
+                                />
+                            )}
                         </div>
                     </div>
                 )}

@@ -259,6 +259,7 @@ export async function fetchAllStudents(page) {
         .populate({
             path: 'purchases',
             model: 'Payment',
+            match: { isDeleted: { $ne: true } },
             populate: {
                 path: 'product',
                 model: 'Products',
@@ -273,6 +274,7 @@ export async function fetchAllStudents(page) {
         const serializedStudents = students.map(student => ({
             _id: student._id.toString(),
             ...student,
+            purchases: student.purchases ? student.purchases.filter(p => p !== null) : []
         }))
         return {
             success: true,
@@ -318,6 +320,7 @@ export async function searchStudent(details){
             .populate({
                 path: 'purchases',
                 model: 'Payment',
+                match: { isDeleted: { $ne: true } },
                 populate: {
                     path: 'product',
                     model: 'Products',
@@ -333,6 +336,7 @@ export async function searchStudent(details){
         const serializedStudents = students.map(student => ({
             _id: student._id.toString(),
             ...student,
+            purchases: student.purchases ? student.purchases.filter(p => p !== null) : []
         }));
 
         return {
@@ -398,6 +402,52 @@ export async function assignProduct(details){
     }
 }
 
+export async function removeProductAssignment(details) {
+    try {
+        await connectDB()
+        
+        const { studentId, paymentId, adminNote, addBackToCart } = details
+        
+        const student = await Student.findById(studentId)
+        const payment = await Payment.findById(paymentId).populate('product')
+        
+        if (!student || !payment) {
+            return { 
+                success: false, 
+                message: "Student or payment not found" 
+            }
+        }
+        
+        payment.isDeleted = true
+        payment.deletedAt = new Date()
+        payment.deletedBy = "admin"
+        payment.deletionReason = adminNote || "No reason provided"
+        payment.deletionType = "admin_removal"
+        await payment.save()
+        
+        student.purchases = student.purchases.filter(
+            p => p.toString() !== paymentId.toString()
+        )
+        
+        if (addBackToCart && payment.product && !student.cart.includes(payment.product._id)) {
+            student.cart.push(payment.product._id)
+        }
+        
+        await student.save()
+        
+        return {
+            success: true,
+            message: "Product assignment removed successfully"
+        }
+        
+    } catch (error) {
+        console.error("Error removing product assignment:", error)
+        return {
+            success: false,
+            message: "Error removing product assignment"
+        }
+    }
+}
 
 // segment functions
 
@@ -1380,7 +1430,7 @@ export async function paymentDetails(page = 1, limit = 10){
     try {
         await connectDB()
         const skip = (page - 1) * limit
-        const payments = await Payment.find({})
+        const payments = await Payment.find({ isDeleted: { $ne: true } })
         .populate({
             path: 'student',
             model: 'Student',
@@ -1400,7 +1450,7 @@ export async function paymentDetails(page = 1, limit = 10){
         .limit(limit)
         .sort({ createdAt: -1 })
 
-        const totalCount = await Payment.countDocuments({})
+        const totalCount = await Payment.countDocuments({ isDeleted: { $ne: true } })
         const serializedPayments = payments.map(payment => {
             const plainPayment = payment.toObject()
             return {
@@ -1457,7 +1507,8 @@ export async function searchStudentPayments(searchTerm, page = 1, limit = 10){
         
         // Now find payments for these students
         const payments = await Payment.find({
-            student: { $in: studentIds }
+            student: { $in: studentIds },
+            isDeleted: { $ne: true }
         })
         .populate({
             path: 'student',
@@ -1479,7 +1530,8 @@ export async function searchStudentPayments(searchTerm, page = 1, limit = 10){
         .sort({ createdAt: -1 })
 
         const totalCount = await Payment.countDocuments({
-            student: { $in: studentIds }
+            student: { $in: studentIds },
+            isDeleted: { $ne: true }
         })
         
         const serializedPayments = payments.map(payment => {

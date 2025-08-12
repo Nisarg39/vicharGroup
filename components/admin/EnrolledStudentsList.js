@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { fetchAllStudents, showProducts, assignProduct, searchStudent } from '../../server_actions/actions/adminActions';
+import { fetchAllStudents, showProducts, assignProduct, searchStudent, removeProductAssignment } from '../../server_actions/actions/adminActions';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 export default function EnrolledStudentsList() {
@@ -316,14 +316,60 @@ export default function EnrolledStudentsList() {
             {selectedStudent && (
                 <StudentDetails 
                     student={selectedStudent} 
-                    onClose={() => setSelectedStudent(null)} 
+                    onClose={() => setSelectedStudent(null)}
+                    onRefresh={() => {
+                        if (isSearching && searchTerm.trim()) {
+                            fetchAllStudentsDetails(currentPage, true, searchTerm);
+                        } else {
+                            fetchAllStudentsDetails(currentPage, false);
+                        }
+                    }}
                 />
             )}
         </div>
     )
 }
-function StudentDetails({ student, onClose }) {
-    // console.log(student);
+function StudentDetails({ student, onClose, onRefresh }) {
+    const [deletingPayment, setDeletingPayment] = useState(null);
+    
+    const handleRemovePurchase = async (paymentId, productName) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to remove "${productName}" from ${student.name}'s purchases?\n\n` +
+            "This action will:\n" +
+            "• Remove the product from student's account\n" +
+            "• Mark the payment as deleted\n" +
+            "• Optionally add the product back to cart\n\n" +
+            "This action can be audited but not easily undone."
+        );
+        
+        if (!confirmed) return;
+        
+        const adminNote = prompt("Please provide a reason for removal (optional):");
+        const addBackToCart = window.confirm("Add product back to student's cart?");
+        
+        setDeletingPayment(paymentId);
+        
+        try {
+            const response = await removeProductAssignment({
+                studentId: student._id,
+                paymentId: paymentId,
+                adminNote: adminNote || "No reason provided",
+                addBackToCart: addBackToCart
+            });
+            
+            if (response.success) {
+                alert(response.message);
+                onRefresh();
+                onClose();
+            } else {
+                alert("Error: " + response.message);
+            }
+        } catch (error) {
+            alert("Error removing product assignment");
+        } finally {
+            setDeletingPayment(null);
+        }
+    };
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[9999] p-4">
             <div className="bg-white p-8 rounded-xl shadow-2xl max-w-3xl w-full mx-4 transform transition-all max-h-[90vh] overflow-y-auto">
@@ -392,13 +438,42 @@ function StudentDetails({ student, onClose }) {
                             </div>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-lg col-span-1 md:col-span-2">
-                            <p className="text-sm font-semibold text-gray-600 mb-2">Purchase History</p>
-                            <div className="max-h-32 overflow-y-auto">
+                            <div className="flex justify-between items-center mb-2">
+                                <p className="text-sm font-semibold text-gray-600">Purchase History</p>
+                                <span className="text-xs text-gray-500">
+                                    {student.purchases?.length || 0} items
+                                </span>
+                            </div>
+                            <div className="max-h-40 overflow-y-auto space-y-2">
                                 {student.purchases && student.purchases.length > 0 ? 
                                     student.purchases.map((item, index) => (
-                                        <span key={index} className="block py-1 text-gray-800">
-                                            {index+1}. {item.product.name} - {new Date(item.createdAt).toLocaleDateString()}
-                                        </span>
+                                        <div key={index} className="flex justify-between items-center py-2 px-3 bg-white rounded border hover:shadow-sm transition-shadow">
+                                            <div className="flex-1">
+                                                <span className="font-medium text-gray-800">
+                                                    {index + 1}. {item.product.name}
+                                                </span>
+                                                <div className="text-xs text-gray-500">
+                                                    Purchased: {new Date(item.createdAt).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemovePurchase(item._id, item.product.name)}
+                                                disabled={deletingPayment === item._id}
+                                                className="ml-2 px-3 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                                title="Remove this purchase"
+                                            >
+                                                {deletingPayment === item._id ? (
+                                                    <span>Removing...</span>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        <span>Delete</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     ))
                                     : 
                                     <p className="text-gray-500 italic">No purchase history</p>
