@@ -227,8 +227,8 @@ export default function EnrolledStudentsList() {
                             <>Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalCount)} of {totalCount} students</>
                         )}
                     </div>
-                    <div className="overflow-x-auto overflow-y-visible shadow-lg rounded-lg mx-4">
-                        <table className="min-w-full bg-white border-collapse">
+                    <div className="overflow-x-auto shadow-lg rounded-lg mx-4" style={{ overflow: 'visible' }}>
+                        <table className="min-w-full bg-white border-collapse" style={{ position: 'relative', zIndex: 1 }}>
                             <thead className="bg-gray-100">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b">Sr No.</th>
@@ -242,7 +242,7 @@ export default function EnrolledStudentsList() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {Object.values(students).map((student, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 transition-colors duration-200" style={{ zIndex: Object.values(students).length - index }}>
+                                    <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{(currentPage - 1) * 10 + index + 1}</td>
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">{student.name}</td>
                                         <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-700">+91 {student.phone}</td>
@@ -252,7 +252,7 @@ export default function EnrolledStudentsList() {
                                                 {student.isVerified ? 'Verified' : 'Not Verified'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 whitespace-nowrap relative" style={{ zIndex: Object.values(students).length - index + 100 }}>
+                                        <td className="px-6 py-5 whitespace-nowrap relative" style={{ overflow: 'visible' }}>
                                             <div className="relative">
                                                 <SearchableDropdown
                                                     products={products}
@@ -416,8 +416,8 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
     const dropdownRef = useRef(null);
+    const dropdownMenuRef = useRef(null);
 
     const filteredProducts = searchTerm.trim() 
         ? products.filter(product =>
@@ -425,36 +425,18 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
           )
         : products;
 
-    const calculateDropdownPosition = () => {
-        if (dropdownRef.current) {
-            const rect = dropdownRef.current.getBoundingClientRect();
-            const top = rect.bottom + window.scrollY;
-            const right = window.innerWidth - rect.right;
-            setDropdownPosition({ top, right });
-        }
-    };
-
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+                dropdownMenuRef.current && !dropdownMenuRef.current.contains(event.target)) {
                 setIsOpen(false);
             }
         };
 
-        const handleScroll = () => {
-            if (isOpen) {
-                calculateDropdownPosition();
-            }
-        };
-
         document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('scroll', handleScroll, true);
-        window.addEventListener('resize', handleScroll);
         
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('scroll', handleScroll, true);
-            window.removeEventListener('resize', handleScroll);
         };
     }, [isOpen]);
 
@@ -471,20 +453,18 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
     };
 
     const handleToggleDropdown = () => {
-        if (!isOpen) {
-            calculateDropdownPosition();
-        }
         setIsOpen(!isOpen);
     };
 
     return (
-        <div className="relative w-full" ref={dropdownRef}>
+        <div className="relative w-full" ref={dropdownRef} style={{ zIndex: isOpen ? 10000 : 1 }}>
             <button
                 type="button"
                 onClick={handleToggleDropdown}
                 className={`relative w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white hover:bg-gray-50 transition-colors ${
                     selectedProduct ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-700'
-                } ${isOpen ? 'z-[1]' : 'z-[20]'}`}
+                }`}
+                style={{ zIndex: 1 }}
             >
                 <div className="flex items-center justify-between">
                     <span className="truncate">
@@ -503,10 +483,12 @@ function SearchableDropdown({ products, onSelect, placeholder }) {
 
             {isOpen && (
                 <div 
-                    className="fixed z-[9999] min-w-[350px] bg-white border border-gray-300 rounded-md shadow-xl max-h-80 overflow-hidden backdrop-blur-sm"
+                    ref={dropdownMenuRef}
+                    className="absolute mt-1 w-full min-w-[350px] bg-white border border-gray-300 rounded-md shadow-xl max-h-80 overflow-hidden"
                     style={{
-                        top: `${dropdownPosition.top}px`,
-                        right: `${dropdownPosition.right}px`
+                        minWidth: '350px',
+                        maxWidth: '400px',
+                        zIndex: 10001
                     }}
                 >
                     <div className="p-3 border-b border-gray-200 bg-gray-50">
