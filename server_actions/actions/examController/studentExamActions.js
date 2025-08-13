@@ -612,12 +612,13 @@ async function submitExamResultInternal(examData) {
         const normalizedUserAnswer = normalizeAnswer(userAnswer, question);
         const normalizedCorrectAnswer = normalizeAnswer(question.answer, question);
         if (normalizedUserAnswer === normalizedCorrectAnswer) {
-          finalScore += questionMarks;
+          // Use admin-configured positive marks instead of questionMarks for subject-specific scoring (like MHT-CET)
+          finalScore += adminPositiveMarks;
           correctAnswersCount++;
           questionAnalysis.push({
             questionId: question._id,
             status: "correct",
-            marks: questionMarks,
+            marks: adminPositiveMarks,
             userAnswer: normalizedUserAnswer,
             correctAnswer: normalizedCorrectAnswer,
             negativeMarkingRule: questionNegativeMarkingRule.description,
@@ -643,9 +644,14 @@ async function submitExamResultInternal(examData) {
     // 5. Calculate subject-wise performance
     const subjectPerformance = {};
     
-    exam.examQuestions.forEach((question, index) => {
+    for (let index = 0; index < exam.examQuestions.length; index++) {
+      const question = exam.examQuestions[index];
       const subject = question.subject || 'Unknown';
       const questionResult = questionAnalysis[index];
+      
+      // Get question-specific marking rule for accurate total marks calculation
+      const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, question);
+      const questionMaxMarks = questionNegativeMarkingRule.positiveMarks || question.marks || 4;
       
       if (!subjectPerformance[subject]) {
         subjectPerformance[subject] = {
@@ -664,7 +670,7 @@ async function submitExamResultInternal(examData) {
       
       const subjectStats = subjectPerformance[subject];
       subjectStats.totalQuestions++;
-      subjectStats.totalMarks += question.marks || 4;
+      subjectStats.totalMarks += questionMaxMarks;
       
       if (questionResult.status === 'correct' || questionResult.status === 'partially_correct') {
         subjectStats.attempted++;
@@ -677,7 +683,7 @@ async function submitExamResultInternal(examData) {
       } else {
         subjectStats.unanswered++;
       }
-    });
+    }
     
     // Calculate accuracy and percentage for each subject
     Object.values(subjectPerformance).forEach(subject => {

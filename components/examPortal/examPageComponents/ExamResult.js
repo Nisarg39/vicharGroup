@@ -41,7 +41,32 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   // State for subject filtering
   const [selectedSubject, setSelectedSubject] = useState('All')
 
-  // Helper function to get actual marking scheme details from the evaluated result
+  // Helper function to get general marking scheme details (always show scheme regardless of application)
+  const getGeneralMarkingScheme = () => {
+    // First try to get from exam's markingRulePreview (this contains the general scheme)
+    if (exam?.markingRulePreview?.hasMarkingRules) {
+      return {
+        positiveMarks: exam.markingRulePreview.positiveMarks,
+        negativeMarks: exam.markingRulePreview.negativeMarks,
+        isSubjectWise: exam.markingRulePreview.isSubjectWise || false,
+        subjects: exam.markingRulePreview.subjects || {},
+        ruleSource: exam.markingRulePreview.ruleSource || 'system',
+        ruleDescription: exam.markingRulePreview.ruleDescription || 'General marking scheme'
+      }
+    }
+
+    // Fallback to basic marking info from exam or result
+    return {
+      positiveMarks: exam?.positiveMarks || exam?.marks || result?.negativeMarkingInfo?.positiveMarks || 4,
+      negativeMarks: exam?.negativeMarks !== undefined ? exam.negativeMarks : (result?.negativeMarkingInfo?.negativeMarks || 0),
+      isSubjectWise: false,
+      subjects: {},
+      ruleSource: result?.negativeMarkingInfo?.ruleSource || 'exam_specific',
+      ruleDescription: result?.negativeMarkingInfo?.ruleDescription || 'Standard marking scheme'
+    }
+  }
+
+  // Helper function to get actual marking scheme details from the evaluated result (for comparison)
   const getActualMarkingDetails = () => {
     if (!questionAnalysis || questionAnalysis.length === 0) {
       // Fallback to basic marking info if no question analysis available
@@ -195,14 +220,21 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   const { totalMarksEarned, totalMarksDeducted } = calculateActualMarks()
 
-  // Now we can safely call getActualMarkingDetails after getQuestionById is defined
-  const markingDetails = getActualMarkingDetails()
+  // Get both general marking scheme and actual applied details
+  const generalMarkingScheme = getGeneralMarkingScheme()
+  const actualMarkingDetails = getActualMarkingDetails()
+  
+  // Use general marking scheme for display to students
+  const markingDetails = generalMarkingScheme
 
   // Calculate marks breakdown using marking details (now that markingDetails is available)
   const positiveMarksPerQuestion = markingDetails.isSubjectWise ? 'varies' : markingDetails.positiveMarks
   const negativeMarksPerQuestion = result?.negativeMarkingInfo?.negativeMarks || markingDetails.negativeMarks
 
-  // Get unique subjects from questions
+  // Check if this is a JEE exam
+  const isJeeExam = exam?.stream?.toLowerCase().includes('jee')
+  
+  // Get unique subjects from questions with competitive exam ordering
   const getUniqueSubjects = () => {
     if (!exam?.examQuestions || !questionAnalysis.length) return []
     
@@ -214,25 +246,104 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
       }
     })
     
-    return Array.from(subjects).sort()
+    // Apply competitive exam ordering (Physics, Chemistry, then others alphabetically)
+    const uniqueSubjects = Array.from(subjects)
+    const priorityOrder = ['Physics', 'Chemistry']
+    const orderedSubjects = []
+    
+    // Add priority subjects first if they exist
+    priorityOrder.forEach(subject => {
+      if (uniqueSubjects.includes(subject)) {
+        orderedSubjects.push(subject)
+      }
+    })
+    
+    // Add remaining subjects alphabetically
+    const remainingSubjects = uniqueSubjects
+      .filter(subject => !priorityOrder.includes(subject))
+      .sort()
+    
+    return [...orderedSubjects, ...remainingSubjects]
   }
 
   const uniqueSubjects = getUniqueSubjects()
 
-  // Filter questions based on selected subject
+  // Sort question analysis to match exam interface display order
+  const getSortedQuestionAnalysis = () => {
+    if (!questionAnalysis || questionAnalysis.length === 0) return []
+    
+    // Create a copy to avoid mutating original
+    const analysisCopy = [...questionAnalysis]
+    
+    // For JEE exams, we need to sort by subject order, then by section, then by question number
+    if (isJeeExam) {
+      analysisCopy.sort((a, b) => {
+        const questionA = getQuestionById(a.questionId)
+        const questionB = getQuestionById(b.questionId)
+        
+        if (!questionA || !questionB) return 0
+        
+        // First, sort by subject order (Physics, Chemistry, then others)
+        const subjectIndexA = uniqueSubjects.indexOf(questionA.subject)
+        const subjectIndexB = uniqueSubjects.indexOf(questionB.subject)
+        
+        if (subjectIndexA !== subjectIndexB) {
+          return subjectIndexA - subjectIndexB
+        }
+        
+        // Within same subject, sort by section (Section A = 1 before Section B = 2)
+        const sectionA = questionA.section || 1
+        const sectionB = questionB.section || 1
+        
+        if (sectionA !== sectionB) {
+          return sectionA - sectionB
+        }
+        
+        // Within same section, sort by question number
+        return (questionA.questionNumber || 0) - (questionB.questionNumber || 0)
+      })
+    }
+    // For other exams, sort by subject order only
+    else {
+      analysisCopy.sort((a, b) => {
+        const questionA = getQuestionById(a.questionId)
+        const questionB = getQuestionById(b.questionId)
+        
+        if (!questionA || !questionB) return 0
+        
+        // Sort by subject order
+        const subjectIndexA = uniqueSubjects.indexOf(questionA.subject)
+        const subjectIndexB = uniqueSubjects.indexOf(questionB.subject)
+        
+        if (subjectIndexA !== subjectIndexB) {
+          return subjectIndexA - subjectIndexB
+        }
+        
+        // Within same subject, maintain original order or use question number if available
+        return (questionA.questionNumber || 0) - (questionB.questionNumber || 0)
+      })
+    }
+    
+    return analysisCopy
+  }
+
+  // Get sorted question analysis
+  const sortedQuestionAnalysis = getSortedQuestionAnalysis()
+
+  // Filter questions based on selected subject (using sorted array)
   const filteredQuestionAnalysis = selectedSubject === 'All' 
-    ? questionAnalysis 
-    : questionAnalysis.filter(analysis => {
+    ? sortedQuestionAnalysis 
+    : sortedQuestionAnalysis.filter(analysis => {
         const question = getQuestionById(analysis.questionId)
         return question?.subject === selectedSubject
       })
 
   // Calculate subject-wise performance
   const calculateSubjectPerformance = () => {
-    if (!questionAnalysis.length || !uniqueSubjects.length) return []
+    if (!sortedQuestionAnalysis.length || !uniqueSubjects.length) return []
     
     return uniqueSubjects.map(subject => {
-      const subjectQuestions = questionAnalysis.filter(analysis => {
+      const subjectQuestions = sortedQuestionAnalysis.filter(analysis => {
         const question = getQuestionById(analysis.questionId)
         return question?.subject === subject
       })
@@ -260,7 +371,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
       const percentage = maxPossibleMarks > 0 ? ((subjectMarks / maxPossibleMarks) * 100).toFixed(1) : '0.0'
       
       // Estimate time spent per subject (proportional to questions)
-      const timeSpent = totalQuestions > 0 ? Math.round((timeTaken * totalQuestions) / questionAnalysis.length) : 0
+      const timeSpent = totalQuestions > 0 ? Math.round((timeTaken * totalQuestions) / sortedQuestionAnalysis.length) : 0
       
       // Calculate difficulty breakdown (estimated)
       const difficultyBreakdown = {
@@ -981,19 +1092,35 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Target className="w-5 h-5 text-amber-600" />
-                Marking Scheme Applied
+                Marking Scheme
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Details about the marking rules applied to this exam
+                General marking rules for this exam (applicable to all students)
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Informational note */}
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <BookOpen className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Note:</strong> This section shows the general marking scheme for this exam. 
+                      All students can view these marking rules to understand how exams of this type are evaluated, 
+                      regardless of which subjects they attempted.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               <div className="space-y-4">
                 {markingDetails.isSubjectWise ? (
                   // Subject-wise marking scheme for CET
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50">
-                      <h4 className="font-bold text-blue-900 mb-4 text-lg">Subject-wise Marking Scheme Applied</h4>
+                      <h4 className="font-bold text-blue-900 mb-4 text-lg">Subject-wise Marking Scheme</h4>
                       <div className="space-y-3">
                         {Object.entries(markingDetails.subjects).map(([subject, marks]) => (
                           <div key={subject} className="flex justify-between items-center p-3 bg-white/60 rounded-xl">
@@ -1016,7 +1143,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       </div>
                       <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
                         <p className="text-blue-800 font-medium text-sm">
-                          <strong>Applied Rule:</strong> {markingDetails.ruleDescription}
+                          <strong>General Rule:</strong> {markingDetails.ruleDescription}
                         </p>
                         <p className="text-blue-700 text-xs mt-1">
                           Source: {markingDetails.ruleSource === 'super_admin_default' ? 'System Default Rules' : 'Exam-Specific Rules'}
@@ -1057,7 +1184,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="font-semibold text-blue-900">Applied Marking Rule</span>
+                    <span className="font-semibold text-blue-900">General Marking Rule</span>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div><span className="font-medium text-gray-700">Description:</span> 
@@ -1136,12 +1263,12 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   </div>
                 </div>
 
-                {/* Rule Source Information */}
+                {/* Rule Source Information - Show for actual applied rules */}
                 {result?.negativeMarkingInfo && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-semibold text-blue-900">Applied Rule Details</span>
+                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                      <span className="font-semibold text-gray-900">Actually Applied Rule (for reference)</span>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div><span className="font-medium text-gray-700">Rule Source:</span> 
@@ -1152,6 +1279,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       {result.negativeMarkingInfo.ruleDescription && (
                         <div><span className="font-medium text-gray-700">Description:</span> <span className="text-gray-800">{result.negativeMarkingInfo.ruleDescription}</span></div>
                       )}
+                      <div className="text-xs text-gray-600 mt-2 italic">
+                        Note: The general marking scheme above shows what applies to all students. This section shows what was actually applied to your specific result.
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1160,7 +1290,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                    <span className="font-semibold text-gray-900">Marking Guidelines</span>
+                    <span className="font-semibold text-gray-900">General Marking Guidelines</span>
                   </div>
                   <ul className="space-y-2 text-sm text-gray-700">
                     {markingDetails.isSubjectWise ? (
@@ -1173,9 +1303,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           </li>
                         ))}
                         <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-green-800 font-medium">
-                            {totalMarksDeducted > 0 ? 'Minimal negative marking applied' : 'No negative marking was applied to this exam'}
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-blue-800 font-medium">
+                            {markingDetails.negativeMarks > 0 ? `Negative marking may apply: -${markingDetails.negativeMarks} mark(s) for incorrect answers` : 'No negative marking applies to this exam'}
                           </span>
                         </li>
                         <li className="flex items-start gap-2">
@@ -1207,7 +1337,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                         {markingDetails.negativeMarks === 0 && (
                           <li className="flex items-start gap-2">
                             <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span className="text-green-800 font-medium">No negative marking was applied to this exam</span>
+                            <span className="text-green-800 font-medium">No negative marking applies to this exam</span>
                           </li>
                         )}
                       </>
@@ -1293,17 +1423,23 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     if (!question) return null
                     const isCorrect = analysis.status === 'correct'
                     const isUnattempted = analysis.status === 'unattempted'
-                    // Find original question number in full list
-                    const originalIndex = questionAnalysis.findIndex(qa => qa.questionId === analysis.questionId)
+                    // Find question number in sorted list for consistent display
+                    const sortedIndex = sortedQuestionAnalysis.findIndex(qa => qa.questionId === analysis.questionId)
                     return (
                       <div key={analysis.questionId} className="border border-gray-200 rounded-xl p-4 print-question bg-gray-50/80">
                         {/* Question Header */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-3">
-                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Q{originalIndex + 1}</span>
+                            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Q{sortedIndex + 1}</span>
                             {question.subject && (
                               <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">
                                 {question.subject}
+                              </Badge>
+                            )}
+                            {/* Show section info for JEE exams */}
+                            {isJeeExam && question.section && (
+                              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                                Section {question.section === 1 ? 'A' : question.section === 2 ? 'B' : question.section}
                               </Badge>
                             )}
                             <Badge
@@ -1351,10 +1487,10 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                               } else if (isCorrectAnswer && !isUserAnswer) {
                                 // Correct answer but user didn't select
                                 optionStatus = 'Correct Answer (Missed)'
-                                statusColor = 'text-green-700'
-                                borderColor = 'border-green-300'
-                                bgColor = 'bg-green-25'
-                                statusIcon = <CheckCircle className="w-4 h-4 text-green-500" />
+                                statusColor = 'text-amber-700'
+                                borderColor = 'border-amber-300'
+                                bgColor = 'bg-amber-50'
+                                statusIcon = <CheckCircle className="w-4 h-4 text-amber-600" />
                               } else if (!isCorrectAnswer && isUserAnswer) {
                                 // User selected wrong answer
                                 optionStatus = 'Wrong Selection'
@@ -1455,7 +1591,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 
                 {/* Print view - all questions */}
                 <div className="print-all-questions space-y-6" style={{ display: 'none' }}>
-                  {questionAnalysis.map((analysis, index) => {
+                  {sortedQuestionAnalysis.map((analysis, index) => {
                     const question = getQuestionById(analysis.questionId)
                     if (!question) return null
                     const isCorrect = analysis.status === 'correct'
@@ -1469,6 +1605,12 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                             {question.subject && (
                               <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">
                                 {question.subject}
+                              </Badge>
+                            )}
+                            {/* Show section info for JEE exams in print view */}
+                            {isJeeExam && question.section && (
+                              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                                Section {question.section === 1 ? 'A' : question.section === 2 ? 'B' : question.section}
                               </Badge>
                             )}
                             <Badge
@@ -1516,10 +1658,10 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                               } else if (isCorrectAnswer && !isUserAnswer) {
                                 // Correct answer but user didn't select
                                 optionStatus = 'Correct Answer (Missed)'
-                                statusColor = 'text-green-700'
-                                borderColor = 'border-green-300'
-                                bgColor = 'bg-green-25'
-                                statusIcon = <CheckCircle className="w-4 h-4 text-green-500" />
+                                statusColor = 'text-amber-700'
+                                borderColor = 'border-amber-300'
+                                bgColor = 'bg-amber-50'
+                                statusIcon = <CheckCircle className="w-4 h-4 text-amber-600" />
                               } else if (!isCorrectAnswer && isUserAnswer) {
                                 // User selected wrong answer
                                 optionStatus = 'Wrong Selection'

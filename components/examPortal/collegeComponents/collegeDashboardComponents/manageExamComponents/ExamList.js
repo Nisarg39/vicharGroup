@@ -129,13 +129,10 @@ export default function ExamList({ collegeData, onBack, refreshKey }) {
         setShowEditModal(true);
     };
 
-    const handleExamUpdated = (updatedExam) => {
-        // Update the exam in the list
-        setExams(prevExams => 
-            prevExams.map(exam => 
-                exam._id === updatedExam._id ? updatedExam : exam
-            )
-        );
+    const handleExamUpdated = () => {
+        // Refetch the exam list to ensure proper data formatting from server
+        fetchExams(pagination.currentPage);
+        
         // Show success message
         setUpdateStatus({ 
             show: true, 
