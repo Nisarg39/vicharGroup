@@ -14,66 +14,40 @@ export default function QuestionNavigator({
     isCetExam = false,
     cetAccess = { allUnlocked: true },
     isJeeExam = false,
+    selectedSubject = null,
     isMobileOverlay = false
 }) {
-    // Get all unique subjects from questions, filtering out locked subjects for CET exams
-    const allSubjects = Array.from(new Set((questions || []).map(q => q.subject))).filter(subject => {
-        if (!subject) return false
-        // For CET exams, only show unlocked subjects
-        if (isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[subject]?.isLocked) {
-            return false
-        }
-        return true
-    })
-    
-    // Initialize with empty set - all subjects collapsed by default, or expand all for mobile overlay
-    const [expandedSubjects, setExpandedSubjects] = useState(isMobileOverlay ? new Set(allSubjects) : new Set())
-    
     // Find current question's subject
     const currentQuestion = questions[currentQuestionIndex]
     const currentSubject = currentQuestion?.subject
     
-    // Group questions by subject and apply JEE sorting if needed
-    const questionsBySubject = {}
+    // Filter questions for the selected subject only
+    const selectedSubjectQuestions = (questions || []).filter(q => q.subject === selectedSubject);
     
-    // First group all questions by subject
-    questions.forEach((question, index) => {
-        const subject = question.subject || 'Other'
-        if (!questionsBySubject[subject]) {
-            questionsBySubject[subject] = []
-        }
-        questionsBySubject[subject].push({ question, originalIndex: index })
-    })
-    
-    // Apply JEE sorting to each subject if this is a JEE exam
+    // Apply JEE sorting if needed
+    let sortedSelectedSubjectQuestions;
     if (isJeeExam) {
-        Object.keys(questionsBySubject).forEach(subject => {
-            questionsBySubject[subject].sort((a, b) => {
-                // Sort by section: Section A (1) before Section B (2), then by questionNumber
-                const sectionA = a.question.section || 1;
-                const sectionB = b.question.section || 1;
-                
-                if (sectionA !== sectionB) {
-                    return sectionA - sectionB;
-                }
-                
-                return (a.question.questionNumber || 0) - (b.question.questionNumber || 0);
-            });
+        sortedSelectedSubjectQuestions = selectedSubjectQuestions.sort((a, b) => {
+            // Sort by section: Section A (1) before Section B (2), then by questionNumber
+            const sectionA = a.section || 1;
+            const sectionB = b.section || 1;
+            
+            if (sectionA !== sectionB) {
+                return sectionA - sectionB;
+            }
+            
+            return (a.questionNumber || 0) - (b.questionNumber || 0);
         });
+    } else {
+        sortedSelectedSubjectQuestions = selectedSubjectQuestions;
     }
     
-    const toggleSubject = (subject) => {
-        setExpandedSubjects(prev => {
-            const newSet = new Set(prev)
-            if (newSet.has(subject)) {
-                newSet.delete(subject)
-            } else {
-                newSet.add(subject)
-            }
-            return newSet
-        })
-    }
-
+    // Create array with original indices for navigation
+    const selectedSubjectQuestionsWithIndices = sortedSelectedSubjectQuestions.map(question => ({
+        question,
+        originalIndex: questions.findIndex(q => q._id === question._id)
+    }));
+    
     // Safe navigation that prevents going to locked subjects
     const handleSafeGoToQuestion = (globalIndex) => {
         const targetQuestion = questions[globalIndex]
@@ -87,14 +61,21 @@ export default function QuestionNavigator({
         onGoToQuestion(globalIndex)
     }
     
-    // Get subject-wise statistics
-    const getSubjectStats = (subject) => {
-        const subjectQuestions = questionsBySubject[subject] || []
-        const answered = subjectQuestions.filter(({question}) => answers[question._id]).length
-        const marked = subjectQuestions.filter(({originalIndex}) => markedQuestions.has(originalIndex)).length
-        const visited = subjectQuestions.filter(({originalIndex}) => visitedQuestions.has(originalIndex)).length
-        return { total: subjectQuestions.length, answered, marked, visited }
+    // Get statistics for the selected subject
+    const getSelectedSubjectStats = () => {
+        const answered = selectedSubjectQuestionsWithIndices.filter(({question}) => answers[question._id]).length
+        const marked = selectedSubjectQuestionsWithIndices.filter(({originalIndex}) => markedQuestions.has(originalIndex)).length
+        const visited = selectedSubjectQuestionsWithIndices.filter(({originalIndex}) => visitedQuestions.has(originalIndex)).length
+        return { 
+            total: selectedSubjectQuestionsWithIndices.length, 
+            answered, 
+            marked, 
+            visited,
+            subject: selectedSubject 
+        }
     }
+    
+    const stats = getSelectedSubjectStats();
     // Handle window resize for responsive behavior
     const [windowWidth, setWindowWidth] = useState(1024)
     
@@ -131,16 +112,20 @@ export default function QuestionNavigator({
                         <div className="flex items-center gap-2">
                             <Grid className="w-5 h-5 text-blue-600" />
                             <div>
-                                <VicharCardTitle className="text-lg font-semibold text-gray-900">Question Navigator</VicharCardTitle>
-                                <VicharCardDescription className="text-sm text-gray-600 mt-1">Tap to jump to any question</VicharCardDescription>
+                                <VicharCardTitle className="text-lg font-semibold text-gray-900">
+                                    {selectedSubject} Navigator
+                                </VicharCardTitle>
+                                <VicharCardDescription className="text-sm text-gray-600 mt-1">
+                                    {stats.answered}/{stats.total} answered • {stats.marked} marked
+                                </VicharCardDescription>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="text-right">
                                 <div className="text-lg font-bold text-blue-600">
-                                    {currentQuestionIndex + 1}
+                                    {selectedSubjectQuestionsWithIndices.findIndex(({originalIndex}) => originalIndex === currentQuestionIndex) + 1}
                                 </div>
-                                <div className="text-xs text-gray-500 font-medium">of {questions.length}</div>
+                                <div className="text-xs text-gray-500 font-medium">of {stats.total}</div>
                             </div>
                             {!isMobileOverlay && (
                                 <button 
@@ -228,256 +213,177 @@ export default function QuestionNavigator({
                             </div>
                         )}
 
-                        {/* Subject-wise Question Navigator */}
+                        {/* Selected Subject Question Navigator */}
                         {showGrid && (
                             <div className={isMobileOverlay ? "space-y-2" : "flex-1 overflow-y-auto"}>
-                                <div className={isMobileOverlay ? "space-y-2" : "space-y-2 p-1"}>
-                                    {allSubjects.map(subject => {
-                                        const stats = getSubjectStats(subject)
-                                        const isExpanded = expandedSubjects.has(subject)
-                                        const hasCurrentQuestion = currentSubject === subject
-                                        
-                                        return (
-                                            <div key={subject} className="border border-gray-200 rounded-lg overflow-hidden">
-                                                {/* Subject Header */}
-                                                <button
-                                                    onClick={() => toggleSubject(subject)}
-                                                    className={`w-full p-2.5 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${
-                                                        hasCurrentQuestion ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-3 h-3 rounded-full ${
-                                                            hasCurrentQuestion ? 'bg-blue-600' : 'bg-gray-300'
-                                                        }`}></div>
-                                                        <div>
-                                                            <h3 className={`font-semibold text-sm ${
-                                                                hasCurrentQuestion ? 'text-blue-900' : 'text-gray-900'
-                                                            }`}>{subject}</h3>
-                                                            <div className="flex items-center gap-3 text-xs text-gray-600 mt-1">
-                                                                <span>{stats.answered}/{stats.total} answered</span>
-                                                                {stats.marked > 0 && <span>{stats.marked} marked</span>}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                                            <span className="text-xs text-gray-600">{stats.answered}</span>
-                                                        </div>
-                                                        {stats.marked > 0 && (
-                                                            <div className="flex items-center gap-1">
-                                                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                                                <span className="text-xs text-gray-600">{stats.marked}</span>
-                                                            </div>
-                                                        )}
-                                                        {isExpanded ? 
-                                                            <ChevronUp className="w-4 h-4 text-gray-600" /> : 
-                                                            <ChevronDown className="w-4 h-4 text-gray-600" />
-                                                        }
-                                                    </div>
-                                                </button>
-                                                
-                                                {/* Questions Grid - Expandable */}
-                                                {isExpanded && (
-                                                    <div className="p-2.5 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-                                                        <div className={`grid ${getGridCols()} gap-1.5`}>
-                                                            {questionsBySubject[subject]?.map(({question, originalIndex}, subjectQuestionIndex) => {
-                                                const isAnswered = answers[question._id]
-                                                const isMarked = markedQuestions.has(originalIndex)
-                                                const isCurrent = originalIndex === currentQuestionIndex
-                                                const isVisited = visitedQuestions.has(originalIndex)
+                                <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                                    <div className={`grid ${getGridCols()} gap-1.5`}>
+                                        {selectedSubjectQuestionsWithIndices.map(({question, originalIndex}, subjectQuestionIndex) => {
+                            const isAnswered = answers[question._id]
+                            const isMarked = markedQuestions.has(originalIndex)
+                            const isCurrent = originalIndex === currentQuestionIndex
+                            const isVisited = visitedQuestions.has(originalIndex)
 
-                                // NSE Navigation States Logic
-                                const getQuestionState = () => {
-                                    if (isCurrent) return 'current'
-                                    if (isAnswered && isMarked) return 'answered-marked'
-                                    if (isAnswered && !isMarked) return 'answered'
-                                    if (!isAnswered && isMarked) return 'marked-unanswered'
-                                    if (!isAnswered && isVisited) return 'not-answered'
-                                    return 'not-visited'
-                                }
+                            // NSE Navigation States Logic
+                            const getQuestionState = () => {
+                                if (isCurrent) return 'current'
+                                if (isAnswered && isMarked) return 'answered-marked'
+                                if (isAnswered && !isMarked) return 'answered'
+                                if (!isAnswered && isMarked) return 'marked-unanswered'
+                                if (!isAnswered && isVisited) return 'not-answered'
+                                return 'not-visited'
+                            }
 
-                                const state = getQuestionState()
-                                const stateStyles = {
-                                    'current': 'bg-blue-600 text-white shadow-lg scale-110',
-                                    'not-visited': 'bg-white text-gray-700 border-2 border-gray-400 hover:bg-gray-50',
-                                    'not-answered': 'bg-red-500 text-white hover:bg-red-600',
-                                    'answered': 'bg-green-500 text-white hover:bg-green-600',
-                                    'marked-unanswered': 'bg-purple-500 text-white hover:bg-purple-600',
-                                    'answered-marked': 'bg-gradient-to-br from-purple-600 to-purple-700 text-white border-4 border-green-400 hover:from-purple-700 hover:to-purple-800 relative ring-2 ring-green-500 ring-offset-1'
-                                }
+                            const state = getQuestionState()
+                            const stateStyles = {
+                                'current': 'bg-blue-600 text-white shadow-lg scale-110',
+                                'not-visited': 'bg-white text-gray-700 border-2 border-gray-400 hover:bg-gray-50',
+                                'not-answered': 'bg-red-500 text-white hover:bg-red-600',
+                                'answered': 'bg-green-500 text-white hover:bg-green-600',
+                                'marked-unanswered': 'bg-purple-500 text-white hover:bg-purple-600',
+                                'answered-marked': 'bg-gradient-to-br from-purple-600 to-purple-700 text-white border-4 border-green-400 hover:from-purple-700 hover:to-purple-800 relative ring-2 ring-green-500 ring-offset-1'
+                            }
 
-                                const stateLabels = {
-                                    'current': 'Current Question',
-                                    'not-visited': 'Not Visited',
-                                    'not-answered': 'Not Answered',
-                                    'answered': 'Answered',
-                                    'marked-unanswered': 'Marked for Review (Unanswered)',
-                                    'answered-marked': 'Marked for Review (Answered)'
-                                }
+                            const stateLabels = {
+                                'current': 'Current Question',
+                                'not-visited': 'Not Visited',
+                                'not-answered': 'Not Answered',
+                                'answered': 'Answered',
+                                'marked-unanswered': 'Marked for Review (Unanswered)',
+                                'answered-marked': 'Marked for Review (Answered)'
+                            }
 
-                                                return (
-                                                    <button
-                                                        key={originalIndex}
-                                                        onClick={() => handleSafeGoToQuestion(originalIndex)}
-                                                        className={`${getButtonSize()} rounded-xl font-bold transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95 relative touch-action-manipulation ${
-                                                            stateStyles[state]
-                                                        }`}
-                                                        title={`Question ${subjectQuestionIndex + 1} (Global: ${originalIndex + 1}) - ${stateLabels[state]}`}
-                                                    >
-                                                        {subjectQuestionIndex + 1}
-                                                        {/* Enhanced tick mark for answered-marked state */}
-                                                        {state === 'answered-marked' && (
-                                                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg z-10">
-                                                                <svg className="w-3 h-3 text-white font-bold" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                </svg>
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                )
-                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-                                    
+                            return (
+                                <button
+                                    key={originalIndex}
+                                    onClick={() => handleSafeGoToQuestion(originalIndex)}
+                                    className={`${getButtonSize()} rounded-xl font-bold transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95 relative touch-action-manipulation ${
+                                        stateStyles[state]
+                                    }`}
+                                    title={`Question ${subjectQuestionIndex + 1} - ${stateLabels[state]}`}
+                                >
+                                    {subjectQuestionIndex + 1}
+                                    {/* Enhanced tick mark for answered-marked state */}
+                                    {state === 'answered-marked' && (
+                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg z-10">
+                                            <svg className="w-3 h-3 text-white font-bold" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </button>
+                            )
+                        })}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Subject-wise Statistics View */}
+                        {/* Selected Subject Statistics View */}
                         {!showGrid && (
                             <div className="space-y-4">
-                                {/* Overall Progress Bar */}
+                                {/* Progress Bar for Selected Subject */}
                                 <div className="bg-gray-100 rounded-full h-3">
                                     <div 
                                         className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                                        style={{ width: `${(Object.keys(answers).length / questions.length) * 100}%` }}
+                                        style={{ width: `${(stats.answered / stats.total) * 100}%` }}
                                     ></div>
                                 </div>
                                 
-                                {/* Subject-wise Stats */}
+                                {/* Selected Subject Stats */}
                                 <div className="space-y-3">
-                                    {allSubjects.map(subject => {
-                                        const stats = getSubjectStats(subject)
-                                        const hasCurrentQuestion = currentSubject === subject
-                                        const isExpanded = expandedSubjects.has(subject)
-                                        
-                                        return (
-                                            <div key={subject} className={`border rounded-lg overflow-hidden ${
-                                                hasCurrentQuestion ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
-                                            }`}>
-                                                <button 
-                                                    onClick={() => toggleSubject(subject)}
-                                                    className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-3 h-3 rounded-full ${
-                                                                hasCurrentQuestion ? 'bg-blue-600' : 'bg-gray-300'
-                                                            }`}></div>
-                                                            <div>
-                                                                <h3 className={`font-semibold text-sm ${
-                                                                    hasCurrentQuestion ? 'text-blue-900' : 'text-gray-900'
-                                                                }`}>{subject}</h3>
-                                                                <div className="text-xs text-gray-600 mt-1">
-                                                                    {stats.answered}/{stats.total} answered • {stats.marked} marked
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="text-xs text-gray-600">
-                                                                {Math.round((stats.answered / stats.total) * 100)}%
-                                                            </div>
-                                                            {isExpanded ? 
-                                                                <ChevronUp className="w-4 h-4 text-gray-600" /> : 
-                                                                <ChevronDown className="w-4 h-4 text-gray-600" />
-                                                            }
+                                    <div className="border border-blue-200 bg-blue-50 rounded-lg overflow-hidden">
+                                        <div className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                                                    <div>
+                                                        <h3 className="font-semibold text-sm text-blue-900">{selectedSubject}</h3>
+                                                        <div className="text-xs text-gray-600 mt-1">
+                                                            {stats.answered}/{stats.total} answered • {stats.marked} marked
                                                         </div>
                                                     </div>
-                                                </button>
-                                                
-                                                {isExpanded && (
-                                                    <div className="p-3 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-                                                        <div className="grid grid-cols-6 gap-2">
-                                                            {questionsBySubject[subject]?.map(({question, originalIndex}, subjectQuestionIndex) => {
-                                                                const isAnswered = answers[question._id]
-                                                                const isMarked = markedQuestions.has(originalIndex)
-                                                                const isCurrent = originalIndex === currentQuestionIndex
-                                                                const isVisited = visitedQuestions.has(originalIndex)
-                                                                
-                                                                const getQuestionState = () => {
-                                                                    if (isCurrent) return 'current'
-                                                                    if (isAnswered && isMarked) return 'answered-marked'
-                                                                    if (isAnswered && !isMarked) return 'answered'
-                                                                    if (!isAnswered && isMarked) return 'marked-unanswered'
-                                                                    if (!isAnswered && isVisited) return 'not-answered'
-                                                                    return 'not-visited'
-                                                                }
-                                                                
-                                                                const state = getQuestionState()
-                                                                const stateStyles = {
-                                                                    'current': 'bg-blue-600 text-white shadow-lg scale-110',
-                                                                    'not-visited': 'bg-white text-gray-700 border-2 border-gray-400 hover:bg-gray-50',
-                                                                    'not-answered': 'bg-red-500 text-white hover:bg-red-600',
-                                                                    'answered': 'bg-green-500 text-white hover:bg-green-600',
-                                                                    'marked-unanswered': 'bg-purple-500 text-white hover:bg-purple-600',
-                                                                    'answered-marked': 'bg-gradient-to-br from-purple-600 to-purple-700 text-white border-2 border-green-400 hover:from-purple-700 hover:to-purple-800 relative ring-1 ring-green-500'
-                                                                }
-                                                                
-                                                                return (
-                                                                    <button
-                                                                        key={originalIndex}
-                                                                        onClick={() => handleSafeGoToQuestion(originalIndex)}
-                                                                        className={`w-8 h-8 rounded-lg font-bold text-xs transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95 relative touch-action-manipulation ${
-                                                                            stateStyles[state]
-                                                                        }`}
-                                                                        title={`Question ${subjectQuestionIndex + 1} (Global: ${originalIndex + 1})`}
-                                                                    >
-                                                                        {subjectQuestionIndex + 1}
-                                                                        {/* Enhanced tick mark for answered-marked state */}
-                                                                        {state === 'answered-marked' && (
-                                                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg z-10">
-                                                                                <svg className="w-2.5 h-2.5 text-white font-bold" fill="currentColor" viewBox="0 0 20 20">
-                                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                                </svg>
-                                                                            </div>
-                                                                        )}
-                                                                    </button>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                </div>
+                                                <div className="text-lg font-bold text-blue-600">
+                                                    {Math.round((stats.answered / stats.total) * 100)}%
+                                                </div>
                                             </div>
-                                        )
-                                    })}
+                                        </div>
+                                        
+                                        <div className="p-3 bg-gray-50 border-t border-gray-200">
+                                            <div className="grid grid-cols-6 gap-2">
+                                                {selectedSubjectQuestionsWithIndices.map(({question, originalIndex}, subjectQuestionIndex) => {
+                                                    const isAnswered = answers[question._id]
+                                                    const isMarked = markedQuestions.has(originalIndex)
+                                                    const isCurrent = originalIndex === currentQuestionIndex
+                                                    const isVisited = visitedQuestions.has(originalIndex)
+                                                    
+                                                    const getQuestionState = () => {
+                                                        if (isCurrent) return 'current'
+                                                        if (isAnswered && isMarked) return 'answered-marked'
+                                                        if (isAnswered && !isMarked) return 'answered'
+                                                        if (!isAnswered && isMarked) return 'marked-unanswered'
+                                                        if (!isAnswered && isVisited) return 'not-answered'
+                                                        return 'not-visited'
+                                                    }
+                                                    
+                                                    const state = getQuestionState()
+                                                    const stateStyles = {
+                                                        'current': 'bg-blue-600 text-white shadow-lg scale-110',
+                                                        'not-visited': 'bg-white text-gray-700 border-2 border-gray-400 hover:bg-gray-50',
+                                                        'not-answered': 'bg-red-500 text-white hover:bg-red-600',
+                                                        'answered': 'bg-green-500 text-white hover:bg-green-600',
+                                                        'marked-unanswered': 'bg-purple-500 text-white hover:bg-purple-600',
+                                                        'answered-marked': 'bg-gradient-to-br from-purple-600 to-purple-700 text-white border-2 border-green-400 hover:from-purple-700 hover:to-purple-800 relative ring-1 ring-green-500'
+                                                    }
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={originalIndex}
+                                                            onClick={() => handleSafeGoToQuestion(originalIndex)}
+                                                            className={`w-8 h-8 rounded-lg font-bold text-xs transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95 relative touch-action-manipulation ${
+                                                                stateStyles[state]
+                                                            }`}
+                                                            title={`Question ${subjectQuestionIndex + 1}`}
+                                                        >
+                                                            {subjectQuestionIndex + 1}
+                                                            {/* Enhanced tick mark for answered-marked state */}
+                                                            {state === 'answered-marked' && (
+                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg z-10">
+                                                                    <svg className="w-2.5 h-2.5 text-white font-bold" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                {/* Quick Actions */}
+                                {/* Quick Actions for Selected Subject */}
                                 <div className="space-y-2">
                                     <button 
                                         onClick={() => {
-                                            // Find next unanswered question starting from current position
+                                            // Find next unanswered question in selected subject
+                                            const currentSubjectIndex = selectedSubjectQuestionsWithIndices.findIndex(({originalIndex}) => originalIndex === currentQuestionIndex);
                                             let nextUnanswered = -1
                                             
-                                            // First, look for unanswered questions after current position
-                                            for (let i = currentQuestionIndex + 1; i < questions.length; i++) {
-                                                if (!answers[questions[i]?._id]) {
-                                                    nextUnanswered = i
+                                            // First, look for unanswered questions after current position in subject
+                                            for (let i = currentSubjectIndex + 1; i < selectedSubjectQuestionsWithIndices.length; i++) {
+                                                if (!answers[selectedSubjectQuestionsWithIndices[i].question._id]) {
+                                                    nextUnanswered = selectedSubjectQuestionsWithIndices[i].originalIndex
                                                     break
                                                 }
                                             }
                                             
-                                            // If not found after current position, wrap around and search from beginning
+                                            // If not found after current position, wrap around to beginning of subject
                                             if (nextUnanswered === -1) {
-                                                for (let i = 0; i < currentQuestionIndex; i++) {
-                                                    if (!answers[questions[i]?._id]) {
-                                                        nextUnanswered = i
+                                                for (let i = 0; i < currentSubjectIndex; i++) {
+                                                    if (!answers[selectedSubjectQuestionsWithIndices[i].question._id]) {
+                                                        nextUnanswered = selectedSubjectQuestionsWithIndices[i].originalIndex
                                                         break
                                                     }
                                                 }
@@ -487,26 +393,31 @@ export default function QuestionNavigator({
                                         }}
                                         className="w-full bg-red-500 text-white py-3 px-4 rounded-xl font-semibold active:scale-95 transition-transform"
                                     >
-                                        Go to Next Unanswered
+                                        Go to Next Unanswered in {selectedSubject}
                                     </button>
                                     <button 
                                         onClick={() => {
-                                            const markedArray = Array.from(markedQuestions).sort((a, b) => a - b)
-                                            if (markedArray.length === 0) return
+                                            // Find marked questions in selected subject only
+                                            const markedInSubject = selectedSubjectQuestionsWithIndices
+                                                .filter(({originalIndex}) => markedQuestions.has(originalIndex))
+                                                .map(({originalIndex}) => originalIndex)
+                                                .sort((a, b) => a - b)
                                             
-                                            // Find next marked question after current position
-                                            let nextMarked = markedArray.find(i => i > currentQuestionIndex)
+                                            if (markedInSubject.length === 0) return
                                             
-                                            // If not found after current position, wrap around to first marked question
+                                            // Find next marked question after current position in subject
+                                            let nextMarked = markedInSubject.find(i => i > currentQuestionIndex)
+                                            
+                                            // If not found after current position, wrap around to first marked question in subject
                                             if (nextMarked === undefined) {
-                                                nextMarked = markedArray[0]
+                                                nextMarked = markedInSubject[0]
                                             }
                                             
                                             handleSafeGoToQuestion(nextMarked)
                                         }}
                                         className="w-full bg-purple-500 text-white py-3 px-4 rounded-xl font-semibold active:scale-95 transition-transform"
                                     >
-                                        Go to Marked Questions
+                                        Go to Marked in {selectedSubject}
                                     </button>
                                 </div>
                             </div>
