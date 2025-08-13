@@ -719,13 +719,34 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     
     // Helper function to get global question index from subject-relative index
+    // Fixed to handle sorted JEE questions correctly
     const getGlobalQuestionIndex = (subjectRelativeIndex, subject) => {
-        const subjectQuestions = (questions || []).filter(q => q.subject === subject);
-        if (subjectQuestions.length === 0) return 0;
+        // Get the sorted subject questions (same sorting as used in display)
+        const filtered = (questions || []).filter(q => q.subject === subject);
         
-        const targetQuestion = subjectQuestions[subjectRelativeIndex];
+        let sortedSubjectQuestions;
+        if (isJeeExam) {
+            // Apply the same sorting as in subjectQuestions
+            sortedSubjectQuestions = filtered.sort((a, b) => {
+                const sectionA = a.section || 1;
+                const sectionB = b.section || 1;
+                
+                if (sectionA !== sectionB) {
+                    return sectionA - sectionB;
+                }
+                
+                return (a.questionNumber || 0) - (b.questionNumber || 0);
+            });
+        } else {
+            sortedSubjectQuestions = filtered;
+        }
+        
+        if (sortedSubjectQuestions.length === 0) return 0;
+        
+        const targetQuestion = sortedSubjectQuestions[subjectRelativeIndex];
         if (!targetQuestion) return 0;
         
+        // Find the global index of this question in the original unsorted array
         return questions.findIndex(q => q._id === targetQuestion._id);
     }
     
@@ -739,9 +760,28 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             setSelectedSubject(targetQuestion.subject);
         }
         
-        // Find the subject-relative index
-        const subjectQuestions = (questions || []).filter(q => q.subject === targetQuestion.subject);
-        const subjectRelativeIndex = subjectQuestions.findIndex(q => q._id === targetQuestion._id);
+        // Get the sorted subject questions (same sorting as used in display)
+        const filtered = (questions || []).filter(q => q.subject === targetQuestion.subject);
+        
+        let sortedSubjectQuestions;
+        if (isJeeExam) {
+            // Apply the same sorting as in subjectQuestions
+            sortedSubjectQuestions = filtered.sort((a, b) => {
+                const sectionA = a.section || 1;
+                const sectionB = b.section || 1;
+                
+                if (sectionA !== sectionB) {
+                    return sectionA - sectionB;
+                }
+                
+                return (a.questionNumber || 0) - (b.questionNumber || 0);
+            });
+        } else {
+            sortedSubjectQuestions = filtered;
+        }
+        
+        // Find the subject-relative index in the sorted array
+        const subjectRelativeIndex = sortedSubjectQuestions.findIndex(q => q._id === targetQuestion._id);
         
         if (subjectRelativeIndex !== -1) {
             setCurrentQuestionIndex(subjectRelativeIndex);
