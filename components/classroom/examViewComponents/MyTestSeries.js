@@ -143,12 +143,23 @@ export default function MyTestSeries() {
 
     const formatDateTime = (dateString) => {
         if (!dateString) return 'Not scheduled'
-        return new Date(dateString).toLocaleString('en-US', {
+        
+        const date = new Date(dateString)
+        console.log('MyTestSeries formatDateTime:', {
+            input: dateString,
+            parsedDate: date.toISOString(),
+            localString: date.toString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        })
+        
+        // Use local timezone formatting (will automatically show IST time)
+        return date.toLocaleString('en-IN', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         })
     }
 
@@ -156,6 +167,31 @@ export default function MyTestSeries() {
         const now = new Date()
         const startTime = exam.startTime ? new Date(exam.startTime) : null
         const endTime = exam.endTime ? new Date(exam.endTime) : null
+        
+        // Debug exam timing
+        if (startTime || endTime) {
+            console.log('MyTestSeries getScheduledExamStatus:', {
+                examName: exam.examName,
+                now: {
+                    iso: now.toISOString(),
+                    local: now.toString()
+                },
+                startTime: startTime ? {
+                    iso: startTime.toISOString(),
+                    local: startTime.toString(),
+                    raw: exam.startTime
+                } : null,
+                endTime: endTime ? {
+                    iso: endTime.toISOString(),
+                    local: endTime.toString(),
+                    raw: exam.endTime
+                } : null,
+                comparison: {
+                    nowVsStart: startTime ? (now < startTime ? 'before' : 'after') : 'no-start',
+                    nowVsEnd: endTime ? (now > endTime ? 'after' : 'before') : 'no-end'
+                }
+            })
+        }
 
         // Check exam status from database first
         if (exam.status === 'cancelled') {

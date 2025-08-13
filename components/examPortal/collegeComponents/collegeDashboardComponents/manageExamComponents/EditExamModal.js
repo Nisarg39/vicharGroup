@@ -32,19 +32,48 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
     const formatDateTimeLocal = (dateString) => {
         if (!dateString) return '';
         
+        console.log('formatDateTimeLocal called with:', dateString);
+        
         // If the dateString is already in the correct format (YYYY-MM-DDTHH:mm), return as is
         if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateString)) {
+            console.log('formatDateTimeLocal: already in correct format, returning as-is');
             return dateString;
         }
         
-        // Otherwise, create a proper local datetime string
-        const date = new Date(dateString);
-        
-        // Adjust for timezone offset to get local time
-        const timezoneOffset = date.getTimezoneOffset() * 60000;
-        const localDate = new Date(date.getTime() - timezoneOffset);
-        
-        return localDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm format
+        try {
+            // Create a date object from the input (this will be in UTC if coming from database)
+            const utcDate = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(utcDate.getTime())) {
+                console.warn('Invalid date provided to formatDateTimeLocal:', dateString);
+                return '';
+            }
+            
+            // Get the current timezone offset in minutes
+            const timezoneOffset = utcDate.getTimezoneOffset();
+            
+            // Convert UTC date to local date for datetime-local input
+            // The datetime-local input expects the date in local time format
+            const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
+            
+            // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+            const result = localDate.toISOString().slice(0, 16);
+            
+            console.log('formatDateTimeLocal conversion:', { 
+                input: dateString,
+                utcDate: utcDate.toISOString(),
+                timezoneOffset: timezoneOffset,
+                localTime: utcDate.toString(),
+                result: result,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            });
+            
+            return result;
+        } catch (error) {
+            console.error('Error in formatDateTimeLocal:', error, 'Input:', dateString);
+            return '';
+        }
     };
 
     // Initialize form data when exam changes
@@ -100,6 +129,14 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
             
             // Use rule-based negative marking system, no need to save negativeMarks field
             const cleanFormData = { ...formData, standard: cleanStandard };
+            
+            // Debug: Log the data being sent to backend
+            console.log('EditExamModal submitting data:', {
+                startTime: cleanFormData.startTime,
+                endTime: cleanFormData.endTime,
+                examAvailability: cleanFormData.examAvailability
+            });
+            
             const response = await updateExam(exam._id, cleanFormData, collegeData._id);
             
             if (response.success) {

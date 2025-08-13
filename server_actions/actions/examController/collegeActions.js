@@ -444,13 +444,26 @@ export async function createExam(examData, collegeId) {
         const parseDateTime = (dateTimeStr) => {
             if (!dateTimeStr) return null;
             
-            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), append seconds
+            console.log('parseDateTime input:', dateTimeStr);
+            
+            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), treat as local time
             if (typeof dateTimeStr === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTimeStr)) {
-                return new Date(dateTimeStr + ':00');
+                
+                // Parse as local time, not UTC
+                // datetime-local values are in the user's local timezone
+                const result = new Date(dateTimeStr + ':00');
+                console.log('parseDateTime datetime-local format:', {
+                    input: dateTimeStr,
+                    resultISO: result.toISOString(),
+                    resultLocal: result.toString()
+                });
+                return result;
             }
             
-            return new Date(dateTimeStr);
+            const result = new Date(dateTimeStr);
+            console.log('parseDateTime generic format result:', result.toISOString());
+            return result;
         };
         
         // Create a plain object for the exam
@@ -723,23 +736,42 @@ export async function updateExam(examId, updateData, collegeId) {
 
         // Handle date fields and time conversion
         if (filteredUpdateData.startTime) {
+            console.log('updateExam startTime input:', filteredUpdateData.startTime);
             // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
             if (typeof filteredUpdateData.startTime === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.startTime)) {
-                // For datetime-local format, append seconds and treat as local time
-                filteredUpdateData.startTime = new Date(filteredUpdateData.startTime + ':00')
+                // datetime-local format represents local time, convert to UTC for storage
+                // The datetime-local value is in user's timezone, we need to store it as UTC in DB
+                const localDateTime = filteredUpdateData.startTime + ':00'; // Add seconds
+                filteredUpdateData.startTime = new Date(localDateTime);
+                console.log('updateExam startTime datetime-local conversion:', {
+                    input: filteredUpdateData.startTime,
+                    localDateTime: localDateTime,
+                    utcResult: filteredUpdateData.startTime.toISOString(),
+                    localResult: filteredUpdateData.startTime.toString()
+                });
             } else {
-                filteredUpdateData.startTime = new Date(filteredUpdateData.startTime)
+                filteredUpdateData.startTime = new Date(filteredUpdateData.startTime);
+                console.log('updateExam startTime generic result:', filteredUpdateData.startTime.toISOString());
             }
         }
         if (filteredUpdateData.endTime) {
+            console.log('updateExam endTime input:', filteredUpdateData.endTime);
             // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
             if (typeof filteredUpdateData.endTime === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.endTime)) {
-                // For datetime-local format, append seconds and treat as local time
-                filteredUpdateData.endTime = new Date(filteredUpdateData.endTime + ':00')
+                // datetime-local format represents local time, convert to UTC for storage
+                const localDateTime = filteredUpdateData.endTime + ':00'; // Add seconds
+                filteredUpdateData.endTime = new Date(localDateTime);
+                console.log('updateExam endTime datetime-local conversion:', {
+                    input: filteredUpdateData.endTime,
+                    localDateTime: localDateTime,
+                    utcResult: filteredUpdateData.endTime.toISOString(),
+                    localResult: filteredUpdateData.endTime.toString()
+                });
             } else {
-                filteredUpdateData.endTime = new Date(filteredUpdateData.endTime)
+                filteredUpdateData.endTime = new Date(filteredUpdateData.endTime);
+                console.log('updateExam endTime generic result:', filteredUpdateData.endTime.toISOString());
             }
         }
         if (filteredUpdateData.examDate) {
