@@ -144,7 +144,8 @@ export default function StudentRequest({ collegeData }) {
 
     useEffect(() => {
         const fetchRequests = async () => {
-            const response = await getStudentRequests(collegeData._id, currentPage, requestsPerPage)
+            // Fetch all requests at once for proper client-side filtering and pagination
+            const response = await getStudentRequests(collegeData._id, 1, 1000) // Fetch up to 1000 requests
             if (response.success) {
                 setRequests(response.studentRequest)
                 setPagination(response.pagination)
@@ -152,7 +153,7 @@ export default function StudentRequest({ collegeData }) {
             setLoading(false)
         }
         fetchRequests()
-    }, [currentPage, requestsPerPage])
+    }, [collegeData._id]) // Only fetch once when component mounts
 
     // Auto-select on expand (always set, not just if empty)
     useEffect(() => {
@@ -223,7 +224,8 @@ export default function StudentRequest({ collegeData }) {
         const response = await assignStudent(details);
         if (response.success) {
             toast.success("Student assigned successfully")
-            const updatedResponse = await getStudentRequests(collegeData._id);
+            // Fetch all requests again to update the list
+            const updatedResponse = await getStudentRequests(collegeData._id, 1, 1000);
             if (updatedResponse.success) {
                 setRequests(updatedResponse.studentRequest);
                 setExpandedRequest(null);
@@ -255,7 +257,8 @@ export default function StudentRequest({ collegeData }) {
         const response = await assignStudent(details);
         if (response.success) {
             toast.success("Student request rejected")
-            const updatedResponse = await getStudentRequests(collegeData._id);
+            // Fetch all requests again to update the list
+            const updatedResponse = await getStudentRequests(collegeData._id, 1, 1000);
             if (updatedResponse.success) {
                 setRequests(updatedResponse.studentRequest);
                 setExpandedRequest(null);
