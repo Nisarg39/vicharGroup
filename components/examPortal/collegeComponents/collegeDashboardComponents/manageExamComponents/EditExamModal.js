@@ -28,16 +28,23 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
     // Note: Negative marking rule selection removed - using admin defaults only
     
 
-    // Helper function to convert UTC date to local datetime-local format
+    // Helper function to format datetime for datetime-local input
     const formatDateTimeLocal = (dateString) => {
         if (!dateString) return '';
+        
+        // If the dateString is already in the correct format (YYYY-MM-DDTHH:mm), return as is
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateString)) {
+            return dateString;
+        }
+        
+        // Otherwise, create a proper local datetime string
         const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+        
+        // Adjust for timezone offset to get local time
+        const timezoneOffset = date.getTimezoneOffset() * 60000;
+        const localDate = new Date(date.getTime() - timezoneOffset);
+        
+        return localDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm format
     };
 
     // Initialize form data when exam changes
@@ -75,13 +82,6 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
         }));
     };
 
-    const handleSubjectChange = (e) => {
-        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-        setFormData(prev => ({
-            ...prev,
-            examSubject: selectedOptions
-        }));
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -440,11 +440,24 @@ export async function createExam(examData, collegeId) {
             negativeMarks = defaultNegativeMarking.negativeMarks || 0
         }
         
+        // Helper function to properly handle datetime-local format
+        const parseDateTime = (dateTimeStr) => {
+            if (!dateTimeStr) return null;
+            
+            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), append seconds
+            if (typeof dateTimeStr === 'string' && 
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTimeStr)) {
+                return new Date(dateTimeStr + ':00');
+            }
+            
+            return new Date(dateTimeStr);
+        };
+        
         // Create a plain object for the exam
         const examDoc = {
             ...examData,
-            startTime: examData.examAvailability === 'scheduled' ? examData.startTime : null,
-            endTime: examData.examAvailability === 'scheduled' ? examData.endTime : null,
+            startTime: examData.examAvailability === 'scheduled' ? parseDateTime(examData.startTime) : null,
+            endTime: examData.examAvailability === 'scheduled' ? parseDateTime(examData.endTime) : null,
             examSubject: examData.examSubject || [],
             section: examData.stream === 'JEE' ? examData.section : null,
             negativeMarks: negativeMarks,
@@ -710,10 +723,24 @@ export async function updateExam(examId, updateData, collegeId) {
 
         // Handle date fields and time conversion
         if (filteredUpdateData.startTime) {
-            filteredUpdateData.startTime = new Date(filteredUpdateData.startTime)
+            // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
+            if (typeof filteredUpdateData.startTime === 'string' && 
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.startTime)) {
+                // For datetime-local format, append seconds and treat as local time
+                filteredUpdateData.startTime = new Date(filteredUpdateData.startTime + ':00')
+            } else {
+                filteredUpdateData.startTime = new Date(filteredUpdateData.startTime)
+            }
         }
         if (filteredUpdateData.endTime) {
-            filteredUpdateData.endTime = new Date(filteredUpdateData.endTime)
+            // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
+            if (typeof filteredUpdateData.endTime === 'string' && 
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.endTime)) {
+                // For datetime-local format, append seconds and treat as local time
+                filteredUpdateData.endTime = new Date(filteredUpdateData.endTime + ':00')
+            } else {
+                filteredUpdateData.endTime = new Date(filteredUpdateData.endTime)
+            }
         }
         if (filteredUpdateData.examDate) {
             filteredUpdateData.examDate = new Date(filteredUpdateData.examDate)
