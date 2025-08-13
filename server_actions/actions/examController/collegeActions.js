@@ -440,31 +440,43 @@ export async function createExam(examData, collegeId) {
             negativeMarks = defaultNegativeMarking.negativeMarks || 0
         }
         
-        // Helper function to properly handle datetime-local format
-        // Fix for production/Vercel timezone issues - explicitly handle IST conversion
-        const parseDateTime = (dateTimeStr) => {
-            if (!dateTimeStr) return null;
-            
-            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), treat as IST and convert to UTC
-            if (typeof dateTimeStr === 'string' && 
-                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTimeStr)) {
-                
-                // datetime-local values are in IST, convert to UTC for storage
+        // Process startTime - using same logic as updateExam for consistency
+        let processedStartTime = null;
+        if (examData.examAvailability === 'scheduled' && examData.startTime) {
+            if (typeof examData.startTime === 'string' && 
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(examData.startTime)) {
+                // datetime-local format represents IST time, convert to UTC for storage
                 // Subtract 5.5 hours to convert IST to UTC
-                const localDateTime = dateTimeStr + ':00'; // Add seconds
+                const localDateTime = examData.startTime + ':00'; // Add seconds
                 const istDate = new Date(localDateTime);
                 const utcDate = new Date(istDate.getTime() - (5.5 * 60 * 60 * 1000));
-                return utcDate;
+                processedStartTime = utcDate;
+            } else {
+                processedStartTime = new Date(examData.startTime);
             }
-            
-            return new Date(dateTimeStr);
-        };
+        }
+        
+        // Process endTime - using same logic as updateExam for consistency
+        let processedEndTime = null;
+        if (examData.examAvailability === 'scheduled' && examData.endTime) {
+            if (typeof examData.endTime === 'string' && 
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(examData.endTime)) {
+                // datetime-local format represents IST time, convert to UTC for storage
+                // Subtract 5.5 hours to convert IST to UTC
+                const localDateTime = examData.endTime + ':00'; // Add seconds
+                const istDate = new Date(localDateTime);
+                const utcDate = new Date(istDate.getTime() - (5.5 * 60 * 60 * 1000));
+                processedEndTime = utcDate;
+            } else {
+                processedEndTime = new Date(examData.endTime);
+            }
+        }
         
         // Create a plain object for the exam
         const examDoc = {
             ...examData,
-            startTime: examData.examAvailability === 'scheduled' ? parseDateTime(examData.startTime) : null,
-            endTime: examData.examAvailability === 'scheduled' ? parseDateTime(examData.endTime) : null,
+            startTime: processedStartTime,
+            endTime: processedEndTime,
             examSubject: examData.examSubject || [],
             section: examData.stream === 'JEE' ? examData.section : null,
             negativeMarks: negativeMarks,

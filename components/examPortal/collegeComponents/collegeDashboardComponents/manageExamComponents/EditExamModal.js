@@ -111,8 +111,8 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                 return;
             }
 
-            // Always store standard as a plain number string
-            const cleanStandard = typeof formData.standard === 'string' ? formData.standard.replace(/[^0-9]/g, '') : formData.standard;
+            // Always store standard as a plain number string - preserve original exam standard
+            const cleanStandard = exam.standard || (typeof formData.standard === 'string' ? formData.standard.replace(/[^0-9]/g, '') : formData.standard);
             
             // Use rule-based negative marking system, no need to save negativeMarks field
             const cleanFormData = { ...formData, standard: cleanStandard };
@@ -290,22 +290,14 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Standard *</label>
-                                <select
+                                <input
+                                    type="text"
                                     name="standard"
-                                    value={formData.standard}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="">Select Standard</option>
-                                    {collegeData?.allocatedClasses && collegeData.allocatedClasses.length > 0 ? (
-                                        collegeData.allocatedClasses.map((cls) => (
-                                            <option key={cls} value={cls}>{cls}th</option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>No classes allocated</option>
-                                    )}
-                                </select>
+                                    value={formData.standard ? `${formData.standard}th` : 'Not Set'}
+                                    disabled
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Standard cannot be changed after exam creation</p>
                             </div>
 
                             {formData.stream === 'JEE' && (
