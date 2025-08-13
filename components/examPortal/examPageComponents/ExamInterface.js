@@ -1097,6 +1097,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 }}
                                 isCetExam={isCetExam}
                                 cetAccess={cetAccess}
+                                isJeeExam={isJeeExam}
                                 isMobileOverlay={true}
                             />
                         </div>
@@ -1175,6 +1176,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         onGoToQuestion={handleNavigatorGoToQuestion}
                                         isCetExam={isCetExam}
                                         cetAccess={cetAccess}
+                                        isJeeExam={isJeeExam}
                                     />
                                 </div>
                             </div>

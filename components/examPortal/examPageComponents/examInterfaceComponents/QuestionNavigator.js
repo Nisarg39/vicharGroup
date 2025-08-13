@@ -13,6 +13,7 @@ export default function QuestionNavigator({
     visitedQuestions = new Set(),
     isCetExam = false,
     cetAccess = { allUnlocked: true },
+    isJeeExam = false,
     isMobileOverlay = false
 }) {
     // Get all unique subjects from questions, filtering out locked subjects for CET exams
@@ -32,8 +33,10 @@ export default function QuestionNavigator({
     const currentQuestion = questions[currentQuestionIndex]
     const currentSubject = currentQuestion?.subject
     
-    // Group questions by subject
+    // Group questions by subject and apply JEE sorting if needed
     const questionsBySubject = {}
+    
+    // First group all questions by subject
     questions.forEach((question, index) => {
         const subject = question.subject || 'Other'
         if (!questionsBySubject[subject]) {
@@ -41,6 +44,23 @@ export default function QuestionNavigator({
         }
         questionsBySubject[subject].push({ question, originalIndex: index })
     })
+    
+    // Apply JEE sorting to each subject if this is a JEE exam
+    if (isJeeExam) {
+        Object.keys(questionsBySubject).forEach(subject => {
+            questionsBySubject[subject].sort((a, b) => {
+                // Sort by section: Section A (1) before Section B (2), then by questionNumber
+                const sectionA = a.question.section || 1;
+                const sectionB = b.question.section || 1;
+                
+                if (sectionA !== sectionB) {
+                    return sectionA - sectionB;
+                }
+                
+                return (a.question.questionNumber || 0) - (b.question.questionNumber || 0);
+            });
+        });
+    }
     
     const toggleSubject = (subject) => {
         setExpandedSubjects(prev => {
