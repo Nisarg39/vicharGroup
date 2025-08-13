@@ -441,29 +441,23 @@ export async function createExam(examData, collegeId) {
         }
         
         // Helper function to properly handle datetime-local format
+        // Fix for production/Vercel timezone issues - explicitly handle IST conversion
         const parseDateTime = (dateTimeStr) => {
             if (!dateTimeStr) return null;
             
-            console.log('parseDateTime input:', dateTimeStr);
-            
-            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), treat as local time
+            // If it's in datetime-local format (YYYY-MM-DDTHH:mm), treat as IST and convert to UTC
             if (typeof dateTimeStr === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateTimeStr)) {
                 
-                // Parse as local time, not UTC
-                // datetime-local values are in the user's local timezone
-                const result = new Date(dateTimeStr + ':00');
-                console.log('parseDateTime datetime-local format:', {
-                    input: dateTimeStr,
-                    resultISO: result.toISOString(),
-                    resultLocal: result.toString()
-                });
-                return result;
+                // datetime-local values are in IST, convert to UTC for storage
+                // Subtract 5.5 hours to convert IST to UTC
+                const localDateTime = dateTimeStr + ':00'; // Add seconds
+                const istDate = new Date(localDateTime);
+                const utcDate = new Date(istDate.getTime() - (5.5 * 60 * 60 * 1000));
+                return utcDate;
             }
             
-            const result = new Date(dateTimeStr);
-            console.log('parseDateTime generic format result:', result.toISOString());
-            return result;
+            return new Date(dateTimeStr);
         };
         
         // Create a plain object for the exam
@@ -735,43 +729,31 @@ export async function updateExam(examId, updateData, collegeId) {
             }, {})
 
         // Handle date fields and time conversion
+        // Fix for production/Vercel timezone issues - explicitly handle IST conversion
         if (filteredUpdateData.startTime) {
-            console.log('updateExam startTime input:', filteredUpdateData.startTime);
-            // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
             if (typeof filteredUpdateData.startTime === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.startTime)) {
-                // datetime-local format represents local time, convert to UTC for storage
-                // The datetime-local value is in user's timezone, we need to store it as UTC in DB
+                // datetime-local format represents IST time, convert to UTC for storage
+                // Subtract 5.5 hours to convert IST to UTC
                 const localDateTime = filteredUpdateData.startTime + ':00'; // Add seconds
-                filteredUpdateData.startTime = new Date(localDateTime);
-                console.log('updateExam startTime datetime-local conversion:', {
-                    input: filteredUpdateData.startTime,
-                    localDateTime: localDateTime,
-                    utcResult: filteredUpdateData.startTime.toISOString(),
-                    localResult: filteredUpdateData.startTime.toString()
-                });
+                const istDate = new Date(localDateTime);
+                const utcDate = new Date(istDate.getTime() - (5.5 * 60 * 60 * 1000));
+                filteredUpdateData.startTime = utcDate;
             } else {
                 filteredUpdateData.startTime = new Date(filteredUpdateData.startTime);
-                console.log('updateExam startTime generic result:', filteredUpdateData.startTime.toISOString());
             }
         }
         if (filteredUpdateData.endTime) {
-            console.log('updateExam endTime input:', filteredUpdateData.endTime);
-            // Handle datetime-local format (YYYY-MM-DDTHH:mm) properly
             if (typeof filteredUpdateData.endTime === 'string' && 
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(filteredUpdateData.endTime)) {
-                // datetime-local format represents local time, convert to UTC for storage
+                // datetime-local format represents IST time, convert to UTC for storage
+                // Subtract 5.5 hours to convert IST to UTC
                 const localDateTime = filteredUpdateData.endTime + ':00'; // Add seconds
-                filteredUpdateData.endTime = new Date(localDateTime);
-                console.log('updateExam endTime datetime-local conversion:', {
-                    input: filteredUpdateData.endTime,
-                    localDateTime: localDateTime,
-                    utcResult: filteredUpdateData.endTime.toISOString(),
-                    localResult: filteredUpdateData.endTime.toString()
-                });
+                const istDate = new Date(localDateTime);
+                const utcDate = new Date(istDate.getTime() - (5.5 * 60 * 60 * 1000));
+                filteredUpdateData.endTime = utcDate;
             } else {
                 filteredUpdateData.endTime = new Date(filteredUpdateData.endTime);
-                console.log('updateExam endTime generic result:', filteredUpdateData.endTime.toISOString());
             }
         }
         if (filteredUpdateData.examDate) {

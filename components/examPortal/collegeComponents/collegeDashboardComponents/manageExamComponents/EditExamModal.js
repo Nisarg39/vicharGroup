@@ -29,19 +29,17 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
     
 
     // Helper function to format datetime for datetime-local input
+    // This handles the production/Vercel timezone issue explicitly
     const formatDateTimeLocal = (dateString) => {
         if (!dateString) return '';
         
-        console.log('formatDateTimeLocal called with:', dateString);
-        
         // If the dateString is already in the correct format (YYYY-MM-DDTHH:mm), return as is
         if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dateString)) {
-            console.log('formatDateTimeLocal: already in correct format, returning as-is');
             return dateString;
         }
         
         try {
-            // Create a date object from the input (this will be in UTC if coming from database)
+            // Create UTC date from database string
             const utcDate = new Date(dateString);
             
             // Check if date is valid
@@ -50,24 +48,13 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
                 return '';
             }
             
-            // Get the current timezone offset in minutes
-            const timezoneOffset = utcDate.getTimezoneOffset();
-            
-            // Convert UTC date to local date for datetime-local input
-            // The datetime-local input expects the date in local time format
-            const localDate = new Date(utcDate.getTime() - (timezoneOffset * 60000));
+            // Convert UTC to IST explicitly (UTC + 5:30)
+            // This ensures consistent behavior in both development and production
+            const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000));
             
             // Format for datetime-local input (YYYY-MM-DDTHH:MM)
-            const result = localDate.toISOString().slice(0, 16);
-            
-            console.log('formatDateTimeLocal conversion:', { 
-                input: dateString,
-                utcDate: utcDate.toISOString(),
-                timezoneOffset: timezoneOffset,
-                localTime: utcDate.toString(),
-                result: result,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-            });
+            // Use the IST date but format as if it were UTC to get the correct local time
+            const result = istDate.toISOString().slice(0, 16);
             
             return result;
         } catch (error) {

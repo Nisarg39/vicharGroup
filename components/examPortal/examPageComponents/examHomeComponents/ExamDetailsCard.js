@@ -192,13 +192,13 @@ export default function ExamDetailsCard({
                             <div className="bg-white/70 rounded-xl p-4 border border-indigo-100/50">
                                 <p className="text-sm font-semibold text-indigo-900 mb-1">Start Time</p>
                                 <p className="text-base font-bold text-indigo-800">
-                                    {new Date(exam.startTime).toLocaleDateString()} at {new Date(exam.startTime).toLocaleTimeString()}
+                                    {new Date(exam.startTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} at {new Date(exam.startTime).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                 </p>
                             </div>
                             <div className="bg-white/70 rounded-xl p-4 border border-indigo-100/50">
                                 <p className="text-sm font-semibold text-indigo-900 mb-1">End Time</p>
                                 <p className="text-base font-bold text-indigo-800">
-                                    {new Date(exam.endTime).toLocaleDateString()} at {new Date(exam.endTime).toLocaleTimeString()}
+                                    {new Date(exam.endTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} at {new Date(exam.endTime).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                 </p>
                             </div>
                         </div>

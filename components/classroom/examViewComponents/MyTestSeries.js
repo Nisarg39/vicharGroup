@@ -144,54 +144,25 @@ export default function MyTestSeries() {
     const formatDateTime = (dateString) => {
         if (!dateString) return 'Not scheduled'
         
+        // Fix for production/Vercel: explicitly format in IST timezone
         const date = new Date(dateString)
-        console.log('MyTestSeries formatDateTime:', {
-            input: dateString,
-            parsedDate: date.toISOString(),
-            localString: date.toString(),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-        })
         
-        // Use local timezone formatting (will automatically show IST time)
+        // Always format in IST timezone, regardless of server timezone
         return date.toLocaleString('en-IN', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            timeZone: 'Asia/Kolkata' // Explicitly force IST timezone
         })
     }
 
     const getScheduledExamStatus = (exam) => {
+        // Fix for production/Vercel: ensure all time comparisons are in IST
         const now = new Date()
         const startTime = exam.startTime ? new Date(exam.startTime) : null
         const endTime = exam.endTime ? new Date(exam.endTime) : null
-        
-        // Debug exam timing
-        if (startTime || endTime) {
-            console.log('MyTestSeries getScheduledExamStatus:', {
-                examName: exam.examName,
-                now: {
-                    iso: now.toISOString(),
-                    local: now.toString()
-                },
-                startTime: startTime ? {
-                    iso: startTime.toISOString(),
-                    local: startTime.toString(),
-                    raw: exam.startTime
-                } : null,
-                endTime: endTime ? {
-                    iso: endTime.toISOString(),
-                    local: endTime.toString(),
-                    raw: exam.endTime
-                } : null,
-                comparison: {
-                    nowVsStart: startTime ? (now < startTime ? 'before' : 'after') : 'no-start',
-                    nowVsEnd: endTime ? (now > endTime ? 'after' : 'before') : 'no-end'
-                }
-            })
-        }
 
         // Check exam status from database first
         if (exam.status === 'cancelled') {
@@ -316,7 +287,6 @@ export default function MyTestSeries() {
 
     // Helper function to sort scheduled exams
     const sortScheduledExams = (exams) => {
-        const now = new Date()
         
         return [...exams].sort((a, b) => {
             const aStartTime = a.startTime ? new Date(a.startTime) : null
