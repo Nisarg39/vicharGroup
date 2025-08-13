@@ -460,6 +460,24 @@ export default function ExamHome({ examId }) {
 
     const viewPreviousResult = () => {
         if (previousResult) {
+            // Check if this is a scheduled exam and if results can be shown
+            const isScheduledExam = exam?.examAvailability === 'scheduled';
+            const examEndTime = exam?.endTime ? new Date(exam.endTime) : null;
+            const currentTime = new Date();
+            const isBeforeEndTime = examEndTime && currentTime < examEndTime;
+            
+            if (isScheduledExam && isBeforeEndTime) {
+                const endTimeFormatted = examEndTime.toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                });
+                toast.error(
+                    `Results will be available after the exam ends at ${endTimeFormatted}`,
+                    { duration: 5000 }
+                );
+                return;
+            }
+            
             setExamResult(previousResult)
             setCurrentView('result')
         }
@@ -530,32 +548,83 @@ export default function ExamHome({ examId }) {
                 // Exam submission completed
 
                 if (result.success) {
-                    setExamResult(result.result);
+                    // Check if this is a scheduled exam and if current time is before end time
+                    const isScheduledExam = examData.examAvailability === 'scheduled';
+                    const examEndTime = examData.examEndTime ? new Date(examData.examEndTime) : null;
+                    const currentTime = new Date();
+                    const isBeforeEndTime = examEndTime && currentTime < examEndTime;
                     
-                    // IMMEDIATELY refresh attempts after submission to validate reattempt logic
-                    const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                    if (updatedAttempts.success) {
-                        setAllAttempts(updatedAttempts.attempts);
-                        // Update hasAttempted state since we now have at least one attempt
+                    if (isScheduledExam && isBeforeEndTime) {
+                        // For scheduled exams submitted before end time, don't show results immediately
+                        const timeUntilEnd = examEndTime - currentTime;
+                        const minutesUntilEnd = Math.ceil(timeUntilEnd / (1000 * 60));
+                        
+                        // Store the result but don't display it yet
+                        setExamResult(result.result);
                         setHasAttempted(true);
-                        // Update previous result state for the "View Previous Result" functionality
-                        if (updatedAttempts.attempts.length > 0) {
-                            setPreviousResult({
-                                score: result.result.score,
-                                totalMarks: result.result.totalMarks,
-                                percentage: result.result.percentage,
-                                correctAnswers: result.result.statistics?.correctAnswers || 0,
-                                incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                                unattempted: result.result.statistics?.unattempted || 0,
-                                timeTaken: result.result.timeTaken,
-                                completedAt: result.result.completedAt,
-                                questionAnalysis: result.result.questionAnalysis || []
-                            });
+                        
+                        // Update attempts
+                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                        if (updatedAttempts.success) {
+                            setAllAttempts(updatedAttempts.attempts);
+                            if (updatedAttempts.attempts.length > 0) {
+                                setPreviousResult({
+                                    score: result.result.score,
+                                    totalMarks: result.result.totalMarks,
+                                    percentage: result.result.percentage,
+                                    correctAnswers: result.result.statistics?.correctAnswers || 0,
+                                    incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                                    unattempted: result.result.statistics?.unattempted || 0,
+                                    timeTaken: result.result.timeTaken,
+                                    completedAt: result.result.completedAt,
+                                    questionAnalysis: result.result.questionAnalysis || []
+                                });
+                            }
                         }
+                        
+                        // Show home view with a special message
+                        setCurrentView('home');
+                        
+                        // Format the end time for display
+                        const endTimeFormatted = examEndTime.toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                        });
+                        
+                        toast.success(
+                            `Exam submitted successfully! Results will be available after the exam ends at ${endTimeFormatted}`,
+                            { duration: 8000 }
+                        );
+                    } else {
+                        // For practice exams or scheduled exams after end time, show results immediately
+                        setExamResult(result.result);
+                        
+                        // IMMEDIATELY refresh attempts after submission to validate reattempt logic
+                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                        if (updatedAttempts.success) {
+                            setAllAttempts(updatedAttempts.attempts);
+                            // Update hasAttempted state since we now have at least one attempt
+                            setHasAttempted(true);
+                            // Update previous result state for the "View Previous Result" functionality
+                            if (updatedAttempts.attempts.length > 0) {
+                                setPreviousResult({
+                                    score: result.result.score,
+                                    totalMarks: result.result.totalMarks,
+                                    percentage: result.result.percentage,
+                                    correctAnswers: result.result.statistics?.correctAnswers || 0,
+                                    incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                                    unattempted: result.result.statistics?.unattempted || 0,
+                                    timeTaken: result.result.timeTaken,
+                                    completedAt: result.result.completedAt,
+                                    questionAnalysis: result.result.questionAnalysis || []
+                                });
+                            }
+                        }
+                        
+                        setCurrentView('result');
+                        toast.success('Exam submitted successfully!');
                     }
                     
-                    setCurrentView('result');
-                    toast.success('Exam submitted successfully!');
                     // Remove any pending offline submission for this exam (if it exists)
                     const updatedSubmissions = offlineSubmissions.filter(sub => sub.examId !== examId);
                     setOfflineSubmissions(updatedSubmissions);
@@ -617,6 +686,24 @@ export default function ExamHome({ examId }) {
 
     // Handler for viewing results
     const handleViewResults = async () => {
+        // Check if this is a scheduled exam and if results can be shown
+        const isScheduledExam = exam?.examAvailability === 'scheduled';
+        const examEndTime = exam?.endTime ? new Date(exam.endTime) : null;
+        const currentTime = new Date();
+        const isBeforeEndTime = examEndTime && currentTime < examEndTime;
+        
+        if (isScheduledExam && isBeforeEndTime) {
+            const endTimeFormatted = examEndTime.toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+            toast.error(
+                `Results will be available after the exam ends at ${endTimeFormatted}`,
+                { duration: 5000 }
+            );
+            return;
+        }
+        
         const result = await fetchLatestExamResult();
         if (result) {
             setExamResult(result);

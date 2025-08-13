@@ -9,7 +9,8 @@ export default function ConfirmSubmitModal({
     totalQuestions, 
     answeredQuestions, 
     onCancel, 
-    onSubmit 
+    onSubmit,
+    exam 
 }) {
     if (!showConfirmSubmit) return null
 
@@ -30,6 +31,28 @@ export default function ConfirmSubmitModal({
                         <p className="text-gray-600 text-sm">
                             Once submitted, you cannot make any changes.
                         </p>
+                        {/* Show message for scheduled exams */}
+                        {exam?.examAvailability === 'scheduled' && exam?.endTime && (() => {
+                            const examEndTime = new Date(exam.endTime);
+                            const currentTime = new Date();
+                            const isBeforeEndTime = currentTime < examEndTime;
+                            
+                            if (isBeforeEndTime) {
+                                const endTimeFormatted = examEndTime.toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short'
+                                });
+                                
+                                return (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
+                                        <p className="text-yellow-800 text-sm font-medium">
+                                            ⏰ Results will be available after the exam ends at {endTimeFormatted}
+                                        </p>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
                     
                     {/* Progress Summary */}

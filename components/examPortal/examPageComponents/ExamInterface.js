@@ -660,7 +660,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             completedAt: new Date().toISOString(),
             visitedQuestions: Array.from(visitedQuestions),
             markedQuestions: Array.from(markedQuestions),
-            warnings: warningCount // Include warnings in submission
+            warnings: warningCount, // Include warnings in submission
+            examAvailability: exam?.examAvailability, // Pass exam availability type
+            examEndTime: exam?.endTime // Pass exam end time for scheduled exams
         };
 
         // Clear saved progress
@@ -1261,6 +1263,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 onCancel={handleCancelSubmit}
                 onSubmit={handleConfirmSubmit}
                 VicharButton={VicharButton}
+                exam={exam}
             />
         </div>
     )
