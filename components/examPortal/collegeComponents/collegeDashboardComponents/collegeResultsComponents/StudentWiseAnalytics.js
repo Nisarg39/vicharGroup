@@ -310,24 +310,30 @@ export default function StudentWiseAnalytics() {
                     })
                 }
                 
-                // Apply client-side pagination for filtered results
-                const startIndex = (currentPage - 1) * pageSize
-                const endIndex = startIndex + pageSize
-                const paginatedStudents = filteredStudents.slice(startIndex, endIndex)
+                // Apply client-side pagination only for performance filtering
+                let paginatedStudents
+                let totalFilteredStudents
+                let totalFilteredPages
                 
-                // Calculate correct pagination values
-                const totalFilteredStudents = filteredStudents.length
-                const backendFilteredTotal = result.data.pagination.total || 0
+                if (filters.performance) {
+                    // Performance filtering is done client-side, so we need client-side pagination
+                    const startIndex = (currentPage - 1) * pageSize
+                    const endIndex = startIndex + pageSize
+                    paginatedStudents = filteredStudents.slice(startIndex, endIndex)
+                    totalFilteredStudents = filteredStudents.length
+                    totalFilteredPages = Math.ceil(totalFilteredStudents / pageSize)
+                } else {
+                    // Backend handles filtering and pagination, use results directly
+                    paginatedStudents = filteredStudents
+                    totalFilteredStudents = result.data.pagination.total || 0
+                    totalFilteredPages = result.data.pagination.totalPages || 1
+                }
+                
                 const backendActualTotal = result.data.pagination.actualTotal || result.data.pagination.total || 0
-                
-                // Use backend pagination for non-performance filters, client-side for performance
-                const totalFilteredPages = filters.performance ?
-                    Math.ceil(totalFilteredStudents / pageSize) :
-                    result.data.pagination.totalPages
                 
                 setStudents(paginatedStudents)
                 setTotalPages(totalFilteredPages)
-                setTotalStudents(filters.performance ? totalFilteredStudents : backendFilteredTotal)
+                setTotalStudents(totalFilteredStudents)
                 setActualTotalStudents(backendActualTotal) // Unfiltered total from backend
                 setSummary(result.data.summary || {})
             } else {

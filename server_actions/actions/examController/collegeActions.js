@@ -1933,24 +1933,31 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
         let enrolledStudentQuery = { ...baseQuery }
         
         // Apply backend filters (class and stream - performance is client-side)
-        if (filters.class) {
-            enrolledStudentQuery.class = filters.class
-        }
-        if (filters.stream) {
-            enrolledStudentQuery.allocatedStreams = { $in: [filters.stream] }
+        // If search is provided, search should work across ALL students regardless of filters
+        if (!filters.search) {
+            // Only apply other filters when not searching
+            if (filters.class) {
+                enrolledStudentQuery.class = filters.class
+            }
+            if (filters.stream) {
+                enrolledStudentQuery.allocatedStreams = { $in: [filters.stream] }
+            }
         }
         
         // Get total count with filters applied for correct pagination
         const filteredTotalStudents = await EnrolledStudent.countDocuments(enrolledStudentQuery)
         
         // Get enrolled students with pagination
+        // If search is active, we need to fetch more data to search through
         const skip = (page - 1) * limit
+        const fetchLimit = filters.search ? Math.max(1000, limit * 10) : limit
+        const fetchSkip = filters.search ? 0 : skip
         
         const enrolledStudents = await EnrolledStudent.find(enrolledStudentQuery)
             .populate('student', 'name email interestedStream course')
             .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
+            .skip(fetchSkip)
+            .limit(fetchLimit)
             .lean()
         
         // Get all exams for this college with stream and standard info for filtering
@@ -2095,39 +2102,50 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
             })
         }
         
-        // Calculate summary statistics
+        // Apply pagination to search results
+        let paginatedStudents = filteredStudents
+        let searchTotalCount = filteredStudents.length
+        
+        if (filters.search) {
+            // For search results, apply pagination after filtering
+            const searchSkip = (page - 1) * limit
+            paginatedStudents = filteredStudents.slice(searchSkip, searchSkip + limit)
+        }
+        
+        // Calculate summary statistics based on the filtered/searched results
+        const dataForSummary = paginatedStudents.length > 0 ? filteredStudents : []
         const summary = {
             // Use actual total for display purposes
             totalStudents: actualTotalStudents,
-            // Keep filtered statistics for current view
-            filteredStudents: filteredStudents.length,
-            averageScore: filteredStudents.length > 0 ? 
-                Math.round(filteredStudents.reduce((sum, s) => sum + s.averageScore, 0) / filteredStudents.length * 100) / 100 : 0,
+            // Keep filtered/searched statistics for current view
+            filteredStudents: dataForSummary.length,
+            averageScore: dataForSummary.length > 0 ? 
+                Math.round(dataForSummary.reduce((sum, s) => sum + s.averageScore, 0) / dataForSummary.length * 100) / 100 : 0,
             totalExamsCreated: collegeExams.length,
-            totalAttempts: filteredStudents.reduce((sum, s) => sum + s.attemptedExams, 0),
-            averagePassRate: filteredStudents.length > 0 ? 
-                Math.round(filteredStudents.reduce((sum, s) => sum + s.passRate, 0) / filteredStudents.length * 100) / 100 : 0,
+            totalAttempts: dataForSummary.reduce((sum, s) => sum + s.attemptedExams, 0),
+            averagePassRate: dataForSummary.length > 0 ? 
+                Math.round(dataForSummary.reduce((sum, s) => sum + s.passRate, 0) / dataForSummary.length * 100) / 100 : 0,
             performanceDistribution: {
-                excellent: filteredStudents.filter(s => s.performance === 'excellent').length,
-                good: filteredStudents.filter(s => s.performance === 'good').length,
-                average: filteredStudents.filter(s => s.performance === 'average').length,
-                below_average: filteredStudents.filter(s => s.performance === 'below_average').length,
-                poor: filteredStudents.filter(s => s.performance === 'poor').length
+                excellent: dataForSummary.filter(s => s.performance === 'excellent').length,
+                good: dataForSummary.filter(s => s.performance === 'good').length,
+                average: dataForSummary.filter(s => s.performance === 'average').length,
+                below_average: dataForSummary.filter(s => s.performance === 'below_average').length,
+                poor: dataForSummary.filter(s => s.performance === 'poor').length
             }
         }
         
         return {
             success: true,
             data: {
-                students: filteredStudents,
+                students: paginatedStudents,
                 pagination: {
-                    // Use filtered total for pagination calculations
-                    total: filteredTotalStudents,
+                    // Use search count for search results, filtered count for filtered results
+                    total: filters.search ? searchTotalCount : filteredTotalStudents,
                     // Include unfiltered count for reference  
                     actualTotal: actualTotalStudents,
                     page: page,
                     limit: limit,
-                    totalPages: Math.ceil(filteredTotalStudents / limit)
+                    totalPages: Math.ceil((filters.search ? searchTotalCount : filteredTotalStudents) / limit)
                 },
                 summary
             }
