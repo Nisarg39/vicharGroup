@@ -41,6 +41,40 @@ import { getExamStudentStats } from '../../../../../server_actions/actions/examC
 import DetailedPerformanceAnalysis from './DetailedPerformanceAnalysis'
 
 const ExamStudentStats = ({ examId, onBack }) => {
+    // Utility function for safe numeric conversion with bounds checking
+    const safeNumber = (value, defaultValue = 0, min = null, max = null) => {
+        // Handle already formatted strings like "85.5th"
+        if (typeof value === 'string' && value.includes('th')) {
+            const numericPart = parseFloat(value.replace('th', ''))
+            if (!isNaN(numericPart) && isFinite(numericPart)) {
+                value = numericPart
+            }
+        }
+        
+        let num = parseFloat(value)
+        if (isNaN(num) || !isFinite(num)) {
+            num = defaultValue
+        }
+        if (min !== null && num < min) num = min
+        if (max !== null && num > max) num = max
+        return num
+    }
+    
+    // Safe percentile formatter
+    const formatPercentile = (percentile) => {
+        if (percentile === null || percentile === undefined) {
+            return '-'
+        }
+        
+        // If already a formatted string, return as is
+        if (typeof percentile === 'string' && percentile.includes('th')) {
+            return percentile
+        }
+        
+        // Convert to safe number and format
+        const safePercentileValue = safeNumber(percentile, 0, 0, 100)
+        return safePercentileValue.toFixed(1) + 'th'
+    }
     const [performanceData, setPerformanceData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -327,7 +361,7 @@ const ExamStudentStats = ({ examId, onBack }) => {
 
             // Add totals
             row.push(student.total)
-            row.push(student.percentile !== null && student.percentile !== undefined ? student.percentile.toFixed(1) + 'th' : '-')
+            row.push(formatPercentile(student.percentile))
             row.push(student.rank)
 
             return row
@@ -792,17 +826,23 @@ const ExamStudentStats = ({ examId, onBack }) => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 {student.status === 'completed' && student.percentile !== null && student.percentile !== undefined ? (
-                                                    <div className={`px-3 py-1.5 rounded-full font-bold text-sm ${
-                                                        student.percentile >= 90 
-                                                            ? 'bg-green-100 text-green-800' :
-                                                        student.percentile >= 75 
-                                                            ? 'bg-blue-100 text-blue-800' :
-                                                        student.percentile >= 50 
-                                                            ? 'bg-yellow-100 text-yellow-800' 
-                                                            : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {student.percentile.toFixed(1)}th
-                                                    </div>
+                                                    (() => {
+                                                        const safePercentileValue = safeNumber(student.percentile, 0, 0, 100)
+                                                        return (
+                                                            <div className={`px-3 py-1.5 rounded-full font-bold text-sm ${
+                                                                safePercentileValue >= 90 
+                                                                    ? 'bg-green-100 text-green-800' :
+                                                                safePercentileValue >= 75 
+                                                                    ? 'bg-blue-100 text-blue-800' :
+                                                                safePercentileValue >= 50 
+                                                                    ? 'bg-yellow-100 text-yellow-800' 
+                                                                    : 'bg-red-100 text-red-800'
+                                                            }`}>
+                                                                {safePercentileValue.toFixed(1)}th
+                                                            </div>
+                                                        )
+                                                    })()
+                                                    
                                                 ) : (
                                                     <span className="text-sm text-gray-500">-</span>
                                                 )}

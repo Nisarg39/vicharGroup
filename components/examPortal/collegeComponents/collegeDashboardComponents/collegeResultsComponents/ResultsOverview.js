@@ -6,7 +6,6 @@ import {
     Users, 
     BookOpen,
     Clock,
-    Award,
     Eye,
     Loader2
 } from 'lucide-react'
@@ -130,7 +129,7 @@ export default function ResultsOverview({ onNavigate }) {
                 </div>
 
                 {/* Quick Navigation Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                     <div 
                         className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100/60 p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
                         onClick={() => onNavigate('exams')}
@@ -146,25 +145,6 @@ export default function ResultsOverview({ onNavigate }) {
                             </div>
                             <div className="p-4 bg-blue-100 rounded-2xl group-hover:scale-110 transition-transform duration-200">
                                 <BarChart3 className="w-10 h-10 text-blue-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div 
-                        className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100/60 p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer group"
-                        onClick={() => onNavigate('students')}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">View by Students</h3>
-                                <p className="text-gray-600 mb-4">Track individual student performance and progress</p>
-                                <div className="flex items-center gap-2 text-green-600 font-semibold">
-                                    <Users className="w-5 h-5" />
-                                    Browse Student Results
-                                </div>
-                            </div>
-                            <div className="p-4 bg-green-100 rounded-2xl group-hover:scale-110 transition-transform duration-200">
-                                <Award className="w-10 h-10 text-green-600" />
                             </div>
                         </div>
                     </div>

@@ -530,8 +530,6 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
                 query.startTime = { $ne: null, $gt: new Date() };
                 query.examAvailability = 'scheduled';
                 sortOptions = { startTime: 1 };
-                console.log('Upcoming Exams Query:', JSON.stringify(query));
-                console.log('Upcoming Exams Sort:', JSON.stringify(sortOptions));
             }
         }
 
@@ -545,7 +543,6 @@ export async function showExamList(collegeId, page = 1, limit = 10, filters = {}
             .lean()
 
         if (filters.sortBy === 'upcoming') {
-            console.log('Found Upcoming Exams:', exams.map(e => ({ examName: e.examName, startTime: e.startTime })));
         }
 
         const serializedExams = exams.map(exam => ({
@@ -1709,8 +1706,17 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                     studentName: student.name,
                     std: exam.standard,
                     total: student.score,
-                    percentile: student.percentile !== null && student.percentile !== undefined ? 
-                        student.percentile.toFixed(1) + 'th' : '-',
+                    percentile: (() => {
+                        if (student.percentile === null || student.percentile === undefined) {
+                            return '-'
+                        }
+                        // Safe number conversion
+                        const num = parseFloat(student.percentile)
+                        if (isNaN(num) || !isFinite(num)) {
+                            return '-'
+                        }
+                        return Math.max(0, Math.min(100, num)).toFixed(1) + 'th'
+                    })(),
                     rank: student.rank
                 }
 
@@ -1822,27 +1828,11 @@ export async function getCollegeDashboardSummary(details) {
         
         // Get college info using token-based authentication
         const college = await collegeAuth(details)
-        console.log('🏫 College Auth Result:', { 
-            authenticated: !!college, 
-            collegeId: college?._id,
-            collegeName: college?.collegeName 
-        })
 
         // Debug: Check if any colleges exist in the database at all
         const allColleges = await College.find({}).select('_id collegeName token').lean()
-        console.log('🗄️ Database Debug - All Colleges:', {
-            totalColleges: allColleges.length,
-            collegesWithTokens: allColleges.filter(c => c.token).length,
-            sampleCollege: allColleges[0] ? {
-                id: allColleges[0]._id,
-                name: allColleges[0].collegeName,
-                hasToken: !!allColleges[0].token,
-                tokenPreview: allColleges[0].token?.substring(0, 10) + '...'
-            } : null
-        })
         
         if (!college) {
-            console.log('❌ College authentication failed')
             return {
                 success: false,
                 message: "College not authenticated",
@@ -1855,7 +1845,6 @@ export async function getCollegeDashboardSummary(details) {
         }
         
         const collegeId = college._id
-        console.log('🔍 Starting data queries for college:', collegeId)
         
         // Execute all database queries in parallel with a single DB connection
         const [
@@ -1874,12 +1863,6 @@ export async function getCollegeDashboardSummary(details) {
             Exam.find({ college: collegeId }).select('_id').lean()
         ])
         
-        console.log('📊 Database Query Results:', {
-            totalStudents,
-            totalExams,
-            examIdsCount: collegeExams.length,
-            examIds: collegeExams.map(e => e._id)
-        })
 
         // Debug: Check status breakdown of enrolled students
         const allEnrolledStudents = await EnrolledStudent.find({ college: collegeId }).lean()
@@ -1887,13 +1870,6 @@ export async function getCollegeDashboardSummary(details) {
             acc[student.status] = (acc[student.status] || 0) + 1
             return acc
         }, {})
-        console.log('📊 Enrolled Students Status Breakdown:', {
-            totalCount: allEnrolledStudents.length,
-            statusBreakdown,
-            approvedCount: statusBreakdown.approved || 0,
-            pendingCount: statusBreakdown.pending || 0,
-            rejectedCount: statusBreakdown.rejected || 0
-        })
         
         // Get exam attempts count using the exam IDs we already fetched
         const examIds = collegeExams.map(exam => exam._id)
@@ -1901,11 +1877,6 @@ export async function getCollegeDashboardSummary(details) {
             ? await ExamResult.countDocuments({ exam: { $in: examIds } })
             : 0
             
-        console.log('📈 Final Summary Data:', {
-            totalStudents,
-            totalExams,
-            totalExamAttempts
-        })
         
         return {
             success: true,

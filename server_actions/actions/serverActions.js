@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken"
 export async function signInGoogle(details) {
    try {
         if (!details || !details.email) {
-            console.log("Missing email in details:", details)
             return {
                 success: false,
                 message: "Invalid user details"

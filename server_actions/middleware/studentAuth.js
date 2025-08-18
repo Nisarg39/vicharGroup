@@ -40,7 +40,7 @@ export async function verifyOtpMiddleware(handler){
         }else{
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             student.otp = null
-            student.save()
+            await student.save()
             return {
                 success: true,
                 message: "Student Verified",

@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import ResultsOverview from './collegeResultsComponents/ResultsOverview'
 import ExamResultsList from './collegeResultsComponents/ExamResultsList'
-import StudentResultsList from './collegeResultsComponents/StudentResultsList'
-import StudentPerformanceView from './collegeResultsComponents/StudentPerformanceView'
 import ExamStudentStats from './collegeResultsComponents/ExamStudentStats'
 
 export default function Results() {
@@ -20,15 +18,10 @@ export default function Results() {
         // Navigate back to previous view based on current view
         switch (currentView) {
             case 'exams':
-            case 'students':
                 setCurrentView('overview')
                 break
             case 'examStudentStats':
                 setCurrentView('exams')
-                break
-            case 'studentDetails':
-            case 'studentAnalytics':
-                setCurrentView('students')
                 break
             default:
                 setCurrentView('overview')
@@ -49,19 +42,6 @@ export default function Results() {
                     <ExamStudentStats 
                         examId={navigationData.examId}
                         examData={navigationData.examData}
-                        onNavigate={handleNavigate} 
-                        onBack={handleBack} 
-                    />
-                )
-            
-            case 'students':
-                return <StudentResultsList onNavigate={handleNavigate} onBack={handleBack} />
-            
-            case 'studentDetails':
-            case 'studentAnalytics':
-                return (
-                    <StudentPerformanceView 
-                        studentId={navigationData.studentId}
                         onNavigate={handleNavigate} 
                         onBack={handleBack} 
                     />

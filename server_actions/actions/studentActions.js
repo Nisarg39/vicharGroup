@@ -36,7 +36,6 @@ export async function sendOtp(phone){
                 phone: phone, 
                 otp: studentOtp,
             })
-            // console.log(studentOtp)
 
             // sending otp to student using fast2sms api
             await fetch('https://www.fast2sms.com/dev/bulkV2', {
@@ -64,7 +63,6 @@ export async function sendOtp(phone){
             const token = jwt.sign({ id: student._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
             student.previousToken = student.token
             student.token = token
-            // console.log(student.otp)
             await fetch('https://www.fast2sms.com/dev/bulkV2', {
                 method: 'POST',
                 headers: {
@@ -119,9 +117,15 @@ export async function verifyOtp(data) {
         }
     }
 }
+
 export async function getStudentDetails(token){
     await connectDB()
-    const student = await Student.findOne({token: token}).populate([
+    const student = await Student.findOne({
+        $or: [
+            { token: token },
+            { previousToken: token }
+        ]
+    }).populate([
         {
             path: "purchases",
             populate: {
@@ -167,7 +171,6 @@ export async function getStudentDetails(token){
     }
 }
 export async function mandatoryDetails(data){
-    // console.log(data)
     await connectDB()
     const middleware = await verifyStudentMiddleware(data.token)
     if(middleware.success){
@@ -425,7 +428,6 @@ export async function productPurchase(data){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error purchasing product",
             success: false,
@@ -488,7 +490,6 @@ export async function getChapterDetails(details){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error fetching chapter details",
             success: false,
@@ -511,7 +512,6 @@ export async function getSegments(){
             segments: JSON.parse(JSON.stringify(segments))
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error fetching segments",
             success: false,
@@ -537,7 +537,6 @@ export async function getTestSeries(){
             testSeries: JSON.parse(JSON.stringify(testSeries))
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error fetching test series",
             success: false,
@@ -561,7 +560,6 @@ export async function studentAppSupport(details) {
             student: middleware.student._id,
             message: details.message,
         })
-        // console.log(helpAndSupportMessage)
         if(helpAndSupportMessage){
             return {
                 message : "We have recieved your message, we look at your request and respond to you if necessary",
@@ -600,7 +598,6 @@ export async function feelingConfusedMessage(details){
             message: details.message,
             streamName: details.streamName
         })
-        // console.log(helpAndSupportMessage)
         if(feelingConfusedMessageDetails){
             return {
                 message : "We have recieved your message, we look at your request and respond to you if necessary",
@@ -653,7 +650,6 @@ export async function collegeRequestStatus(details){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error connecting to database",
             success: false,
@@ -683,7 +679,6 @@ export async function searchCollege(details){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error searching for college",
             success: false,
@@ -748,7 +743,6 @@ export async function sendStudentRequest(details){
             studentRequest: JSON.parse(JSON.stringify(studentRequest))
         }
     } catch (error) {
-        console.log(error)
         return {
             message: "Error sending student request",
             success: false, 

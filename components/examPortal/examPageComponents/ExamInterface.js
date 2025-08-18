@@ -450,9 +450,34 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // --- FULLSCREEN LOGIC START ---
     const [warningDialog, setWarningDialog] = useState(false);
+    
+    // Detect iOS devices (iPhone, iPad, iPod)
+    const isIOS = () => {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+               (navigator.userAgentData?.platform === 'iOS') ||
+               (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+    };
+    
+    // Check if Fullscreen API is supported
+    const isFullscreenSupported = () => {
+        return !isIOS() && (
+            document.fullscreenEnabled ||
+            document.webkitFullscreenEnabled ||
+            document.mozFullScreenEnabled ||
+            document.msFullscreenEnabled
+        );
+    };
 
     // Function to request full-screen mode (exactly like reference)
     const enterFullScreen = () => {
+        // Skip fullscreen on iOS devices
+        if (!isFullscreenSupported()) {
+            console.log('Fullscreen not supported on this device');
+            setWarningDialog(false);
+            warningIssuedRef.current = false;
+            return;
+        }
+        
         const element = document.documentElement; // Whole document
         if (element.requestFullscreen) {
             element.requestFullscreen().then(() => {
@@ -569,14 +594,22 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 return;
             }
             
-            if (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false) {
+            // On iOS, only check for visibility and focus, not fullscreen
+            const isViolation = isIOS() 
+                ? (document.visibilityState !== 'visible' || document.hasFocus() === false)
+                : (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false);
+            
+            if (isViolation) {
                 // Only increment warning count once per violation
                 if (!warningIssuedRef.current) {
                     warningIssuedRef.current = true;
                     setWarningCount(prev => {
                         const newCount = prev + 1;
                         // Warning issued - count incremented
-                        toast.error(`⚠️ Warning ${newCount}: Please stay in fullscreen mode`, { duration: 3000 });
+                        const warningMessage = isIOS() 
+                            ? `⚠️ Warning ${newCount}: Please keep the exam tab active`
+                            : `⚠️ Warning ${newCount}: Please stay in fullscreen mode`;
+                        toast.error(warningMessage, { duration: 3000 });
                         return newCount;
                     });
                 }
@@ -589,7 +622,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // Only add listeners if exam has started
         if (isExamStarted) {
             document.addEventListener('visibilitychange', handleVisibilityChange);
-            document.addEventListener('fullscreenchange', handleVisibilityChange);
+            // Only add fullscreen listener if supported
+            if (isFullscreenSupported()) {
+                document.addEventListener('fullscreenchange', handleVisibilityChange);
+            }
             window.addEventListener("resize", handleVisibilityChange);
             window.addEventListener("focus", handleVisibilityChange);
             window.addEventListener("blur", handleVisibilityChange);
@@ -597,7 +633,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            document.removeEventListener('fullscreenchange', handleVisibilityChange);
+            if (isFullscreenSupported()) {
+                document.removeEventListener('fullscreenchange', handleVisibilityChange);
+            }
             window.removeEventListener("resize", handleVisibilityChange);
             window.removeEventListener("focus", handleVisibilityChange);
             window.removeEventListener("blur", handleVisibilityChange);
@@ -942,17 +980,27 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             ⚠️ Warning #{warningCount + 1}
                         </h3>
                         <p className="text-gray-700 mb-2">
-                            You have exited fullscreen mode or the exam window has lost focus. 
-                            Please return to fullscreen mode to continue your exam safely.
+                            {isIOS() 
+                                ? "The exam tab has lost focus. Please return to this tab and keep it active during the exam."
+                                : "You have exited fullscreen mode or the exam window has lost focus. Please return to fullscreen mode to continue your exam safely."
+                            }
                         </p>
                         <p className="text-sm text-red-500 mb-4">
                             Total warnings received: {warningCount}
                         </p>
                         <button
-                            onClick={enterFullScreen}
+                            onClick={() => {
+                                if (isIOS()) {
+                                    // On iOS, just close the dialog since we can't enter fullscreen
+                                    setWarningDialog(false);
+                                    warningIssuedRef.current = false;
+                                } else {
+                                    enterFullScreen();
+                                }
+                            }}
                             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
                         >
-                            Return to Fullscreen
+                            {isIOS() ? "Continue Exam" : "Return to Fullscreen"}
                         </button>
                     </div>
                 </div>

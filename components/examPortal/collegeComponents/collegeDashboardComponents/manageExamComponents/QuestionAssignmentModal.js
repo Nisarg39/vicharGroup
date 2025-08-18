@@ -527,6 +527,7 @@ export default function QuestionAssignmentModal({
                 examSubjects={exam?.examSubject || []}
                 calculateTotalMarks={calculateTotalMarks}
                 examStream={exam?.stream}
+                exam={exam}
                 // Scheme-related props
                 selectedScheme={selectedScheme}
                 schemeValidation={schemeValidation}

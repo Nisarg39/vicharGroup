@@ -13,6 +13,12 @@ const DefaultNegativeMarkingRuleSchema = new mongoose.Schema({
         type: String,
         required: false, // Optional for subject-specific rules
     },
+    section: {
+        type: String, // e.g., "Section A", "Section B", "All"
+        required: false, // Optional for section-specific rules
+        enum: ["Section A", "Section B", "Section C", "All"],
+        default: "All"
+    },
     negativeMarks: {
         type: Number,
         required: true,
@@ -67,12 +73,13 @@ const DefaultNegativeMarkingRuleSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Compound index to ensure unique rules per stream-standard-subject-questionType combination
+// Compound index to ensure unique rules per stream-standard-subject-questionType-section combination
 DefaultNegativeMarkingRuleSchema.index({ 
     stream: 1, 
     standard: 1, 
     subject: 1, 
-    questionType: 1
+    questionType: 1,
+    section: 1
 }, { 
     unique: true,
     partialFilterExpression: { isActive: true }

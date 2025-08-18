@@ -8,7 +8,6 @@ import Chapter from "../models/chapter"
 export  async function studentEnq(formData) {
     try {
         await connectDB()
-        // console.log(formData)
         const newEnquiry = new EnquiryForm({
             fullName: formData.get('fullName'),
             email: formData.get('email'),
@@ -23,7 +22,6 @@ export  async function studentEnq(formData) {
             message: "Thank You for Contacting Us, we will get back to you soon",
         }
     } catch (error) {
-        // console.log(error)
         return {
             success: false,
             message: "Enquiry Submission Failed"
@@ -32,7 +30,6 @@ export  async function studentEnq(formData) {
 }
 
 export async function contactUs(formdata) {
-    // console.log(formdata)
     try{
         await connectDB()
         const newContact = new ContactUs({
@@ -48,7 +45,6 @@ export async function contactUs(formdata) {
             message: "Thank You for Contacting Us, we will get back to you soon",
         }
     }catch(error){
-        // console.log(error)
             return {
                 success: false,
                 message: "Contact Submission Failed"
@@ -80,7 +76,6 @@ export async function getProductDetail(pageParameters){
             }
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error fetching product"

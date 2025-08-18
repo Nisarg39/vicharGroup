@@ -5,25 +5,11 @@ import {
     PencilIcon, 
     TrashIcon,
     DocumentTextIcon,
-    ChartBarIcon,
-    CalendarIcon,
-    ClockIcon,
-    UsersIcon,
-    AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import CreateExam from './manageExamComponents/CreateExam';
 
 export default function ManageExams({collegeData, examDetails}) {
     const [currentView, setCurrentView] = useState('dashboard');
-    const [activeTab, setActiveTab] = useState('overview');
-
-    // Calculate exam statistics from examDetails
-    const examStats = {
-        totalExams: examDetails?.length || 0,
-        activeExams: examDetails?.filter(exam => exam.status === 'active').length || 0,
-        completedExams: examDetails?.filter(exam => exam.status === 'completed').length || 0,
-        totalStudents: examDetails?.reduce((total, exam) => total + (exam.students?.length || 0), 0) || 0
-    };
 
     // Get recent exams from examDetails with safe date handling
     const recentExams = examDetails?.slice(0, 3).map(exam => ({
@@ -36,25 +22,11 @@ export default function ManageExams({collegeData, examDetails}) {
 
     const quickActions = [
         {
-            title: 'Create New Exam',
+            title: 'Manage All Exams',
             description: 'Set up a new exam with questions and settings',
             icon: PlusIcon,
             color: 'bg-blue-500',
             action: () => handleCreateExam()
-        },
-        {
-            title: 'View Results',
-            description: 'Check exam results and analytics',
-            icon: ChartBarIcon,
-            color: 'bg-purple-500',
-            action: () => console.log('View results')
-        },
-        {
-            title: 'Schedule Exam',
-            description: 'Set exam dates and time slots',
-            icon: CalendarIcon,
-            color: 'bg-orange-500',
-            action: () => console.log('Schedule exam')
         }
     ];
 
@@ -78,57 +50,6 @@ export default function ManageExams({collegeData, examDetails}) {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Exam Management</h1>
                     <p className="text-gray-600">Create, manage, and monitor your college examinations</p>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Exams</p>
-                                <p className="text-3xl font-bold text-gray-900">{examStats.totalExams}</p>
-                            </div>
-                            <div className="bg-blue-100 p-3 rounded-full">
-                                <AcademicCapIcon className="h-6 w-6 text-blue-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Active Exams</p>
-                                <p className="text-3xl font-bold text-green-600">{examStats.activeExams}</p>
-                            </div>
-                            <div className="bg-green-100 p-3 rounded-full">
-                                <ClockIcon className="h-6 w-6 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Completed</p>
-                                <p className="text-3xl font-bold text-purple-600">{examStats.completedExams}</p>
-                            </div>
-                            <div className="bg-purple-100 p-3 rounded-full">
-                                <ChartBarIcon className="h-6 w-6 text-purple-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                                <p className="text-3xl font-bold text-orange-600">{examStats.totalStudents}</p>
-                            </div>
-                            <div className="bg-orange-100 p-3 rounded-full">
-                                <UsersIcon className="h-6 w-6 text-orange-600" />
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Recent Exams Section */}
@@ -161,7 +82,7 @@ export default function ManageExams({collegeData, examDetails}) {
                         {quickActions.map((action, index) => (
                             <button
                                 key={index}
-                                onClick={action.title === 'Create New Exam' ? handleCreateExam : action.action}
+                                onClick={action.title === 'Manage All Exams' ? handleCreateExam : action.action}
                                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 text-left group"
                             >
                                 <div className="flex items-center mb-3">

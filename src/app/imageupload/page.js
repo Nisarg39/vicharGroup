@@ -31,7 +31,6 @@ export default function Home(){
                         width: result.info.width,
                         height: result.info.height
                     });
-                    console.log(`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${result.info.public_id}`);
                 }}
             />
             {imageId && (

@@ -90,6 +90,28 @@ async function getNegativeMarkingRuleForExam(exam) {
   }
 }
 
+// Helper function to determine section name from question and exam context
+function getQuestionSection(exam, question) {
+  // For JEE Advanced and similar exams with section-specific rules
+  if (question.section !== undefined && question.section !== null) {
+    // Map numeric section to string
+    const sectionMap = {
+      1: "Section A",
+      2: "Section B", 
+      3: "Section C"
+    };
+    return sectionMap[question.section] || "All";
+  }
+  
+  // If exam has a section field, use that
+  if (exam.section) {
+    return exam.section;
+  }
+  
+  // Default to "All" for backward compatibility
+  return "All";
+}
+
 // Enhanced helper function to get negative marking rule for a specific question type
 async function getNegativeMarkingRuleForQuestion(exam, question) {
   try {
@@ -100,17 +122,28 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
     } else if (question.isMultipleAnswer) {
       questionType = 'MCMA';
     }
+    
+    // Determine section for this question
+    const questionSection = getQuestionSection(exam, question);
 
-    // Priority order for rule matching:
-    // 1. Question type + Subject + Standard specific
-    // 2. Question type + Subject specific
-    // 3. Question type + Standard specific  
-    // 4. Question type specific
-    // 5. Subject + Standard specific
-    // 6. Subject specific
-    // 7. Standard specific
-    // 8. Stream-wide rule
-    // 9. Exam's negativeMarks field
+    // Enhanced Priority order for rule matching (includes section-specific rules):
+    // 1. Section + Question type + Subject + Standard specific (highest priority)
+    // 2. Section + Question type + Subject specific
+    // 3. Section + Question type + Standard specific
+    // 4. Section + Question type specific
+    // 5. Question type + Subject + Standard specific
+    // 6. Question type + Subject specific
+    // 7. Question type + Standard specific  
+    // 8. Question type specific
+    // 9. Section + Subject + Standard specific
+    // 10. Section + Subject specific
+    // 11. Section + Standard specific
+    // 12. Section specific
+    // 13. Subject + Standard specific
+    // 14. Subject specific
+    // 15. Standard specific
+    // 16. Stream-wide rule
+    // 17. Exam's negativeMarks field
 
     const defaultRules = await DefaultNegativeMarkingRule.find({
       stream: exam.stream,
@@ -121,8 +154,65 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
     const questionSubject = question.subject;
 
     for (const rule of defaultRules) {
-      // 1. Question type + Subject + Standard specific (highest priority)
-      if (rule.questionType === questionType && rule.subject && rule.standard) {
+      const ruleSection = rule.section || "All";
+      const isRuleSectionMatch = (ruleSection === "All" || ruleSection === questionSection);
+      
+      // 1. Section + Question type + Subject + Standard specific (highest priority)
+      if (isRuleSectionMatch && rule.questionType === questionType && rule.subject && rule.standard && rule.section && rule.section !== "All") {
+        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.standard}th > ${rule.subject} > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 2. Section + Question type + Subject specific
+      else if (isRuleSectionMatch && rule.questionType === questionType && rule.subject && !rule.standard && rule.section && rule.section !== "All") {
+        if (questionSubject === rule.subject) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.subject} > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 3. Section + Question type + Standard specific
+      else if (isRuleSectionMatch && rule.questionType === questionType && !rule.subject && rule.standard && rule.section && rule.section !== "All") {
+        if (rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.standard}th > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 4. Section + Question type specific
+      else if (isRuleSectionMatch && rule.questionType === questionType && !rule.subject && !rule.standard && rule.section && rule.section !== "All") {
+        return {
+          source: "super_admin_default",
+          negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
+          description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.section}`,
+          defaultRuleId: rule._id,
+          partialMarkingEnabled: rule.partialMarkingEnabled,
+          partialMarkingRules: rule.partialMarkingRules
+        };
+      }
+      // 5. Question type + Subject + Standard specific (no section specified or "All")
+      else if (rule.questionType === questionType && rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
         if (questionSubject === rule.subject && rule.standard === exam.standard) {
           return {
             source: "super_admin_default",
@@ -135,8 +225,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 2. Question type + Subject specific
-      else if (rule.questionType === questionType && rule.subject && !rule.standard) {
+      // 6. Question type + Subject specific (no section specified or "All")
+      else if (rule.questionType === questionType && rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
         if (questionSubject === rule.subject) {
           return {
             source: "super_admin_default",
@@ -149,8 +239,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 3. Question type + Standard specific
-      else if (rule.questionType === questionType && !rule.subject && rule.standard) {
+      // 7. Question type + Standard specific (no section specified or "All")
+      else if (rule.questionType === questionType && !rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
         if (rule.standard === exam.standard) {
           return {
             source: "super_admin_default",
@@ -163,8 +253,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 4. Question type specific (stream-wide)
-      else if (rule.questionType === questionType && !rule.subject && !rule.standard) {
+      // 8. Question type specific (stream-wide, no section specified or "All")
+      else if (rule.questionType === questionType && !rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
         return {
           source: "super_admin_default",
           negativeMarks: rule.negativeMarks,
@@ -175,8 +265,62 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           partialMarkingRules: rule.partialMarkingRules
         };
       }
-      // 5. Subject + Standard specific (no question type)
-      else if (!rule.questionType && rule.subject && rule.standard) {
+      // 9. Section + Subject + Standard specific (no question type)
+      else if (isRuleSectionMatch && !rule.questionType && rule.subject && rule.standard && rule.section && rule.section !== "All") {
+        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Section rule: ${rule.stream} > ${rule.standard}th > ${rule.subject} > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 10. Section + Subject specific (no question type)
+      else if (isRuleSectionMatch && !rule.questionType && rule.subject && !rule.standard && rule.section && rule.section !== "All") {
+        if (questionSubject === rule.subject) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Section rule: ${rule.stream} > ${rule.subject} > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 11. Section + Standard specific (no question type)
+      else if (isRuleSectionMatch && !rule.questionType && !rule.subject && rule.standard && rule.section && rule.section !== "All") {
+        if (rule.standard === exam.standard) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Section rule: ${rule.stream} > ${rule.standard}th > ${rule.section}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules
+          };
+        }
+      }
+      // 12. Section specific (no question type, no subject, no standard)
+      else if (isRuleSectionMatch && !rule.questionType && !rule.subject && !rule.standard && rule.section && rule.section !== "All") {
+        return {
+          source: "super_admin_default",
+          negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
+          description: rule.description || `Section rule: ${rule.stream} > ${rule.section}`,
+          defaultRuleId: rule._id,
+          partialMarkingEnabled: rule.partialMarkingEnabled,
+          partialMarkingRules: rule.partialMarkingRules
+        };
+      }
+      // 13. Subject + Standard specific (no question type, no section specified or "All")
+      else if (!rule.questionType && rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
         if (questionSubject === rule.subject && rule.standard === exam.standard) {
           return {
             source: "super_admin_default",
@@ -189,8 +333,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 6. Subject specific (no question type)
-      else if (!rule.questionType && rule.subject && !rule.standard) {
+      // 14. Subject specific (no question type, no section specified or "All")
+      else if (!rule.questionType && rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
         if (questionSubject === rule.subject) {
           return {
             source: "super_admin_default",
@@ -203,8 +347,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 7. Standard specific (no question type, no subject)
-      else if (!rule.questionType && !rule.subject && rule.standard) {
+      // 15. Standard specific (no question type, no subject, no section specified or "All")
+      else if (!rule.questionType && !rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
         if (rule.standard === exam.standard) {
           return {
             source: "super_admin_default",
@@ -217,8 +361,8 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
           };
         }
       }
-      // 8. Stream-wide rule (no question type, no subject, no standard)
-      else if (!rule.questionType && !rule.subject && !rule.standard) {
+      // 16. Stream-wide rule (no question type, no subject, no standard, no section specified or "All")
+      else if (!rule.questionType && !rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
         return {
           source: "super_admin_default",
           negativeMarks: rule.negativeMarks,
@@ -231,7 +375,7 @@ async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
     }
 
-    // 9. Fallback to exam's negativeMarks field
+    // 17. Fallback to exam's negativeMarks field
     return {
       source: "exam_specific",
       negativeMarks: exam.negativeMarks || 0,
@@ -367,6 +511,35 @@ async function checkExamEligibilityUncached(details) {
     // 6. Get preview of marking rules that would be applied to this exam
     const previewMarkingRules = await getNegativeMarkingRuleForExam(exam);
     
+    // 6.5. Get subject-specific marking rules for better preview
+    const subjectMarkingMap = {};
+    let isSubjectWise = false;
+    
+    if (exam.examQuestions && exam.examQuestions.length > 0) {
+      // Get unique subjects and their marking rules
+      const uniqueSubjects = [...new Set(exam.examQuestions.map(q => q.subject).filter(Boolean))];
+      
+      for (const subject of uniqueSubjects) {
+        // Find a question from this subject to get its marking rule
+        const sampleQuestion = exam.examQuestions.find(q => q.subject === subject);
+        if (sampleQuestion) {
+          const subjectRule = await getNegativeMarkingRuleForQuestion(exam, sampleQuestion);
+          subjectMarkingMap[subject] = {
+            correct: subjectRule.positiveMarks || previewMarkingRules.positiveMarks,
+            incorrect: -Math.abs(subjectRule.negativeMarks || previewMarkingRules.negativeMarks),
+            unanswered: 0
+          };
+        }
+      }
+      
+      // Check if subjects have different marking schemes
+      const markingValues = Object.values(subjectMarkingMap);
+      if (markingValues.length > 1) {
+        const uniquePositiveMarks = [...new Set(markingValues.map(v => v.correct))];
+        isSubjectWise = uniquePositiveMarks.length > 1;
+      }
+    }
+    
     // Add marking rules to exam object for Instructions component
     const examWithMarkingRules = {
       ...exam,
@@ -375,7 +548,9 @@ async function checkExamEligibilityUncached(details) {
         negativeMarks: previewMarkingRules.negativeMarks,
         ruleDescription: previewMarkingRules.description,
         ruleSource: previewMarkingRules.source,
-        hasMarkingRules: true
+        hasMarkingRules: true,
+        isSubjectWise: isSubjectWise,
+        subjects: isSubjectWise ? subjectMarkingMap : {}
       }
     };
 
@@ -1068,21 +1243,17 @@ export async function getStudentExamResults(studentId) {
 
 export async function getAllExamAttempts(studentId, examId) {
   try {
-    // console.log("getAllExamAttempts called with:", { studentId, examId });
     await connectDB();
     if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(examId)) {
-      console.log("Invalid IDs provided");
       return { success: false, message: "Invalid student ID or exam ID" };
     }
     const results = await ExamResult.find({ student: studentId, exam: examId })
       .sort({ completedAt: -1 })
       .lean();
     
-    // console.log("Found", results.length, "results from database");
     
     // Simple serialization without population for now
     const cleanResults = results.map((result, i) => {
-      console.log(`Processing result ${i + 1}:`, result._id);
       return {
         _id: result._id,
         score: result.score,
@@ -1101,7 +1272,6 @@ export async function getAllExamAttempts(studentId, examId) {
       };
     });
     
-    // console.log("Returning", cleanResults.length, "clean results");
     return {
       success: true,
       attempts: cleanResults,
@@ -1292,6 +1462,25 @@ export async function getEligibleExamsForStudent(studentId) {
     return {
       success: false,
       message: `Error fetching eligible exams: ${error.message}`,
+    };
+  }
+}
+
+// Clear exam cache - useful for refreshing exam data
+export async function clearExamCacheData(examId) {
+  try {
+    // Clear server-side cache for this exam
+    clearExamCache(examId);
+    
+    return {
+      success: true,
+      message: "Exam cache cleared successfully"
+    };
+  } catch (error) {
+    console.error("Error clearing exam cache:", error);
+    return {
+      success: false,
+      message: `Error clearing exam cache: ${error.message}`
     };
   }
 }

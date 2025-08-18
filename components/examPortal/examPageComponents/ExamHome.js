@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 import { useSelector, useDispatch } from "react-redux"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { studentDetails } from "../../../features/login/LoginSlice"
-import { checkExamEligibility, submitExamResult, getStudentExamResults, getStudentExamResult, getAllExamAttempts } from "../../../server_actions/actions/examController/studentExamActions"
+import { checkExamEligibility, submitExamResult, getStudentExamResults, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
 
 // Import sub-components
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
@@ -101,8 +101,25 @@ export default function ExamHome({ examId }) {
         setIsRefreshing(true);
         
         try {
-            // Clear client-side cache
+            // Clear client-side cache for exam data
             localStorage.removeItem(`exam_${examId}`);
+            
+            // Also clear any other related cache entries
+            const cacheKeys = Object.keys(localStorage).filter(key => 
+                key.includes(`exam_${examId}`) || key.includes(examId)
+            );
+            cacheKeys.forEach(key => {
+                if (key !== `exam_progress_${examId}_${student._id}`) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Clear server-side cache
+            await clearExamCacheData(examId);
+            
+            // Reset exam state before fetching fresh data
+            setExam(null);
+            setIsEligible(false);
             
             // Force fresh eligibility check
             await checkEligibility(student);

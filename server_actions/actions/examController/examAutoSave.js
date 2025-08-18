@@ -54,7 +54,6 @@ async function saveExamProgressInternal(progressData) {
       // You could create a separate ExamProgress collection for this
       // For now, we're just using in-memory storage
       
-      console.log(`✅ Auto-saved progress for student ${studentId} in exam ${examId}`);
     }
 
     return {

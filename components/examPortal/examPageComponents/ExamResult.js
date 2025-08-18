@@ -19,20 +19,54 @@ import { useEffect, useState } from "react"
 import negativeMarkingRules from "../../../utils/examUtils/negative_marking_rules"
 
 export default function ExamResult({ result, exam, onBack, onRetake, allAttempts = [] }) {
+  
+  // Utility function for safe numeric conversion with bounds checking
+  const safeNumber = (value, defaultValue = 0, min = null, max = null) => {
+    let num = parseFloat(value)
+    if (isNaN(num) || !isFinite(num)) {
+      num = defaultValue
+    }
+    if (min !== null && num < min) num = min
+    if (max !== null && num > max) num = max
+    return num
+  }
+
+  // Helper function to get marks for subject with proper type safety
+  const getMarksForSubject = (subject, markingDetails) => {
+    if (markingDetails.isSubjectWise && markingDetails.subjects && markingDetails.subjects[subject]) {
+      return safeNumber(markingDetails.subjects[subject].correct, 4, 0, 100)
+    }
+    return safeNumber(markingDetails.positiveMarks, 4, 0, 100)
+  }
+
   let {
     score,
     totalMarks,
-    correctAnswers,
-    incorrectAnswers,
-    unattempted,
     timeTaken,
     completedAt,
     questionAnalysis = [],
     collegeDetails = null,
-    warnings = 0 // Extract warnings from result
+    warnings = 0, // Extract warnings from result
+    statistics = {} // Extract statistics object
   } = result
 
-  // Clamp score to valid ranges
+  // Extract statistics data from the nested statistics object
+  let {
+    correctAnswers = 0,
+    incorrectAnswers = 0,
+    unattempted = 0
+  } = statistics
+
+  // Apply comprehensive numeric validation to all extracted values
+  score = safeNumber(score, 0, 0, totalMarks)
+  totalMarks = safeNumber(totalMarks, 0, 0)
+  correctAnswers = safeNumber(correctAnswers, 0, 0)
+  incorrectAnswers = safeNumber(incorrectAnswers, 0, 0)
+  unattempted = safeNumber(unattempted, 0, 0)
+  timeTaken = safeNumber(timeTaken, 0, 0)
+  warnings = safeNumber(warnings, 0, 0)
+
+  // Clamp score to valid ranges after numeric validation
   score = Math.min(score, totalMarks)
 
   // Get student info from Redux
@@ -67,6 +101,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   }
 
   // Helper function to get actual marking scheme details from the evaluated result (for comparison)
+  // Note: This function is kept for potential future use but currently unused
+  // eslint-disable-next-line no-unused-vars
   const getActualMarkingDetails = () => {
     if (!questionAnalysis || questionAnalysis.length === 0) {
       // Fallback to basic marking info if no question analysis available
@@ -172,11 +208,11 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     return null;
   })();
 
-  // Calculate safe values for accuracy, time efficiency, and completion rate
-  const totalQuestions = (correctAnswers || 0) + (incorrectAnswers || 0) + (unattempted || 0)
-  const accuracy = totalQuestions > 0 ? ((correctAnswers / totalQuestions) * 100).toFixed(2) : "0.00"
-  const timePerQuestion = totalQuestions > 0 ? Math.round(timeTaken / totalQuestions) : 0
-  const completionRate = totalQuestions > 0 ? (((correctAnswers + incorrectAnswers) / totalQuestions) * 100).toFixed(1) : "0.0"
+  // Calculate safe values for accuracy, time efficiency, and completion rate with comprehensive validation
+  const totalQuestions = safeNumber(correctAnswers + incorrectAnswers + unattempted, 0, 0)
+  const accuracy = totalQuestions > 0 ? safeNumber(((correctAnswers / totalQuestions) * 100), 0, 0, 100).toFixed(2) : "0.00"
+  const timePerQuestion = totalQuestions > 0 ? Math.round(safeNumber(timeTaken / totalQuestions, 0, 0)) : 0
+  const completionRate = totalQuestions > 0 ? safeNumber((((correctAnswers + incorrectAnswers) / totalQuestions) * 100), 0, 0, 100).toFixed(1) : "0.0"
 
   // Calculate marks breakdown - will be set after markingDetails is available
 
@@ -197,10 +233,12 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   // Calculate actual marks earned and deducted from question analysis
   const calculateActualMarks = () => {
     if (!questionAnalysis || questionAnalysis.length === 0) {
-      // Fallback calculation if no question analysis
+      // Fallback calculation if no question analysis - use safe numeric handling
+      const safePositiveMarks = safeNumber(typeof positiveMarksPerQuestion === 'number' ? positiveMarksPerQuestion : 4, 4, 0)
+      const safeNegativeMarks = safeNumber(negativeMarksPerQuestion, 0, 0)
       return {
-        totalMarksEarned: correctAnswers * (typeof positiveMarksPerQuestion === 'number' ? positiveMarksPerQuestion : 4),
-        totalMarksDeducted: incorrectAnswers * negativeMarksPerQuestion
+        totalMarksEarned: correctAnswers * safePositiveMarks,
+        totalMarksDeducted: incorrectAnswers * safeNegativeMarks
       }
     }
 
@@ -208,10 +246,11 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     let deducted = 0
 
     questionAnalysis.forEach(analysis => {
-      if (analysis.marks > 0) {
-        earned += analysis.marks
-      } else if (analysis.marks < 0) {
-        deducted += Math.abs(analysis.marks)
+      const marks = safeNumber(analysis.marks, 0)
+      if (marks > 0) {
+        earned += marks
+      } else if (marks < 0) {
+        deducted += Math.abs(marks)
       }
     })
 
@@ -220,16 +259,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   const { totalMarksEarned, totalMarksDeducted } = calculateActualMarks()
 
-  // Get both general marking scheme and actual applied details
+  // Get general marking scheme for display to students
   const generalMarkingScheme = getGeneralMarkingScheme()
-  const actualMarkingDetails = getActualMarkingDetails()
-  
-  // Use general marking scheme for display to students
   const markingDetails = generalMarkingScheme
 
-  // Calculate marks breakdown using marking details (now that markingDetails is available)
-  const positiveMarksPerQuestion = markingDetails.isSubjectWise ? 'varies' : markingDetails.positiveMarks
-  const negativeMarksPerQuestion = result?.negativeMarkingInfo?.negativeMarks || markingDetails.negativeMarks
+  // Calculate marks breakdown using marking details with proper type safety
+  const positiveMarksPerQuestion = markingDetails.isSubjectWise ? markingDetails.positiveMarks : safeNumber(markingDetails.positiveMarks, 4, 0)
+  const negativeMarksPerQuestion = safeNumber(result?.negativeMarkingInfo?.negativeMarks || markingDetails.negativeMarks, 0, 0)
 
   // Check if this is a JEE exam
   const isJeeExam = exam?.stream?.toLowerCase().includes('jee')
@@ -340,6 +376,40 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   // Calculate subject-wise performance
   const calculateSubjectPerformance = () => {
+    // First priority: Use server-provided subjectPerformance if available
+    if (result?.subjectPerformance && Array.isArray(result.subjectPerformance) && result.subjectPerformance.length > 0) {
+      // Use server-calculated data with proper totalMarks
+      return result.subjectPerformance.map(serverSubject => {
+        // Estimate time spent per subject (proportional to questions)
+        const totalQuestionsInExam = sortedQuestionAnalysis.length || 1
+        const timeSpent = serverSubject.totalQuestions > 0 ? 
+          Math.round((timeTaken * serverSubject.totalQuestions) / totalQuestionsInExam) : 0
+        
+        // Calculate difficulty breakdown (estimated)
+        const difficultyBreakdown = {
+          easy: Math.floor(serverSubject.correct * 0.6),
+          medium: Math.floor(serverSubject.correct * 0.3),
+          hard: Math.floor(serverSubject.correct * 0.1)
+        }
+        
+        return {
+          subject: serverSubject.subject,
+          totalQuestions: serverSubject.totalQuestions,
+          attempted: serverSubject.attempted,
+          correct: serverSubject.correct,
+          incorrect: serverSubject.incorrect,
+          unanswered: serverSubject.unanswered,
+          marks: serverSubject.marks,
+          maxMarks: serverSubject.totalMarks, // Use server-calculated totalMarks instead of recalculating
+          percentage: serverSubject.percentage || 0,
+          accuracy: serverSubject.accuracy || 0,
+          timeSpent,
+          difficulty: difficultyBreakdown
+        }
+      })
+    }
+    
+    // Fallback: Calculate client-side if server data not available
     if (!sortedQuestionAnalysis.length || !uniqueSubjects.length) return []
     
     return uniqueSubjects.map(subject => {
@@ -362,13 +432,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         // Use subject-specific positive marks
         maxPossibleMarks = totalQuestions * markingDetails.subjects[subject].correct
       } else {
-        // Use standard positive marks (ensure it's a number)
-        const standardMarks = typeof positiveMarksPerQuestion === 'number' ? positiveMarksPerQuestion : (markingDetails.positiveMarks || 4)
+        // Use standard positive marks with proper numeric validation
+        const standardMarks = getMarksForSubject(subject, markingDetails)
         maxPossibleMarks = totalQuestions * standardMarks
       }
       
-      const accuracy = attempted > 0 ? ((correct / attempted) * 100).toFixed(2) : '0.00'
-      const percentage = maxPossibleMarks > 0 ? ((subjectMarks / maxPossibleMarks) * 100).toFixed(1) : '0.0'
+      const accuracy = attempted > 0 ? safeNumber(((correct / attempted) * 100), 0, 0, 100).toFixed(2) : '0.00'
+      const percentage = maxPossibleMarks > 0 ? safeNumber(((subjectMarks / maxPossibleMarks) * 100), 0, 0, 100).toFixed(1) : '0.0'
       
       // Estimate time spent per subject (proportional to questions)
       const timeSpent = totalQuestions > 0 ? Math.round((timeTaken * totalQuestions) / sortedQuestionAnalysis.length) : 0
@@ -389,8 +459,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         unanswered,
         marks: subjectMarks,
         maxMarks: maxPossibleMarks,
-        percentage: parseFloat(percentage),
-        accuracy: parseFloat(accuracy),
+        percentage: safeNumber(parseFloat(percentage), 0, 0, 100),
+        accuracy: safeNumber(parseFloat(accuracy), 0, 0, 100),
         timeSpent,
         difficulty: difficultyBreakdown
       }
@@ -398,7 +468,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   }
 
 
-  // Helper functions for performance colors
+  // Helper function for performance colors
   const getPerformanceColor = (percentage) => {
     if (percentage >= 90) return 'text-green-600'
     if (percentage >= 75) return 'text-blue-600'
@@ -406,22 +476,16 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
     return 'text-red-600'
   }
 
-  const getPerformanceBg = (percentage) => {
-    if (percentage >= 90) return 'bg-green-100'
-    if (percentage >= 75) return 'bg-blue-100'
-    if (percentage >= 60) return 'bg-yellow-100'
-    return 'bg-red-100'
-  }
-
   // Calculate the data
   const subjectPerformance = calculateSubjectPerformance()
 
   // Helper component for circular progress
   const CircularProgress = ({ percentage, size = 120, strokeWidth = 8, color = "#3B82F6" }) => {
+    const safePercentage = safeNumber(percentage, 0, 0, 100)
     const radius = (size - strokeWidth) / 2
     const circumference = radius * 2 * Math.PI
     const strokeDasharray = circumference
-    const strokeDashoffset = circumference - (percentage / 100) * circumference
+    const strokeDashoffset = circumference - (safePercentage / 100) * circumference
 
     return (
       <div className="relative inline-flex items-center justify-center">
@@ -448,7 +512,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold text-gray-900">{percentage.toFixed(1)}%</span>
+          <span className="text-xl font-bold text-gray-900">{safePercentage.toFixed(1)}%</span>
         </div>
       </div>
     )
@@ -456,16 +520,17 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   // Helper component for progress bar
   const ProgressBar = ({ percentage, color = "bg-blue-500", label }) => {
+    const safePercentage = safeNumber(percentage, 0, 0, 100)
     return (
       <div className="w-full">
         {label && <div className="flex justify-between text-sm mb-1">
           <span className="text-gray-600">{label}</span>
-          <span className="font-medium">{percentage.toFixed(1)}%</span>
+          <span className="font-medium">{safePercentage.toFixed(1)}%</span>
         </div>}
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div 
             className={`${color} h-2.5 rounded-full transition-all duration-1000 ease-out`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
+            style={{ width: `${safePercentage}%` }}
           ></div>
         </div>
       </div>
@@ -702,10 +767,10 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               <div className="flex flex-col items-center justify-center gap-6 mb-6">
                 <div className="flex flex-col items-center">
                   <CircularProgress 
-                    percentage={totalMarks > 0 ? (score / totalMarks) * 100 : 0} 
+                    percentage={totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0} 
                     size={150}
                     strokeWidth={12}
-                    color={getPerformanceColor(totalMarks > 0 ? (score / totalMarks) * 100 : 0).replace('text-', '#').replace('600', '600').replace('green', '10B981').replace('blue', '3B82F6').replace('yellow', 'F59E0B').replace('red', 'EF4444')}
+                    color={getPerformanceColor(totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0).replace('text-', '#').replace('600', '600').replace('green', '10B981').replace('blue', '3B82F6').replace('yellow', 'F59E0B').replace('red', 'EF4444')}
                   />
                   <div className="mt-3 text-center">
                     <div className="text-lg font-semibold text-gray-900">Overall Score</div>
@@ -722,9 +787,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       const total = correctAnswers + incorrectAnswers + unattempted;
                       if (total === 0) return null;
                       
-                      const correctPercentage = (correctAnswers / total) * 100;
-                      const incorrectPercentage = (incorrectAnswers / total) * 100;
-                      const unattemptedPercentage = (unattempted / total) * 100;
+                      const correctPercentage = safeNumber((correctAnswers / total) * 100, 0, 0, 100);
+                      const incorrectPercentage = safeNumber((incorrectAnswers / total) * 100, 0, 0, 100);
+                      const unattemptedPercentage = safeNumber((unattempted / total) * 100, 0, 0, 100);
                       
                       const radius = 80;
                       const circumference = 2 * Math.PI * radius;
@@ -868,8 +933,16 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <span className="text-lg font-bold text-purple-600">{timePerQuestion}s</span>
                   </div>
                   {(() => {
-                    const avgTimeTarget = 90; // 90 seconds target per question
-                    const efficiency = Math.max(0, Math.min(100, ((avgTimeTarget - timePerQuestion) / avgTimeTarget) * 100 + 50));
+                    // Calculate dynamic time target based on exam duration and total questions
+                    const examDurationMinutes = safeNumber(exam?.examDurationMinutes, 180, 1) // Default 3 hours
+                    const examDurationSeconds = examDurationMinutes * 60
+                    const avgTimeTarget = totalQuestions > 0 ? Math.round(examDurationSeconds / totalQuestions) : 90
+                    
+                    // Calculate efficiency: better efficiency for faster completion within reasonable bounds
+                    const efficiency = avgTimeTarget > 0 ? 
+                      safeNumber(Math.max(0, Math.min(100, ((avgTimeTarget - timePerQuestion) / avgTimeTarget) * 100 + 50)), 0, 0, 100) :
+                      50 // Default middle efficiency if no target available
+                    
                     return (
                       <ProgressBar 
                         percentage={efficiency} 
@@ -898,13 +971,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-medium text-gray-900">Warnings</span>
                     <span className={`text-lg font-bold ${warnings > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {warnings}
+                      {safeNumber(warnings, 0, 0)}
                     </span>
                   </div>
                   <div className={`w-full rounded-full h-2 ${warnings > 0 ? 'bg-red-200' : 'bg-green-200'}`}>
                     <div 
                       className={`h-2 rounded-full transition-all duration-300 ${warnings > 0 ? 'bg-red-500' : 'bg-green-500'}`} 
-                      style={{ width: warnings > 0 ? `${Math.min(100, (warnings / 5) * 100)}%` : '100%' }}
+                      style={{ width: warnings > 0 ? `${safeNumber(Math.min(100, (warnings / 5) * 100), 0, 0, 100)}%` : '100%' }}
                     ></div>
                   </div>
                   <span className="text-xs text-gray-500 mt-2 block">
@@ -924,20 +997,20 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="text-center">
                         <div className="text-3xl font-bold text-blue-600">
-                          {result.comparativeStats.percentileRank.toFixed(1)}th
+                          {safeNumber(result.comparativeStats.percentileRank, 0, 0, 100).toFixed(1)}th
                         </div>
                         <div className="text-sm text-blue-800 font-medium">Percentile</div>
                         <div className="text-xs text-blue-600 mt-1">
-                          You scored better than {result.comparativeStats.percentileRank.toFixed(1)}% of students
+                          You scored better than {safeNumber(result.comparativeStats.percentileRank, 0, 0, 100).toFixed(1)}% of students
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-green-600">
-                          #{result.comparativeStats.rank || '-'}
+                          #{safeNumber(result.comparativeStats.rank, 0, 1) || '-'}
                         </div>
                         <div className="text-sm text-green-800 font-medium">Rank</div>
                         <div className="text-xs text-green-600 mt-1">
-                          Out of {result.comparativeStats.totalStudentsAppeared || 0} students
+                          Out of {safeNumber(result.comparativeStats.totalStudentsAppeared, 0, 0)} students
                         </div>
                       </div>
                     </div>
@@ -954,7 +1027,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="space-y-3">
                       <div>
                         <ProgressBar 
-                          percentage={totalMarks > 0 ? (totalMarksEarned / totalMarks) * 100 : 0}
+                          percentage={totalMarks > 0 ? safeNumber((totalMarksEarned / totalMarks) * 100, 0, 0, 100) : 0}
                           color="bg-green-500"
                           label="Marks Earned"
                         />
@@ -962,7 +1035,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       {negativeMarksPerQuestion > 0 && totalMarksDeducted > 0 && (
                         <div>
                           <ProgressBar 
-                            percentage={totalMarks > 0 ? (totalMarksDeducted / totalMarks) * 100 : 0}
+                            percentage={totalMarks > 0 ? safeNumber((totalMarksDeducted / totalMarks) * 100, 0, 0, 100) : 0}
                             color="bg-red-500"
                             label="Marks Deducted"
                           />
@@ -970,7 +1043,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       )}
                       <div>
                         <ProgressBar 
-                          percentage={totalMarks > 0 ? (score / totalMarks) * 100 : 0}
+                          percentage={totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0}
                           color="bg-blue-500"
                           label="Final Score"
                         />
@@ -984,21 +1057,21 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="space-y-3">
                       <div>
                         <ProgressBar 
-                          percentage={totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0}
+                          percentage={totalQuestions > 0 ? safeNumber((correctAnswers / totalQuestions) * 100, 0, 0, 100) : 0}
                           color="bg-green-500"
                           label="Correct Questions"
                         />
                       </div>
                       <div>
                         <ProgressBar 
-                          percentage={totalQuestions > 0 ? (incorrectAnswers / totalQuestions) * 100 : 0}
+                          percentage={totalQuestions > 0 ? safeNumber((incorrectAnswers / totalQuestions) * 100, 0, 0, 100) : 0}
                           color="bg-red-500"  
                           label="Incorrect Questions"
                         />
                       </div>
                       <div>
                         <ProgressBar 
-                          percentage={totalQuestions > 0 ? (unattempted / totalQuestions) * 100 : 0}
+                          percentage={totalQuestions > 0 ? safeNumber((unattempted / totalQuestions) * 100, 0, 0, 100) : 0}
                           color="bg-gray-500"
                           label="Unattempted Questions"
                         />
@@ -1028,8 +1101,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div key={index} className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-semibold text-gray-900 text-lg">{subject.subject}</h4>
-                        <span className={`text-xl font-bold ${getPerformanceColor(subject.percentage)}`}>
-                          {subject.percentage.toFixed(1)}%
+                        <span className={`text-xl font-bold ${getPerformanceColor(safeNumber(subject.percentage, 0, 0, 100))}`}>
+                          {safeNumber(subject.percentage, 0, 0, 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="space-y-3">
@@ -1055,7 +1128,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Accuracy</span>
-                          <span className="font-medium text-blue-600">{subject.accuracy.toFixed(2)}%</span>
+                          <span className="font-medium text-blue-600">{safeNumber(subject.accuracy, 0, 0, 100).toFixed(2)}%</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Est. Time</span>

@@ -12,7 +12,6 @@ export function useOffline() {
         .register('/sw.js')
         .then((registration) => {
           setServiceWorker(registration);
-          console.log('Service Worker registered:', registration);
           
           // Check if service worker is ready
           if (registration.active) {
@@ -33,12 +32,10 @@ export function useOffline() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      console.log('Connection restored');
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      console.log('Connection lost');
     };
 
     window.addEventListener('online', handleOnline);
@@ -164,7 +161,6 @@ export function useOffline() {
     if (serviceWorker && 'sync' in serviceWorker) {
       try {
         await serviceWorker.sync.register('sync-exam-submissions');
-        console.log('Background sync registered');
         return true;
       } catch (error) {
         console.error('Background sync registration failed:', error);
@@ -191,7 +187,6 @@ export function useOffline() {
   // Sync offline submissions with server
   const syncOfflineSubmissions = useCallback(async () => {
     if (!isOnline) {
-      console.log('Cannot sync while offline');
       return { success: false, message: 'Cannot sync while offline' };
     }
 

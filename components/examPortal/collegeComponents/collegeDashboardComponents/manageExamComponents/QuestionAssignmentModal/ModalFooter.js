@@ -16,6 +16,19 @@ function getSubjectDifficultyCounts(questions) {
   return counts;
 }
 
+// Helper to get section counts for JEE exams
+function getSectionCounts(questions) {
+  const counts = { sectionA: 0, sectionB: 0 };
+  questions.forEach(q => {
+    if (q.section === 1) {
+      counts.sectionA += 1;
+    } else if (q.section === 2) {
+      counts.sectionB += 1;
+    }
+  });
+  return counts;
+}
+
 // For all questions in DB, we need the full question list for current filters
 // If you only have counts, you can't break down by difficulty. So we use the 'questions' prop for the current page.
 // If you want all questions for all pages, you need to fetch them all.
@@ -74,6 +87,7 @@ export default function ModalFooter({
   examSubjects = [],
   calculateTotalMarks,
   examStream,
+  exam = null,
   // Scheme-related props
   selectedScheme = null,
   schemeValidation = null,
@@ -82,6 +96,10 @@ export default function ModalFooter({
   // For all questions in DB, we need the full question list for current filters
   // Assigned difficulty breakdown
   const assignedCounts = getSubjectDifficultyCounts(allSelectedQuestions);
+  
+  // Section counts for JEE exams
+  const sectionCounts = getSectionCounts(allSelectedQuestions);
+  const isJEEExam = examStream === 'JEE' || exam?.stream === 'JEE';
 
   return (
     <div className="bg-white border-t border-gray-200 shadow-lg">
@@ -156,6 +174,28 @@ export default function ModalFooter({
                     </span>
                   </span>
                 </div>
+
+                {/* Section counts for JEE exams */}
+                {isJEEExam && selectedQuestions.length > 0 && (
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1 bg-blue-500 rounded-full">
+                        <span className="w-3 h-3 text-white text-xs font-bold flex items-center justify-center">A</span>
+                      </div>
+                      <span className="text-sm text-blue-700 font-medium">
+                        Section A: <span className="font-bold text-blue-800">{sectionCounts.sectionA}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1 bg-indigo-500 rounded-full">
+                        <span className="w-3 h-3 text-white text-xs font-bold flex items-center justify-center">B</span>
+                      </div>
+                      <span className="text-sm text-indigo-700 font-medium">
+                        Section B: <span className="font-bold text-indigo-800">{sectionCounts.sectionB}</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {questions.length > 0 && (
                   <div className="flex items-center space-x-2">

@@ -57,14 +57,12 @@ export async function adminLogin(details) {
             }
         }
         const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || 'fallback_secret_key', { expiresIn: '30d' })
-        // console.log(token)
         return {
             success: true,
             message: "Login Successful",
             token
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Login Failed"
@@ -96,7 +94,6 @@ export async function getEnquiries(page) {
             unseenCount
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching enquiries"
@@ -128,7 +125,6 @@ export async function getContactUs(page) {
             unseenCount
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching contactUs"
@@ -184,7 +180,6 @@ export async function messageSeenContactUs(id) {
 }
 
 export async function contactedToogle(id, followUpNote) {
-    // console.log(id, followUpNote)
     try{
         await connectDB()
         const student = await EnquiryForm.findById(id)
@@ -206,7 +201,6 @@ export async function contactedToogle(id, followUpNote) {
             }
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error contacting"
@@ -215,7 +209,6 @@ export async function contactedToogle(id, followUpNote) {
 }
 
 export async function contactUsToogle(id, followUpNote){
-    // console.log(id, followUpNote)
     try {
         await connectDB()
         const customer = await ContactUs.findById(id)
@@ -236,7 +229,6 @@ export async function contactUsToogle(id, followUpNote){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error contacting"
@@ -284,7 +276,6 @@ export async function fetchAllStudents(page) {
             totalCount,
         }
     }catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching students"
@@ -348,7 +339,6 @@ export async function searchStudent(details){
             totalCount,
         };
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching students"
@@ -394,7 +384,6 @@ export async function assignProduct(details){
         }
 
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error assigning product"
@@ -461,7 +450,6 @@ export async function addSegment(details){
             segment: segment
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error adding segment"
@@ -486,7 +474,6 @@ export async function segmentDetails(){
             products: products,
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error fetching segments"
@@ -515,7 +502,6 @@ export async function editSegment(details){
             products: products
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error fetching segment"
@@ -598,7 +584,6 @@ export async function addProduct(details){
             }
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error adding product"
@@ -616,7 +601,6 @@ export async function showProducts(){
             products: products
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error fetching products"
@@ -635,7 +619,6 @@ export async function showCourses(){
             products: courseProducts
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching courses"
@@ -655,7 +638,6 @@ export async function updateCourse(details) {
             product: product
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating course"
@@ -665,7 +647,6 @@ export async function updateCourse(details) {
 
 // subject controls
 export async function addSubject(details){
-    // console.log(details)
     try {
         await connectDB()
         
@@ -696,7 +677,6 @@ export async function addSubject(details){
             subject: addSubject
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding subject"
@@ -751,9 +731,7 @@ export async function showSubjects(productId){
         }
         
         // Add logging to debug
-        console.log(`Product ${product.name} has ${subjects.length} subjects`)
         subjects.forEach(subject => {
-            console.log(`Subject: ${subject.name}, Chapters: ${subject.chapters?.length || 0}`)
         })
         
         return {
@@ -761,7 +739,6 @@ export async function showSubjects(productId){
             subjects: subjects
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching subjects"
@@ -783,7 +760,6 @@ export async function updateSubject(details){
             subject: updatedSubject
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating subject"
@@ -825,7 +801,6 @@ export async function getAllSubjectsAcrossProducts(excludeProductId = null){
             subjects: subjectsWithProductInfo
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching all subjects"
@@ -836,7 +811,6 @@ export async function getAllSubjectsAcrossProducts(excludeProductId = null){
 export async function addExistingSubjectToProduct(details){
     try {
         await connectDB()
-        console.log("Adding existing subject reference to product:", details.subjectId, "->", details.productId)
         
         // Verify the product exists
         const targetProduct = await Products.findById(details.productId)
@@ -877,7 +851,6 @@ export async function addExistingSubjectToProduct(details){
             }
         })
         
-        console.log(`Successfully added subject reference ${subject.name} to product`)
         
         return {
             success: true,
@@ -915,7 +888,6 @@ export async function addChapter(details){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding chapter"
@@ -937,7 +909,6 @@ export async function updateChapter(details){
             chapter: updatedChapter
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating chapter"
@@ -967,7 +938,6 @@ export async function deleteChapter(chapterId){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting chapter"
@@ -998,7 +968,6 @@ export async function addLecture(details){
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding lecture"
@@ -1027,7 +996,6 @@ export async function showLectures(details) {
             chapter: chapter
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching lectures"
@@ -1044,7 +1012,6 @@ export async function updateLecture(details) {
             lecture: lecture
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating lecture"
@@ -1071,7 +1038,6 @@ export async function deleteLecture(details) {
             lecture: lecture
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting lecture"
@@ -1084,7 +1050,6 @@ export async function addDpp(details) {
     try {
         await connectDB()
         const dpp = await Dpp.create(details)
-        // console.log(dpp)
         if(dpp){
             const chapter = await Chapter.findByIdAndUpdate(details.chapterId, {
                 $push: {
@@ -1092,7 +1057,6 @@ export async function addDpp(details) {
                 }
             }, {new: true})
 
-            // console.log(chapter)
             if(chapter){
                 return {
                     success: true,
@@ -1103,7 +1067,6 @@ export async function addDpp(details) {
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding dpp"
@@ -1112,7 +1075,6 @@ export async function addDpp(details) {
 }
 
 export async function updateDpp(details){
-    console.log(details)
     try {
         await connectDB()
         const dpp = await Dpp.findByIdAndUpdate(details._id, details, {new: true})
@@ -1123,14 +1085,12 @@ export async function updateDpp(details){
             }
         }
         
-        // console.log(dpp)
         return {
             success: true,
             message: "Dpp updated successfully",
             dpp: dpp
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating dpp"
@@ -1171,7 +1131,6 @@ export async function deleteDpp(details){
         }
         
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting dpp"
@@ -1195,7 +1154,6 @@ export async function addDppQuestion(details){
             dppQuestion: JSON.parse(JSON.stringify(dppQuestion))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding question"
@@ -1213,7 +1171,6 @@ export async function updateDppQuestion(details){
             dppQuestion: JSON.parse(JSON.stringify(updatedQuestion))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating question"
@@ -1231,7 +1188,6 @@ export async function deleteDppQuestion(questionId){
             message: "Question deleted successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting question"
@@ -1258,7 +1214,6 @@ export async function addExercise(details){
             exercise: JSON.parse(JSON.stringify(exercise))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding exercise"
@@ -1274,7 +1229,6 @@ export async function showExercise(chapterId) {
             exercises: JSON.parse(JSON.stringify(exercises.exercises))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error showing exercise"
@@ -1310,7 +1264,6 @@ export async function deleteExercise(details) {
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting exercise"
@@ -1330,7 +1283,6 @@ export async function addTeacher(details){
             teacher: JSON.parse(JSON.stringify(teacher))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding teacher"
@@ -1342,14 +1294,12 @@ export async function updateTeacher(details){
     try {
         await connectDB()
         const teacher = await Teacher.findByIdAndUpdate(details.teacherId, details, {new: true})
-        console.log(teacher)
         return {
             success: true,
             message: "Teacher updated successfully",
             teacher: JSON.parse(JSON.stringify(teacher))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating teacher"
@@ -1366,7 +1316,6 @@ export async function showTeachers() {
             teachers: JSON.parse(JSON.stringify(teachers))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error showing teachers"
@@ -1386,7 +1335,6 @@ export async function addCouponCode(details){
             couponCode: couponCode
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding coupon code"
@@ -1416,7 +1364,6 @@ export async function getAllCouponCodes(page = 1, limit = 10){
             }
         }
     }catch(error){
-        console.log(error)
         return {
             success: false,
             message: "Error fetching coupon codes"
@@ -1468,7 +1415,6 @@ export async function paymentDetails(page = 1, limit = 10){
             totalCount,
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching payments"
@@ -1552,7 +1498,6 @@ export async function searchStudentPayments(searchTerm, page = 1, limit = 10){
             totalCount,
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error searching payments"
@@ -1578,7 +1523,6 @@ export async function addBanner(details) {
             banner: JSON.parse(JSON.stringify(banner))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding banner"
@@ -1595,7 +1539,6 @@ export async function showBanners() {
             banners: banners
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching banners"
@@ -1617,7 +1560,6 @@ export async function updateBanner(details) {
             banner: JSON.parse(JSON.stringify(banner))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating banner"
@@ -1657,7 +1599,6 @@ export async function showStudentAppSupport(page = 1) {
             unseenCount
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching support requests"
@@ -1682,7 +1623,6 @@ export async function messageSeenHelpAndSupport(id) {
             message: "Message marked as seen successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error marking message as seen"
@@ -1707,7 +1647,6 @@ export async function contactedToggleHelpAndSupport(id) {
             message: "Contact status updated successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating contact status"
@@ -1749,7 +1688,6 @@ export async function showFeelingConsfusedData(page = 1) {
             uncontactedCount
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching feeling confused data"
@@ -1774,7 +1712,6 @@ export async function messageSeenFeelingConfused(id) {
             message: "Message marked as seen successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error marking message as seen"
@@ -1802,7 +1739,6 @@ export async function contactedToggleFeelingConfused(id, followUpNote) {
             message: "Contact status updated successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating contact status"
@@ -1832,7 +1768,6 @@ export async function addCollege(details) {
             college: JSON.parse(JSON.stringify(college))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error adding college"
@@ -1882,7 +1817,6 @@ export async function showCollegeList(page = 1, limit = 10) {
             }
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error fetching colleges"
@@ -2102,7 +2036,6 @@ export async function updateExamQuestion(details){
             question: JSON.parse(JSON.stringify(updatedQuestion))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error updating question"
@@ -2119,7 +2052,6 @@ export async function deleteExamQuestion(questionId){
             message: "Question deleted successfully"
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error deleting question"
@@ -2140,7 +2072,6 @@ export async function createTeacherExam(teacherExamData){
             teacherExam: JSON.parse(JSON.stringify(teacherExam))
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: "Error creating teacher exam"
@@ -2176,7 +2107,6 @@ export async function CreateTeacherExam(details) {
             teacher: teacher
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: error.message || "Error creating teacher"
@@ -2214,7 +2144,6 @@ export async function GetAllTeachers(page = 1, limit = 10) {
             hasPrevPage: page > 1
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: error.message || "Error fetching teachers"
@@ -2265,7 +2194,6 @@ export async function UpdateTeacherExam(teacherId, details) {
             teacher: updatedTeacher
         }
     } catch (error) {
-        console.log(error)
         return {
             success: false,
             message: error.message || "Error updating teacher"
@@ -2381,8 +2309,6 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
     try {
         await connectDB()
         
-        console.log("Starting migration with data:", negativeMarkingData)
-        console.log("Admin ID:", adminId)
         
         const rules = []
         
@@ -2393,7 +2319,6 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
         
         // Process the negative marking rules from the file
         for (const exam of negativeMarkingData.exams) {
-            console.log("Processing exam:", exam.name)
             
             const examName = exam.name
             const conductedBy = exam.conductedBy
@@ -2403,7 +2328,6 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
                 for (const [key, scheme] of Object.entries(exam.markingScheme)) {
                     if (key === 'note') continue // Skip notes
                     
-                    console.log(`Processing scheme for ${examName} - ${key}:`, scheme)
                     
                     // Determine if this is a subject-specific rule (like MHT-CET) or question type (like JEE)
                     const isSubject = ['Physics', 'Chemistry', 'Mathematics', 'Biology'].includes(key)
@@ -2428,13 +2352,11 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
                         createdBy: new mongoose.Types.ObjectId(adminId) // Ensure proper ObjectId format
                     }
                     
-                    console.log("Created rule:", rule)
                     rules.push(rule)
                 }
             }
         }
         
-        console.log(`Attempting to insert ${rules.length} rules`)
         
         if (rules.length === 0) {
             return {
@@ -2450,7 +2372,6 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
         } catch (error) {
             if (error.code === 11000) {
                 // Handle duplicate key errors - some rules might already exist
-                console.log("Some rules already exist, continuing with unique ones")
                 // Try inserting one by one to get successful ones
                 for (const rule of rules) {
                     try {
@@ -2461,7 +2382,6 @@ export async function migrateNegativeMarkingRules(negativeMarkingData, adminId) 
                             throw duplicateError // Re-throw if not a duplicate error
                         }
                         // Skip duplicates
-                        console.log(`Skipping duplicate rule for ${rule.stream} - ${rule.subject || rule.questionType || 'general'}`)
                     }
                 }
             } else {
@@ -2621,12 +2541,8 @@ export async function getPredefinedMarks(questionData) {
 // Question Selection Scheme Functions
 export async function createQuestionSelectionScheme(schemeData) {
     try {
-        console.log("=== CREATE QUESTION SELECTION SCHEME START ===")
-        console.log("1. Connecting to database...")
         await connectDB()
-        console.log("2. Database connected successfully")
         
-        console.log("3. Received scheme data:", JSON.stringify(schemeData, null, 2))
         
         // Validate the data structure
         if (!schemeData.schemeName) {
@@ -2642,16 +2558,11 @@ export async function createQuestionSelectionScheme(schemeData) {
             throw new Error("Subject rules are required")
         }
         
-        console.log("4. Basic validation passed")
         
         // Log validation details
-        console.log("5. Validating totals:")
-        console.log("   - Total scheme questions:", schemeData.totalSchemeQuestions)
         const calculatedTotal = schemeData.subjectRules.reduce((sum, rule) => {
-            console.log(`   - Rule for ${rule.subject} Class ${rule.standard}: ${rule.totalQuestions} questions`)
             return sum + rule.totalQuestions
         }, 0)
-        console.log("   - Calculated total from rules:", calculatedTotal)
         
         // Ensure all numeric fields are numbers (not strings)
         const processedSchemeData = {
@@ -2674,13 +2585,9 @@ export async function createQuestionSelectionScheme(schemeData) {
             }))
         }
         
-        console.log("6. Processed data for database:", JSON.stringify(processedSchemeData, null, 2))
         
-        console.log("7. Creating scheme in database...")
         const newScheme = await QuestionSelectionScheme.create(processedSchemeData)
         
-        console.log("8. Scheme created successfully with ID:", newScheme._id)
-        console.log("=== CREATE QUESTION SELECTION SCHEME END ===")
         
         return {
             success: true,
@@ -2726,21 +2633,16 @@ export async function createQuestionSelectionScheme(schemeData) {
 
 export async function getAllQuestionSelectionSchemes(filters = {}) {
     try {
-        console.log("=== GET ALL QUESTION SELECTION SCHEMES START ===")
         await connectDB()
-        console.log("Connected to database")
         
         const query = {}
         if (filters.examType) query.examType = filters.examType
         if (filters.isActive !== undefined) query.isActive = filters.isActive
         
-        console.log("Query filters:", query)
         const schemes = await QuestionSelectionScheme.find(query)
             .sort({ createdAt: -1 })
             .lean()
         
-        console.log(`Found ${schemes.length} schemes`)
-        console.log("=== GET ALL QUESTION SELECTION SCHEMES END ===")
         
         return {
             success: true,
