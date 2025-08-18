@@ -1942,14 +1942,16 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
         const skip = (page - 1) * limit
         
         const enrolledStudents = await EnrolledStudent.find(enrolledStudentQuery)
-            .populate('student', 'name email')
+            .populate('student', 'name email interestedStream course')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean()
         
-        // Get all exams for this college
-        const collegeExams = await Exam.find({ college: collegeId }).select('_id totalMarks').lean()
+        // Get all exams for this college with stream and standard info for filtering
+        const collegeExams = await Exam.find({ college: collegeId })
+            .select('_id totalMarks stream standard')
+            .lean()
         const examIds = collegeExams.map(exam => exam._id)
         
         // Process each student to get their performance data
@@ -1963,11 +1965,52 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     exam: { $in: examIds }
                 }).populate('exam', 'examName totalMarks examSubject stream standard').lean()
                 
-                // Calculate student statistics
-                const totalExams = collegeExams.length
-                const attemptedExams = examResults.length
-                const scores = examResults.map(result => result.score || 0)
-                const totalMarks = examResults.reduce((sum, result) => sum + (result.exam?.totalMarks || 0), 0)
+                // Filter exams based on student's eligibility (stream and class)
+                // Get student streams from allocatedStreams field (primary source)
+                const studentStreams = enrolledStudent.allocatedStreams || []
+                
+                const studentClass = enrolledStudent.class
+                
+                // DEBUG: Check if allocatedStreams is populated
+                // If allocatedStreams is empty, we need to understand why
+                if (studentStreams.length === 0) {
+                    // Fallback: If no allocatedStreams, infer from the display data or use all exams
+                    // This is a temporary fix - the real solution is to populate allocatedStreams properly
+                    console.log(`WARNING: Student ${enrolledStudent.student.name} has no allocatedStreams, using all exams as fallback`)
+                }
+
+                // Filter exams based on student's allocated streams and class
+                const eligibleExams = studentStreams.length > 0 
+                    ? collegeExams.filter(exam => {
+                        // Stream matching - check if exam stream matches student's allocated streams
+                        if (!exam.stream) return false
+                        
+                        const streamMatch = studentStreams.some(studentStream => {
+                            return studentStream.toString().toUpperCase().trim() === exam.stream.toString().toUpperCase().trim()
+                        })
+                        
+                        if (!streamMatch) return false
+                        
+                        // Class matching
+                        if (studentClass && exam.standard) {
+                            return studentClass.toString() === exam.standard.toString()
+                        }
+                        
+                        return true
+                    })
+                    : collegeExams // Fallback: if no allocated streams, show all exams (this explains the 11 count)
+                
+                // Filter exam results to only include results from eligible exams
+                const eligibleExamIds = eligibleExams.map(exam => exam._id.toString())
+                const filteredExamResults = examResults.filter(result => 
+                    eligibleExamIds.includes(result.exam._id.toString())
+                )
+                
+                // Calculate student statistics based on eligible exams
+                const totalExams = eligibleExams.length
+                const attemptedExams = filteredExamResults.length
+                const scores = filteredExamResults.map(result => result.score || 0)
+                const totalMarks = filteredExamResults.reduce((sum, result) => sum + (result.exam?.totalMarks || 0), 0)
                 const obtainedMarks = scores.reduce((sum, score) => sum + score, 0)
                 
                 const averageScore = attemptedExams > 0 ? 
@@ -1976,7 +2019,7 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                 const lowestScore = scores.length > 0 ? Math.min(...scores) : 0
                 
                 // Calculate pass rate (assuming 40% passing criteria)
-                const passedExams = examResults.filter(result => {
+                const passedExams = filteredExamResults.filter(result => {
                     const passingMarks = (result.exam?.totalMarks || 0) * 0.4
                     return result.score >= passingMarks
                 }).length
@@ -1984,8 +2027,8 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     Math.round((passedExams / attemptedExams) * 100 * 100) / 100 : 0
                 
                 // Get last exam details
-                const lastExam = examResults.length > 0 ? 
-                    examResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0] : null
+                const lastExam = filteredExamResults.length > 0 ? 
+                    filteredExamResults.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0] : null
                 
                 // Determine performance category
                 let performance = 'poor'
@@ -1999,7 +2042,7 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     name: enrolledStudent.student.name,
                     email: enrolledStudent.student.email,
                     class: enrolledStudent.class || 'N/A',
-                    stream: enrolledStudent.allocatedStreams?.[0] || 'N/A',
+                    stream: studentStreams.length > 0 ? studentStreams[0] : 'N/A',
                     rollNumber: enrolledStudent.rollNumber || `ST${studentId.toString().slice(-6)}`,
                     totalExams,
                     attemptedExams,
