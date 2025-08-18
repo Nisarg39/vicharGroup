@@ -48,6 +48,9 @@ export default function ExamHome({ examId }) {
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
     const [hasSavedProgress, setHasSavedProgress] = useState(false);
     const [pendingExamStart, setPendingExamStart] = useState(false);
+    
+    // Add state for cache refresh functionality
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Helper to get the progress key
     const getProgressKey = () => exam && student?._id ? `exam_progress_${exam._id}_${student._id}` : null;
@@ -87,6 +90,30 @@ export default function ExamHome({ examId }) {
         setShowContinuePrompt(false);
         setPendingExamStart(false);
         setCurrentView('instructions');
+    };
+
+    // Handler for refreshing exam data - clears cache and fetches fresh data
+    const handleRefreshExamData = async () => {
+        if (!student?._id || isRefreshing) {
+            return;
+        }
+
+        setIsRefreshing(true);
+        
+        try {
+            // Clear client-side cache
+            localStorage.removeItem(`exam_${examId}`);
+            
+            // Force fresh eligibility check
+            await checkEligibility(student);
+            
+            toast.success('Exam data refreshed successfully!');
+        } catch (error) {
+            console.error('Error refreshing exam data:', error);
+            toast.error('Failed to refresh exam data. Please try again.');
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     // Sync offline submissions
@@ -205,6 +232,42 @@ export default function ExamHome({ examId }) {
         }
     }, [syncOfflineData])
 
+    // Refresh exam data when page becomes visible (for scheduled exams)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && exam?.examAvailability === 'scheduled') {
+                // Clear cache for scheduled exams when user returns to the page
+                localStorage.removeItem(`exam_${examId}`)
+                
+                // Refresh exam data if student is available
+                if (student?._id) {
+                    checkEligibility(student)
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [exam?.examAvailability, examId, student])
+
+    // Periodic refresh for scheduled exams (every 2 minutes)
+    useEffect(() => {
+        if (exam?.examAvailability === 'scheduled' && currentView === 'home' && isOnline) {
+            const intervalId = setInterval(() => {
+                // Clear cache and refresh exam data
+                localStorage.removeItem(`exam_${examId}`)
+                if (student?._id) {
+                    checkEligibility(student)
+                }
+            }, 2 * 60 * 1000) // Refresh every 2 minutes
+
+            return () => clearInterval(intervalId)
+        }
+    }, [exam?.examAvailability, currentView, isOnline, examId, student])
+
     // Load cached exam data
     useEffect(() => {
         loadCachedExamData()
@@ -213,17 +276,11 @@ export default function ExamHome({ examId }) {
     // Load cached exam data from localStorage
     const loadCachedExamData = useCallback(() => {
         try {
-            const cachedExam = localStorage.getItem(`exam_${examId}`)
-            const cachedQuestions = localStorage.getItem(`exam_questions_${examId}`)
+            // Only load cached progress and submissions, not exam data
+            // Exam data will be fetched fresh to avoid stale countdown timers
             const cachedProgress = localStorage.getItem(`exam_progress_${examId}`)
             const cachedSubmissions = localStorage.getItem('offline_submissions')
 
-            if (cachedExam) {
-                setExam(JSON.parse(cachedExam))
-            }
-            if (cachedQuestions) {
-                setExamQuestions(JSON.parse(cachedQuestions))
-            }
             if (cachedProgress) {
                 setExamProgress(JSON.parse(cachedProgress))
             }
@@ -235,13 +292,55 @@ export default function ExamHome({ examId }) {
         }
     }, [examId])
 
-    // Cache exam data
+    // Cache exam data with timestamp for validation
     const cacheExamData = useCallback((examData, questions) => {
         try {
-            localStorage.setItem(`exam_${examId}`, JSON.stringify(examData))
+            // Add timestamp to cached data for validation
+            const cacheData = {
+                exam: examData,
+                timestamp: Date.now(),
+                cacheVersion: '1.0' // Version for cache invalidation
+            }
+            localStorage.setItem(`exam_${examId}`, JSON.stringify(cacheData))
             localStorage.setItem(`exam_questions_${examId}`, JSON.stringify(questions))
         } catch (error) {
             console.error('Error caching exam data:', error)
+        }
+    }, [examId])
+
+    // Load and validate cached exam data for offline use only
+    const loadAndValidateCachedExam = useCallback(() => {
+        try {
+            const cachedData = localStorage.getItem(`exam_${examId}`)
+            if (!cachedData) return null
+
+            const parsed = JSON.parse(cachedData)
+            
+            // Check if cache has the new structure with timestamp
+            if (parsed.timestamp && parsed.exam) {
+                const cacheAge = Date.now() - parsed.timestamp
+                const MAX_CACHE_AGE = 5 * 60 * 1000 // 5 minutes for exam details
+                
+                // For scheduled exams, always invalidate cache to get fresh timing
+                if (parsed.exam.examAvailability === 'scheduled') {
+                    // Clear the stale cache
+                    localStorage.removeItem(`exam_${examId}`)
+                    return null
+                }
+                
+                // For other exams, use cache if it's fresh enough
+                if (cacheAge < MAX_CACHE_AGE) {
+                    return parsed.exam
+                }
+            }
+            
+            // Clear old format or expired cache
+            localStorage.removeItem(`exam_${examId}`)
+            return null
+        } catch (error) {
+            console.error('Error validating cached exam data:', error)
+            localStorage.removeItem(`exam_${examId}`)
+            return null
         }
     }, [examId])
 
@@ -334,32 +433,67 @@ export default function ExamHome({ examId }) {
         }
         
         try {
-            const eligibility = await checkExamEligibility(details)
-            if(eligibility.success){
-                toast.success(eligibility.message)
-                setExam(eligibility.exam)
-                setIsEligible(true); // NEW: set eligible
-                
-                // Cache exam data for offline use
-                cacheExamData(eligibility.exam, eligibility.exam.examQuestions || [])
-                
-                // Load questions if available
-                if (eligibility.exam.examQuestions) {
-                    setExamQuestions(eligibility.exam.examQuestions)
-                    // Questions loaded successfully
+            // Always try to fetch fresh data when online
+            if (isOnline) {
+                const eligibility = await checkExamEligibility(details)
+                if(eligibility.success){
+                    toast.success(eligibility.message)
+                    setExam(eligibility.exam)
+                    setIsEligible(true); // NEW: set eligible
+                    
+                    // Cache exam data for offline use
+                    cacheExamData(eligibility.exam, eligibility.exam.examQuestions || [])
+                    
+                    // Load questions if available
+                    if (eligibility.exam.examQuestions) {
+                        setExamQuestions(eligibility.exam.examQuestions)
+                        // Questions loaded successfully
+                    } else {
+                        // No questions found in exam data
+                    }
+                    
+                    // Eligibility check completed
                 } else {
-                    // No questions found in exam data
+                    toast.error(eligibility.message)
+                    setIsEligible(false); // NEW: set not eligible
                 }
-                
-                // Eligibility check completed
             } else {
-                toast.error(eligibility.message)
-                setIsEligible(false); // NEW: set not eligible
+                // Offline: try to use validated cached data
+                const cachedExam = loadAndValidateCachedExam()
+                if (cachedExam) {
+                    setExam(cachedExam)
+                    // For offline mode, assume eligible if we have cached data
+                    setIsEligible(true)
+                    toast.info('Using cached exam data (offline mode)')
+                    
+                    // Load cached questions if available
+                    const cachedQuestions = localStorage.getItem(`exam_questions_${examId}`)
+                    if (cachedQuestions) {
+                        setExamQuestions(JSON.parse(cachedQuestions))
+                    }
+                } else {
+                    toast.error('No cached exam data available for offline use')
+                    setIsEligible(false)
+                }
             }
         } catch (error) {
             console.error('Error checking eligibility:', error)
-            toast.error('Failed to check exam eligibility')
-            setIsEligible(false); // NEW: set not eligible
+            
+            // If online check fails, try cached data as fallback
+            const cachedExam = loadAndValidateCachedExam()
+            if (cachedExam) {
+                setExam(cachedExam)
+                setIsEligible(true)
+                toast.warning('Using cached exam data due to connection issues')
+                
+                const cachedQuestions = localStorage.getItem(`exam_questions_${examId}`)
+                if (cachedQuestions) {
+                    setExamQuestions(JSON.parse(cachedQuestions))
+                }
+            } else {
+                toast.error('Failed to check exam eligibility')
+                setIsEligible(false)
+            }
         }
     }
 
@@ -680,6 +814,24 @@ export default function ExamHome({ examId }) {
 
     // Handler for viewing attempt details
     const handleViewAttemptDetails = (attempt) => {
+        // Check if this is a scheduled exam and if results can be shown
+        const isScheduledExam = exam?.examAvailability === 'scheduled';
+        const examEndTime = exam?.endTime ? new Date(exam.endTime) : null;
+        const currentTime = new Date();
+        const isBeforeEndTime = examEndTime && currentTime < examEndTime;
+        
+        if (isScheduledExam && isBeforeEndTime) {
+            const endTimeFormatted = examEndTime.toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+            toast.error(
+                `Results will be available after the exam ends at ${endTimeFormatted}`,
+                { duration: 5000 }
+            );
+            return;
+        }
+        
         setSelectedAttempt(attempt);
         setCurrentView('attemptDetails');
     };
@@ -892,6 +1044,8 @@ export default function ExamHome({ examId }) {
                                         onContinueExam={handleContinueExamDirect}
                                         onViewPreviousResult={viewPreviousResult}
                                         isEligible={isEligible}
+                                        onRefreshExamData={handleRefreshExamData}
+                                        isRefreshing={isRefreshing}
                                     />
                                 </div>
                             </div>

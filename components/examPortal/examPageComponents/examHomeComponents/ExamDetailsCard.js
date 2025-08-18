@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../../ui/button"
 import { Badge } from "../../../ui/badge"
 import { Separator } from "../../../ui/separator"
-import { Clock, AlertCircle, Play, BarChart3, BookOpen, Award, WifiOff, Timer } from "lucide-react"
+import { Clock, AlertCircle, Play, BarChart3, BookOpen, Award, WifiOff, Timer, RefreshCw } from "lucide-react"
 
 export default function ExamDetailsCard({ 
     exam, 
@@ -16,7 +16,9 @@ export default function ExamDetailsCard({
     onStartExam, 
     onContinueExam, 
     onViewPreviousResult,
-    isEligible // NEW: eligibility prop
+    isEligible, // NEW: eligibility prop
+    onRefreshExamData, // NEW: refresh function prop
+    isRefreshing // NEW: refresh loading state prop
 }) {
     // State for countdown timers
     const [currentTime, setCurrentTime] = useState(new Date())
@@ -114,6 +116,17 @@ export default function ExamDetailsCard({
     }
 
     const timingStatus = getExamTimingStatus()
+    
+    // Determine when to show refresh button
+    // Show ONLY when: it's a "Start Exam" scenario (no saved progress), exam is scheduled, and student appears to have cached/stale timing data
+    const shouldShowRefreshButton = () => {
+        return (
+            !hasUncompletedExam && // Not a "Continue Exam" scenario
+            exam?.examAvailability === 'scheduled' && // Exam is scheduled
+            onRefreshExamData && // Function is available
+            isOnline // Only show when online
+        )
+    }
 
     return (
         <Card className="bg-white/80 backdrop-blur-2xl shadow-2xl border border-white/30 rounded-3xl overflow-hidden group hover:shadow-3xl transition-all duration-500 relative">
@@ -182,12 +195,27 @@ export default function ExamDetailsCard({
                 {/* Exam Timing Information for Scheduled Exams */}
                 {exam.examAvailability === 'scheduled' && exam.startTime && exam.endTime && (
                     <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-6 border border-indigo-100/50 backdrop-blur-sm">
-                        <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-3 text-lg">
-                            <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-md">
-                                <Clock className="w-5 h-5 text-white" />
-                            </div>
-                            Exam Schedule
-                        </h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-indigo-900 flex items-center gap-3 text-lg">
+                                <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-md">
+                                    <Clock className="w-5 h-5 text-white" />
+                                </div>
+                                Exam Schedule
+                            </h3>
+                            {shouldShowRefreshButton() && (
+                                <Button
+                                    onClick={onRefreshExamData}
+                                    disabled={isRefreshing}
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-indigo-200 bg-white/70 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 px-3 py-2 rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Refresh exam timing data"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                                </Button>
+                            )}
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-white/70 rounded-xl p-4 border border-indigo-100/50">
                                 <p className="text-sm font-semibold text-indigo-900 mb-1">Start Time</p>
