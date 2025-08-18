@@ -260,13 +260,14 @@ export default function StudentWiseAnalytics() {
             // Separate backend filters from frontend-only filters
             const backendFilters = {
                 search: debouncedSearch,
-                class: filters.class
-                // Note: stream and performance filters will be applied client-side
+                class: filters.class,
+                stream: filters.stream
+                // Note: only performance filter will be applied client-side
             }
 
             // Fetch more data when using client-side filters to account for filtering
-            const fetchLimit = (filters.performance || filters.stream) ? 100 : pageSize
-            const fetchPage = (filters.performance || filters.stream) ? 1 : currentPage
+            const fetchLimit = filters.performance ? 100 : pageSize
+            const fetchPage = filters.performance ? 1 : currentPage
 
             const result = await getCollegeStudentResults(
                 { token }, 
@@ -277,13 +278,6 @@ export default function StudentWiseAnalytics() {
 
             if (result.success) {
                 let filteredStudents = result.data.students || []
-                
-                // Apply client-side stream filter
-                if (filters.stream) {
-                    filteredStudents = filteredStudents.filter(student => 
-                        student.stream === filters.stream
-                    )
-                }
                 
                 // Apply client-side performance filter
                 if (filters.performance) {
@@ -326,7 +320,7 @@ export default function StudentWiseAnalytics() {
                 const backendActualTotal = result.data.pagination.total || 0
                 
                 // Use actual total from backend for pagination visibility
-                const totalFilteredPages = (filters.performance || filters.stream) ?
+                const totalFilteredPages = filters.performance ?
                     Math.ceil(totalFilteredStudents / pageSize) :
                     result.data.pagination.totalPages
                 
@@ -632,7 +626,7 @@ export default function StudentWiseAnalytics() {
                                 <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/90">
                                     <div className="flex items-center justify-between">
                                         <div className="text-sm text-gray-700">
-                                            {filters.performance || filters.stream ?
+                                            {filters.performance ?
                                                 `Showing ${totalStudents} filtered results of ${actualTotalStudents} students` :
                                                 `Showing ${((currentPage - 1) * pageSize) + 1} to ${Math.min(currentPage * pageSize, actualTotalStudents)} of ${actualTotalStudents} students`
                                             }
