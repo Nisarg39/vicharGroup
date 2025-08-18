@@ -1932,11 +1932,16 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
         // Build query for data fetching
         let enrolledStudentQuery = { ...baseQuery }
         
-        // Apply backend filters (class and search only - stream and performance are client-side)
+        // Apply backend filters (class and stream - performance is client-side)
         if (filters.class) {
             enrolledStudentQuery.class = filters.class
         }
-        // Note: stream filter removed from backend - will be handled client-side
+        if (filters.stream) {
+            enrolledStudentQuery.allocatedStreams = { $in: [filters.stream] }
+        }
+        
+        // Get total count with filters applied for correct pagination
+        const filteredTotalStudents = await EnrolledStudent.countDocuments(enrolledStudentQuery)
         
         // Get enrolled students with pagination
         const skip = (page - 1) * limit
@@ -2116,13 +2121,13 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
             data: {
                 students: filteredStudents,
                 pagination: {
-                    // Use actual total for pagination calculations
-                    total: actualTotalStudents,
-                    // Also include filtered count for frontend reference
-                    filteredTotal: filteredStudents.length,
+                    // Use filtered total for pagination calculations
+                    total: filteredTotalStudents,
+                    // Include unfiltered count for reference  
+                    actualTotal: actualTotalStudents,
                     page: page,
                     limit: limit,
-                    totalPages: Math.ceil(actualTotalStudents / limit)
+                    totalPages: Math.ceil(filteredTotalStudents / limit)
                 },
                 summary
             }

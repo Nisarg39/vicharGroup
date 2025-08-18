@@ -317,17 +317,18 @@ export default function StudentWiseAnalytics() {
                 
                 // Calculate correct pagination values
                 const totalFilteredStudents = filteredStudents.length
-                const backendActualTotal = result.data.pagination.total || 0
+                const backendFilteredTotal = result.data.pagination.total || 0
+                const backendActualTotal = result.data.pagination.actualTotal || result.data.pagination.total || 0
                 
-                // Use actual total from backend for pagination visibility
+                // Use backend pagination for non-performance filters, client-side for performance
                 const totalFilteredPages = filters.performance ?
                     Math.ceil(totalFilteredStudents / pageSize) :
                     result.data.pagination.totalPages
                 
                 setStudents(paginatedStudents)
                 setTotalPages(totalFilteredPages)
-                setTotalStudents(totalFilteredStudents) // Current filtered count
-                setActualTotalStudents(backendActualTotal) // Actual total from backend
+                setTotalStudents(filters.performance ? totalFilteredStudents : backendFilteredTotal)
+                setActualTotalStudents(backendActualTotal) // Unfiltered total from backend
                 setSummary(result.data.summary || {})
             } else {
                 console.error('Failed to fetch students:', result.message)
