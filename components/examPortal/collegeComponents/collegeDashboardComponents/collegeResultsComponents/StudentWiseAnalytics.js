@@ -220,6 +220,7 @@ export default function StudentWiseAnalytics() {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [totalStudents, setTotalStudents] = useState(0)
+    const [actualTotalStudents, setActualTotalStudents] = useState(0)
     const [selectedStudent, setSelectedStudent] = useState(null)
     const [showModal, setShowModal] = useState(false)
     const [summary, setSummary] = useState({})
@@ -265,10 +266,11 @@ export default function StudentWiseAnalytics() {
 
             // Fetch more data when using client-side filters to account for filtering
             const fetchLimit = (filters.performance || filters.stream) ? 100 : pageSize
+            const fetchPage = (filters.performance || filters.stream) ? 1 : currentPage
 
             const result = await getCollegeStudentResults(
                 { token }, 
-                1, // Always fetch from page 1 when filtering client-side
+                fetchPage, 
                 fetchLimit, 
                 backendFilters
             )
@@ -321,11 +323,17 @@ export default function StudentWiseAnalytics() {
                 
                 // Calculate correct pagination values
                 const totalFilteredStudents = filteredStudents.length
-                const totalFilteredPages = Math.ceil(totalFilteredStudents / pageSize)
+                const backendActualTotal = result.data.pagination.total || 0
+                
+                // Use actual total from backend for pagination visibility
+                const totalFilteredPages = (filters.performance || filters.stream) ?
+                    Math.ceil(totalFilteredStudents / pageSize) :
+                    result.data.pagination.totalPages
                 
                 setStudents(paginatedStudents)
                 setTotalPages(totalFilteredPages)
-                setTotalStudents(totalFilteredStudents)
+                setTotalStudents(totalFilteredStudents) // Current filtered count
+                setActualTotalStudents(backendActualTotal) // Actual total from backend
                 setSummary(result.data.summary || {})
             } else {
                 console.error('Failed to fetch students:', result.message)
@@ -387,7 +395,7 @@ export default function StudentWiseAnalytics() {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Users className="w-4 h-4" />
-                            {totalStudents} Students
+                            {actualTotalStudents > 0 ? actualTotalStudents : totalStudents} Students
                         </div>
                     </div>
                 </div>
@@ -399,7 +407,7 @@ export default function StudentWiseAnalytics() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-gray-600">Total Students</p>
-                                    <p className="text-3xl font-bold text-blue-600">{summary.totalStudents || 0}</p>
+                                    <p className="text-3xl font-bold text-blue-600">{summary.totalStudents || actualTotalStudents || 0}</p>
                                 </div>
                                 <div className="p-3 bg-blue-100 rounded-2xl">
                                     <Users className="w-8 h-8 text-blue-600" />
@@ -620,11 +628,14 @@ export default function StudentWiseAnalytics() {
                             </div>
 
                             {/* Pagination */}
-                            {totalPages > 1 && (
+                            {(totalPages > 1 || actualTotalStudents > pageSize) && (
                                 <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/90">
                                     <div className="flex items-center justify-between">
                                         <div className="text-sm text-gray-700">
-                                            Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalStudents)} of {totalStudents} students
+                                            {filters.performance || filters.stream ?
+                                                `Showing ${totalStudents} filtered results of ${actualTotalStudents} students` :
+                                                `Showing ${((currentPage - 1) * pageSize) + 1} to ${Math.min(currentPage * pageSize, actualTotalStudents)} of ${actualTotalStudents} students`
+                                            }
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button

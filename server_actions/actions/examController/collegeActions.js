@@ -1920,23 +1920,26 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
         
         const collegeId = college._id
         
-        // Build query for enrolled students
-        let enrolledStudentQuery = { 
+        // Build query for enrolled students - always get total count first
+        const baseQuery = { 
             college: collegeId, 
             status: 'approved' 
         }
         
-        // Apply filters
+        // Get actual total students count (unfiltered except for college and status)
+        const actualTotalStudents = await EnrolledStudent.countDocuments(baseQuery)
+        
+        // Build query for data fetching
+        let enrolledStudentQuery = { ...baseQuery }
+        
+        // Apply backend filters (class and search only - stream and performance are client-side)
         if (filters.class) {
             enrolledStudentQuery.class = filters.class
         }
-        if (filters.stream) {
-            enrolledStudentQuery.allocatedStreams = { $in: [filters.stream] }
-        }
+        // Note: stream filter removed from backend - will be handled client-side
         
         // Get enrolled students with pagination
         const skip = (page - 1) * limit
-        const totalStudents = await EnrolledStudent.countDocuments(enrolledStudentQuery)
         
         const enrolledStudents = await EnrolledStudent.find(enrolledStudentQuery)
             .populate('student', 'name email')
@@ -2046,7 +2049,10 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
         
         // Calculate summary statistics
         const summary = {
-            totalStudents: filteredStudents.length,
+            // Use actual total for display purposes
+            totalStudents: actualTotalStudents,
+            // Keep filtered statistics for current view
+            filteredStudents: filteredStudents.length,
             averageScore: filteredStudents.length > 0 ? 
                 Math.round(filteredStudents.reduce((sum, s) => sum + s.averageScore, 0) / filteredStudents.length * 100) / 100 : 0,
             totalExamsCreated: collegeExams.length,
@@ -2067,10 +2073,13 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
             data: {
                 students: filteredStudents,
                 pagination: {
-                    total: totalStudents,
+                    // Use actual total for pagination calculations
+                    total: actualTotalStudents,
+                    // Also include filtered count for frontend reference
+                    filteredTotal: filteredStudents.length,
                     page: page,
                     limit: limit,
-                    totalPages: Math.ceil(totalStudents / limit)
+                    totalPages: Math.ceil(actualTotalStudents / limit)
                 },
                 summary
             }
