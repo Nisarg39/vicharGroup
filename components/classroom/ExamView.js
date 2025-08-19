@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import JoinCollege from './examViewComponents/JoinCollege';
 import MyTestSeries from './examViewComponents/MyTestSeries';
+import ClassroomExamAnalytics from './examViewComponents/ClassroomExamAnalytics'
 
 export default function ExamView() {
     const [activeSection, setActiveSection] = useState('joinCollege');
@@ -30,7 +31,8 @@ export default function ExamView() {
                         <div className="flex w-full sm:w-auto">
                             {[
                                 { id: 'joinCollege', label: 'Join College' },
-                                { id: 'purchased', label: 'My Test Series' }
+                                { id: 'purchased', label: 'My Test Series' },
+                                { id: 'examAnalytics', label: 'Exam Analytics' }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -53,6 +55,7 @@ export default function ExamView() {
                     <div className="bg-white/90 backdrop-blur-xl p-3 sm:p-6 lg:p-8 rounded-3xl shadow-xl border border-gray-100/50 hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
                         {activeSection === 'joinCollege' && <JoinCollege />}
                         {activeSection === 'purchased' && <MyTestSeries />}
+                        {activeSection === 'examAnalytics' && <ClassroomExamAnalytics />}
                     </div>
                 </div>
 

@@ -430,9 +430,11 @@ export default function ExamHome({ examId }) {
                     score: result.result.score,
                     totalMarks: result.result.totalMarks,
                     percentage: result.result.percentage,
-                    correctAnswers: result.result.statistics?.correctAnswers || 0,
-                    incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                    unattempted: result.result.statistics?.unattempted || 0,
+                    statistics: {
+                        correctAnswers: result.result.statistics?.correctAnswers || 0,
+                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                        unattempted: result.result.statistics?.unattempted || 0
+                    },
                     timeTaken: result.result.timeTaken,
                     completedAt: result.result.completedAt,
                     questionAnalysis: result.result.questionAnalysis || []
@@ -653,9 +655,11 @@ export default function ExamHome({ examId }) {
                         score: result.result.score,
                         totalMarks: result.result.totalMarks,
                         percentage: result.result.percentage,
-                        correctAnswers: result.result.statistics?.correctAnswers || 0,
-                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                        unattempted: result.result.statistics?.unattempted || 0,
+                        statistics: {
+                            correctAnswers: result.result.statistics?.correctAnswers || 0,
+                            incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                            unattempted: result.result.statistics?.unattempted || 0
+                        },
                         timeTaken: result.result.timeTaken,
                         completedAt: result.result.completedAt,
                         questionAnalysis: result.result.questionAnalysis || []
@@ -723,9 +727,11 @@ export default function ExamHome({ examId }) {
                                     score: result.result.score,
                                     totalMarks: result.result.totalMarks,
                                     percentage: result.result.percentage,
-                                    correctAnswers: result.result.statistics?.correctAnswers || 0,
-                                    incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                                    unattempted: result.result.statistics?.unattempted || 0,
+                                    statistics: {
+                                        correctAnswers: result.result.statistics?.correctAnswers || 0,
+                                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                                        unattempted: result.result.statistics?.unattempted || 0
+                                    },
                                     timeTaken: result.result.timeTaken,
                                     completedAt: result.result.completedAt,
                                     questionAnalysis: result.result.questionAnalysis || []
@@ -762,9 +768,11 @@ export default function ExamHome({ examId }) {
                                     score: result.result.score,
                                     totalMarks: result.result.totalMarks,
                                     percentage: result.result.percentage,
-                                    correctAnswers: result.result.statistics?.correctAnswers || 0,
-                                    incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                                    unattempted: result.result.statistics?.unattempted || 0,
+                                    statistics: {
+                                        correctAnswers: result.result.statistics?.correctAnswers || 0,
+                                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                                        unattempted: result.result.statistics?.unattempted || 0
+                                    },
                                     timeTaken: result.result.timeTaken,
                                     completedAt: result.result.completedAt,
                                     questionAnalysis: result.result.questionAnalysis || []
@@ -1034,7 +1042,6 @@ export default function ExamHome({ examId }) {
                     <section aria-label="Exam Alerts" className="space-y-4 animate-slideUp" style={{animationDelay: '0.1s'}}>
                         <PreviousAttemptAlert
                             hasAttempted={hasAttempted}
-                            onViewPreviousResult={viewPreviousResult}
                         />
                     </section>
 
@@ -1059,7 +1066,6 @@ export default function ExamHome({ examId }) {
                                         isOnline={isOnline}
                                         onStartExam={handleStartExam}
                                         onContinueExam={handleContinueExamDirect}
-                                        onViewPreviousResult={viewPreviousResult}
                                         isEligible={isEligible}
                                         onRefreshExamData={handleRefreshExamData}
                                         isRefreshing={isRefreshing}

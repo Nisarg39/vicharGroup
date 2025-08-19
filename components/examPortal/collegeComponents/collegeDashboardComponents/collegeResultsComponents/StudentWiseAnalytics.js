@@ -7,21 +7,17 @@ import {
     BookOpen,
     TrendingUp,
     TrendingDown,
-    Award,
     Target,
-    Eye,
-    X,
     Loader2,
     ChevronLeft,
     ChevronRight,
     BarChart3,
     User,
     Medal,
-    CheckCircle,
-    XCircle,
-    Download
+    XCircle
 } from 'lucide-react'
 import { getCollegeStudentResults } from '../../../../../server_actions/actions/examController/collegeActions'
+import StudentWiseDetailedInfo from './studentWiseAnalyticsSubComponents/StudentWiseDetailedInfo'
 
 // Performance badge component
 const PerformanceBadge = memo(({ performance, className = "" }) => {
@@ -46,165 +42,7 @@ const PerformanceBadge = memo(({ performance, className = "" }) => {
 
 PerformanceBadge.displayName = 'PerformanceBadge'
 
-// Student Detail Modal Component
-const StudentDetailModal = memo(({ student, isOpen, onClose }) => {
-    if (!isOpen || !student) return null
-
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 max-w-6xl w-full max-h-[90vh] overflow-hidden">
-                {/* Modal Header */}
-                <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white/20 rounded-2xl">
-                                <User className="w-8 h-8" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold">{student.name}</h2>
-                                <p className="text-indigo-100">{student.email}</p>
-                                <p className="text-indigo-200 text-sm">
-                                    {student.class} • {student.stream}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                    {/* Performance Overview Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-200 rounded-xl">
-                                    <BookOpen className="w-5 h-5 text-blue-700" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-blue-600 font-medium">Total Exams</p>
-                                    <p className="text-2xl font-bold text-blue-900">{student.totalExams}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-green-200 rounded-xl">
-                                    <Target className="w-5 h-5 text-green-700" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-green-600 font-medium">Average Score</p>
-                                    <p className="text-2xl font-bold text-green-900">{student.averageScore}%</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-purple-200 rounded-xl">
-                                    <Award className="w-5 h-5 text-purple-700" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-purple-600 font-medium">Best Score</p>
-                                    <p className="text-2xl font-bold text-purple-900">{student.highestScore}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-orange-200 rounded-xl">
-                                    <CheckCircle className="w-5 h-5 text-orange-700" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-orange-600 font-medium">Pass Rate</p>
-                                    <p className="text-2xl font-bold text-orange-900">{student.passRate}%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Performance Analysis */}
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <BarChart3 className="w-6 h-6 text-indigo-600" />
-                                Performance Analysis
-                            </h3>
-                            <PerformanceBadge performance={student.performance} />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-600 mb-3">Key Metrics</h4>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Exams Attempted</span>
-                                        <span className="font-semibold">{student.attemptedExams} / {student.totalExams}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Total Marks Obtained</span>
-                                        <span className="font-semibold">{student.obtainedMarks} / {student.totalMarks}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Lowest Score</span>
-                                        <span className="font-semibold">{student.lowestScore}</span>
-                                    </div>
-                                    {student.lastExamDate && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-700">Last Exam</span>
-                                            <span className="font-semibold text-sm">
-                                                {new Date(student.lastExamDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h4 className="text-sm font-semibold text-gray-600 mb-3">Performance Summary</h4>
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                    <p className="text-gray-700 text-sm leading-relaxed">
-                                        This student has {student.performance === 'excellent' ? 'excellent' : 
-                                        student.performance === 'good' ? 'good' : 
-                                        student.performance === 'average' ? 'average' : 
-                                        student.performance === 'below_average' ? 'below average' : 'poor'} performance 
-                                        with an average score of {student.averageScore}%. 
-                                        {student.attemptedExams > 0 ? 
-                                            ` They have attempted ${student.attemptedExams} out of ${student.totalExams} exams with a pass rate of ${student.passRate}%.` :
-                                            ' No exams have been attempted yet.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3 justify-center">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all duration-200 font-medium">
-                            <Download className="w-4 h-4" />
-                            Export Report
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 font-medium">
-                            <Eye className="w-4 h-4" />
-                            View Exam History
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-})
-
-StudentDetailModal.displayName = 'StudentDetailModal'
-
-export default function StudentWiseAnalytics() {
+export default function StudentWiseAnalytics({ onBack }) {
     const [students, setStudents] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchLoading, setSearchLoading] = useState(false)
@@ -222,7 +60,7 @@ export default function StudentWiseAnalytics() {
     const [totalStudents, setTotalStudents] = useState(0)
     const [actualTotalStudents, setActualTotalStudents] = useState(0)
     const [selectedStudent, setSelectedStudent] = useState(null)
-    const [showModal, setShowModal] = useState(false)
+    const [viewMode, setViewMode] = useState('list') // 'list' or 'detail'
     const [summary, setSummary] = useState({})
     const [isInitialLoad, setIsInitialLoad] = useState(true)
     const pageSize = 10
@@ -360,7 +198,13 @@ export default function StudentWiseAnalytics() {
     // Handle student row click
     const handleStudentClick = useCallback((student) => {
         setSelectedStudent(student)
-        setShowModal(true)
+        setViewMode('detail')
+    }, [])
+
+    // Handle back to list
+    const handleBackToList = useCallback(() => {
+        setViewMode('list')
+        setSelectedStudent(null)
     }, [])
 
     // Handle filter changes
@@ -381,11 +225,27 @@ export default function StudentWiseAnalytics() {
         return { classes, streams }
     }, [])
 
+    // Show detail view if a student is selected
+    if (viewMode === 'detail' && selectedStudent) {
+        return <StudentWiseDetailedInfo student={selectedStudent} onBack={handleBackToList} />
+    }
+
+
+    // Show list view
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header Section */}
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100/60 p-6">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                            <span className="font-medium">Back to Results</span>
+                        </button>
+                    )}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -586,16 +446,29 @@ export default function StudentWiseAnalytics() {
                                                         <div>
                                                             <div className="text-sm font-medium text-gray-900">{student.name}</div>
                                                             <div className="text-sm text-gray-500">{student.email}</div>
-                                                            <div className="text-xs text-gray-400">{student.class} • {student.stream}</div>
+                                                            <div className="text-xs text-gray-400">{student.class} • {student.allocatedStreams ? student.allocatedStreams.join(', ') : student.stream}</div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-900">{student.class}</div>
-                                                    <div className="text-sm text-gray-500">{student.stream}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {student.allocatedStreams ? (
+                                                            student.allocatedStreams.map((stream, idx) => (
+                                                                <span 
+                                                                    key={idx}
+                                                                    className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1"
+                                                                >
+                                                                    {stream}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            student.stream
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900 font-medium">{student.attemptedExams} / {student.totalExams}</div>
+                                                    <div className="text-sm text-gray-900 font-medium">{student.attemptedExams}</div>
                                                     <div className="text-xs text-gray-500">attempts</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -614,12 +487,18 @@ export default function StudentWiseAnalytics() {
                                                     <span className="text-sm font-medium text-gray-900">{student.passRate}%</span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <PerformanceBadge performance={student.performance} />
+                                                    <div className="flex flex-col gap-1">
+                                                        <PerformanceBadge performance={student.performance} />
+                                                        {student.cumulativeSubjectAnalysis && student.cumulativeSubjectAnalysis.length > 0 && (
+                                                            <div className="text-xs text-gray-500">
+                                                                {student.cumulativeSubjectAnalysis.length} subjects analyzed
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                     <button className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1 group-hover:bg-indigo-100 px-2 py-1 rounded-lg transition-all duration-200">
-                                                        <Eye className="w-4 h-4" />
-                                                        View
+                                                        View Details
                                                     </button>
                                                 </td>
                                             </tr>
@@ -683,15 +562,6 @@ export default function StudentWiseAnalytics() {
                     )}
                 </div>
 
-                {/* Student Detail Modal */}
-                <StudentDetailModal 
-                    student={selectedStudent}
-                    isOpen={showModal}
-                    onClose={() => {
-                        setShowModal(false)
-                        setSelectedStudent(null)
-                    }}
-                />
             </div>
         </div>
     )

@@ -468,12 +468,20 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   }
 
 
-  // Helper function for performance colors
+  // Helper function for performance colors (CSS classes)
   const getPerformanceColor = (percentage) => {
     if (percentage >= 90) return 'text-green-600'
     if (percentage >= 75) return 'text-blue-600'
     if (percentage >= 60) return 'text-yellow-600'
     return 'text-red-600'
+  }
+
+  // Helper function for performance colors (hex values for SVG)
+  const getPerformanceColorHex = (percentage) => {
+    if (percentage >= 90) return '#10B981' // green-600
+    if (percentage >= 75) return '#3B82F6' // blue-600
+    if (percentage >= 60) return '#F59E0B' // yellow-600
+    return '#EF4444' // red-600
   }
 
   // Calculate the data
@@ -770,7 +778,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     percentage={totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0} 
                     size={150}
                     strokeWidth={12}
-                    color={getPerformanceColor(totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0).replace('text-', '#').replace('600', '600').replace('green', '10B981').replace('blue', '3B82F6').replace('yellow', 'F59E0B').replace('red', 'EF4444')}
+                    color={getPerformanceColorHex(totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0)}
                   />
                   <div className="mt-3 text-center">
                     <div className="text-lg font-semibold text-gray-900">Overall Score</div>
@@ -1129,27 +1137,6 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Accuracy</span>
                           <span className="font-medium text-blue-600">{safeNumber(subject.accuracy, 0, 0, 100).toFixed(2)}%</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Est. Time</span>
-                          <span className="font-medium">{Math.floor(subject.timeSpent / 60)}:{(subject.timeSpent % 60).toString().padStart(2, '0')}</span>
-                        </div>
-                        <div className="pt-2 border-t border-gray-200">
-                          <div className="text-xs text-gray-600 mb-2">Question Difficulty Breakdown</div>
-                          <div className="flex gap-3 text-xs">
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                              <span>Easy: {subject.difficulty.easy}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                              <span>Med: {subject.difficulty.medium}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                              <span>Hard: {subject.difficulty.hard}</span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>

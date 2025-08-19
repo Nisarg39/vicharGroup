@@ -15,7 +15,6 @@ export default function ExamDetailsCard({
     isOnline,
     onStartExam, 
     onContinueExam, 
-    onViewPreviousResult,
     isEligible, // NEW: eligibility prop
     onRefreshExamData, // NEW: refresh function prop
     isRefreshing // NEW: refresh loading state prop
@@ -376,16 +375,6 @@ export default function ExamDetailsCard({
                                     Maximum attempts reached
                                 </div>
                             )}
-                            <Button 
-                                onClick={onViewPreviousResult}
-                                variant="outline"
-                                className="border-2 border-green-300 bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400 px-8 py-4 rounded-2xl font-bold flex items-center gap-3 group/button shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                            >
-                                <div className="p-1 bg-green-200 rounded-lg group-hover/button:bg-green-300 transition-colors duration-300">
-                                    <BarChart3 className="w-5 h-5" />
-                                </div>
-                                View Previous Result
-                            </Button>
                         </>
                     ) : (
                         <Button 

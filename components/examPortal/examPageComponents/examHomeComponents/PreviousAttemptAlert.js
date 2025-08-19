@@ -1,10 +1,9 @@
 "use client"
 
 import { Alert, AlertDescription } from "../../../ui/alert"
-import { Button } from "../../../ui/button"
 import { BarChart3 } from "lucide-react"
 
-export default function PreviousAttemptAlert({ hasAttempted, onViewPreviousResult }) {
+export default function PreviousAttemptAlert({ hasAttempted }) {
     if (!hasAttempted) return null
 
     return (
@@ -15,16 +14,9 @@ export default function PreviousAttemptAlert({ hasAttempted, onViewPreviousResul
                     <div>
                         <h3 className="font-semibold text-blue-900">Previous Attempt Found</h3>
                         <p className="text-sm text-blue-700">
-                            You have already attempted this exam. You can view your previous result or retake the exam.
+                            You have already attempted this exam. You can retake the exam if allowed.
                         </p>
                     </div>
-                    <Button 
-                        onClick={onViewPreviousResult}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                        View Result
-                    </Button>
                 </div>
             </AlertDescription>
         </Alert>

@@ -13,6 +13,14 @@ import DefaultNegativeMarkingRule from "../../models/exam_portal/defaultNegative
 import { getCachedExam, getCachedEligibility, getCachedQuestions, clearExamCache } from "../../utils/cache";
 // Import retry handler
 import { retryExamSubmission, withRetry } from "../../utils/retryHandler";
+// Import safe numeric operations
+import {
+    safePercentage,
+    safeParseNumber,
+    standardPercentage,
+    safeStandardDeviation,
+    safeReduce
+} from "../../../utils/safeNumericOperations";
 
 
 // im getting error - Error: Maximum call stack size exceeded this has happened to me alot of times in this project and to solve it use JSON.parse(JSON.stringify(exam)) wherever needed
@@ -859,12 +867,10 @@ async function submitExamResultInternal(examData) {
       }
     }
     
-    // Calculate accuracy and percentage for each subject
+    // Calculate accuracy and percentage for each subject - Fixed double rounding
     Object.values(subjectPerformance).forEach(subject => {
-      subject.accuracy = subject.attempted > 0 ? 
-        Math.round((subject.correct / subject.attempted) * 100 * 100) / 100 : 0;
-      subject.percentage = subject.totalMarks > 0 ? 
-        Math.round((subject.marks / subject.totalMarks) * 100 * 100) / 100 : 0;
+      subject.accuracy = safePercentage(subject.correct, subject.attempted, 2);
+      subject.percentage = standardPercentage(subject.marks, subject.totalMarks, 2);
     });
 
     // 6. Create new exam result (do not overwrite)
@@ -1807,15 +1813,21 @@ function generateStudentInsights(percentages, subjectStats, performanceOverTime,
     insights.recommendations.push("Seek help from teachers and create a structured study plan");
   }
 
-  // Subject-wise insights
-  const bestSubject = subjectStats.reduce((best, current) => 
-    current.averagePercentage > best.averagePercentage ? current : best, 
-    subjectStats[0] || { subject: 'None', averagePercentage: 0 }
+  // Subject-wise insights - Safe reduce operations
+  const bestSubject = safeReduce(
+    subjectStats, 
+    (best, current) => 
+      safeParseNumber(current.averagePercentage, 0) > safeParseNumber(best.averagePercentage, 0) ? current : best, 
+    subjectStats[0] || { subject: 'None', averagePercentage: 0 },
+    { subject: 'None', averagePercentage: 0 }
   );
 
-  const worstSubject = subjectStats.reduce((worst, current) => 
-    current.averagePercentage < worst.averagePercentage ? current : worst, 
-    subjectStats[0] || { subject: 'None', averagePercentage: 100 }
+  const worstSubject = safeReduce(
+    subjectStats,
+    (worst, current) => 
+      safeParseNumber(current.averagePercentage, 100) < safeParseNumber(worst.averagePercentage, 100) ? current : worst, 
+    subjectStats[0] || { subject: 'None', averagePercentage: 100 },
+    { subject: 'None', averagePercentage: 100 }
   );
 
   if (bestSubject && bestSubject.averagePercentage > 75) {
@@ -1842,10 +1854,9 @@ function generateStudentInsights(percentages, subjectStats, performanceOverTime,
     }
   }
 
-  // Consistency insights
+  // Consistency insights - Fixed variance calculation
   if (percentages.length > 2) {
-    const variance = percentages.reduce((sum, p) => sum + Math.pow(p - averagePercentage, 2), 0) / percentages.length;
-    const standardDeviation = Math.sqrt(variance);
+    const standardDeviation = safeStandardDeviation(percentages, 0);
     
     if (standardDeviation < 10) {
       insights.strengths.push("Consistent performance across exams");

@@ -13,6 +13,11 @@ import QuestionSelectionScheme from "../../models/exam_portal/questionSelectionS
 import jwt from "jsonwebtoken"
 import { collegeAuth } from "../../middleware/collegeAuth"
 import { data as markingData } from "../../../utils/examUtils/subject_Details.js"
+// Import safe numeric operations
+import {
+    standardPercentage,
+    safeParseNumber
+} from "../../../utils/safeNumericOperations"
 
 
 
@@ -299,9 +304,9 @@ export async function getCollegeAnalytics(details) {
             if (result.student) {
                 const studentId = result.student._id.toString()
                 const percentage = result.percentage !== null && result.percentage !== undefined && !isNaN(result.percentage) 
-                    ? parseFloat(result.percentage || 0)
+                    ? safeParseNumber(result.percentage, 0)
                     : (result.score && result.exam && result.exam.totalMarks) 
-                        ? parseFloat(((result.score / result.exam.totalMarks) * 100).toFixed(2))
+                        ? standardPercentage(result.score, result.exam.totalMarks, 2)
                         : 0
                 
                 if (!studentPerformance[studentId]) {
@@ -1975,7 +1980,7 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                 const examResults = await ExamResult.find({
                     student: studentId,
                     exam: { $in: examIds }
-                }).populate('exam', 'examName totalMarks examSubject stream standard').lean()
+                }).populate('exam', 'examName totalMarks examSubject stream standard examAvailability').lean()
                 
                 // Filter exams based on student's eligibility (stream and class)
                 // Get student streams from allocatedStreams field (primary source)
@@ -2012,10 +2017,11 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     })
                     : collegeExams // Fallback: if no allocated streams, show all exams (this explains the 11 count)
                 
-                // Filter exam results to only include results from eligible exams
+                // Filter exam results to only include results from eligible exams and scheduled exams (not practice)
                 const eligibleExamIds = eligibleExams.map(exam => exam._id.toString())
                 const filteredExamResults = examResults.filter(result => 
-                    eligibleExamIds.includes(result.exam._id.toString())
+                    eligibleExamIds.includes(result.exam._id.toString()) &&
+                    result.exam.examAvailability === 'scheduled'
                 )
                 
                 // Calculate student statistics based on eligible exams
@@ -2037,6 +2043,171 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                 }).length
                 const passRate = attemptedExams > 0 ? 
                     Math.round((passedExams / attemptedExams) * 100 * 100) / 100 : 0
+
+                // Enhanced Cumulative Subject-wise Performance Analysis
+                const cumulativeSubjectAnalysis = {}
+                const subjectWiseAttempts = {}
+                const subjectWiseTimeSpent = {}
+                const subjectDifficultyAnalysis = {}
+                
+                // Process each exam result for detailed subject analysis
+                filteredExamResults.forEach(result => {
+                    if (result.subjectPerformance && result.subjectPerformance.length > 0) {
+                        result.subjectPerformance.forEach(subjectData => {
+                            const subject = subjectData.subject
+                            
+                            if (!cumulativeSubjectAnalysis[subject]) {
+                                cumulativeSubjectAnalysis[subject] = {
+                                    subject: subject,
+                                    totalExamsAttempted: 0,
+                                    totalQuestions: 0,
+                                    totalQuestionsAttempted: 0,
+                                    totalCorrect: 0,
+                                    totalIncorrect: 0,
+                                    totalUnanswered: 0,
+                                    totalMarksObtained: 0,
+                                    totalMaxMarks: 0,
+                                    totalTimeSpent: 0,
+                                    accuracySum: 0,
+                                    examScores: [],
+                                    consistencyRating: 0,
+                                    improvementTrend: 'stable',
+                                    difficultyAnalysis: {
+                                        easy: { attempted: 0, correct: 0, accuracy: 0 },
+                                        medium: { attempted: 0, correct: 0, accuracy: 0 },
+                                        hard: { attempted: 0, correct: 0, accuracy: 0 }
+                                    }
+                                }
+                                subjectWiseAttempts[subject] = []
+                                subjectWiseTimeSpent[subject] = []
+                            }
+                            
+                            const analysis = cumulativeSubjectAnalysis[subject]
+                            
+                            // Accumulate statistics
+                            analysis.totalExamsAttempted++
+                            analysis.totalQuestions += subjectData.totalQuestions || 0
+                            analysis.totalQuestionsAttempted += subjectData.attempted || 0
+                            analysis.totalCorrect += subjectData.correct || 0
+                            analysis.totalIncorrect += subjectData.incorrect || 0
+                            analysis.totalUnanswered += subjectData.unanswered || 0
+                            analysis.totalMarksObtained += subjectData.marks || 0
+                            analysis.totalMaxMarks += subjectData.totalMarks || 0
+                            analysis.totalTimeSpent += subjectData.timeSpent || 0
+                            analysis.accuracySum += subjectData.accuracy || 0
+                            
+                            // Track scores for trend analysis
+                            const subjectPercentage = subjectData.totalMarks > 0 ? 
+                                Math.round((subjectData.marks / subjectData.totalMarks) * 100 * 100) / 100 : 0
+                            analysis.examScores.push(subjectPercentage)
+                            subjectWiseAttempts[subject].push({
+                                examDate: result.completedAt,
+                                score: subjectPercentage,
+                                accuracy: subjectData.accuracy || 0
+                            })
+                            
+                            // Difficulty breakdown
+                            if (subjectData.difficultyBreakdown) {
+                                Object.keys(subjectData.difficultyBreakdown).forEach(level => {
+                                    if (analysis.difficultyAnalysis[level]) {
+                                        analysis.difficultyAnalysis[level].attempted += subjectData.difficultyBreakdown[level].attempted || 0
+                                        analysis.difficultyAnalysis[level].correct += subjectData.difficultyBreakdown[level].correct || 0
+                                    }
+                                })
+                            }
+                            
+                            subjectWiseTimeSpent[subject].push(subjectData.timeSpent || 0)
+                        })
+                    }
+                })
+                
+                // Calculate derived statistics for each subject
+                Object.keys(cumulativeSubjectAnalysis).forEach(subject => {
+                    const analysis = cumulativeSubjectAnalysis[subject]
+                    
+                    // Calculate averages and percentages
+                    analysis.averageScore = analysis.totalMaxMarks > 0 ? 
+                        Math.round((analysis.totalMarksObtained / analysis.totalMaxMarks) * 100 * 100) / 100 : 0
+                    
+                    analysis.overallAccuracy = analysis.totalQuestionsAttempted > 0 ? 
+                        Math.round((analysis.totalCorrect / analysis.totalQuestionsAttempted) * 100 * 100) / 100 : 0
+                    
+                    analysis.averageTimePerQuestion = analysis.totalQuestionsAttempted > 0 ? 
+                        Math.round((analysis.totalTimeSpent / analysis.totalQuestionsAttempted) * 100) / 100 : 0
+                    
+                    analysis.attemptRate = analysis.totalQuestions > 0 ? 
+                        Math.round((analysis.totalQuestionsAttempted / analysis.totalQuestions) * 100 * 100) / 100 : 0
+                    
+                    // Calculate difficulty-wise accuracy
+                    Object.keys(analysis.difficultyAnalysis).forEach(level => {
+                        const diffData = analysis.difficultyAnalysis[level]
+                        diffData.accuracy = diffData.attempted > 0 ? 
+                            Math.round((diffData.correct / diffData.attempted) * 100 * 100) / 100 : 0
+                    })
+                    
+                    // Calculate consistency rating (lower standard deviation = higher consistency)
+                    if (analysis.examScores.length > 1) {
+                        const mean = analysis.examScores.reduce((sum, score) => sum + score, 0) / analysis.examScores.length
+                        const variance = analysis.examScores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / analysis.examScores.length
+                        const standardDeviation = Math.sqrt(variance)
+                        analysis.consistencyRating = Math.max(0, Math.round((100 - standardDeviation) * 100) / 100)
+                    } else {
+                        analysis.consistencyRating = analysis.examScores.length === 1 ? 100 : 0
+                    }
+                    
+                    // Calculate improvement trend
+                    if (analysis.examScores.length >= 3) {
+                        const recent = analysis.examScores.slice(-3)
+                        const older = analysis.examScores.slice(0, -3)
+                        const recentAvg = recent.reduce((sum, score) => sum + score, 0) / recent.length
+                        const olderAvg = older.length > 0 ? older.reduce((sum, score) => sum + score, 0) / older.length : recentAvg
+                        
+                        if (recentAvg > olderAvg + 5) analysis.improvementTrend = 'improving'
+                        else if (recentAvg < olderAvg - 5) analysis.improvementTrend = 'declining'
+                        else analysis.improvementTrend = 'stable'
+                    }
+                    
+                    // Performance category for subject
+                    if (analysis.averageScore >= 90) analysis.performanceCategory = 'excellent'
+                    else if (analysis.averageScore >= 75) analysis.performanceCategory = 'good'
+                    else if (analysis.averageScore >= 60) analysis.performanceCategory = 'average'
+                    else if (analysis.averageScore >= 40) analysis.performanceCategory = 'below_average'
+                    else analysis.performanceCategory = 'poor'
+                    
+                    // Strength/Weakness identification
+                    analysis.isStrength = analysis.averageScore >= 75 && analysis.overallAccuracy >= 70
+                    analysis.needsImprovement = analysis.averageScore < 60 || analysis.overallAccuracy < 50
+                    
+                    // Time efficiency rating
+                    const avgTimeSpent = subjectWiseTimeSpent[subject].length > 0 ? 
+                        subjectWiseTimeSpent[subject].reduce((sum, time) => sum + time, 0) / subjectWiseTimeSpent[subject].length : 0
+                    analysis.timeEfficiency = avgTimeSpent > 0 && analysis.overallAccuracy > 70 ? 'efficient' : 
+                        avgTimeSpent > 120 ? 'slow' : 'average' // assuming 2 minutes per question is average
+                })
+                
+                // Subject-wise insights and recommendations
+                const subjectInsights = {
+                    strongestSubjects: Object.values(cumulativeSubjectAnalysis)
+                        .filter(s => s.isStrength)
+                        .sort((a, b) => b.averageScore - a.averageScore)
+                        .slice(0, 3),
+                    
+                    weakestSubjects: Object.values(cumulativeSubjectAnalysis)
+                        .filter(s => s.needsImprovement)
+                        .sort((a, b) => a.averageScore - b.averageScore)
+                        .slice(0, 3),
+                    
+                    mostConsistentSubjects: Object.values(cumulativeSubjectAnalysis)
+                        .filter(s => s.totalExamsAttempted > 1)
+                        .sort((a, b) => b.consistencyRating - a.consistencyRating)
+                        .slice(0, 2),
+                    
+                    improvingSubjects: Object.values(cumulativeSubjectAnalysis)
+                        .filter(s => s.improvementTrend === 'improving'),
+                    
+                    decliningSubjects: Object.values(cumulativeSubjectAnalysis)
+                        .filter(s => s.improvementTrend === 'declining')
+                }
                 
                 // Get last exam details
                 const lastExam = filteredExamResults.length > 0 ? 
@@ -2055,6 +2226,7 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     email: enrolledStudent.student.email,
                     class: enrolledStudent.class || 'N/A',
                     stream: studentStreams.length > 0 ? studentStreams[0] : 'N/A',
+                    allocatedStreams: studentStreams.length > 0 ? studentStreams : ['N/A'],
                     rollNumber: enrolledStudent.rollNumber || `ST${studentId.toString().slice(-6)}`,
                     totalExams,
                     attemptedExams,
@@ -2067,7 +2239,17 @@ export async function getCollegeStudentResults(details, page = 1, limit = 10, fi
                     lastExamDate: lastExam?.completedAt || null,
                     lastExamScore: lastExam ? Math.round((lastExam.score / lastExam.exam.totalMarks) * 100) : null,
                     performance,
-                    enrolledAt: enrolledStudent.createdAt
+                    enrolledAt: enrolledStudent.createdAt,
+                    
+                    // Enhanced Cumulative Subject Analysis
+                    cumulativeSubjectAnalysis: Object.values(cumulativeSubjectAnalysis),
+                    subjectInsights,
+                    subjectWiseTrends: Object.keys(cumulativeSubjectAnalysis).map(subject => ({
+                        subject,
+                        attempts: subjectWiseAttempts[subject] || [],
+                        trend: cumulativeSubjectAnalysis[subject].improvementTrend,
+                        consistency: cumulativeSubjectAnalysis[subject].consistencyRating
+                    }))
                 }
             })
         )
@@ -4031,4 +4213,133 @@ export async function validateSchemeCompliance(examId, schemeId, currentSelectio
         }
     }
 }
+
+// Get student exam history for college
+export async function getStudentExamHistory(details, studentId, searchQuery = '', page = 1, limit = 5) {
+    try {
+        await connectDB()
+        
+        // Get college info using token-based authentication
+        const college = await collegeAuth(details)
+        if (!college) {
+            return {
+                success: false,
+                message: "College not authenticated",
+                data: []
+            }
+        }
+        
+        // Get student to verify they belong to this college
+        const enrolledStudent = await EnrolledStudent.findOne({
+            student: studentId,
+            college: college._id,
+            status: 'approved'
+        }).populate('student', 'name email')
+        
+        if (!enrolledStudent) {
+            return {
+                success: false,
+                message: "Student not found or not enrolled in this college",
+                data: []
+            }
+        }
+        
+        // Build search query for exams if search term is provided
+        let examMatchQuery = { 
+            college: college._id,
+            examAvailability: 'scheduled'  // Only show scheduled exams
+        }
+        if (searchQuery && searchQuery.trim()) {
+            examMatchQuery.examName = { 
+                $regex: searchQuery.trim(), 
+                $options: 'i' 
+            }
+        }
+        
+        // First get all matching results to calculate total count
+        const allExamResults = await ExamResult.find({ 
+            student: studentId 
+        })
+        .populate({
+            path: 'exam',
+            match: examMatchQuery,
+            select: 'examName examSubject stream standard startTime endTime examDurationMinutes totalMarks'
+        })
+        .sort({ completedAt: -1 })
+        .lean()
+        
+        // Filter out results where exam is null (not from this college or not matching search)
+        const allCollegeExamResults = allExamResults.filter(result => result.exam !== null)
+        const totalResults = allCollegeExamResults.length
+        
+        // Apply pagination
+        const skip = (page - 1) * limit
+        const paginatedResults = allCollegeExamResults.slice(skip, skip + limit)
+        
+        // Format the data for the frontend
+        const examHistory = paginatedResults.map(result => {
+            const exam = result.exam
+            const percentage = exam.totalMarks > 0 ? ((result.score / exam.totalMarks) * 100).toFixed(2) : 0
+            
+            return {
+                examId: exam._id.toString(),
+                examName: exam.examName,
+                date: result.completedAt.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                }),
+                time: result.completedAt.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }),
+                duration: `${exam.examDurationMinutes} min`,
+                score: parseFloat(percentage),
+                marksScored: result.score,
+                totalMarks: exam.totalMarks,
+                status: percentage >= 40 ? 'passed' : 'failed',
+                correct: result.statistics?.correctAnswers || 0,
+                incorrect: result.statistics?.incorrectAnswers || 0,
+                unattempted: result.statistics?.unattempted || 0,
+                timeTaken: result.timeTaken,
+                rank: result.comparativeStats?.rank || null,
+                subjects: result.subjectPerformance?.map(subject => ({
+                    name: subject.subject,
+                    marks: subject.marks || 0,
+                    totalMarks: subject.totalMarks || 0
+                })) || [],
+                stream: exam.stream,
+                standard: exam.standard,
+                completedAt: result.completedAt
+            }
+        })
+        
+        return {
+            success: true,
+            data: examHistory,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalResults / limit),
+                totalResults: totalResults,
+                limit: limit,
+                hasNext: page < Math.ceil(totalResults / limit),
+                hasPrev: page > 1
+            },
+            studentInfo: {
+                name: enrolledStudent.student.name,
+                email: enrolledStudent.student.email
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error fetching student exam history:', error)
+        return {
+            success: false,
+            message: error.message || "Failed to fetch student exam history",
+            data: []
+        }
+    }
+}
+
 

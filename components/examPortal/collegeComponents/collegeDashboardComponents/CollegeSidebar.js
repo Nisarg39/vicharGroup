@@ -44,12 +44,6 @@ export default function CollegeSidebar({ onMenuSelect, collegeData }) {
             icon: ClipboardDocumentListIcon,
             path: '/college/results'
         },
-        {
-            id: 'reports',
-            label: 'Reports',
-            icon: ChartPieIcon,
-            path: '/college/reports'
-        },
     ]
 
     const handleItemClick = (itemId) => {
