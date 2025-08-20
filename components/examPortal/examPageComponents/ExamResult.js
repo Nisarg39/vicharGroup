@@ -16,9 +16,69 @@ import {
 } from "lucide-react"
 import { useSelector } from "react-redux"
 import { useEffect, useState } from "react"
-import negativeMarkingRules from "../../../utils/examUtils/negative_marking_rules"
 
 export default function ExamResult({ result, exam, onBack, onRetake, allAttempts = [] }) {
+  
+  // Check if exam is scheduled and still in progress
+  const isScheduledExamInProgress = () => {
+    console.log('Exam object:', exam)
+    console.log('Exam availability:', exam?.examAvailability)
+    console.log('Exam status:', exam?.status)
+    console.log('Exam endTime:', exam?.endTime)
+    
+    // Check if exam is scheduled type
+    const isScheduled = exam?.examAvailability === 'scheduled'
+    
+    if (isScheduled && exam?.endTime) {
+      const currentTime = new Date()
+      const examEndTime = new Date(exam.endTime)
+      console.log('Current time:', currentTime)
+      console.log('Exam end time:', examEndTime)
+      console.log('Is exam still in progress?', currentTime < examEndTime)
+      return currentTime < examEndTime
+    }
+    
+    console.log('Not a scheduled exam or no endTime found')
+    return false
+  }
+
+  // Early return with warning if scheduled exam is still in progress
+  if (isScheduledExamInProgress()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md">
+          <Card className="shadow-lg border-orange-200">
+            <CardHeader className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                <Clock className="w-8 h-8 text-orange-600" />
+              </div>
+              <CardTitle className="text-xl font-bold text-orange-800">
+                Results Not Available Yet
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-base">
+                This is a scheduled exam that is currently in progress. Results will be available after the exam ends.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <p className="text-sm text-orange-700 font-medium">
+                  Exam ends at: {new Date(exam.endTime).toLocaleString()}
+                </p>
+              </div>
+              <Button
+                onClick={onBack}
+                variant="outline"
+                className="w-full font-semibold px-5 py-2 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
   
   // Utility function for safe numeric conversion with bounds checking
   const safeNumber = (value, defaultValue = 0, min = null, max = null) => {
@@ -75,124 +135,90 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   // State for subject filtering
   const [selectedSubject, setSelectedSubject] = useState('All')
 
-  // Helper function to get general marking scheme details (always show scheme regardless of application)
+  // Helper function to get actual marking scheme used for evaluation
   const getGeneralMarkingScheme = () => {
-    // First try to get from exam's markingRulePreview (this contains the general scheme)
+    // Priority 1: Use actual evaluation rules from exam's markingRulePreview (set by super admin rules)
     if (exam?.markingRulePreview?.hasMarkingRules) {
       return {
         positiveMarks: exam.markingRulePreview.positiveMarks,
         negativeMarks: exam.markingRulePreview.negativeMarks,
         isSubjectWise: exam.markingRulePreview.isSubjectWise || false,
         subjects: exam.markingRulePreview.subjects || {},
-        ruleSource: exam.markingRulePreview.ruleSource || 'system',
-        ruleDescription: exam.markingRulePreview.ruleDescription || 'General marking scheme'
+        ruleSource: exam.markingRulePreview.ruleSource || 'super_admin_default',
+        ruleDescription: exam.markingRulePreview.ruleDescription || 'Super admin configured marking scheme'
       }
     }
 
-    // Fallback to basic marking info from exam or result
-    return {
-      positiveMarks: exam?.positiveMarks || exam?.marks || result?.negativeMarkingInfo?.positiveMarks || 4,
-      negativeMarks: exam?.negativeMarks !== undefined ? exam.negativeMarks : (result?.negativeMarkingInfo?.negativeMarks || 0),
-      isSubjectWise: false,
-      subjects: {},
-      ruleSource: result?.negativeMarkingInfo?.ruleSource || 'exam_specific',
-      ruleDescription: result?.negativeMarkingInfo?.ruleDescription || 'Standard marking scheme'
-    }
-  }
+    // Priority 2: If no preview rules, derive from actual result's negativeMarkingInfo (this contains what was actually applied)
+    if (result?.negativeMarkingInfo) {
+      // For subject-wise marking (like MHT-CET), analyze question analysis to build subject breakdown
+      const subjectWiseMarks = {}
+      let isSubjectWise = false
 
-  // Helper function to get actual marking scheme details from the evaluated result (for comparison)
-  // Note: This function is kept for potential future use but currently unused
-  // eslint-disable-next-line no-unused-vars
-  const getActualMarkingDetails = () => {
-    if (!questionAnalysis || questionAnalysis.length === 0) {
-      // Fallback to basic marking info if no question analysis available
-      return {
-        positiveMarks: result?.negativeMarkingInfo?.positiveMarks || exam?.positiveMarks || exam?.marks || 4,
-        negativeMarks: result?.negativeMarkingInfo?.negativeMarks || 0,
-        isSubjectWise: false,
-        subjects: {},
-        ruleSource: result?.negativeMarkingInfo?.ruleSource || 'unknown',
-        ruleDescription: result?.negativeMarkingInfo?.ruleDescription || 'Standard marking'
-      }
-    }
-
-    // Analyze actual questions to determine if subject-wise marking was used
-    const subjectMarkingMap = {}
-    let hasSubjectWiseMarking = false
-
-    questionAnalysis.forEach(analysis => {
-      const question = getQuestionById(analysis.questionId)
-      if (!question?.subject) return
-
-      const subject = question.subject
-      if (!subjectMarkingMap[subject]) {
-        subjectMarkingMap[subject] = {
-          correct: [],
-          incorrect: [],
-          unanswered: []
-        }
-      }
-
-      if (analysis.status === 'correct' && analysis.marks > 0) {
-        subjectMarkingMap[subject].correct.push(analysis.marks)
-      } else if (analysis.status === 'incorrect' && analysis.marks < 0) {
-        subjectMarkingMap[subject].incorrect.push(Math.abs(analysis.marks))
-      }
-    })
-
-    // Check if different subjects have different marking patterns
-    const subjectKeys = Object.keys(subjectMarkingMap)
-    if (subjectKeys.length > 1) {
-      const markingPatterns = subjectKeys.map(subject => {
-        const correctMarks = subjectMarkingMap[subject].correct
-        const avgCorrect = correctMarks.length > 0 ? correctMarks[0] : 0 // Take first value as they should be consistent per subject
-        return { subject, avgCorrect }
-      })
-
-      // Check if subjects have different positive marks
-      const uniqueMarks = [...new Set(markingPatterns.map(p => p.avgCorrect))]
-      hasSubjectWiseMarking = uniqueMarks.length > 1
-
-      if (hasSubjectWiseMarking) {
-        const subjects = {}
-        markingPatterns.forEach(({ subject, avgCorrect }) => {
-          const incorrectMarks = subjectMarkingMap[subject].incorrect
-          const avgIncorrect = incorrectMarks.length > 0 ? incorrectMarks[0] : 0
-
-          subjects[subject] = {
-            correct: avgCorrect,
-            incorrect: -avgIncorrect, // Show as negative
-            unanswered: 0
+      if (questionAnalysis && questionAnalysis.length > 0) {
+        const subjectMarkingMap = {}
+        
+        questionAnalysis.forEach(analysis => {
+          const question = getQuestionById(analysis.questionId)
+          if (question?.subject) {
+            const subject = question.subject
+            if (!subjectMarkingMap[subject]) {
+              subjectMarkingMap[subject] = { correctMarks: [], incorrectMarks: [] }
+            }
+            
+            if (analysis.status === 'correct' && analysis.marks > 0) {
+              subjectMarkingMap[subject].correctMarks.push(analysis.marks)
+            } else if (analysis.status === 'incorrect' && analysis.marks < 0) {
+              subjectMarkingMap[subject].incorrectMarks.push(Math.abs(analysis.marks))
+            }
           }
         })
 
-        return {
-          positiveMarks: 'Subject-wise',
-          negativeMarks: 'Varies by subject',
-          isSubjectWise: true,
-          subjects,
-          ruleSource: result?.negativeMarkingInfo?.ruleSource || 'unknown',
-          ruleDescription: result?.negativeMarkingInfo?.ruleDescription || 'Subject-wise marking applied'
+        // Check if different subjects have different positive marks (indicates subject-wise marking)
+        const subjectKeys = Object.keys(subjectMarkingMap)
+        if (subjectKeys.length > 1) {
+          const positiveMarksBySubject = subjectKeys.map(subject => {
+            const correctMarks = subjectMarkingMap[subject].correctMarks
+            return correctMarks.length > 0 ? correctMarks[0] : 0
+          })
+          
+          const uniquePositiveMarks = [...new Set(positiveMarksBySubject)]
+          isSubjectWise = uniquePositiveMarks.length > 1
+          
+          if (isSubjectWise) {
+            subjectKeys.forEach(subject => {
+              const correctMarks = subjectMarkingMap[subject].correctMarks
+              const incorrectMarks = subjectMarkingMap[subject].incorrectMarks
+              subjectWiseMarks[subject] = {
+                correct: correctMarks.length > 0 ? correctMarks[0] : 1,
+                incorrect: incorrectMarks.length > 0 ? incorrectMarks[0] : 0
+              }
+            })
+          }
         }
+      }
+
+      return {
+        positiveMarks: result.negativeMarkingInfo.positiveMarks || 4,
+        negativeMarks: result.negativeMarkingInfo.negativeMarks || 0,
+        isSubjectWise,
+        subjects: subjectWiseMarks,
+        ruleSource: result.negativeMarkingInfo.ruleSource || 'super_admin_default',
+        ruleDescription: result.negativeMarkingInfo.ruleDescription || 'Applied marking scheme from super admin rules'
       }
     }
 
-    // Standard marking scheme (all subjects same)
-    const allCorrectMarks = questionAnalysis.filter(a => a.status === 'correct' && a.marks > 0).map(a => a.marks)
-    const allIncorrectMarks = questionAnalysis.filter(a => a.status === 'incorrect' && a.marks < 0).map(a => Math.abs(a.marks))
-    
-    const standardPositive = allCorrectMarks.length > 0 ? allCorrectMarks[0] : (exam?.positiveMarks || exam?.marks || 4)
-    const standardNegative = allIncorrectMarks.length > 0 ? allIncorrectMarks[0] : 0
-
+    // Priority 3: Final fallback to exam basic properties (least preferred)
     return {
-      positiveMarks: standardPositive,
-      negativeMarks: standardNegative,
+      positiveMarks: exam?.positiveMarks || exam?.marks || 4,
+      negativeMarks: exam?.negativeMarks || 0,
       isSubjectWise: false,
       subjects: {},
-      ruleSource: result?.negativeMarkingInfo?.ruleSource || 'unknown',
-      ruleDescription: result?.negativeMarkingInfo?.ruleDescription || 'Standard marking applied'
+      ruleSource: 'exam_specific',
+      ruleDescription: 'Basic exam configuration (no super admin rules found)'
     }
   }
+
 
   // Fallback: Try to get college details from student object if not in result
   const finalCollegeDetails = collegeDetails || (() => {
@@ -1155,7 +1181,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 Marking Scheme
               </CardTitle>
               <CardDescription className="text-gray-600">
-                General marking rules for this exam (applicable to all students)
+                Actual super admin marking rules used to evaluate this exam
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1167,9 +1193,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-blue-700">
-                      <strong>Note:</strong> This section shows the general marking scheme for this exam. 
-                      All students can view these marking rules to understand how exams of this type are evaluated, 
-                      regardless of which subjects they attempted.
+                      <strong>Note:</strong> This section shows the actual super admin marking rules that were applied to evaluate your exam submission. 
+                      These are the specific rules configured by administrators and used in the scoring process.
                     </p>
                   </div>
                 </div>
@@ -1206,7 +1231,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           <strong>General Rule:</strong> {markingDetails.ruleDescription}
                         </p>
                         <p className="text-blue-700 text-xs mt-1">
-                          Source: {markingDetails.ruleSource === 'super_admin_default' ? 'System Default Rules' : 'Exam-Specific Rules'}
+                          Source: {markingDetails.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : markingDetails.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
                         </p>
                       </div>
                     </div>
@@ -1252,7 +1277,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     </div>
                     <div><span className="font-medium text-gray-700">Source:</span> 
                       <Badge variant="outline" className="ml-2 text-xs">
-                        {markingDetails.ruleSource === 'super_admin_default' ? 'System Default Rules' : 'Exam-Specific Rules'}
+                        {markingDetails.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : markingDetails.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
                       </Badge>
                     </div>
                   </div>
@@ -1333,14 +1358,14 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="space-y-2 text-sm">
                       <div><span className="font-medium text-gray-700">Rule Source:</span> 
                         <Badge variant="outline" className="ml-2 text-xs">
-                          {result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'System Default' : 'Exam Specific'}
+                          {result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : result.negativeMarkingInfo.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
                         </Badge>
                       </div>
                       {result.negativeMarkingInfo.ruleDescription && (
                         <div><span className="font-medium text-gray-700">Description:</span> <span className="text-gray-800">{result.negativeMarkingInfo.ruleDescription}</span></div>
                       )}
                       <div className="text-xs text-gray-600 mt-2 italic">
-                        Note: The general marking scheme above shows what applies to all students. This section shows what was actually applied to your specific result.
+                        Note: The marking scheme above shows the actual super admin rules used for evaluation. This section provides additional details about the specific rule application for your result.
                       </div>
                     </div>
                   </div>
@@ -1350,7 +1375,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                    <span className="font-semibold text-gray-900">General Marking Guidelines</span>
+                    <span className="font-semibold text-gray-900">Super Admin Marking Guidelines</span>
                   </div>
                   <ul className="space-y-2 text-sm text-gray-700">
                     {markingDetails.isSubjectWise ? (

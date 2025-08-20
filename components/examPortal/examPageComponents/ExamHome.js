@@ -460,6 +460,7 @@ export default function ExamHome({ examId }) {
                     setExam(eligibility.exam)
                     setIsEligible(true); // NEW: set eligible
                     
+                    
                     // Cache exam data for offline use
                     cacheExamData(eligibility.exam, eligibility.exam.examQuestions || [])
                     

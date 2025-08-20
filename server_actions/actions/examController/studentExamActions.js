@@ -1490,6 +1490,94 @@ export async function clearExamCacheData(examId) {
   }
 }
 
+export async function validateExamAccess(examId, studentId) {
+  "use server";
+  try {
+    await connectDB();
+
+    // 1. Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return { 
+        success: false, 
+        message: "Invalid exam or student ID" 
+      };
+    }
+
+    // 2. Get exam with UTC times from database
+    const exam = await Exam.findById(examId).lean();
+    if (!exam) {
+      return { 
+        success: false, 
+        message: "Exam not found" 
+      };
+    }
+
+    // 3. Only validate timing for scheduled exams
+    if (exam.examAvailability === 'scheduled' && exam.startTime && exam.endTime) {
+      const serverTimeUTC = new Date(); // Server time in UTC
+      const examStartUTC = new Date(exam.startTime); // Database time is UTC
+      const examEndUTC = new Date(exam.endTime); // Database time is UTC
+      
+      // 4. Apply 3-minute grace period before official start
+      const gracePeriodMs = 3 * 60 * 1000; // 3 minutes in milliseconds
+      const graceStartTime = new Date(examStartUTC.getTime() - gracePeriodMs);
+      
+      // Check if current server time is before the allowed start time
+      if (serverTimeUTC < graceStartTime) {
+        const timeRemainingMs = graceStartTime - serverTimeUTC;
+        const minutesRemaining = Math.ceil(timeRemainingMs / (1000 * 60));
+        
+        return {
+          success: false,
+          message: `This exam will be available in ${minutesRemaining} minutes`,
+          timeRemaining: timeRemainingMs,
+          examStartTime: examStartUTC,
+          serverTime: serverTimeUTC,
+          violation: "TOO_EARLY"
+        };
+      }
+      
+      // Check if current server time is after exam end time
+      if (serverTimeUTC > examEndUTC) {
+        return {
+          success: false,
+          message: `This exam has ended`,
+          examEndTime: examEndUTC,
+          serverTime: serverTimeUTC,
+          violation: "TOO_LATE"
+        };
+      }
+    }
+
+    // 5. Perform full eligibility check (includes all other validations)
+    const eligibilityCheck = await checkExamEligibility({ examId, studentId });
+    if (!eligibilityCheck.success) {
+      return {
+        success: false,
+        message: eligibilityCheck.message,
+        violation: "ELIGIBILITY_FAILED"
+      };
+    }
+
+    // 6. Access granted
+    return {
+      success: true,
+      message: "Access granted to exam",
+      exam: exam,
+      serverTime: new Date()
+    };
+
+  } catch (error) {
+    console.error("Error validating exam access:", error);
+    return { 
+      success: false, 
+      message: "Server error during validation. Please try again.",
+      violation: "SERVER_ERROR"
+    };
+  }
+}
+
+
 export async function getStudentExamAnalytics(studentId) {
   /**
    * getStudentExamAnalytics(studentId)

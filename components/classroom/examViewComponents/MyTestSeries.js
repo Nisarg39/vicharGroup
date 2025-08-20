@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { ClockIcon, DocumentTextIcon, CheckCircleIcon, ChartBarIcon, CalendarIcon, UserGroupIcon, BuildingOfficeIcon, ExclamationTriangleIcon, ArrowRightIcon, AcademicCapIcon, BookOpenIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import { useSelector } from 'react-redux'
 import { useRouter } from 'next/navigation'
-import { getEligibleExamsForStudent, getAllExamAttempts } from '../../../server_actions/actions/examController/studentExamActions'
+import { getEligibleExamsForStudent, getAllExamAttempts, validateExamAccess } from '../../../server_actions/actions/examController/studentExamActions'
 import toast from 'react-hot-toast'
 
 export default function MyTestSeries() {
@@ -17,6 +17,7 @@ export default function MyTestSeries() {
     const [activeTab, setActiveTab] = useState('scheduled') // 'scheduled' or 'practice'
     const [examResults, setExamResults] = useState({}) // Store exam results by examId
     const [loadingResults, setLoadingResults] = useState({})
+    const [validatingAccess, setValidatingAccess] = useState({}) // Track validation loading states
 
     useEffect(() => {
         const fetchEligibleExams = async () => {
@@ -67,9 +68,60 @@ export default function MyTestSeries() {
         fetchEligibleExams()
     }, [student?._id])
 
-    const handleTakeExam = (examId) => {
-        window.open(`/exams/${examId}`, '_blank')
-    }
+    const handleTakeExam = async (examId) => {
+        if (!student?._id) {
+            toast.error('Please login to attempt the exam');
+            return;
+        }
+
+        // Show loading state
+        setValidatingAccess(prev => ({ ...prev, [examId]: true }));
+
+        try {
+            // Server-side validation before opening exam page
+            const validationResult = await validateExamAccess(examId, student._id);
+            
+            if (validationResult.success) {
+                // Access granted - open exam page
+                window.open(`/exams/${examId}`, '_blank');
+            } else {
+                // Access denied - show appropriate error
+                handleAccessError(validationResult, examId);
+            }
+        } catch (error) {
+            console.error('Error validating exam access:', error);
+            toast.error('Unable to validate exam access. Please try again.');
+        } finally {
+            setValidatingAccess(prev => ({ ...prev, [examId]: false }));
+        }
+    };
+
+    const handleAccessError = (validationResult, examId) => {
+        const { message, timeRemaining, examStartTime, violation } = validationResult;
+        
+        if (violation === "TOO_EARLY" && timeRemaining && examStartTime) {
+            // Time-related error with specific messaging
+            const minutesRemaining = Math.ceil(timeRemaining / (1000 * 60));
+            const startTimeIST = new Date(examStartTime).toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+            
+            toast.error(
+                `Exam starts in ${minutesRemaining} minutes at ${startTimeIST}. Please wait until the scheduled time.`,
+                { duration: 8000 }
+            );
+        } else if (violation === "TOO_LATE") {
+            toast.error(
+                `This exam has ended. You can no longer attempt it.`,
+                { duration: 6000 }
+            );
+        } else {
+            // General error (eligibility failed, server error, etc.)
+            toast.error(message || 'Unable to access exam at this time.');
+        }
+    };
 
     const checkExamResults = async (examId) => {
         if (!student?._id || loadingResults[examId]) return null
@@ -406,6 +458,7 @@ export default function MyTestSeries() {
         const examStatus = isScheduled ? getScheduledExamStatus(exam) : getPracticeExamStatus(exam)
         const hasResults = examResults[exam._id]?.hasResults
         const isLoadingResults = loadingResults[exam._id]
+        const isValidatingAccess = validatingAccess[exam._id]
         
         return (
             <div 
@@ -556,8 +609,25 @@ export default function MyTestSeries() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                            {/* Download PDF Button - Show when results are available */}
-                            {hasResults && (
+                            {/* Download PDF Button - Show when results are available and for scheduled exams only after end time */}
+                            {hasResults && (() => {
+                                // For practice exams, always show download button when results are available
+                                if (!isScheduled) {
+                                    return true;
+                                }
+                                
+                                // For scheduled exams, only show after end time
+                                const now = new Date();
+                                const endTime = exam.endTime ? new Date(exam.endTime) : null;
+                                
+                                // If no end time is set, show the button (fallback for legacy exams)
+                                if (!endTime) {
+                                    return true;
+                                }
+                                
+                                // Only show if current time is after end time
+                                return now > endTime;
+                            })() && (
                                 <button 
                                     onClick={() => handleDownloadPDF(exam._id, exam.examName)}
                                     className="w-full sm:min-w-[120px] py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transform transition-all duration-200 shadow-lg text-xs sm:text-sm bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:scale-[1.02] cursor-pointer"
@@ -578,15 +648,24 @@ export default function MyTestSeries() {
                             {/* Take Exam Button */}
                             <button 
                                 onClick={() => handleTakeExam(exam._id)}
-                                disabled={!examStatus.canTake}
+                                disabled={!examStatus.canTake || isValidatingAccess}
                                 className={`w-full sm:min-w-[140px] py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transform transition-all duration-200 shadow-lg text-xs sm:text-sm ${
-                                    examStatus.canTake 
+                                    examStatus.canTake && !isValidatingAccess
                                         ? 'bg-gradient-to-r from-[#1d77bc] to-[#2d8bd4] hover:from-[#1d77bc]/90 hover:to-[#2d8bd4]/90 hover:scale-[1.02] cursor-pointer' 
                                         : 'bg-gray-400 cursor-not-allowed opacity-60'
                                 }`}
                             >
-                                <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="truncate">{examStatus.canTake ? 'Take Exam' : examStatus.label}</span>
+                                {isValidatingAccess ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b border-white"></div>
+                                        <span className="truncate">Validating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                        <span className="truncate">{examStatus.canTake ? 'Take Exam' : examStatus.label}</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
