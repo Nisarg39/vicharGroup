@@ -520,6 +520,7 @@ export default function ExamHome({ examId }) {
         const isSignedIn = localStorage.getItem("token")
         const viewParam = searchParams.get('view')
         const printParam = searchParams.get('print')
+        const attemptRefParam = searchParams.get('attemptRef')
         
         if(!isSignedIn){
             toast.error("Please sign in to access this page")
@@ -537,7 +538,7 @@ export default function ExamHome({ examId }) {
                     
                     // Handle result view after student is loaded
                     if (viewParam === 'result') {
-                        handleDirectResultView(studentDetail.student, printParam === 'true')
+                        handleDirectResultView(studentDetail.student, printParam === 'true', attemptRefParam)
                     }
                 } else {
                     localStorage.removeItem('token')
@@ -553,7 +554,7 @@ export default function ExamHome({ examId }) {
             
             // Handle result view if student is already loaded
             if (viewParam === 'result') {
-                handleDirectResultView(student, printParam === 'true')
+                handleDirectResultView(student, printParam === 'true', attemptRefParam)
             }
             
             setIsLoading(false)
@@ -891,40 +892,75 @@ export default function ExamHome({ examId }) {
     };
 
     // Handler for direct result view from URL parameters
-    const handleDirectResultView = async (studentData, autoPrint = false) => {
+    const handleDirectResultView = async (studentData, autoPrint = false, attemptRefParam = null) => {
         try {
-            const result = await getAllExamAttempts(studentData._id, examId);
-            if (result.success && result.attempts && result.attempts.length > 0) {
-                // Get the latest attempt
-                const latestAttempt = result.attempts[0];
-                
-                // Convert to the format expected by ExamResult component
-                const formattedResult = {
-                    score: latestAttempt.score,
-                    totalMarks: latestAttempt.totalMarks,
-                    percentage: latestAttempt.percentage,
-                    correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
-                    incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
-                    unattempted: latestAttempt.statistics?.unattempted || 0,
-                    timeTaken: latestAttempt.timeTaken,
-                    completedAt: latestAttempt.completedAt,
-                    questionAnalysis: latestAttempt.questionAnalysis || [],
-                    negativeMarkingInfo: latestAttempt.negativeMarkingInfo
-                };
-                
-                setExamResult(formattedResult);
-                setAllAttempts(result.attempts);
-                setCurrentView('result');
-                
-                // Auto-trigger print if requested
-                if (autoPrint) {
-                    setTimeout(() => {
-                        window.print();
-                    }, 2000); // Give time for the component to render
+            let latestAttempt = null;
+            let allAttemptsData = [];
+
+            // If we have attempt reference from localStorage (from Download PDF), use it
+            if (attemptRefParam) {
+                try {
+                    const storedData = localStorage.getItem(attemptRefParam);
+                    if (storedData) {
+                        const parsedData = JSON.parse(storedData);
+                        // Verify the stored data is for the correct exam and not too old (1 hour)
+                        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+                        if (parsedData.examId === examId && parsedData.timestamp > oneHourAgo) {
+                            latestAttempt = parsedData.attempt;
+                            // Clean up the temporary data after use
+                            localStorage.removeItem(attemptRefParam);
+                        }
+                    }
+                    
+                    // Still fetch all attempts for completeness
+                    const result = await getAllExamAttempts(studentData._id, examId);
+                    if (result.success && result.attempts) {
+                        allAttemptsData = result.attempts;
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing attempt data from localStorage:', parseError);
+                    // Fallback to normal flow
+                    attemptRefParam = null;
                 }
-            } else {
-                toast.error('No exam results found');
-                setCurrentView('home');
+            }
+            
+            // If no attempt data in localStorage or parsing failed, fetch normally
+            if (!attemptRefParam || !latestAttempt) {
+                const result = await getAllExamAttempts(studentData._id, examId);
+                if (result.success && result.attempts && result.attempts.length > 0) {
+                    latestAttempt = result.attempts[0];
+                    allAttemptsData = result.attempts;
+                } else {
+                    toast.error('No exam results found');
+                    setCurrentView('home');
+                    return;
+                }
+            }
+            
+            // Convert to the format expected by ExamResult component  
+            const formattedResult = {
+                score: latestAttempt.score,
+                totalMarks: latestAttempt.totalMarks,
+                percentage: latestAttempt.percentage,
+                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                unattempted: latestAttempt.statistics?.unattempted || 0,
+                timeTaken: latestAttempt.timeTaken,
+                completedAt: latestAttempt.completedAt,
+                questionAnalysis: latestAttempt.questionAnalysis || [],
+                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                statistics: latestAttempt.statistics || {}
+            };
+            
+            setExamResult(formattedResult);
+            setAllAttempts(allAttemptsData);
+            setCurrentView('result');
+            
+            // Auto-trigger print if requested
+            if (autoPrint) {
+                setTimeout(() => {
+                    window.print();
+                }, 2000); // Give time for the component to render
             }
         } catch (error) {
             console.error('Error loading exam result:', error);

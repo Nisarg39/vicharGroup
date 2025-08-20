@@ -121,7 +121,7 @@ function getQuestionSection(exam, question) {
 }
 
 // Enhanced helper function to get negative marking rule for a specific question type
-async function getNegativeMarkingRuleForQuestion(exam, question) {
+export async function getNegativeMarkingRuleForQuestion(exam, question) {
   try {
     // Determine question type
     let questionType = 'MCQ'; // Default

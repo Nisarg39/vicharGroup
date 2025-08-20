@@ -13,6 +13,7 @@ import QuestionSelectionScheme from "../../models/exam_portal/questionSelectionS
 import jwt from "jsonwebtoken"
 import { collegeAuth } from "../../middleware/collegeAuth"
 import { data as markingData } from "../../../utils/examUtils/subject_Details.js"
+import { getNegativeMarkingRuleForQuestion } from "./studentExamActions.js"
 // Import safe numeric operations
 import {
     standardPercentage,
@@ -1707,7 +1708,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                 subjects: examSubjects,
                 examDate: exam.createdAt
             },
-            studentsData: studentsData.filter(s => s.status === 'completed').map((student, index) => {
+            studentsData: await Promise.all(studentsData.filter(s => s.status === 'completed').map(async (student, index) => {
                 const studentData = {
                     sNo: index + 1,
                     studentName: student.name,
@@ -1727,42 +1728,45 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                     rank: student.rank
                 }
 
-                // Add subject-wise performance for each subject in the exam
-                examSubjects.forEach(subject => {
-                    // Find subject performance data
-                    const subjectData = student.subjectPerformance.find(sp => sp.subject === subject)
+                // Recalculate subject-wise performance using super admin rules only
+                for (const subject of examSubjects) {
+                    let correct = 0, wrong = 0, totalMarks = 0
                     
-                    if (subjectData) {
-                        studentData[`${subject}_correct`] = subjectData.correct || 0
-                        studentData[`${subject}_wrong`] = subjectData.incorrect || 0  
-                        studentData[`${subject}_totalMarks`] = subjectData.marks || 0
-                    } else {
-                        // If subjectPerformance doesn't have this subject, calculate from questionAnalysis
-                        let correct = 0, wrong = 0, totalMarks = 0
-                        
-                        if (student.questionAnalysis && student.questionAnalysis.length > 0 && exam.examQuestions) {
-                            student.questionAnalysis.forEach((question, qIndex) => {
-                                const examQuestion = exam.examQuestions[qIndex]
-                                if (examQuestion && examQuestion.subject === subject) {
-                                    if (question.status === 'correct' || question.status === 'partially_correct') {
-                                        correct++
-                                    } else if (question.status === 'incorrect') {
-                                        wrong++
-                                    }
-                                    totalMarks += question.marks || 0
+                    if (student.questionAnalysis && student.questionAnalysis.length > 0 && exam.examQuestions) {
+                        // Process each question for this subject
+                        for (let qIndex = 0; qIndex < student.questionAnalysis.length; qIndex++) {
+                            const questionAnalysis = student.questionAnalysis[qIndex]
+                            const examQuestion = exam.examQuestions[qIndex]
+                            
+                            if (examQuestion && examQuestion.subject === subject) {
+                                // Get super admin marking rule for this question
+                                const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, examQuestion)
+                                const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || examQuestion.marks || 4
+                                const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks || 1
+                                
+                                // Count correct/wrong based on status
+                                if (questionAnalysis.status === 'correct' || questionAnalysis.status === 'partially_correct') {
+                                    correct++
+                                    // Use super admin positive marks
+                                    totalMarks += adminPositiveMarks
+                                } else if (questionAnalysis.status === 'incorrect') {
+                                    wrong++
+                                    // Apply super admin negative marks
+                                    totalMarks -= adminNegativeMarks
                                 }
-                            })
+                                // unattempted questions add 0 marks
+                            }
                         }
-                        
-                        studentData[`${subject}_correct`] = correct
-                        studentData[`${subject}_wrong`] = wrong
-                        studentData[`${subject}_totalMarks`] = totalMarks
                     }
-                })
+                    
+                    studentData[`${subject}_correct`] = correct
+                    studentData[`${subject}_wrong`] = wrong
+                    studentData[`${subject}_totalMarks`] = totalMarks
+                }
 
 
                 return studentData
-            })
+            }))
         }
 
         // Apply search and filter before pagination

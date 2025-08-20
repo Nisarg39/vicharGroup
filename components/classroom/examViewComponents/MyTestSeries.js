@@ -124,10 +124,45 @@ export default function MyTestSeries() {
                 return
             }
 
-            // Open the exam page with result view and print parameter
+            // Get complete attempt data using getAllExamAttempts to ensure we have full analytics
+            const allAttemptsResult = await getAllExamAttempts(student._id, examId)
+            if (!allAttemptsResult.success || !allAttemptsResult.attempts || allAttemptsResult.attempts.length === 0) {
+                toast.error('No complete exam results found')
+                return
+            }
+
+            // Get the latest attempt (same as used in View Details)
+            const latestAttempt = allAttemptsResult.attempts[0]
+
+            // Store attempt data in localStorage with a unique key and timestamp for cleanup
+            const attemptKey = `pdf_attempt_${examId}_${Date.now()}`
+            const attemptDataWithTimestamp = {
+                attempt: latestAttempt,
+                timestamp: Date.now(),
+                examId: examId
+            }
+            localStorage.setItem(attemptKey, JSON.stringify(attemptDataWithTimestamp))
+
+            // Clean up old attempt data (older than 1 hour)
+            const oneHourAgo = Date.now() - (60 * 60 * 1000)
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('pdf_attempt_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key))
+                        if (data.timestamp < oneHourAgo) {
+                            localStorage.removeItem(key)
+                        }
+                    } catch (e) {
+                        localStorage.removeItem(key)
+                    }
+                }
+            })
+            
+            // Open the exam page with result view, print parameter, and attempt reference
             const params = new URLSearchParams({
                 view: 'result',
-                print: 'true'
+                print: 'true',
+                attemptRef: attemptKey
             })
             
             const resultUrl = `/exams/${examId}?${params.toString()}`

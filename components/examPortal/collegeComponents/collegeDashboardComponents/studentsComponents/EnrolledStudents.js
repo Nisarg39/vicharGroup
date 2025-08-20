@@ -156,10 +156,6 @@ export default function EnrolledStudents({ collegeData }) {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center space-x-3">
                                 <h2 className="text-2xl font-bold text-gray-900">Enrolled Students</h2>
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                    <UserGroupIcon className="h-4 w-4 mr-1" />
-                                    {students.length} Total
-                                </span>
                             </div>
                             <div className="relative">
                                 <input

@@ -71,7 +71,7 @@ export async function adminLogin(details) {
 }
 export async function getEnquiries(page) {
     try {
-        connectDB()
+        await connectDB()
         const limit = 10
         const skip = (page - 1) * limit
         const enquiries = await EnquiryForm.find({})
@@ -102,7 +102,7 @@ export async function getEnquiries(page) {
 }
 export async function getContactUs(page) {
     try {
-        connectDB()
+        await connectDB()
         const limit = 10
         const skip = (page - 1) * limit
         const contactUs = await ContactUs.find({})
@@ -132,50 +132,74 @@ export async function getContactUs(page) {
     }
 }
 export async function changePassword(details) {
-    const admin = await Admin.findOne({password: details.currentPassword})
-    if (!admin) {
+    try {
+        await connectDB()
+        const admin = await Admin.findOne({password: details.currentPassword})
+        if (!admin) {
+            return {
+                success: false,
+                message: "Invalid Credentials"
+            }
+        }
+        admin.password = details.newPassword
+        await admin.save()
+        return {
+            success: true,
+            message: "Password Changed Successfully"
+        }
+    } catch (error) {
         return {
             success: false,
-            message: "Invalid Credentials"
+            message: "Error changing password"
         }
-    }
-    admin.password = details.newPassword
-    await admin.save()
-    return {
-        success: true,
-        message: "Password Changed Successfully"
     }
 }
 
 export async function messageSeenEnquiryForm(id) {
-    const contact = await EnquiryForm.findById(id)
-    if (!contact) {
+    try {
+        await connectDB()
+        const contact = await EnquiryForm.findById(id)
+        if (!contact) {
+            return {
+                success: false,
+                message: "Contact Not Found"
+            }
+        }
+        contact.seen = true
+        await contact.save()
+        return {
+            success: true,
+            message: "Message Seen Successfully"
+        }
+    } catch (error) {
         return {
             success: false,
-            message: "Contact Not Found"
+            message: "Error marking message as seen"
         }
-    }
-    contact.seen = true
-    await contact.save()
-    return {
-        success: true,
-        message: "Message Seen Successfully"
     }
 }
 
 export async function messageSeenContactUs(id) {
-    const contact = await ContactUs.findById(id)
-    if (!contact) {
+    try {
+        await connectDB()
+        const contact = await ContactUs.findById(id)
+        if (!contact) {
+            return {
+                success: false,
+                message: "Contact Not Found"
+            }
+        }
+        contact.seen = true
+        await contact.save()
+        return {
+            success: true,
+            message: "Message Seen Successfully"
+        }
+    } catch (error) {
         return {
             success: false,
-            message: "Contact Not Found"
+            message: "Error marking message as seen"
         }
-    }
-    contact.seen = true
-    await contact.save()
-    return {
-        success: true,
-        message: "Message Seen Successfully"
     }
 }
 
@@ -1223,6 +1247,7 @@ export async function addExercise(details){
 
 export async function showExercise(chapterId) {
     try {
+        await connectDB()
         const exercises = await Chapter.findById(chapterId).populate("exercises")
         return {
             success: true,
