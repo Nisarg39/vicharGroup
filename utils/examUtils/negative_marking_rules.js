@@ -12,7 +12,7 @@ const negativeMarkingRules = {
           },
           "Numerical": {
             "correct": 4,
-            "incorrect": 0,
+            "incorrect": -1,
             "unanswered": 0,
             "note": "No negative marking."
           }
@@ -36,7 +36,7 @@ const negativeMarkingRules = {
           },
           "Numerical": {
             "correct": 4,
-            "incorrect": 0,
+            "incorrect": -1,
             "unanswered": 0,
             "note": "No negative marking for numerical questions."
           }

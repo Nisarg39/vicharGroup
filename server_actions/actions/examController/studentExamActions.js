@@ -701,10 +701,10 @@ async function submitExamResultInternal(examData) {
       
       // Get question-specific negative marking rule
       const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, question);
-      const negativeMarks = questionNegativeMarkingRule.negativeMarks;
       
-      // Get admin-configured positive marks (fallback to question.marks or 4)
+      // Get admin-configured marks using proper fallback logic
       const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || questionMarks || 4;
+      const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks !== undefined ? questionNegativeMarkingRule.negativeMarks : 1;
 
       if (!userAnswer || (Array.isArray(userAnswer) && userAnswer.length === 0)) {
         unattempted++;
@@ -740,7 +740,7 @@ async function submitExamResultInternal(examData) {
           unattempted++;
         } else if (wrongSelected.length > 0) {
           // Negative Marks: Use admin-configured rule for MCMA wrong selections
-          marksAwarded = -negativeMarks; // Use admin-configured negative marking
+          marksAwarded = -adminNegativeMarks; // Use admin-configured negative marking
           status = "incorrect";
           incorrectAnswers++;
         } else if (correctSelectedCount === totalCorrectOptions) {
@@ -807,12 +807,12 @@ async function submitExamResultInternal(examData) {
             negativeMarkingRule: questionNegativeMarkingRule.description,
           });
         } else {
-          finalScore -= negativeMarks;
+          finalScore -= adminNegativeMarks;
           incorrectAnswers++;
           questionAnalysis.push({
             questionId: question._id,
             status: "incorrect",
-            marks: -negativeMarks,
+            marks: -adminNegativeMarks,
             userAnswer: normalizedUserAnswer,
             correctAnswer: normalizedCorrectAnswer,
             negativeMarkingRule: questionNegativeMarkingRule.description,
