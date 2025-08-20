@@ -1734,7 +1734,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                             // Get super admin marking rule for this question
                             const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, examQuestion)
                             const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || examQuestion.marks || 4
-                            const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks || 1
+                            const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks !== undefined ? questionNegativeMarkingRule.negativeMarks : 1
                             
                             // Calculate marks based on status using super admin rules
                             if (questionAnalysis.status === 'correct' || questionAnalysis.status === 'partially_correct') {
