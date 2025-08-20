@@ -253,6 +253,9 @@ export default function StudentWiseAnalytics({ onBack }) {
                                 Student Analytics
                             </h1>
                             <p className="text-gray-600 mt-1">Comprehensive student performance analysis and insights</p>
+                            <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 mt-2 inline-block">
+                                ℹ️ Statistics shown are for scheduled exams only
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Users className="w-4 h-4" />

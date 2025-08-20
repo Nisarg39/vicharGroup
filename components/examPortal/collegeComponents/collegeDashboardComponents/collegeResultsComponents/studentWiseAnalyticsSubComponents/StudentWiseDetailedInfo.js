@@ -365,20 +365,6 @@ const StudentWiseDetailedInfo = memo(({ student, onBack }) => {
                                                     </div>
                                                 </div>
 
-                                                {/* Difficulty Analysis */}
-                                                {subject.difficultyAnalysis && (
-                                                    <div>
-                                                        <div className="text-xs font-semibold text-gray-600 mb-2">Difficulty Performance</div>
-                                                        <div className="flex gap-2">
-                                                            {Object.entries(subject.difficultyAnalysis).map(([level, data]) => (
-                                                                <div key={level} className="flex-1 text-center bg-white rounded p-2">
-                                                                    <div className="text-sm font-bold text-gray-800">{data.accuracy}%</div>
-                                                                    <div className="text-xs text-gray-600 capitalize">{level}</div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
 
                                                 {/* Time Efficiency */}
                                                 <div className="flex items-center justify-between text-sm">

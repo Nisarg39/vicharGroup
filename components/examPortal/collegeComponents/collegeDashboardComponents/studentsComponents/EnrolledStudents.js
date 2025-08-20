@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react'
 import { getEnrolledStudents, updateEnrolledStudent } from '../../../../../server_actions/actions/examController/collegeActions'
 import { 
     UserGroupIcon,
-    AcademicCapIcon,
-    BookOpenIcon,
-    ClockIcon,
     MagnifyingGlassIcon,
     ArrowUpIcon,
     ArrowDownIcon
@@ -153,62 +150,17 @@ export default function EnrolledStudents({ collegeData }) {
             </div>
 
             <div className="relative z-10 space-y-6">
-                {/* Stats Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                                <p className="text-3xl font-bold text-blue-600">{students.length}</p>
-                            </div>
-                            <div className="bg-blue-100 p-3 rounded-full">
-                                <UserGroupIcon className="h-6 w-6 text-blue-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Active Classes</p>
-                                <p className="text-3xl font-bold text-green-600">2</p>
-                            </div>
-                            <div className="bg-green-100 p-3 rounded-full">
-                                <AcademicCapIcon className="h-6 w-6 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Subjects</p>
-                                <p className="text-3xl font-bold text-purple-600">{collegeData.allocatedSubjects.length}</p>
-                            </div>
-                            <div className="bg-purple-100 p-3 rounded-full">
-                                <BookOpenIcon className="h-6 w-6 text-purple-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-gray-100/50">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Average Duration</p>
-                                <p className="text-3xl font-bold text-orange-600">6m</p>
-                            </div>
-                            <div className="bg-orange-100 p-3 rounded-full">
-                                <ClockIcon className="h-6 w-6 text-orange-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Search and Table Section */}
                 <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-gray-100/50">
                     <div className="p-6 border-b border-gray-200">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <h2 className="text-2xl font-bold text-gray-900">Enrolled Students</h2>
+                            <div className="flex items-center space-x-3">
+                                <h2 className="text-2xl font-bold text-gray-900">Enrolled Students</h2>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    <UserGroupIcon className="h-4 w-4 mr-1" />
+                                    {students.length} Total
+                                </span>
+                            </div>
                             <div className="relative">
                                 <input
                                     type="text"

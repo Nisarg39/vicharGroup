@@ -523,9 +523,9 @@ const ExamStudentStats = ({ examId, onBack }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
                     <StatCard
                         icon={Users}
-                        title="Total Registered"
+                        title="Eligible Students"
                         value={stats.totalRegistered || 0}
-                        subtitle="Enrolled students"
+                        subtitle="Eligible student"
                         color="blue"
                     />
                     <StatCard

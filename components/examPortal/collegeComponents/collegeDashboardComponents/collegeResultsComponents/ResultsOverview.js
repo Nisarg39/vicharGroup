@@ -63,7 +63,7 @@ export default function ResultsOverview({ onNavigate }) {
                     <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100/60 p-6 hover:shadow-2xl transition-all duration-300">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                                <p className="text-sm font-medium text-gray-600">Eligible Students</p>
                                 {loading ? (
                                     <div className="flex items-center gap-2 mt-2">
                                         <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
@@ -73,7 +73,7 @@ export default function ResultsOverview({ onNavigate }) {
                                     <p className="text-3xl font-bold text-blue-600">{overviewStats.totalStudents.toLocaleString()}</p>
                                 )}
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Enrolled students
+                                    Students eligible for active exams
                                 </p>
                             </div>
                             <div className="p-3 bg-blue-100 rounded-2xl">

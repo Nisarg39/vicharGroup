@@ -1398,13 +1398,18 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
             .populate('student', 'name email')
             .lean()
         
-        // Get all students enrolled in this college to get actual registration count
-        const enrolledStudents = await EnrolledStudent.find({ 
+        // Get all students enrolled in this college 
+        const allEnrolledStudents = await EnrolledStudent.find({ 
             college: collegeId, 
             status: 'approved' 
         }).populate('student', 'name email').lean()
         
-        const totalRegistered = enrolledStudents.length
+        // Filter only students eligible for this specific exam
+        const eligibleStudents = allEnrolledStudents.filter(enrolledStudent => {
+            return checkStudentExamEligibility(enrolledStudent, exam)
+        })
+        
+        const totalRegistered = eligibleStudents.length
         const totalAttempted = examResults.length
         // All exam results are considered completed since they exist in the database
         const totalCompleted = examResults.length
@@ -1460,11 +1465,8 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
             notAttempted: Math.max(0, totalAttempted - totalCompleted)
         }
         
-        // Get all enrolled students and merge with exam results
-        const enrolledStudentsData = await EnrolledStudent.find({ 
-            college: collegeId, 
-            status: 'approved' 
-        }).populate('student', 'name email').lean()
+        // Use only eligible students for this exam
+        const enrolledStudentsData = eligibleStudents
         
         // Create a map of exam results by student ID
         const examResultsMap = new Map()
@@ -1827,6 +1829,100 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
     }
 }
 
+// Helper function to check if a student is eligible for a specific exam
+function checkStudentExamEligibility(enrolledStudent, exam) {
+    // Stream match
+    const isStreamMatch = enrolledStudent.allocatedStreams?.includes(exam.stream)
+    
+    // Class match  
+    const isClassMatch = 
+        enrolledStudent.class === `${exam.standard}` ||
+        enrolledStudent.class === `${exam.standard}th`
+    
+    // Subject match (if both have subjects allocated)
+    let isSubjectMatch = true
+    if (enrolledStudent.allocatedSubjects?.length > 0 && exam.examSubject?.length > 0) {
+        isSubjectMatch = exam.examSubject.some(examSubject => 
+            enrolledStudent.allocatedSubjects.some(studentSubject => 
+                studentSubject.toLowerCase() === examSubject.toLowerCase() ||
+                // Handle common abbreviations
+                (studentSubject.toLowerCase() === 'physics' && examSubject.toLowerCase() === 'phy') ||
+                (studentSubject.toLowerCase() === 'phy' && examSubject.toLowerCase() === 'physics') ||
+                (studentSubject.toLowerCase() === 'chemistry' && examSubject.toLowerCase() === 'chem') ||
+                (studentSubject.toLowerCase() === 'chem' && examSubject.toLowerCase() === 'chemistry') ||
+                (studentSubject.toLowerCase() === 'mathematics' && examSubject.toLowerCase() === 'math') ||
+                (studentSubject.toLowerCase() === 'math' && examSubject.toLowerCase() === 'mathematics') ||
+                (studentSubject.toLowerCase() === 'mathematics' && examSubject.toLowerCase() === 'maths') ||
+                (studentSubject.toLowerCase() === 'maths' && examSubject.toLowerCase() === 'mathematics') ||
+                (studentSubject.toLowerCase() === 'biology' && examSubject.toLowerCase() === 'bio') ||
+                (studentSubject.toLowerCase() === 'bio' && examSubject.toLowerCase() === 'biology')
+            )
+        )
+    }
+    
+    return isStreamMatch && isClassMatch && isSubjectMatch
+}
+
+// Get count of students eligible for at least one active exam
+export async function getEligibleStudentsCount(details) {
+    try {
+        await connectDB()
+        const college = await collegeAuth(details)
+        
+        if (!college) {
+            return { success: false, count: 0, message: "College not authenticated" }
+        }
+        
+        // Get active exams with questions
+        const activeExams = await Exam.find({
+            college: college._id,
+            examStatus: 'active',
+            status: 'scheduled',
+            $expr: { $gt: [{ $size: "$examQuestions" }, 0] } // Has questions
+        }).lean()
+        
+        if (activeExams.length === 0) {
+            return { success: true, count: 0, message: "No active exams with questions found" }
+        }
+        
+        // Get all approved enrolled students
+        const enrolledStudents = await EnrolledStudent.find({
+            college: college._id,
+            status: 'approved'
+        }).lean()
+        
+        if (enrolledStudents.length === 0) {
+            return { success: true, count: 0, message: "No approved enrolled students found" }
+        }
+        
+        let eligibleStudentsSet = new Set()
+        
+        // Check eligibility for each student against each exam
+        for (const student of enrolledStudents) {
+            for (const exam of activeExams) {
+                const isEligible = checkStudentExamEligibility(student, exam)
+                if (isEligible) {
+                    eligibleStudentsSet.add(student.student.toString())
+                    break // Student is eligible for at least one exam
+                }
+            }
+        }
+        
+        return {
+            success: true,
+            count: eligibleStudentsSet.size,
+            message: `Found ${eligibleStudentsSet.size} eligible students out of ${enrolledStudents.length} approved enrollments`
+        }
+    } catch (error) {
+        console.error('Error counting eligible students:', error)
+        return { 
+            success: false, 
+            count: 0, 
+            message: error.message || "Failed to count eligible students" 
+        }
+    }
+}
+
 export async function getCollegeDashboardSummary(details) {
     try {
         await connectDB()
@@ -1851,17 +1947,15 @@ export async function getCollegeDashboardSummary(details) {
         
         const collegeId = college._id
         
-        // Execute all database queries in parallel with a single DB connection
+        // Get eligible students count instead of total enrolled
+        const eligibleStudentsResult = await getEligibleStudentsCount(details)
+        const totalStudents = eligibleStudentsResult.success ? eligibleStudentsResult.count : 0
+        
+        // Execute remaining database queries in parallel
         const [
-            totalStudents,
             totalExams,
             collegeExams
         ] = await Promise.all([
-            EnrolledStudent.countDocuments({
-                college: collegeId
-                // Note: Including all students regardless of status to fix zero count issue
-                // TODO: Consider if we should filter by status: 'approved' only
-            }),
             Exam.countDocuments({
                 college: collegeId
             }),
