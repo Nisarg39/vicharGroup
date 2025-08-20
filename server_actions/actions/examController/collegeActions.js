@@ -1415,11 +1415,12 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
         // All exam results are considered completed since they exist in the database
         const totalCompleted = examResults.length
         
-        // Calculate statistics (marks-based) 
-        const scores = examResults.map(result => result.score || 0)
-        const averageScore = scores.length > 0 ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 100) / 100 : 0
-        const highestScore = scores.length > 0 ? Math.max(...scores) : 0
-        const lowestScore = scores.length > 0 ? Math.min(...scores) : 0
+        // Calculate statistics (marks-based) using super admin rules
+        // We'll recalculate these after processing the Excel data with super admin rules
+        let scores = examResults.map(result => result.score || 0)
+        let averageScore = scores.length > 0 ? Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 100) / 100 : 0
+        let highestScore = scores.length > 0 ? Math.max(...scores) : 0
+        let lowestScore = scores.length > 0 ? Math.min(...scores) : 0
         
         // Calculate time spent (if available) - convert from seconds to minutes
         const timesSpent = examResults
@@ -1431,7 +1432,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
         // Calculate pass rate (assuming passing marks is available in exam)
         const passingMarks = exam.passingMarks || (exam.totalMarks * 0.4) // 40% of total marks as default
         const passedCount = scores.filter(score => score >= passingMarks).length
-        const passRate = scores.length > 0 ? Math.round((passedCount / scores.length) * 100 * 100) / 100 : 0
+        let passRate = scores.length > 0 ? Math.round((passedCount / scores.length) * 100 * 100) / 100 : 0
         
         // Get stream-specific score ranges for distribution
         const getStreamScoreRanges = (stream, totalMarks) => {
@@ -1458,7 +1459,7 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
         const ranges = getStreamScoreRanges(exam.stream, exam.totalMarks)
         
         // Score distribution based on marks
-        const scoreDistribution = {
+        let scoreDistribution = {
             excellent: scores.filter(score => score >= ranges.excellent).length,
             good: scores.filter(score => score >= ranges.good && score < ranges.excellent).length,
             average: scores.filter(score => score >= ranges.average && score < ranges.good).length,
@@ -1708,65 +1709,128 @@ export async function getExamStudentStats(details, examId, page = 1, limit = 10,
                 subjects: examSubjects,
                 examDate: exam.createdAt
             },
-            studentsData: await Promise.all(studentsData.filter(s => s.status === 'completed').map(async (student, index) => {
-                const studentData = {
-                    sNo: index + 1,
-                    studentName: student.name,
-                    std: exam.standard,
-                    total: student.score,
-                    percentile: (() => {
-                        if (student.percentile === null || student.percentile === undefined) {
-                            return '-'
-                        }
-                        // Safe number conversion
-                        const num = parseFloat(student.percentile)
-                        if (isNaN(num) || !isFinite(num)) {
-                            return '-'
-                        }
-                        return Math.max(0, Math.min(100, num)).toFixed(1) + 'th'
-                    })(),
-                    rank: student.rank
-                }
-
-                // Recalculate subject-wise performance using super admin rules only
-                for (const subject of examSubjects) {
-                    let correct = 0, wrong = 0, totalMarks = 0
-                    
-                    if (student.questionAnalysis && student.questionAnalysis.length > 0 && exam.examQuestions) {
-                        // Process each question for this subject
-                        for (let qIndex = 0; qIndex < student.questionAnalysis.length; qIndex++) {
-                            const questionAnalysis = student.questionAnalysis[qIndex]
-                            const examQuestion = exam.examQuestions[qIndex]
+            studentsData: await Promise.all(studentsData.filter(s => s.status === 'completed').map(async (student) => {
+                // Recalculate TOTAL score using super admin rules only
+                let totalScore = 0
+                let totalCorrect = 0
+                let totalWrong = 0
+                let totalUnattempted = 0
+                
+                // Subject-wise data storage
+                const subjectData = {}
+                
+                // Initialize subject data
+                examSubjects.forEach(subject => {
+                    subjectData[subject] = { correct: 0, wrong: 0, totalMarks: 0, unattempted: 0 }
+                })
+                
+                if (student.questionAnalysis && student.questionAnalysis.length > 0 && exam.examQuestions) {
+                    // Process ALL questions to get total score using super admin rules
+                    for (let qIndex = 0; qIndex < student.questionAnalysis.length; qIndex++) {
+                        const questionAnalysis = student.questionAnalysis[qIndex]
+                        const examQuestion = exam.examQuestions[qIndex]
+                        
+                        if (examQuestion) {
+                            // Get super admin marking rule for this question
+                            const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, examQuestion)
+                            const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || examQuestion.marks || 4
+                            const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks || 1
                             
-                            if (examQuestion && examQuestion.subject === subject) {
-                                // Get super admin marking rule for this question
-                                const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, examQuestion)
-                                const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || examQuestion.marks || 4
-                                const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks || 1
+                            // Calculate marks based on status using super admin rules
+                            if (questionAnalysis.status === 'correct' || questionAnalysis.status === 'partially_correct') {
+                                totalScore += adminPositiveMarks
+                                totalCorrect++
                                 
-                                // Count correct/wrong based on status
-                                if (questionAnalysis.status === 'correct' || questionAnalysis.status === 'partially_correct') {
-                                    correct++
-                                    // Use super admin positive marks
-                                    totalMarks += adminPositiveMarks
-                                } else if (questionAnalysis.status === 'incorrect') {
-                                    wrong++
-                                    // Apply super admin negative marks
-                                    totalMarks -= adminNegativeMarks
+                                // Add to subject data
+                                if (examQuestion.subject && subjectData[examQuestion.subject]) {
+                                    subjectData[examQuestion.subject].correct++
+                                    subjectData[examQuestion.subject].totalMarks += adminPositiveMarks
                                 }
-                                // unattempted questions add 0 marks
+                            } else if (questionAnalysis.status === 'incorrect') {
+                                totalScore -= adminNegativeMarks
+                                totalWrong++
+                                
+                                // Add to subject data
+                                if (examQuestion.subject && subjectData[examQuestion.subject]) {
+                                    subjectData[examQuestion.subject].wrong++
+                                    subjectData[examQuestion.subject].totalMarks -= adminNegativeMarks
+                                }
+                            } else {
+                                // Unattempted questions add 0 marks
+                                totalUnattempted++
+                                
+                                // Add to subject data
+                                if (examQuestion.subject && subjectData[examQuestion.subject]) {
+                                    subjectData[examQuestion.subject].unattempted++
+                                }
                             }
                         }
                     }
-                    
-                    studentData[`${subject}_correct`] = correct
-                    studentData[`${subject}_wrong`] = wrong
-                    studentData[`${subject}_totalMarks`] = totalMarks
+                }
+                
+                const studentData = {
+                    studentId: student.student || student._id,
+                    studentName: student.name,
+                    std: exam.standard,
+                    total: totalScore,  // Use recalculated total score
+                    // Add overall statistics based on super admin calculations
+                    totalCorrect: totalCorrect,
+                    totalWrong: totalWrong,
+                    totalUnattempted: totalUnattempted,
+                    // Temporary fields - will be updated after ranking
+                    sNo: 0,
+                    percentile: '-',
+                    rank: 0
                 }
 
+                // Add subject-wise performance using super admin rules
+                examSubjects.forEach(subject => {
+                    studentData[`${subject}_correct`] = subjectData[subject].correct
+                    studentData[`${subject}_wrong`] = subjectData[subject].wrong
+                    studentData[`${subject}_totalMarks`] = subjectData[subject].totalMarks
+                })
 
                 return studentData
             }))
+        }
+        
+        // Recalculate ranks and percentiles based on super admin rule scores
+        if (excelData.studentsData && excelData.studentsData.length > 0) {
+            // Sort students by total score (descending)
+            excelData.studentsData.sort((a, b) => b.total - a.total)
+            
+            // Assign ranks and calculate percentiles
+            excelData.studentsData.forEach((student, index) => {
+                student.sNo = index + 1
+                student.rank = index + 1
+                
+                // Calculate percentile based on position
+                const percentile = ((excelData.studentsData.length - index) / excelData.studentsData.length) * 100
+                student.percentile = percentile.toFixed(1) + 'th'
+            })
+            
+            // Recalculate overall exam statistics using super admin rule scores
+            const superAdminScores = excelData.studentsData.map(student => student.total)
+            if (superAdminScores.length > 0) {
+                averageScore = Math.round((superAdminScores.reduce((sum, score) => sum + score, 0) / superAdminScores.length) * 100) / 100
+                highestScore = Math.max(...superAdminScores)
+                lowestScore = Math.min(...superAdminScores)
+                
+                // Recalculate pass rate with super admin scores
+                const superAdminPassedCount = superAdminScores.filter(score => score >= passingMarks).length
+                const superAdminPassRate = Math.round((superAdminPassedCount / superAdminScores.length) * 100 * 100) / 100
+                
+                // Update scores array and pass rate for stats object
+                scores = superAdminScores
+                passRate = superAdminPassRate
+                
+                // Recalculate score distribution with super admin scores
+                scoreDistribution.excellent = superAdminScores.filter(score => score >= ranges.excellent).length
+                scoreDistribution.good = superAdminScores.filter(score => score >= ranges.good && score < ranges.excellent).length
+                scoreDistribution.average = superAdminScores.filter(score => score >= ranges.average && score < ranges.good).length
+                scoreDistribution.poor = superAdminScores.filter(score => score < ranges.average).length
+                scoreDistribution.notAttempted = Math.max(0, totalAttempted - totalCompleted)
+            }
         }
 
         // Apply search and filter before pagination
