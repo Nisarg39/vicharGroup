@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { VicharCard, VicharCardHeader, VicharCardTitle, VicharCardContent } from "../../../ui/vichar-card"
 import { VicharButton } from "../../../ui/vichar-button"
 import { AlertTriangle } from "lucide-react"
@@ -12,6 +13,13 @@ export default function ConfirmSubmitModal({
     onSubmit,
     exam 
 }) {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const handleSubmit = () => {
+        setIsSubmitting(true)
+        onSubmit()
+    }
+
     if (!showConfirmSubmit) return null
 
     return (
@@ -72,10 +80,11 @@ export default function ConfirmSubmitModal({
                     {/* Action Buttons - Mobile Optimized */}
                     <div className="space-y-3">
                         <VicharButton
-                            onClick={onSubmit}
-                            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-action-manipulation"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl disabled:shadow-md transition-all duration-200 active:scale-95 disabled:active:scale-100 touch-action-manipulation"
                         >
-                            🚀 Submit Final Exam
+                            {isSubmitting ? "Submitting..." : "🚀 Submit Final Exam"}
                         </VicharButton>
                         <VicharButton
                             variant="outline"

@@ -52,6 +52,10 @@ const mcqQuestionSchema = new Schema({
         type: String, 
         enum: ["Easy", "Medium", "Hard"],
         default: "Easy"
+    },
+    explanation: {
+        type: String,
+        default: null
     }
 });
 

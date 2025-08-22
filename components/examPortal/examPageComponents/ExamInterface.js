@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import toast from "react-hot-toast"
 
 // Import sub-components
@@ -17,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs"
 import { User, BookOpen, Info, Timer, CheckCircle, ListTodo, Star, Quote, Building2, Grid, X } from "lucide-react"
 import { useState as useStateReact } from "react"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
+import { getSubjectUnlockTime, getExamAccessRules, getSubjectUnlockSchedule } from "../../../utils/examDurationHelpers"
+import { calculateRemainingTime, getEffectiveExamDuration } from "../../../utils/examTimingUtils"
 // Server auto-save removed - only saves locally until submission
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
@@ -24,13 +26,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [answers, setAnswers] = useState({})
     const [markedQuestions, setMarkedQuestions] = useState(new Set())
     const [visitedQuestions, setVisitedQuestions] = useState(new Set())
-    const [timeLeft, setTimeLeft] = useState(exam?.examDurationMinutes * 60 || 0) // in seconds
+    const [timeLeft, setTimeLeft] = useState(0) // Initialize to 0, let useEffect handle calculation
     const [isExamStarted, setIsExamStarted] = useState(false)
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
     const [examProgress, setExamProgress] = useState(null)
     const timerRef = useRef(null)
     const mainExamRef = useRef(null); // For fullscreen
     const warningsShownRef = useRef(new Set()); // Track which warnings have been shown
+    const timerInitializedRef = useRef(false); // Track if timer has been initialized
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -50,11 +53,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [startTime, setStartTime] = useState(null);
 
     // --- SUBJECTWISE FILTERING ---
-    // Check if this is a JEE exam
+    // Check exam stream types for specialized logic
     const isJeeExam = exam?.stream?.toLowerCase().includes('jee');
-    
-    // Check if this is a CET exam
     const isCetExam = exam?.stream?.toLowerCase().includes('cet');
+    const isNeetExam = exam?.stream?.toLowerCase().includes('neet');
+    const isCompetitiveExam = isJeeExam || isCetExam || isNeetExam;
     
     // Get all unique subjects from questions with competitive exam ordering (Physics, Chemistry, then others alphabetically)
     const allSubjects = (() => {
@@ -77,15 +80,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         return [...orderedSubjects, ...remainingSubjects];
     })();
     const [selectedSubject, setSelectedSubject] = useState(() => {
-        // For CET exams, start with the first available (unlocked) subject
-        if (isCetExam) {
-            const availableSubject = allSubjects.find(subject => {
-                const restrictedSubjects = ['Biology', 'Maths', 'Mathematics'];
-                return !restrictedSubjects.some(restricted => 
-                    subject.toLowerCase().includes(restricted.toLowerCase())
+        // For competitive exams, start with the first available (unlocked) subject
+        if (isCompetitiveExam) {
+            // Get access rules for this exam type
+            const accessRules = getExamAccessRules(exam);
+            if (accessRules.restrictedSubjects && accessRules.restrictedSubjects.length > 0) {
+                const availableSubject = allSubjects.find(subject => 
+                    !accessRules.restrictedSubjects.includes(subject)
                 );
-            });
-            return availableSubject || allSubjects[0] || "";
+                return availableSubject || allSubjects[0] || "";
+            }
         }
         return allSubjects[0] || "";
     });
@@ -95,10 +99,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setCurrentQuestionIndex(0);
     }, [selectedSubject]);
 
-    // Prevent switching to locked subjects in CET exams
+    // Prevent switching to locked subjects in competitive exams
     const handleSubjectChange = (newSubject) => {
-        if (isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[newSubject]?.isLocked) {
-            const remainingTime = Math.ceil(cetAccess.subjectAccess[newSubject].remainingTime / 1000 / 60);
+        if (isCompetitiveExam && competitiveExamAccess.subjectAccess && competitiveExamAccess.subjectAccess[newSubject]?.isLocked) {
+            const remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, newSubject);
             toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
             return;
         }
@@ -160,44 +164,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     const currentSectionInfo = getCurrentSectionInfo();
 
-    // CET exam time-based subject access logic
-    const getCetSubjectAccess = () => {
-        if (!isCetExam || !startTime) return { allUnlocked: true };
+    // Enhanced subject access logic - STABLE OBJECT REFERENCES
+    const competitiveExamAccess = useMemo(() => {
+        if (!startTime || !isExamStarted) {
+            return { allUnlocked: true, subjectAccess: {} };
+        }
         
-        const currentTime = Date.now();
-        const timeElapsed = currentTime - startTime; // in milliseconds
-        const ninetyMinutes = 90 * 60 * 1000; // 90 minutes in milliseconds
-        
-        // Bio and Maths subjects are locked for first 90 minutes
-        const restrictedSubjects = ['Biology', 'Maths', 'Mathematics'];
-        const isTimeExpired = timeElapsed >= ninetyMinutes;
-        
-        const subjectAccess = {};
-        allSubjects.forEach(subject => {
-            const isRestricted = restrictedSubjects.some(restricted => 
-                subject.toLowerCase().includes(restricted.toLowerCase())
-            );
-            subjectAccess[subject] = {
-                isLocked: isRestricted && !isTimeExpired,
-                remainingTime: isRestricted && !isTimeExpired ? ninetyMinutes - timeElapsed : 0
-            };
-        });
+        // Use the proper utility function that handles all stream types correctly
+        const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
         
         return {
-            allUnlocked: isTimeExpired,
-            subjectAccess,
-            totalWaitTime: ninetyMinutes,
-            timeElapsed
+            allUnlocked: unlockSchedule.allUnlocked,
+            subjectAccess: unlockSchedule.subjectAccess || {},
+            streamConfig: unlockSchedule.streamConfig
         };
-    };
-
-    const cetAccess = getCetSubjectAccess();
+    }, [startTime, isExamStarted, exam]);
 
     // For submit button logic
     const totalQuestionsAll = (questions || []).length;
     const answeredQuestionsAll = Object.keys(answers).filter(qid => (questions || []).some(q => q._id === qid)).length;
     const isLastSubject = allSubjects[allSubjects.length - 1] === selectedSubject;
-    const isLastQuestion = currentQuestionIndex === (subjectQuestions.length - 1);
     // Submit button is now always available throughout the exam
 
     // Debug logging removed for security - do not log exam questions/answers
@@ -225,11 +211,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }, 100);
                 
                 setMarkedQuestions(new Set(progress.markedQuestions || []));
+                setVisitedQuestions(new Set(progress.visitedQuestions || []));
                 setStartTime(progress.startTime || Date.now());
-                // Calculate timeLeft based on startTime and duration
-                const duration = (exam.examDurationMinutes || 0) * 60 * 1000;
-                const now = Date.now();
-                const calculatedTimeLeft = Math.max(Math.floor((progress.startTime + duration - now) / 1000), 0);
+                // Calculate timeLeft using the new helper function
+                const calculatedTimeLeft = calculateRemainingTime(exam, progress.startTime);
                 setTimeLeft(calculatedTimeLeft);
                 setIsExamStarted(true);
                 toast.success("Previous progress loaded");
@@ -267,106 +252,128 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     useEffect(() => {
         const savedProgress = localStorage.getItem(progressKey);
         if (savedProgress) {
-            const progress = JSON.parse(savedProgress);
-            setAnswers(progress.answers || {});
-            setWarningCount(progress.warningCount || 0); // Restore warning count
-            
-            // Fix: Restore selected subject first, then set question index
-            if (progress.selectedSubject) {
-                setSelectedSubject(progress.selectedSubject);
+            try {
+                const progress = JSON.parse(savedProgress);
+                setAnswers(progress.answers || {});
+                setWarningCount(progress.warningCount || 0); // Restore warning count
+                
+                // Fix: Restore selected subject first, then set question index
+                if (progress.selectedSubject) {
+                    setSelectedSubject(progress.selectedSubject);
+                }
+                
+                // Reset to 0 to ensure proper loading, then set to saved index after subject is set
+                setCurrentQuestionIndex(0);
+                
+                // Use setTimeout to ensure subject change completes first
+                setTimeout(() => {
+                    setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
+                }, 100);
+                
+                setMarkedQuestions(new Set(progress.markedQuestions || []));
+                setVisitedQuestions(new Set(progress.visitedQuestions || []));
+                setStartTime(progress.startTime || Date.now());
+                // Calculate timeLeft based on exam type
+                if (exam.examAvailability === 'scheduled' && exam.endTime) {
+                    const now = Date.now();
+                    const examEndTime = new Date(exam.endTime).getTime();
+                    const calculatedTimeLeft = Math.max(Math.floor((examEndTime - now) / 1000), 0);
+                    setTimeLeft(calculatedTimeLeft);
+                } else {
+                    const duration = (exam.examDurationMinutes || 180) * 60 * 1000;
+                    const now = Date.now();
+                    const calculatedTimeLeft = Math.max(Math.floor((progress.startTime + duration - now) / 1000), 0);
+                    setTimeLeft(calculatedTimeLeft);
+                }
+                timerInitializedRef.current = true; // Mark timer as initialized when loading progress
+                setIsExamStarted(true);
+                toast.success("Previous progress loaded");
+            } catch (error) {
+                console.error('Error loading saved progress:', error);
+                // Clear corrupted progress
+                localStorage.removeItem(progressKey);
             }
-            
-            // Reset to 0 to ensure proper loading, then set to saved index after subject is set
-            setCurrentQuestionIndex(0);
-            
-            // Use setTimeout to ensure subject change completes first
-            setTimeout(() => {
-                setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
-            }, 100);
-            
-            setMarkedQuestions(new Set(progress.markedQuestions || []));
-            setStartTime(progress.startTime || Date.now());
-            // Calculate timeLeft based on startTime and duration
-            const duration = (exam.examDurationMinutes || 0) * 60 * 1000;
-            const now = Date.now();
-            const calculatedTimeLeft = Math.max(Math.floor((progress.startTime + duration - now) / 1000), 0);
-            setTimeLeft(calculatedTimeLeft);
-            setIsExamStarted(true);
-            toast.success("Previous progress loaded");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [progressKey]);
+
 
     // Mark initial question as visited when exam starts or when navigating
     useEffect(() => {
-        if (isExamStarted && !visitedQuestions.has(currentQuestionIndex)) {
-            setVisitedQuestions(prev => new Set([...prev, currentQuestionIndex]));
+        if (isExamStarted) {
+            const globalIndex = getGlobalQuestionIndex(currentQuestionIndex, selectedSubject);
+            if (!visitedQuestions.has(globalIndex)) {
+                setVisitedQuestions(prev => new Set([...prev, globalIndex]));
+            }
         }
-    }, [isExamStarted, currentQuestionIndex, visitedQuestions]);
+    }, [isExamStarted, currentQuestionIndex, selectedSubject]);
 
-    // Force re-render every minute for CET exam time updates and check for unlocked subjects
-    const [, forceUpdate] = useState({});
+    // Track previously locked subjects for notification purposes
     const [previouslyLockedSubjects, setPreviouslyLockedSubjects] = useState(new Set());
     
+    // Track subject unlocking with stable dependencies
     useEffect(() => {
-        if (isCetExam && isExamStarted) {
-            const interval = setInterval(() => {
-                const currentAccess = getCetSubjectAccess();
-                
-                // Check if any previously locked subjects are now unlocked
-                if (currentAccess.subjectAccess) {
-                    const currentlyLocked = new Set();
-                    const newlyUnlocked = [];
-                    
-                    Object.entries(currentAccess.subjectAccess).forEach(([subject, access]) => {
-                        if (access.isLocked) {
-                            currentlyLocked.add(subject);
-                        } else if (previouslyLockedSubjects.has(subject)) {
-                            newlyUnlocked.push(subject);
-                        }
-                    });
-                    
-                    // Show notification for newly unlocked subjects
-                    if (newlyUnlocked.length > 0) {
-                        toast.success(`🔓 ${newlyUnlocked.join(' & ')} ${newlyUnlocked.length > 1 ? 'are' : 'is'} now available!`);
-                    }
-                    
-                    setPreviouslyLockedSubjects(currentlyLocked);
-                }
-                
-                forceUpdate({});
-            }, 60000); // Update every minute
+        if (!isCompetitiveExam || !isExamStarted || !startTime) return;
+        
+        const checkInterval = setInterval(() => {
+            const elapsedMinutes = Math.floor((Date.now() - startTime) / (1000 * 60));
             
-            return () => clearInterval(interval);
-        }
-    }, [isCetExam, isExamStarted, previouslyLockedSubjects]);
+            // Check if we've hit the 90-minute unlock threshold
+            if (elapsedMinutes >= 90 && previouslyLockedSubjects.size > 0) {
+                const examType = isNeetExam ? 'NEET' : isCetExam ? 'CET' : 'JEE';
+                const subjectList = Array.from(previouslyLockedSubjects).join(' & ');
+                toast.success(`🔓 ${subjectList} now available in ${examType}!`);
+                setPreviouslyLockedSubjects(new Set());
+            }
+        }, 60000); // Check every minute
+        
+        return () => clearInterval(checkInterval);
+    }, [isCompetitiveExam, isExamStarted, startTime, isNeetExam, isCetExam]);
 
     // Initialize locked subjects on exam start
     useEffect(() => {
-        if (isCetExam && isExamStarted && cetAccess.subjectAccess) {
-            const lockedSubjects = new Set();
-            Object.entries(cetAccess.subjectAccess).forEach(([subject, access]) => {
-                if (access.isLocked) {
-                    lockedSubjects.add(subject);
-                }
-            });
-            setPreviouslyLockedSubjects(lockedSubjects);
+        if (isCompetitiveExam && isExamStarted && startTime) {
+            const elapsedMinutes = Math.floor((Date.now() - startTime) / (1000 * 60));
+            
+            if (elapsedMinutes < 90) {
+                const stream = exam?.stream?.toLowerCase() || '';
+                const restrictedSubjects = stream.includes('neet') 
+                    ? ['Biology']
+                    : ['Biology', 'Mathematics', 'Maths', 'Math'];
+                    
+                setPreviouslyLockedSubjects(new Set(restrictedSubjects));
+            }
         }
-    }, [isCetExam, isExamStarted]);
+    }, [isCompetitiveExam, isExamStarted, startTime, exam?.stream]);
 
     // Check if current subject is locked and switch to available subject
     useEffect(() => {
-        if (isCetExam && isExamStarted && cetAccess.subjectAccess && cetAccess.subjectAccess[selectedSubject]?.isLocked) {
-            // Find first available subject
+        if (!isCompetitiveExam || !isExamStarted || !startTime) return;
+        
+        const stream = exam?.stream?.toLowerCase() || '';
+        
+        // FIXED: Only apply restrictions to CET exams, not JEE
+        const isCetStream = (stream.includes('mht') && stream.includes('cet')) || 
+                           (stream.includes('cet') && !stream.includes('jee'));
+        
+        if (!isCetStream) return; // JEE and NEET have no restrictions
+        
+        const elapsedMinutes = Math.floor((Date.now() - startTime) / (1000 * 60));
+        if (elapsedMinutes >= 90) return; // All subjects unlocked after 90 min
+        
+        // Only CET has subject restrictions
+        const restrictedSubjects = ['Biology', 'Mathematics', 'Maths', 'Math'];
+            
+        if (restrictedSubjects.includes(selectedSubject)) {
             const availableSubject = allSubjects.find(subject => 
-                !cetAccess.subjectAccess[subject]?.isLocked
+                !restrictedSubjects.includes(subject)
             );
-            if (availableSubject && availableSubject !== selectedSubject) {
+            if (availableSubject) {
                 setSelectedSubject(availableSubject);
-                toast(`Switched to ${availableSubject} - ${selectedSubject} is still locked`);
+                toast(`Switched to ${availableSubject} - ${selectedSubject} is locked in CET`);
             }
         }
-    }, [isCetExam, isExamStarted, selectedSubject, cetAccess.subjectAccess, allSubjects]);
+    }, [isCompetitiveExam, isExamStarted, startTime, selectedSubject, exam?.stream, allSubjects]);
 
     // 2. Auto-save to localStorage only (no server calls during exam)
     useEffect(() => {
@@ -399,22 +406,45 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             setAnswers({});
             setCurrentQuestionIndex(0);
             setMarkedQuestions(new Set());
-            setTimeLeft((exam.examDurationMinutes || 0) * 60);
+            setVisitedQuestions(new Set());
+            setWarningCount(0);
+            // Set timer based on exam type without calling helper function
+            if (exam.examAvailability === 'scheduled' && exam.endTime) {
+                const examEndTime = new Date(exam.endTime).getTime();
+                setTimeLeft(Math.max(Math.floor((examEndTime - now) / 1000), 0));
+            } else {
+                setTimeLeft((exam.examDurationMinutes || 180) * 60);
+            }
         }
         setIsExamStarted(true);
         // Clear any previous warnings for this exam session
         warningsShownRef.current.clear();
-        saveExamProgress();
+        timerInitializedRef.current = false; // Reset timer initialization flag
         toast.success("Exam started! Good luck!");
     };
 
     // 6. Timer countdown: recalculate timeLeft based on startTime and duration with warnings
     useEffect(() => {
-        if (isExamStarted && startTime && timeLeft > 0) {
+        if (isExamStarted && startTime) {
             timerRef.current = setInterval(() => {
-                const duration = (exam.examDurationMinutes || 0) * 60 * 1000;
-                const now = Date.now();
-                const calculatedTimeLeft = Math.max(Math.floor((startTime + duration - now) / 1000), 0);
+                // Calculate remaining time differently for scheduled vs practice exams
+                let calculatedTimeLeft;
+                
+                if (exam.examAvailability === 'scheduled' && exam.endTime) {
+                    // For scheduled exams: remaining time until endTime
+                    const now = Date.now();
+                    const examEndTime = new Date(exam.endTime).getTime();
+                    calculatedTimeLeft = Math.max(Math.floor((examEndTime - now) / 1000), 0);
+                } else {
+                    // For practice exams: traditional countdown from duration
+                    const effectiveDuration = exam.examDurationMinutes || 180; // default 3 hours
+                    const durationMs = effectiveDuration * 60 * 1000;
+                    const currentTimeMs = Date.now();
+                    const elapsedMs = currentTimeMs - startTime;
+                    const remainingMs = Math.max(0, durationMs - elapsedMs);
+                    calculatedTimeLeft = Math.floor(remainingMs / 1000);
+                }
+                
                 setTimeLeft(calculatedTimeLeft);
                 
                 // Show time warnings
@@ -431,7 +461,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         if (warning.type === "error") {
                             toast.error(warning.message, { duration: 4000 });
                         } else {
-                            toast.warning(warning.message, { duration: 4000 });
+                            toast(warning.message, {
+                                icon: '⚠️',
+                                style: {
+                                    background: '#f59e0b',
+                                    color: '#fff',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                },
+                                duration: 4000
+                            });
                         }
                     }
                 });
@@ -446,7 +484,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
             };
         }
-    }, [isExamStarted, startTime, exam.examDurationMinutes]);
+    }, [isExamStarted, startTime]);
 
     // --- FULLSCREEN LOGIC START ---
     const [warningDialog, setWarningDialog] = useState(false);
@@ -694,7 +732,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             answers,
             score,
             totalMarks,
-            timeTaken: (exam.examDurationMinutes * 60) - timeLeft,
+            timeTaken: exam.examAvailability === 'scheduled' 
+                ? Math.floor((Date.now() - startTime) / 1000) // Actual time spent for scheduled exams
+                : (getEffectiveExamDuration(exam) * 60) - timeLeft, // Traditional calculation for practice exams
             completedAt: new Date().toISOString(),
             visitedQuestions: Array.from(visitedQuestions),
             markedQuestions: Array.from(markedQuestions),
@@ -870,7 +910,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setAnswers({});
         setCurrentQuestionIndex(0);
         setMarkedQuestions(new Set());
-        setTimeLeft(exam.examDurationMinutes * 60);
+        const effectiveDuration = getEffectiveExamDuration(exam);
+        setTimeLeft(effectiveDuration * 60);
         setIsExamStarted(false);
         setShowContinuePrompt(false);
         // Clear warning tracking for new exam
@@ -1026,9 +1067,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
                         <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
-                                // Check if subject is locked for CET exams
-                                const isLocked = isCetExam && cetAccess.subjectAccess && cetAccess.subjectAccess[subject]?.isLocked;
-                                const remainingTime = isLocked ? Math.ceil(cetAccess.subjectAccess[subject].remainingTime / 1000 / 60) : 0;
+                                // Check if subject is locked for competitive exams
+                                const isLocked = isCompetitiveExam && competitiveExamAccess.subjectAccess && competitiveExamAccess.subjectAccess[subject]?.isLocked;
+                                const remainingTime = isLocked ? getSubjectUnlockTime(competitiveExamAccess.subjectAccess, subject) : 0;
                                 
                                 return (
                                     <TabsTrigger 
@@ -1068,12 +1109,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         </div>
                     )}
                     
-                    {/* CET Time Restriction Info */}
-                    {isCetExam && !cetAccess.allUnlocked && (
+                    {/* Competitive Exam Time Restriction Info */}
+                    {isCompetitiveExam && !competitiveExamAccess.allUnlocked && (
                         <div className="mt-2 text-center">
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                                 <p className="text-xs text-amber-700 font-medium">
-                                    🔒 Bio & Maths papers will unlock in {Math.ceil((cetAccess.totalWaitTime - cetAccess.timeElapsed) / 1000 / 60)} minutes
+                                    {isNeetExam && '🔒 Biology paper will unlock in 90 minutes'}
+                                    {isCetExam && '🔒 Bio & Maths papers will unlock in 90 minutes'}
+                                    {isJeeExam && '🔒 Some sections may have time restrictions'}
                                 </p>
                             </div>
                         </div>
@@ -1138,14 +1181,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 questions={questions}
                                 answers={answers}
                                 markedQuestions={markedQuestions}
+                                visitedQuestions={visitedQuestions}
                                 currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
                                 onGoToQuestion={(index) => {
                                     handleNavigatorGoToQuestion(index);
                                     setShowMobileNavigator(false);
                                 }}
                                 isCetExam={isCetExam}
-                                cetAccess={cetAccess}
+                                cetAccess={competitiveExamAccess}
                                 isJeeExam={isJeeExam}
+                                isNeetExam={isNeetExam}
+                                isCompetitiveExam={isCompetitiveExam}
                                 selectedSubject={selectedSubject}
                                 isMobileOverlay={true}
                             />
@@ -1221,11 +1267,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         questions={questions}
                                         answers={answers}
                                         markedQuestions={markedQuestions}
+                                        visitedQuestions={visitedQuestions}
                                         currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
                                         onGoToQuestion={handleNavigatorGoToQuestion}
                                         isCetExam={isCetExam}
-                                        cetAccess={cetAccess}
+                                        cetAccess={competitiveExamAccess}
                                         isJeeExam={isJeeExam}
+                                        isNeetExam={isNeetExam}
+                                        isCompetitiveExam={isCompetitiveExam}
                                         selectedSubject={selectedSubject}
                                     />
                                 </div>

@@ -5,6 +5,7 @@ import { createExam } from '../../../../../server_actions/actions/examController
 import ExamList from './ExamList';
 import { toast } from 'react-hot-toast';
 import { data } from '../../../../../utils/examUtils/subject_Details';
+import { EXAM_DURATION_CONFIGS } from '../../../../../utils/examDurationHelpers';
 import { VicharCard, VicharCardHeader, VicharCardTitle, VicharCardContent } from '@/components/ui/vichar-card';
 import { VicharButton } from '@/components/ui/vichar-button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -88,14 +89,32 @@ export default function CreateExam({ onBack, collegeData }) {
         // eslint-disable-next-line
     }, [formData.standard]);
 
-    // Handle examAvailability change: clear times if practice
+    // Handle examAvailability change: clear times appropriately for both transitions
     useEffect(() => {
         if (formData.examAvailability === 'practice') {
+            // Clear times immediately when switching to practice
+            setValue('startTime', '');
+            setValue('endTime', '');
+        } else if (formData.examAvailability === 'scheduled') {
+            // Also clear times when switching to scheduled to prevent stale values
+            // User must re-enter appropriate times for new scheduled exam
             setValue('startTime', '');
             setValue('endTime', '');
         }
         // eslint-disable-next-line
     }, [formData.examAvailability]);
+
+    // Auto-set exam duration when stream changes (only if not already set)
+    useEffect(() => {
+        if (formData.stream && !formData.examDurationMinutes) {
+            // Get stream-based default duration from config
+            const streamConfig = EXAM_DURATION_CONFIGS[formData.stream];
+            const defaultDuration = streamConfig?.totalDuration || 180; // Default to 3 hours
+            setValue('examDurationMinutes', defaultDuration);
+        }
+        // eslint-disable-next-line
+    }, [formData.stream]);
+
 
     const handleSubjectChange = (subject) => {
         const currentSubjects = getValues('examSubject') || [];
@@ -110,6 +129,19 @@ export default function CreateExam({ onBack, collegeData }) {
         if (!values.examSubject || values.examSubject.length === 0) {
             toast.error("Please select at least one subject for the exam.");
             return;
+        }
+        
+        // Additional validation for scheduled exams to prevent stale datetime submission
+        if (values.examAvailability === 'scheduled') {
+            if (!values.startTime || !values.endTime) {
+                toast.error("Please select both start and end times for scheduled exams.");
+                return;
+            }
+            // Validate that end time is after start time
+            if (new Date(values.endTime) <= new Date(values.startTime)) {
+                toast.error("End time must be after start time.");
+                return;
+            }
         }
         const cleanStandard = typeof values.standard === 'string' ? values.standard.replace(/[^0-9]/g, '') : values.standard;
         const cleanExamData = {

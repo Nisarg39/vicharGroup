@@ -21,6 +21,18 @@ import {
     safeStandardDeviation,
     safeReduce
 } from "../../../utils/safeNumericOperations";
+// Import decimal evaluation utilities
+import { 
+  evaluateAnswer, 
+  validateEvaluationConfig 
+} from "../../../utils/decimalAnswerEvaluator.js";
+import { 
+  getEvaluationConfig, 
+  logConfigResolution,
+  getSafeDefaultConfig 
+} from "../../../utils/examEvaluationConfig.js";
+import { validateExamDuration } from "../../../utils/examDurationHelpers";
+import { getEffectiveExamDuration } from "../../../utils/examTimingUtils";
 
 
 // im getting error - Error: Maximum call stack size exceeded this has happened to me alot of times in this project and to solve it use JSON.parse(JSON.stringify(exam)) wherever needed
@@ -614,7 +626,6 @@ async function submitExamResultInternal(examData) {
       examId,
       studentId,
       answers,
-      score,
       totalMarks,
       timeTaken,
       completedAt,
@@ -659,32 +670,75 @@ async function submitExamResultInternal(examData) {
       };
     }
 
-    // Helper function to normalize answers for comparison based on model schema
+    // Enhanced helper function to normalize answers with backward compatibility
     const normalizeAnswer = (answer, question) => {
-      if (question.userInputAnswer) {
-        return answer;
+      try {
+        if (!answer) return null;
+        
+        // For MCQ questions, maintain existing array/string normalization
+        if (question.isMultipleAnswer || (Array.isArray(answer) && answer.length > 0)) {
+          // Handle MCMA - normalize array elements
+          return Array.isArray(answer) ? 
+            answer.map(a => String(a).trim().toLowerCase()) : 
+            [String(answer).trim().toLowerCase()];
+        }
+        
+        // For single answers (MCQ or numerical), return as trimmed string
+        return String(answer).trim();
+        
+      } catch (error) {
+        console.error('Error in normalizeAnswer:', error);
+        return String(answer || '').trim();
       }
-      if (Array.isArray(answer)) {
-        return answer.map(ans => {
-          if (typeof ans === 'string') {
-            const match = ans.match(/^[A-D]$/i);
-            if (match) return match[0].toUpperCase();
-            const htmlMatch = ans.match(/<p>([A-D])<\/p>/i);
-            if (htmlMatch) return htmlMatch[1].toUpperCase();
-            const complexMatch = ans.match(/<p>([A-D])\s*[^<]*<\/p>/i);
-            if (complexMatch) return complexMatch[1].toUpperCase();
+    };
+    
+    // Helper function to evaluate if answers match using advanced decimal comparison
+    const evaluateAnswerMatch = (userAnswer, correctAnswer, question) => {
+      try {
+        // Get evaluation configuration for this specific exam and question
+        let evaluationConfig = getEvaluationConfig(exam, question);
+        
+        // Validate configuration
+        if (!validateEvaluationConfig(evaluationConfig)) {
+          console.warn('Invalid evaluation config, using safe defaults for question:', question._id);
+          evaluationConfig = getSafeDefaultConfig();
+        }
+        
+        // Use the enhanced evaluation function
+        const evaluationResult = evaluateAnswer(userAnswer, correctAnswer, question, evaluationConfig);
+        
+        // Log evaluation details for debugging in development
+        if (evaluationResult.evaluationType === 'numerical' && process.env.NODE_ENV === 'development') {
+          logConfigResolution(evaluationConfig, exam, question);
+          console.log(`Question ${question._id} numerical evaluation:`, {
+            userAnswer,
+            correctAnswer,
+            result: evaluationResult.isMatch,
+            evaluationType: evaluationResult.evaluationType,
+            tolerance: evaluationConfig.tolerance,
+            difference: evaluationResult.details?.difference
+          });
+        }
+        
+        return evaluationResult;
+        
+      } catch (error) {
+        console.error('Error in evaluateAnswerMatch:', error);
+        
+        // Fallback to simple string comparison for safety
+        const userStr = String(userAnswer || '').trim().toLowerCase();
+        const correctStr = String(correctAnswer || '').trim().toLowerCase();
+        
+        return {
+          isMatch: userStr === correctStr,
+          evaluationType: 'fallback_string',
+          details: {
+            error: error.message,
+            userValue: userAnswer,
+            correctValue: correctAnswer
           }
-          return ans;
-        });
-      } else if (typeof answer === 'string') {
-        const match = answer.match(/^[A-D]$/i);
-        if (match) return match[0].toUpperCase();
-        const htmlMatch = answer.match(/<p>([A-D])<\/p>/i);
-        if (htmlMatch) return htmlMatch[1].toUpperCase();
-        const complexMatch = answer.match(/<p>([A-D])\s*[^<]*<\/p>/i);
-        if (complexMatch) return complexMatch[1].toUpperCase();
+        };
       }
-      return answer;
     };
 
     // 3. Calculate detailed score with question-specific negative marking
@@ -722,6 +776,9 @@ async function submitExamResultInternal(examData) {
         const questionCorrectAnswers = question.multipleAnswer || [];
         const normalizedUserAnswer = normalizeAnswer(userAnswer, question);
         const normalizedCorrectAnswers = normalizeAnswer(questionCorrectAnswers, question);
+        
+        // For MCMA, we still use the traditional array comparison as decimal evaluation
+        // doesn't apply to multiple choice scenarios
         
         // Analyze user's selections
         const correctSelected = normalizedUserAnswer.filter(ans => normalizedCorrectAnswers.includes(ans));
@@ -791,31 +848,39 @@ async function submitExamResultInternal(examData) {
           }
         });
       } else {
-        // MCQ (Single Choice) or Numerical logic
-        const normalizedUserAnswer = normalizeAnswer(userAnswer, question);
-        const normalizedCorrectAnswer = normalizeAnswer(question.answer, question);
-        if (normalizedUserAnswer === normalizedCorrectAnswer) {
-          // Use admin-configured positive marks instead of questionMarks for subject-specific scoring (like MHT-CET)
+        // MCQ (Single Choice) or Numerical logic with enhanced evaluation
+        const evaluationResult = evaluateAnswerMatch(userAnswer, question.answer, question);
+        
+        if (evaluationResult.isMatch) {
+          // Correct answer - use admin-configured positive marks
           finalScore += adminPositiveMarks;
           correctAnswersCount++;
           questionAnalysis.push({
             questionId: question._id,
             status: "correct",
             marks: adminPositiveMarks,
-            userAnswer: normalizedUserAnswer,
-            correctAnswer: normalizedCorrectAnswer,
+            userAnswer: evaluationResult.details?.userValue || userAnswer,
+            correctAnswer: evaluationResult.details?.correctValue || question.answer,
             negativeMarkingRule: questionNegativeMarkingRule.description,
+            evaluationType: evaluationResult.evaluationType,
+            evaluationDetails: evaluationResult.details,
+            isNumericalEvaluation: evaluationResult.evaluationType === 'numerical'
           });
         } else {
+          // Incorrect answer - apply negative marking
           finalScore -= adminNegativeMarks;
           incorrectAnswers++;
           questionAnalysis.push({
             questionId: question._id,
             status: "incorrect",
             marks: -adminNegativeMarks,
-            userAnswer: normalizedUserAnswer,
-            correctAnswer: normalizedCorrectAnswer,
+            userAnswer: evaluationResult.details?.userValue || userAnswer,
+            correctAnswer: evaluationResult.details?.correctValue || question.answer,
             negativeMarkingRule: questionNegativeMarkingRule.description,
+            evaluationType: evaluationResult.evaluationType,
+            evaluationDetails: evaluationResult.details,
+            isNumericalEvaluation: evaluationResult.evaluationType === 'numerical',
+            numericalDifference: evaluationResult.details?.difference
           });
         }
       }
@@ -969,7 +1034,7 @@ export async function getExamQuestions(examId) {
 
     const exam = await Exam.findById(examId)
       .populate("examQuestions")
-      .select("examQuestions examName examDurationMinutes totalMarks negativeMarks");
+      .select("examQuestions examName examDurationMinutes totalMarks negativeMarks stream");
 
     if (!exam) {
       return {
@@ -978,14 +1043,24 @@ export async function getExamQuestions(examId) {
       };
     }
 
+    // Calculate effective duration and validate
+    const effectiveDuration = getEffectiveExamDuration(exam);
+    const durationValidation = validateExamDuration(exam.stream, effectiveDuration);
+    
     // Use JSON.parse(JSON.stringify()) to break circular references
     const cleanExam = JSON.parse(JSON.stringify({
       _id: exam._id,
       examName: exam.examName,
-      examDurationMinutes: exam.examDurationMinutes,
+      examDurationMinutes: effectiveDuration, // Use effective duration
       totalMarks: exam.totalMarks,
       negativeMarks: exam.negativeMarks,
+      stream: exam.stream,
       questions: exam.examQuestions,
+      durationInfo: {
+        configured: exam.examDurationMinutes,
+        effective: effectiveDuration,
+        validation: durationValidation
+      }
     }));
 
     return {
@@ -1258,7 +1333,7 @@ export async function getAllExamAttempts(studentId, examId) {
     
     
     // Simple serialization without population for now
-    const cleanResults = results.map((result, i) => {
+    const cleanResults = results.map((result) => {
       return {
         _id: result._id,
         score: result.score,
@@ -1395,7 +1470,7 @@ export async function getEligibleExamsForStudent(studentId) {
           _id: exam._id,
           examName: exam.examName,
           examInstructions: exam.examInstructions,
-          examDurationMinutes: exam.examDurationMinutes,
+          examDurationMinutes: getEffectiveExamDuration(exam),
           totalMarks: exam.totalMarks,
           stream: exam.stream,
           standard: exam.standard,
@@ -1578,381 +1653,3 @@ export async function validateExamAccess(examId, studentId) {
 }
 
 
-export async function getStudentExamAnalytics(studentId) {
-  /**
-   * getStudentExamAnalytics(studentId)
-   * Flow:
-   * 1. Validate studentId 
-   * 2. Check student's college enrollments
-   * 3. Get all exam results for the student
-   * 4. Process analytics data (subject-wise, time-based, comparative)
-   * 5. Generate insights and recommendations
-   * 6. Return comprehensive analytics data
-   */
-  try {
-    await connectDB();
-
-    // 1. Validate studentId
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return {
-        success: false,
-        message: "Invalid student ID",
-      };
-    }
-
-    // 2. Find student and verify existence
-    const student = await Student.findById(studentId).lean();
-    if (!student) {
-      return {
-        success: false,
-        message: "Student not found",
-      };
-    }
-
-    // 3. Get student's college enrollments
-    const enrollments = await EnrolledStudent.find({
-      student: studentId,
-      status: 'approved'
-    }).populate({
-      path: 'college',
-      select: 'collegeName collegeCode collegeLogo collegeLocation'
-    }).lean();
-
-    if (!enrollments || enrollments.length === 0) {
-      return {
-        success: true,
-        message: "No college enrollments found",
-        analytics: {
-          student: {
-            _id: student._id,
-            studentName: student.studentName || student.name,
-            email: student.email
-          },
-          enrollments: [],
-          examResults: [],
-          overallStats: {
-            totalExamsAttempted: 0,
-            totalExamsAvailable: 0,
-            averagePercentage: 0,
-            bestPerformance: 0,
-            worstPerformance: 0,
-            totalTimeSpent: 0,
-            completionRate: 0
-          },
-          subjectWiseStats: [],
-          collegeWiseStats: [],
-          performanceOverTime: [],
-          insights: {
-            strengths: [],
-            improvements: [],
-            recommendations: []
-          }
-        }
-      };
-    }
-
-    // 4. Get college IDs for finding available exams
-    const collegeIds = enrollments.map(enrollment => enrollment.college._id);
-
-    // 5. Get all available exams from enrolled colleges
-    const availableExams = await Exam.find({
-      college: { $in: collegeIds },
-      examStatus: 'active'
-    }).select('_id examName stream standard examSubject college totalMarks examDurationMinutes').lean();
-
-    // 6. Get all exam results for this student
-    const examResults = await ExamResult.find({ 
-      student: studentId 
-    }).populate({
-      path: 'exam',
-      select: 'examName examSubject stream standard college totalMarks examDurationMinutes startTime endTime'
-    }).populate({
-      path: 'exam.college',
-      select: 'collegeName collegeCode collegeLogo'
-    }).sort({ completedAt: -1 }).lean();
-
-    // 7. Process analytics data
-    const analyticsData = await processStudentAnalyticsData(
-      student,
-      enrollments,
-      examResults,
-      availableExams
-    );
-
-    return {
-      success: true,
-      message: "Analytics data retrieved successfully",
-      analytics: analyticsData
-    };
-
-  } catch (error) {
-    console.error("Error fetching student exam analytics:", error);
-    return {
-      success: false,
-      message: `Error fetching analytics: ${error.message}`,
-    };
-  }
-}
-
-// Helper function to process analytics data
-async function processStudentAnalyticsData(student, enrollments, examResults, availableExams) {
-  // Basic student info
-  const studentInfo = {
-    _id: student._id,
-    studentName: student.studentName || student.name,
-    email: student.email
-  };
-
-  // College info
-  const collegeInfo = enrollments.map(enrollment => ({
-    _id: enrollment.college._id,
-    collegeName: enrollment.college.collegeName,
-    collegeCode: enrollment.college.collegeCode,
-    collegeLogo: enrollment.college.collegeLogo,
-    collegeLocation: enrollment.college.collegeLocation,
-    class: enrollment.class,
-    allocatedStreams: enrollment.allocatedStreams,
-    allocatedSubjects: enrollment.allocatedSubjects
-  }));
-
-  // Overall statistics
-  const totalExamsAttempted = examResults.length;
-  const totalExamsAvailable = availableExams.length;
-  
-  const percentages = examResults
-    .filter(result => result.score !== null && result.totalMarks > 0)
-    .map(result => (result.score / result.totalMarks) * 100);
-  
-  const averagePercentage = percentages.length > 0 
-    ? percentages.reduce((a, b) => a + b, 0) / percentages.length 
-    : 0;
-  
-  const bestPerformance = percentages.length > 0 ? Math.max(...percentages) : 0;
-  const worstPerformance = percentages.length > 0 ? Math.min(...percentages) : 0;
-  
-  const totalTimeSpent = examResults.reduce((total, result) => total + (result.timeTaken || 0), 0);
-  const completionRate = totalExamsAvailable > 0 ? (totalExamsAttempted / totalExamsAvailable) * 100 : 0;
-
-  // Subject-wise performance
-  const subjectWiseStats = {};
-  examResults.forEach(result => {
-    if (result.subjectPerformance && result.subjectPerformance.length > 0) {
-      result.subjectPerformance.forEach(subj => {
-        if (!subjectWiseStats[subj.subject]) {
-          subjectWiseStats[subj.subject] = {
-            subject: subj.subject,
-            totalAttempts: 0,
-            totalQuestions: 0,
-            totalCorrect: 0,
-            totalIncorrect: 0,
-            totalUnanswered: 0,
-            totalMarks: 0,
-            totalPossibleMarks: 0,
-            averageAccuracy: 0,
-            bestPerformance: 0,
-            worstPerformance: 100,
-            trend: 'stable'
-          };
-        }
-
-        const stats = subjectWiseStats[subj.subject];
-        stats.totalAttempts++;
-        stats.totalQuestions += subj.totalQuestions || 0;
-        stats.totalCorrect += subj.correct || 0;
-        stats.totalIncorrect += subj.incorrect || 0;
-        stats.totalUnanswered += subj.unanswered || 0;
-        stats.totalMarks += subj.marks || 0;
-        stats.totalPossibleMarks += subj.totalMarks || 0;
-
-        const subjectPercentage = subj.totalMarks > 0 ? (subj.marks / subj.totalMarks) * 100 : 0;
-        stats.bestPerformance = Math.max(stats.bestPerformance, subjectPercentage);
-        stats.worstPerformance = Math.min(stats.worstPerformance, subjectPercentage);
-      });
-    }
-  });
-
-  // Calculate averages for subject-wise stats
-  Object.values(subjectWiseStats).forEach(stats => {
-    stats.averageAccuracy = stats.totalQuestions > 0 
-      ? (stats.totalCorrect / stats.totalQuestions) * 100 
-      : 0;
-    stats.averagePercentage = stats.totalPossibleMarks > 0 
-      ? (stats.totalMarks / stats.totalPossibleMarks) * 100 
-      : 0;
-  });
-
-  // College-wise performance
-  const collegeWiseStats = {};
-  examResults.forEach(result => {
-    if (result.exam && result.exam.college) {
-      const collegeId = result.exam.college._id || result.exam.college;
-      const collegeName = result.exam.college.collegeName || 'Unknown College';
-      
-      if (!collegeWiseStats[collegeId]) {
-        collegeWiseStats[collegeId] = {
-          collegeId: collegeId,
-          collegeName: collegeName,
-          totalExamsAttempted: 0,
-          totalMarks: 0,
-          totalPossibleMarks: 0,
-          averagePercentage: 0,
-          bestPerformance: 0,
-          worstPerformance: 100
-        };
-      }
-
-      const stats = collegeWiseStats[collegeId];
-      stats.totalExamsAttempted++;
-      stats.totalMarks += result.score || 0;
-      stats.totalPossibleMarks += result.totalMarks || 0;
-
-      const examPercentage = result.totalMarks > 0 ? (result.score / result.totalMarks) * 100 : 0;
-      stats.bestPerformance = Math.max(stats.bestPerformance, examPercentage);
-      stats.worstPerformance = Math.min(stats.worstPerformance, examPercentage);
-    }
-  });
-
-  // Calculate averages for college-wise stats
-  Object.values(collegeWiseStats).forEach(stats => {
-    stats.averagePercentage = stats.totalPossibleMarks > 0 
-      ? (stats.totalMarks / stats.totalPossibleMarks) * 100 
-      : 0;
-  });
-
-  // Performance over time (last 10 exams)
-  const recentResults = examResults.slice(0, 10);
-  const performanceOverTime = recentResults.reverse().map(result => ({
-    examName: result.exam?.examName || 'Unknown Exam',
-    examDate: result.completedAt,
-    percentage: result.totalMarks > 0 ? (result.score / result.totalMarks) * 100 : 0,
-    timeTaken: result.timeTaken || 0,
-    stream: result.exam?.stream || 'Unknown',
-    standard: result.exam?.standard || 'Unknown'
-  }));
-
-  // Generate insights and recommendations
-  const insights = generateStudentInsights(
-    percentages,
-    Object.values(subjectWiseStats),
-    performanceOverTime,
-    totalExamsAttempted
-  );
-
-  return {
-    student: studentInfo,
-    enrollments: collegeInfo,
-    examResults: examResults.slice(0, 20), // Limit to recent 20 results
-    overallStats: {
-      totalExamsAttempted,
-      totalExamsAvailable,
-      averagePercentage: Math.round(averagePercentage * 100) / 100,
-      bestPerformance: Math.round(bestPerformance * 100) / 100,
-      worstPerformance: Math.round(worstPerformance * 100) / 100,
-      totalTimeSpent: Math.round(totalTimeSpent / 60), // Convert to minutes
-      completionRate: Math.round(completionRate * 100) / 100
-    },
-    subjectWiseStats: Object.values(subjectWiseStats).map(stats => ({
-      ...stats,
-      averageAccuracy: Math.round(stats.averageAccuracy * 100) / 100,
-      averagePercentage: Math.round(stats.averagePercentage * 100) / 100,
-      bestPerformance: Math.round(stats.bestPerformance * 100) / 100,
-      worstPerformance: Math.round(stats.worstPerformance * 100) / 100
-    })),
-    collegeWiseStats: Object.values(collegeWiseStats).map(stats => ({
-      ...stats,
-      averagePercentage: Math.round(stats.averagePercentage * 100) / 100,
-      bestPerformance: Math.round(stats.bestPerformance * 100) / 100,
-      worstPerformance: Math.round(stats.worstPerformance * 100) / 100
-    })),
-    performanceOverTime,
-    insights
-  };
-}
-
-// Helper function to generate insights and recommendations
-function generateStudentInsights(percentages, subjectStats, performanceOverTime, totalExamsAttempted) {
-  const insights = {
-    strengths: [],
-    improvements: [],
-    recommendations: []
-  };
-
-  if (totalExamsAttempted === 0) {
-    insights.recommendations.push("Start taking exams to build your performance analytics");
-    return insights;
-  }
-
-  const averagePercentage = percentages.length > 0 
-    ? percentages.reduce((a, b) => a + b, 0) / percentages.length 
-    : 0;
-
-  // Performance level insights
-  if (averagePercentage >= 85) {
-    insights.strengths.push("Excellent overall academic performance");
-    insights.recommendations.push("Continue your excellent work and consider mentoring other students");
-  } else if (averagePercentage >= 70) {
-    insights.strengths.push("Good overall academic performance");
-    insights.recommendations.push("Focus on weak subjects to reach excellence");
-  } else if (averagePercentage >= 50) {
-    insights.improvements.push("Average performance with room for improvement");
-    insights.recommendations.push("Increase study time and focus on understanding concepts");
-  } else {
-    insights.improvements.push("Below average performance requires immediate attention");
-    insights.recommendations.push("Seek help from teachers and create a structured study plan");
-  }
-
-  // Subject-wise insights - Safe reduce operations
-  const bestSubject = safeReduce(
-    subjectStats, 
-    (best, current) => 
-      safeParseNumber(current.averagePercentage, 0) > safeParseNumber(best.averagePercentage, 0) ? current : best, 
-    subjectStats[0] || { subject: 'None', averagePercentage: 0 },
-    { subject: 'None', averagePercentage: 0 }
-  );
-
-  const worstSubject = safeReduce(
-    subjectStats,
-    (worst, current) => 
-      safeParseNumber(current.averagePercentage, 100) < safeParseNumber(worst.averagePercentage, 100) ? current : worst, 
-    subjectStats[0] || { subject: 'None', averagePercentage: 100 },
-    { subject: 'None', averagePercentage: 100 }
-  );
-
-  if (bestSubject && bestSubject.averagePercentage > 75) {
-    insights.strengths.push(`Strong performance in ${bestSubject.subject}`);
-  }
-
-  if (worstSubject && worstSubject.averagePercentage < 60) {
-    insights.improvements.push(`Need improvement in ${worstSubject.subject}`);
-    insights.recommendations.push(`Allocate more study time to ${worstSubject.subject}`);
-  }
-
-  // Note: Time management insights removed as per-question timing data is not available
-
-  // Trend analysis
-  if (performanceOverTime.length >= 3) {
-    const recentAvg = performanceOverTime.slice(-3).reduce((sum, exam) => sum + exam.percentage, 0) / 3;
-    const earlierAvg = performanceOverTime.slice(0, 3).reduce((sum, exam) => sum + exam.percentage, 0) / 3;
-    
-    if (recentAvg > earlierAvg + 10) {
-      insights.strengths.push("Shows improving trend in recent exams");
-    } else if (recentAvg < earlierAvg - 10) {
-      insights.improvements.push("Shows declining trend in recent exams");
-      insights.recommendations.push("Review study methods and seek guidance to reverse the downward trend");
-    }
-  }
-
-  // Consistency insights - Fixed variance calculation
-  if (percentages.length > 2) {
-    const standardDeviation = safeStandardDeviation(percentages, 0);
-    
-    if (standardDeviation < 10) {
-      insights.strengths.push("Consistent performance across exams");
-    } else if (standardDeviation > 20) {
-      insights.improvements.push("Inconsistent performance across exams");
-      insights.recommendations.push("Focus on building consistent study habits");
-    }
-  }
-
-  return insights;
-}

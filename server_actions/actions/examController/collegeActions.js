@@ -18,6 +18,8 @@ import {
     standardPercentage,
     safeParseNumber
 } from "../../../utils/safeNumericOperations"
+import { getEffectiveExamDuration, validateExamDuration } from "../../../utils/examDurationHelpers"
+import { calculateTimeEfficiency } from "../../../utils/examTimingUtils"
 
 
 
@@ -2617,7 +2619,8 @@ export async function getAdvancedExamAnalytics(details, examId) {
             }
         }
         
-        const allocatedTime = exam.examDurationMinutes * 60 // in seconds
+        const effectiveDuration = getEffectiveExamDuration(exam);
+        const allocatedTime = effectiveDuration * 60 // in seconds
         const validTimes = examResults
             .map(r => r.timeTaken)
             .filter(time => time && time > 0)
@@ -3035,8 +3038,8 @@ export async function getDetailedStudentPerformanceAnalysis(details, examId, stu
             totalTimeSpent: studentResult.timeTaken ? Math.round(studentResult.timeTaken / 60) : 0,
             averageTimePerQuestion: questionAnalysis.length > 0 && studentResult.timeTaken ? 
                 Math.round((studentResult.timeTaken / questionAnalysis.length) * 100) / 100 : 0,
-            timeEfficiency: exam.examDurationMinutes && studentResult.timeTaken ? 
-                Math.round(((exam.examDurationMinutes * 60 - studentResult.timeTaken) / (exam.examDurationMinutes * 60)) * 100 * 100) / 100 : 0
+            timeEfficiency: studentResult.timeTaken ? 
+                calculateTimeEfficiency(studentResult.timeTaken, exam) : 0
         }
         
         const performanceInsights = {

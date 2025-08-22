@@ -109,24 +109,15 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   
   // Check if exam is scheduled and still in progress
   const isScheduledExamInProgress = () => {
-    console.log('Exam object:', exam)
-    console.log('Exam availability:', exam?.examAvailability)
-    console.log('Exam status:', exam?.status)
-    console.log('Exam endTime:', exam?.endTime)
-    
     // Check if exam is scheduled type
     const isScheduled = exam?.examAvailability === 'scheduled'
     
     if (isScheduled && exam?.endTime) {
       const currentTime = new Date()
       const examEndTime = new Date(exam.endTime)
-      console.log('Current time:', currentTime)
-      console.log('Exam end time:', examEndTime)
-      console.log('Is exam still in progress?', currentTime < examEndTime)
       return currentTime < examEndTime
     }
     
-    console.log('Not a scheduled exam or no endTime found')
     return false
   }
 
@@ -798,8 +789,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Main Performance Circle */}
-              <div className="flex flex-col items-center justify-center gap-6 mb-6">
+              {/* Circular Diagrams - Side by side on desktop, stacked on mobile */}
+              <div className="flex flex-col lg:flex-row lg:justify-center lg:items-start gap-8 lg:gap-12 mb-6">
+                {/* Main Performance Circle */}
                 <div className="flex flex-col items-center">
                   <CircularProgress 
                     percentage={totalMarks > 0 ? safeNumber((score / totalMarks) * 100, 0, 0, 100) : 0} 
@@ -812,12 +804,11 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                     <div className="text-sm text-gray-600">{score} / {totalMarks} marks</div>
                   </div>
                 </div>
-              </div>
 
-              {/* Question Distribution Pie Chart */}
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <svg width="200" height="200" className="transform -rotate-90">
+                {/* Question Distribution Pie Chart */}
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                  <svg width="150" height="150" className="transform -rotate-90">
                     {(() => {
                       const total = correctAnswers + incorrectAnswers + unattempted;
                       if (total === 0) return null;
@@ -826,7 +817,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       const incorrectPercentage = safeNumber((incorrectAnswers / total) * 100, 0, 0, 100);
                       const unattemptedPercentage = safeNumber((unattempted / total) * 100, 0, 0, 100);
                       
-                      const radius = 80;
+                      const radius = 60;
                       const circumference = 2 * Math.PI * radius;
                       
                       const correctStroke = (correctPercentage / 100) * circumference;
@@ -840,8 +831,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           {/* Correct answers segment */}
                           {correctAnswers > 0 && (
                             <circle
-                              cx="100"
-                              cy="100"
+                              cx="75"
+                              cy="75"
                               r={radius}
                               fill="transparent"
                               stroke="#10B981"
@@ -855,8 +846,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           {/* Incorrect answers segment */}
                           {incorrectAnswers > 0 && (
                             <circle
-                              cx="100"
-                              cy="100"
+                              cx="75"
+                              cy="75"
                               r={radius}
                               fill="transparent"
                               stroke="#EF4444"
@@ -870,8 +861,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           {/* Unattempted segment */}
                           {unattempted > 0 && (
                             <circle
-                              cx="100"
-                              cy="100"
+                              cx="75"
+                              cy="75"
                               r={radius}
                               fill="transparent"
                               stroke="#9CA3AF"
@@ -886,11 +877,16 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                       );
                     })()}
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute top-0 left-0 w-[150px] h-[150px] flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900">{totalQuestions}</div>
                       <div className="text-xs text-gray-600">Questions</div>
                     </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <div className="text-lg font-semibold text-gray-900">Question Distribution</div>
+                    <div className="text-sm text-gray-600">{totalQuestions} total questions</div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -1181,25 +1177,8 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                 <Target className="w-5 h-5 text-amber-600" />
                 Marking Scheme
               </CardTitle>
-              <CardDescription className="text-gray-600">
-                Actual super admin marking rules used to evaluate this exam
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Informational note */}
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <BookOpen className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-blue-700">
-                      <strong>Note:</strong> This section shows the actual super admin marking rules that were applied to evaluate your exam submission. 
-                      These are the specific rules configured by administrators and used in the scoring process.
-                    </p>
-                  </div>
-                </div>
-              </div>
               
               <div className="space-y-4">
                 {markingDetails.isSubjectWise ? (
@@ -1266,23 +1245,6 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   </div>
                 )}
 
-                {/* Rule Information for all exam types */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="font-semibold text-blue-900">General Marking Rule</span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="font-medium text-gray-700">Description:</span> 
-                      <span className="text-gray-800 ml-1">{markingDetails.ruleDescription}</span>
-                    </div>
-                    <div><span className="font-medium text-gray-700">Source:</span> 
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {markingDetails.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : markingDetails.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Additional actual rule details if available */}
                 {result?.negativeMarkingInfo?.defaultRuleUsed && (
@@ -1349,98 +1311,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                   </div>
                 </div>
 
-                {/* Rule Source Information - Show for actual applied rules */}
-                {result?.negativeMarkingInfo && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      <span className="font-semibold text-gray-900">Actually Applied Rule (for reference)</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div><span className="font-medium text-gray-700">Rule Source:</span> 
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {result.negativeMarkingInfo.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : result.negativeMarkingInfo.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
-                        </Badge>
-                      </div>
-                      {result.negativeMarkingInfo.ruleDescription && (
-                        <div><span className="font-medium text-gray-700">Description:</span> <span className="text-gray-800">{result.negativeMarkingInfo.ruleDescription}</span></div>
-                      )}
-                      <div className="text-xs text-gray-600 mt-2 italic">
-                        Note: The marking scheme above shows the actual super admin rules used for evaluation. This section provides additional details about the specific rule application for your result.
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-                {/* General Guidelines */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                    <span className="font-semibold text-gray-900">Super Admin Marking Guidelines</span>
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    {markingDetails.isSubjectWise ? (
-                      // Subject-wise marking guidelines
-                      <>
-                        {Object.entries(markingDetails.subjects).map(([subject, marks]) => (
-                          <li key={subject} className="flex items-start gap-2">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span>{subject} questions carry {marks.correct} mark{marks.correct !== 1 ? 's' : ''} each for correct answers</span>
-                          </li>
-                        ))}
-                        <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-blue-800 font-medium">
-                            {markingDetails.negativeMarks > 0 ? `Negative marking may apply: -${markingDetails.negativeMarks} mark(s) for incorrect answers` : 'No negative marking applies to this exam'}
-                          </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span>Multiple choice questions: Only one correct answer per question</span>
-                        </li>
-                      </>
-                    ) : (
-                      // Standard guidelines for other exams
-                      <>
-                        <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span>Each question carries {markingDetails.positiveMarks} mark{markingDetails.positiveMarks !== 1 ? 's' : ''} for correct answers</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span>Multiple choice questions: Only one correct answer unless marked as multiple correct</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span>Numerical questions: Usually no negative marking applies</span>
-                        </li>
-                        {markingDetails.negativeMarks > 0 && (
-                          <li className="flex items-start gap-2">
-                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span className="text-red-800 font-medium">Negative marking: -{markingDetails.negativeMarks} mark{markingDetails.negativeMarks !== 1 ? 's' : ''} for incorrect answers</span>
-                          </li>
-                        )}
-                        {markingDetails.negativeMarks === 0 && (
-                          <li className="flex items-start gap-2">
-                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span className="text-green-800 font-medium">No negative marking applies to this exam</span>
-                          </li>
-                        )}
-                      </>
-                    )}
-                    {/* Warning System Explanation */}
-                    <li className="flex items-start gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${warnings > 0 ? 'bg-orange-500' : 'bg-blue-500'}`}></div>
-                      <span>
-                        <span className="font-medium">Warning System:</span> 
-                        {warnings === 0 
-                          ? ' You maintained perfect exam conduct with no violations' 
-                          : ` You received ${warnings} warning${warnings > 1 ? 's' : ''} for exam conduct violations (e.g., exiting fullscreen mode)`
-                        }
-                      </span>
-                    </li>
-                  </ul>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -1659,6 +1530,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                               <p className="text-xs font-medium text-gray-700 mb-1">Your Answer:</p>
                               <p className="text-gray-900 text-sm">{analysis.userAnswer || 'No answer provided'}</p>
                             </div>
+                            {/* Show correct answer if question was unattempted or answered incorrectly */}
+                            {(!analysis.userAnswer || analysis.status !== 'correct') && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                                <p className="text-xs font-medium text-green-700 mb-1">Correct Answer:</p>
+                                <p className="text-green-900 text-sm">{question.answer}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                         {/* Explanation or Additional Info */}
@@ -1830,6 +1708,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                               <p className="text-xs font-medium text-gray-700 mb-1">Your Answer:</p>
                               <p className="text-gray-900 text-sm">{analysis.userAnswer || 'No answer provided'}</p>
                             </div>
+                            {/* Show correct answer if question was unattempted or answered incorrectly */}
+                            {(!analysis.userAnswer || analysis.status !== 'correct') && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                                <p className="text-xs font-medium text-green-700 mb-1">Correct Answer:</p>
+                                <p className="text-green-900 text-sm">{question.answer}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                         {/* Explanation or Additional Info */}

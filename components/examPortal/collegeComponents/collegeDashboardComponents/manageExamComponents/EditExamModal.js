@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { updateExam } from '../../../../../server_actions/actions/examController/collegeActions';
 import { toast } from 'react-hot-toast';
+import { EXAM_DURATION_CONFIGS } from '../../../../../utils/examDurationHelpers';
 
 export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, collegeData }) {
     const [formData, setFormData] = useState({
@@ -88,7 +89,19 @@ export default function EditExamModal({ exam, isOpen, onClose, onExamUpdated, co
         }
     }, [exam, isOpen]);
 
-    // Note: Negative marking rule fetching removed - using admin defaults only
+    // Auto-set exam duration when stream changes (only if not already set)
+    useEffect(() => {
+        if (formData.stream && !formData.examDurationMinutes) {
+            // Get stream-based default duration from config
+            const streamConfig = EXAM_DURATION_CONFIGS[formData.stream];
+            const defaultDuration = streamConfig?.totalDuration || 180; // Default to 3 hours
+            setFormData(prev => ({
+                ...prev,
+                examDurationMinutes: defaultDuration
+            }));
+        }
+    }, [formData.stream]);
+
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;

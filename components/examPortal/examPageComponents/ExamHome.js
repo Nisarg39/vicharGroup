@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 import { useSelector, useDispatch } from "react-redux"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { studentDetails } from "../../../features/login/LoginSlice"
-import { checkExamEligibility, submitExamResult, getStudentExamResults, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
+import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
 
 // Import sub-components
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
@@ -15,7 +15,6 @@ import ExamHeader from "./examHomeComponents/ExamHeader"
 import PreviousAttemptAlert from "./examHomeComponents/PreviousAttemptAlert"
 import ExamDetailsCard from "./examHomeComponents/ExamDetailsCard"
 import ExamAttemptsTable from "./examHomeComponents/ExamAttemptsTable"
-import OfflineCapabilitiesCard from "./examHomeComponents/OfflineCapabilitiesCard"
 
 // Import main components
 import ExamInterface from "./ExamInterface"
@@ -206,11 +205,29 @@ export default function ExamHome({ examId }) {
                 if (examResult) {
                     setCurrentView('result')
                 } else {
-                    // Fetch the latest result from database and show it
-                    const latestResult = await fetchLatestExamResult()
-                    if (latestResult) {
-                        setExamResult(latestResult)
-                        setCurrentView('result')
+                    // Fetch the latest result from database and show it using consistent method
+                    try {
+                        const result = await getAllExamAttempts(student._id, examId);
+                        if (result.success && result.attempts && result.attempts.length > 0) {
+                            const latestAttempt = result.attempts[0];
+                            const formattedResult = {
+                                score: latestAttempt.score,
+                                totalMarks: latestAttempt.totalMarks,
+                                percentage: latestAttempt.percentage,
+                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                                unattempted: latestAttempt.statistics?.unattempted || 0,
+                                timeTaken: latestAttempt.timeTaken,
+                                completedAt: latestAttempt.completedAt,
+                                questionAnalysis: latestAttempt.questionAnalysis || [],
+                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                                statistics: latestAttempt.statistics || {}
+                            };
+                            setExamResult(formattedResult);
+                            setCurrentView('result');
+                        }
+                    } catch (error) {
+                        console.error('Error fetching latest result:', error);
                     }
                 }
             }
@@ -309,19 +326,51 @@ export default function ExamHome({ examId }) {
         }
     }, [examId])
 
-    // Cache exam data with timestamp for validation
+    // Cache exam data with intelligent storage management
     const cacheExamData = useCallback((examData, questions) => {
         try {
             // Add timestamp to cached data for validation
             const cacheData = {
                 exam: examData,
                 timestamp: Date.now(),
-                cacheVersion: '1.0' // Version for cache invalidation
+                cacheVersion: '1.0'
             }
+            
+            // Cache exam metadata (smaller)
             localStorage.setItem(`exam_${examId}`, JSON.stringify(cacheData))
-            localStorage.setItem(`exam_questions_${examId}`, JSON.stringify(questions))
+            
+            // For large question sets, only cache essential data
+            if (questions && questions.length > 0) {
+                const questionsString = JSON.stringify(questions);
+                const sizeInMB = new Blob([questionsString]).size / (1024 * 1024);
+                
+                if (sizeInMB > 4) {
+                    // Skip caching large question sets to prevent quota errors
+                    console.warn(`Question set too large (${sizeInMB.toFixed(1)}MB) - skipping localStorage cache`);
+                    return;
+                }
+                
+                localStorage.setItem(`exam_questions_${examId}`, questionsString);
+            }
         } catch (error) {
-            console.error('Error caching exam data:', error)
+            if (error.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded - clearing old data and retrying');
+                // Clear old exam data and retry
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('exam_') && !key.includes(examId)) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                // Retry with just exam metadata
+                try {
+                    const cacheData = { exam: examData, timestamp: Date.now(), cacheVersion: '1.0' };
+                    localStorage.setItem(`exam_${examId}`, JSON.stringify(cacheData));
+                } catch (retryError) {
+                    console.error('Failed to cache even after cleanup:', retryError);
+                }
+            } else {
+                console.error('Error caching exam data:', error);
+            }
         }
     }, [examId])
 
@@ -361,57 +410,6 @@ export default function ExamHome({ examId }) {
         }
     }, [examId])
 
-    // Fetch latest exam result
-    const fetchLatestExamResult = useCallback(async () => {
-        if (!student?._id) return null
-        
-        try {
-            // Fetching exam results for student
-            const results = await getStudentExamResults(student._id)
-            // Retrieved exam results
-            
-            if (results.success && results.results.length > 0) {
-                // Found exam results
-                
-                // Find the result for this specific exam - try multiple matching strategies
-                let examResult = results.results.find(result => 
-                    result.examName === exam?.examName
-                )
-                
-                if (!examResult) {
-                    examResult = results.results.find(result => 
-                        result._id === examId
-                    )
-                }
-                
-                if (!examResult) {
-                    // Try to find by exam ID in the result data
-                    examResult = results.results.find(result => 
-                        result.exam && result.exam._id === examId
-                    )
-                }
-                
-                // Matched exam result
-                
-                if (examResult) {
-                    return {
-                        score: examResult.score,
-                        totalMarks: examResult.totalMarks,
-                        percentage: examResult.percentage,
-                        correctAnswers: examResult.statistics?.correctAnswers || 0,
-                        incorrectAnswers: examResult.statistics?.incorrectAnswers || 0,
-                        unattempted: examResult.statistics?.unattempted || 0,
-                        timeTaken: examResult.timeTaken,
-                        completedAt: examResult.completedAt,
-                        questionAnalysis: examResult.questionAnalysis || []
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching exam result:', error)
-        }
-        return null
-    }, [student?._id, exam?.examName, examId])
 
     // Check if student has already attempted this exam
     const checkPreviousAttempt = async () => {
@@ -504,7 +502,15 @@ export default function ExamHome({ examId }) {
             if (cachedExam) {
                 setExam(cachedExam)
                 setIsEligible(true)
-                toast.warning('Using cached exam data due to connection issues')
+                toast('Using cached exam data due to connection issues', {
+                    icon: '⚠️',
+                    style: {
+                        background: '#f59e0b',
+                        color: '#fff',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                    },
+                    duration: 4000
+                })
                 
                 const cachedQuestions = localStorage.getItem(`exam_questions_${examId}`)
                 if (cachedQuestions) {
@@ -722,23 +728,28 @@ export default function ExamHome({ examId }) {
                         
                         // Update attempts
                         const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                        if (updatedAttempts.success) {
+                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
                             setAllAttempts(updatedAttempts.attempts);
-                            if (updatedAttempts.attempts.length > 0) {
-                                setPreviousResult({
-                                    score: result.result.score,
-                                    totalMarks: result.result.totalMarks,
-                                    percentage: result.result.percentage,
-                                    statistics: {
-                                        correctAnswers: result.result.statistics?.correctAnswers || 0,
-                                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                                        unattempted: result.result.statistics?.unattempted || 0
-                                    },
-                                    timeTaken: result.result.timeTaken,
-                                    completedAt: result.result.completedAt,
-                                    questionAnalysis: result.result.questionAnalysis || []
-                                });
-                            }
+                            
+                            // Use the latest attempt data for consistent structure
+                            const latestAttempt = updatedAttempts.attempts[0];
+                            const formattedResult = {
+                                score: latestAttempt.score,
+                                totalMarks: latestAttempt.totalMarks,
+                                percentage: latestAttempt.percentage,
+                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                                unattempted: latestAttempt.statistics?.unattempted || 0,
+                                timeTaken: latestAttempt.timeTaken,
+                                completedAt: latestAttempt.completedAt,
+                                questionAnalysis: latestAttempt.questionAnalysis || [],
+                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                                statistics: latestAttempt.statistics || {}
+                            };
+                            
+                            // Store the properly formatted result and update previous result
+                            setExamResult(formattedResult);
+                            setPreviousResult(formattedResult);
                         }
                         
                         // Show home view with a special message
@@ -756,30 +767,36 @@ export default function ExamHome({ examId }) {
                         );
                     } else {
                         // For practice exams or scheduled exams after end time, show results immediately
-                        setExamResult(result.result);
-                        
                         // IMMEDIATELY refresh attempts after submission to validate reattempt logic
                         const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                        if (updatedAttempts.success) {
+                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
                             setAllAttempts(updatedAttempts.attempts);
                             // Update hasAttempted state since we now have at least one attempt
                             setHasAttempted(true);
+                            
+                            // Use the latest attempt data for consistent structure
+                            const latestAttempt = updatedAttempts.attempts[0];
+                            const formattedResult = {
+                                score: latestAttempt.score,
+                                totalMarks: latestAttempt.totalMarks,
+                                percentage: latestAttempt.percentage,
+                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                                unattempted: latestAttempt.statistics?.unattempted || 0,
+                                timeTaken: latestAttempt.timeTaken,
+                                completedAt: latestAttempt.completedAt,
+                                questionAnalysis: latestAttempt.questionAnalysis || [],
+                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                                statistics: latestAttempt.statistics || {}
+                            };
+                            
+                            setExamResult(formattedResult);
+                            
                             // Update previous result state for the "View Previous Result" functionality
-                            if (updatedAttempts.attempts.length > 0) {
-                                setPreviousResult({
-                                    score: result.result.score,
-                                    totalMarks: result.result.totalMarks,
-                                    percentage: result.result.percentage,
-                                    statistics: {
-                                        correctAnswers: result.result.statistics?.correctAnswers || 0,
-                                        incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
-                                        unattempted: result.result.statistics?.unattempted || 0
-                                    },
-                                    timeTaken: result.result.timeTaken,
-                                    completedAt: result.result.completedAt,
-                                    questionAnalysis: result.result.questionAnalysis || []
-                                });
-                            }
+                            setPreviousResult(formattedResult);
+                        } else {
+                            // Fallback to original result if fetching attempts fails
+                            setExamResult(result.result);
                         }
                         
                         setCurrentView('result');
@@ -883,12 +900,32 @@ export default function ExamHome({ examId }) {
             return;
         }
         
-        const result = await fetchLatestExamResult();
-        if (result) {
-            setExamResult(result);
-            setCurrentView('result');
-        } else {
-            toast.error('No results found for this exam');
+        // Use getAllExamAttempts for consistency with other paths
+        try {
+            const result = await getAllExamAttempts(student._id, examId);
+            if (result.success && result.attempts && result.attempts.length > 0) {
+                const latestAttempt = result.attempts[0];
+                const formattedResult = {
+                    score: latestAttempt.score,
+                    totalMarks: latestAttempt.totalMarks,
+                    percentage: latestAttempt.percentage,
+                    correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                    incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                    unattempted: latestAttempt.statistics?.unattempted || 0,
+                    timeTaken: latestAttempt.timeTaken,
+                    completedAt: latestAttempt.completedAt,
+                    questionAnalysis: latestAttempt.questionAnalysis || [],
+                    negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                    statistics: latestAttempt.statistics || {}
+                };
+                setExamResult(formattedResult);
+                setCurrentView('result');
+            } else {
+                toast.error('No results found for this exam');
+            }
+        } catch (error) {
+            console.error('Error fetching exam results:', error);
+            toast.error('Failed to load exam results');
         }
     };
 
@@ -1130,15 +1167,34 @@ export default function ExamHome({ examId }) {
 
                         {/* Sidebar */}
                         <div className="lg:col-span-4 space-y-6 lg:space-y-8">
+                            {/* Best Experience Card */}
                             <div className="group">
                                 <div className="flex items-center justify-between mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900 bg-black bg-clip-text text-transparent">
-                                        Offline & Sync
+                                        Exam Tips
                                     </h2>
                                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent ml-6"></div>
                                 </div>
                                 <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                                    <OfflineCapabilitiesCard />
+                                    <div className="bg-gradient-to-br from-blue-50/80 via-white/70 to-indigo-50/60 backdrop-blur-xl rounded-2xl shadow-lg border border-blue-100/40 p-6 hover:shadow-xl transition-all duration-300">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            For Best Experience
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-start gap-3 p-3 bg-white/60 rounded-lg border border-orange-100">
+                                                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 mb-1">Enable "Do Not Disturb"</p>
+                                                    <p className="text-sm text-gray-600">Put your phone on silent/DND mode to avoid interruptions and prevent tab switching warnings during the exam.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

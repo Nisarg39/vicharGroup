@@ -6,6 +6,7 @@ import { Button } from "../../../ui/button"
 import { Badge } from "../../../ui/badge"
 import { Separator } from "../../../ui/separator"
 import { Clock, AlertCircle, Play, BarChart3, BookOpen, Award, WifiOff, Timer, RefreshCw } from "lucide-react"
+import { getEffectiveExamDuration } from "../../../../utils/examTimingUtils"
 
 export default function ExamDetailsCard({ 
     exam, 
@@ -150,9 +151,6 @@ export default function ExamDetailsCard({
                         <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50/50 w-fit px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm">
                             {exam.examStatus}
                         </Badge>
-                        <div className="text-xs text-gray-500 font-medium">
-                            ID: {exam._id || 'N/A'}
-                        </div>
                     </div>
                 </div>
             </CardHeader>
@@ -166,7 +164,10 @@ export default function ExamDetailsCard({
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-blue-900 mb-1">Duration</p>
-                            <p className="text-lg font-bold text-blue-800">{exam.examDurationMinutes} min</p>
+                            <p className="text-lg font-bold text-blue-800">{getEffectiveExamDuration(exam)} min</p>
+                            {exam.durationInfo?.configured !== exam.examDurationMinutes && (
+                                <p className="text-xs text-gray-600">Stream-optimized duration</p>
+                            )}
                         </div>
                     </div>
                     
@@ -314,7 +315,7 @@ export default function ExamDetailsCard({
                             <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg shadow-md">
                                 <BookOpen className="w-5 h-5 text-white" />
                             </div>
-                            Special Instructions
+                            Topics and Special Instruction
                         </h3>
                         <div className="bg-white/70 rounded-xl p-4 border border-gray-100/50">
                             <p className="text-gray-800 text-sm leading-relaxed">{exam.examInstructions}</p>
