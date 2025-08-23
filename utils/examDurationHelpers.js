@@ -59,14 +59,38 @@ export const getEffectiveExamDuration = (exam) => {
   return 180;
 };
 
+// STABLE CACHE: Prevent object recreation on every call
+const _scheduleCache = new Map();
+const _cacheTTL = 30000; // 30 second cache TTL
+
 /**
- * Get subject unlock schedule for competitive exams
- * @param {Object} exam - Exam object
+ * FIXED: Get subject unlock schedule for competitive exams with stable object references
+ * @param {Object} exam - Exam object  
  * @param {Date} startTime - When the exam started (for practice exams) or student start time (for scheduled exams)
- * @returns {Object} - Subject access configuration
+ * @returns {Object} - Subject access configuration (STABLE REFERENCES)
  */
 export const getSubjectUnlockSchedule = (exam, startTime) => {
-  if (!exam || !startTime) return { allUnlocked: true };
+  if (!exam || !startTime) return { allUnlocked: true, subjectAccess: {}, streamConfig: null };
+  
+  // STABLE CACHING: Generate cache key based on essential properties
+  const now = Date.now();
+  const timeMinute = Math.floor(now / 60000); // Cache per minute for stability
+  const cacheKey = `${exam._id || exam.stream}_${exam.examAvailability}_${Math.floor(startTime.getTime() / 60000)}_${timeMinute}`;
+  
+  // Check cache first - prevents object recreation
+  const cached = _scheduleCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < _cacheTTL) {
+    return cached.result;
+  }
+  
+  // Clean old cache entries periodically
+  if (_scheduleCache.size > 100) {
+    for (const [key, value] of _scheduleCache.entries()) {
+      if ((now - value.timestamp) > _cacheTTL * 2) {
+        _scheduleCache.delete(key);
+      }
+    }
+  }
   
   // Check for exact stream match first, then fallback to intelligent matching
   let streamConfig = EXAM_DURATION_CONFIGS[exam.stream];
@@ -173,12 +197,21 @@ export const getSubjectUnlockSchedule = (exam, startTime) => {
     }
   });
   
-  return {
+  // STABLE RESULT: Create consistent object structure and cache it
+  const result = {
     allUnlocked: !hasLockedSubjects,
-    subjectAccess,
-    streamConfig,
-    examType: exam.examAvailability || 'practice' // Add exam type for debugging
+    subjectAccess: subjectAccess,
+    streamConfig: streamConfig,
+    examType: exam.examAvailability || 'practice'
   };
+  
+  // Cache the result to prevent recreating objects
+  _scheduleCache.set(cacheKey, {
+    result: result,
+    timestamp: now
+  });
+  
+  return result;
 };
 
 /**

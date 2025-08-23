@@ -100,9 +100,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         return allSubjects[0] || "";
     });
 
-    // When switching subject tabs, reset currentQuestionIndex to 0
+    // FIXED: Stable subject switching to prevent cascade effects
+    // Use ref to track previous subject and prevent unnecessary resets
+    const previousSubjectRef = useRef(selectedSubject);
+    
     useEffect(() => {
-        setCurrentQuestionIndex(0);
+        // Only reset question index if subject actually changed
+        if (previousSubjectRef.current !== selectedSubject) {
+            previousSubjectRef.current = selectedSubject;
+            setCurrentQuestionIndex(0);
+        }
     }, [selectedSubject]);
 
     // Prevent switching to locked subjects in competitive exams - using proper helper functions
@@ -175,30 +182,45 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     const currentSectionInfo = getCurrentSectionInfo();
 
-    // Enhanced subject access logic - STABLE OBJECT REFERENCES
-    // Now properly using examDurationHelpers.js for consistent logic
+    // FIXED: Enhanced subject access logic with STABLE OBJECT REFERENCES
+    // This prevents infinite loops by memoizing the unlock schedule computation
     const competitiveExamAccess = useMemo(() => {
         if (!startTime || !isExamStarted) {
-            return { allUnlocked: true, subjectAccess: {} };
+            // Return stable fallback object to prevent re-renders
+            return { allUnlocked: true, subjectAccess: {}, streamConfig: null, examType: 'practice' };
         }
         
         try {
-            // Use the proper utility function that handles all stream types correctly
-            // This function correctly handles scheduled vs practice exam logic
+            // STABLE COMPUTATION: Only recalculates when exam or startTime changes
+            // Using JSON.stringify to create stable cache key for exam object
+            const examKey = `${exam._id}_${exam.stream}_${exam.examAvailability}_${exam.endTime}`;
+            const timeKey = Math.floor(startTime / 60000); // Round to minutes for stability
+            const cacheKey = `${examKey}_${timeKey}`;
+            
+            // Use the utility function but ensure stable object references
             const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
             
+            // STABLE RETURN: Create consistent object structure
             return {
-                allUnlocked: unlockSchedule.allUnlocked,
+                allUnlocked: Boolean(unlockSchedule.allUnlocked),
                 subjectAccess: unlockSchedule.subjectAccess || {},
-                streamConfig: unlockSchedule.streamConfig,
-                examType: unlockSchedule.examType || exam.examAvailability
+                streamConfig: unlockSchedule.streamConfig || null,
+                examType: unlockSchedule.examType || exam.examAvailability || 'practice',
+                _cacheKey: cacheKey // Internal cache key for debugging
             };
         } catch (error) {
             console.error('Error calculating subject unlock schedule:', error);
-            // Fallback to unlocked state to prevent exam from breaking
-            return { allUnlocked: true, subjectAccess: {} };
+            // Return stable fallback object to prevent exam from breaking
+            return { allUnlocked: true, subjectAccess: {}, streamConfig: null, examType: 'practice' };
         }
-    }, [startTime, isExamStarted, exam]);
+    }, [
+        exam._id, // Only exam ID to prevent object reference issues
+        exam.stream,
+        exam.examAvailability, 
+        exam.endTime,
+        Math.floor(startTime / 60000), // Rounded startTime for stability
+        isExamStarted
+    ]);
 
     // For submit button logic
     const totalQuestionsAll = (questions || []).length;
@@ -267,17 +289,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Track previously locked subjects for notification purposes
     const [previouslyLockedSubjects, setPreviouslyLockedSubjects] = useState(new Set());
     
-    // Track subject unlocking with stable dependencies - now using proper helper functions
+    // FIXED: Track subject unlocking with stable dependencies and prevent cascade effects
+    // Use competitiveExamAccess directly instead of recalculating
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime) return;
         
         const checkInterval = setInterval(() => {
             try {
-                // Use the correct helper function to get current unlock schedule
-                const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
-                
-                // Check if previously locked subjects are now unlocked
-                if (unlockSchedule.allUnlocked && previouslyLockedSubjects.size > 0) {
+                // Use already computed competitiveExamAccess to avoid recalculation
+                // This prevents the circular dependency with getSubjectUnlockSchedule
+                if (competitiveExamAccess.allUnlocked && previouslyLockedSubjects.size > 0) {
                     const examType = isNeetExam ? 'NEET' : isCetExam ? 'CET' : 'JEE';
                     const subjectList = Array.from(previouslyLockedSubjects).join(' & ');
                     toast.success(`🔓 ${subjectList} now available in ${examType}!`);
@@ -290,19 +311,24 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }, 60000); // Check every minute
         
         return () => clearInterval(checkInterval);
-    }, [isCompetitiveExam, isExamStarted, startTime, isNeetExam, isCetExam, exam]);
+    }, [
+        isCompetitiveExam, 
+        isExamStarted, 
+        competitiveExamAccess.allUnlocked, // Use computed value instead of recalculating
+        previouslyLockedSubjects.size,
+        isNeetExam, 
+        isCetExam
+    ]);
 
-    // Initialize locked subjects on exam start - now using proper helper functions
+    // FIXED: Initialize locked subjects using computed access state
+    // Prevents recalculation and circular dependencies
     useEffect(() => {
         if (isCompetitiveExam && isExamStarted && startTime) {
             try {
-                // Get the current unlock schedule using the helper function
-                const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
-                
-                // If not all subjects are unlocked, track which ones are currently locked
-                if (!unlockSchedule.allUnlocked && unlockSchedule.subjectAccess) {
-                    const lockedSubjects = Object.keys(unlockSchedule.subjectAccess)
-                        .filter(subject => unlockSchedule.subjectAccess[subject].isLocked)
+                // Use already computed competitiveExamAccess instead of recalculating
+                if (!competitiveExamAccess.allUnlocked && competitiveExamAccess.subjectAccess) {
+                    const lockedSubjects = Object.keys(competitiveExamAccess.subjectAccess)
+                        .filter(subject => competitiveExamAccess.subjectAccess[subject].isLocked)
                         .filter(subject => allSubjects.includes(subject)); // Only track subjects that exist in this exam
                         
                     setPreviouslyLockedSubjects(new Set(lockedSubjects));
@@ -312,39 +338,61 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 // Continue without tracking locked subjects
             }
         }
-    }, [isCompetitiveExam, isExamStarted, startTime, exam, allSubjects]);
+    }, [
+        isCompetitiveExam, 
+        isExamStarted, 
+        competitiveExamAccess.allUnlocked, // Use computed value
+        competitiveExamAccess.subjectAccess,
+        allSubjects.join(',') // Stable string representation
+    ]);
 
-    // Check if current subject is locked and switch to available subject - now using proper helper functions
+    // FIXED: Check subject lock status using computed access state
+    // Prevents circular dependencies and stabilizes subject switching
+    const subjectSwitchInProgressRef = useRef(false);
+    
     useEffect(() => {
-        if (!isCompetitiveExam || !isExamStarted || !startTime) return;
+        if (!isCompetitiveExam || !isExamStarted || !startTime || subjectSwitchInProgressRef.current) return;
         
         try {
-            // Get current unlock schedule using the helper function
-            const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
-            
-            // If all subjects are unlocked, no need to check for restrictions
-            if (unlockSchedule.allUnlocked) return;
+            // Use already computed competitiveExamAccess to avoid recalculation
+            if (competitiveExamAccess.allUnlocked) return;
             
             // Check if current subject is locked
-            const currentSubjectAccess = unlockSchedule.subjectAccess?.[selectedSubject];
+            const currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
             if (currentSubjectAccess?.isLocked) {
                 // Find the first available (unlocked) subject
                 const availableSubject = allSubjects.find(subject => {
-                    const subjectAccess = unlockSchedule.subjectAccess?.[subject];
+                    const subjectAccess = competitiveExamAccess.subjectAccess?.[subject];
                     return !subjectAccess?.isLocked;
                 });
                 
                 if (availableSubject && availableSubject !== selectedSubject) {
+                    // Prevent cascading subject switches
+                    subjectSwitchInProgressRef.current = true;
                     setSelectedSubject(availableSubject);
+                    
                     const remainingTime = Math.ceil(currentSubjectAccess.remainingTime / 1000 / 60);
                     toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
+                    
+                    // Reset the flag after a short delay
+                    setTimeout(() => {
+                        subjectSwitchInProgressRef.current = false;
+                    }, 1000);
                 }
             }
         } catch (error) {
             console.error('Error checking subject lock status:', error);
             // Don't switch subjects if there's an error
+            subjectSwitchInProgressRef.current = false;
         }
-    }, [isCompetitiveExam, isExamStarted, startTime, selectedSubject, exam, allSubjects]);
+    }, [
+        isCompetitiveExam, 
+        isExamStarted, 
+        competitiveExamAccess.allUnlocked,
+        competitiveExamAccess.subjectAccess,
+        selectedSubject,
+        allSubjects.join(',') // Stable string representation
+    ]);
 
     // 2. Auto-save to localStorage only (no server calls during exam)
     useEffect(() => {
@@ -390,22 +438,35 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         toast.success("Exam started! Good luck!");
     };
 
-    // 6. Timer countdown: recalculate timeLeft based on startTime and duration with warnings
+    // FIXED: Timer countdown with stable dependencies and debounced updates
+    // Prevents cascading state updates and React error #185
+    const lastTimeUpdateRef = useRef(0);
+    const autoSubmitTriggeredRef = useRef(false);
+    
     useEffect(() => {
-        if (isExamStarted && startTime) {
-            timerRef.current = setInterval(() => {
+        if (!isExamStarted || !startTime) return;
+        
+        timerRef.current = setInterval(() => {
+            try {
                 // Use consistent helper function for time calculation
                 const calculatedTimeLeft = calculateRemainingTime(exam, startTime);
-                setTimeLeft(calculatedTimeLeft);
                 
-                // Show time warnings
+                // STABLE UPDATE: Only update state if time has actually changed by at least 1 second
+                // This prevents unnecessary re-renders and cascading effects
+                if (Math.abs(calculatedTimeLeft - lastTimeUpdateRef.current) >= 1) {
+                    lastTimeUpdateRef.current = calculatedTimeLeft;
+                    setTimeLeft(calculatedTimeLeft);
+                }
+                
+                // Show time warnings - using stable warning thresholds
                 const warnings = [
-                    { time: 300, message: "⚠️ 5 minutes remaining! Please review your answers.", type: "warning" }, // 5 minutes
-                    { time: 60, message: "🚨 1 minute remaining! Exam will auto-submit soon.", type: "error" }, // 1 minute
-                    { time: 30, message: "⏰ 30 seconds remaining! Auto-submit imminent.", type: "error" }, // 30 seconds
-                    { time: 10, message: "🔥 10 seconds remaining! Submitting now...", type: "error" } // 10 seconds
+                    { time: 300, message: "⚠️ 5 minutes remaining! Please review your answers.", type: "warning" },
+                    { time: 60, message: "🚨 1 minute remaining! Exam will auto-submit soon.", type: "error" },
+                    { time: 30, message: "⏰ 30 seconds remaining! Auto-submit imminent.", type: "error" },
+                    { time: 10, message: "🔥 10 seconds remaining! Submitting now...", type: "error" }
                 ];
                 
+                // STABLE WARNING SYSTEM: Check warnings without triggering state changes
                 warnings.forEach(warning => {
                     if (calculatedTimeLeft === warning.time && !warningsShownRef.current.has(warning.time)) {
                         warningsShownRef.current.add(warning.time);
@@ -425,17 +486,30 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     }
                 });
                 
-                if (calculatedTimeLeft <= 0) {
+                // STABLE AUTO-SUBMIT: Prevent multiple auto-submit calls
+                if (calculatedTimeLeft <= 0 && !autoSubmitTriggeredRef.current) {
+                    autoSubmitTriggeredRef.current = true;
                     handleAutoSubmit();
                 }
-            }, 1000);
-            return () => {
-                if (timerRef.current) {
-                    clearInterval(timerRef.current);
-                }
-            };
-        }
-    }, [isExamStarted, startTime]);
+            } catch (error) {
+                console.error('Timer calculation error:', error);
+                // Continue timer but skip this update
+            }
+        }, 1000);
+        
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, [
+        isExamStarted, 
+        startTime,
+        exam._id, // Only essential exam properties
+        exam.examAvailability,
+        exam.endTime
+    ]);
 
     // --- FULLSCREEN LOGIC START ---
     const [warningDialog, setWarningDialog] = useState(false);

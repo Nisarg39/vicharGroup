@@ -18,6 +18,7 @@ import ExamAttemptsTable from "./examHomeComponents/ExamAttemptsTable"
 
 // Import main components
 import ExamInterface from "./ExamInterface"
+import ExamErrorBoundary from "./ExamErrorBoundary"
 import Instructions from "./Instructions"
 import ExamResult from "./ExamResult"
 import { VicharCard, VicharCardContent, VicharCardHeader, VicharCardTitle } from "../../ui/vichar-card";
@@ -1030,17 +1031,27 @@ export default function ExamHome({ examId }) {
         return <Instructions exam={exam} onStart={beginExam} onBack={() => setCurrentView('home')} />
     }
 
-    // Exam interface
+    // Exam interface with error boundary protection
     if (currentView === 'exam') {
         return (
-            <ExamInterface 
-                exam={exam}
-                questions={exam?.examQuestions || examQuestions || []}
-                student={student}
-                onComplete={handleExamComplete}
-                isOnline={isOnline}
-                onBack={() => setCurrentView('home')}
-            />
+            <ExamErrorBoundary 
+                examId={exam?._id}
+                studentId={student?._id}
+                onSafeExit={() => {
+                    // Return to home view and preserve progress
+                    setCurrentView('home');
+                    toast.error("Exam interface encountered an error. Your progress has been saved.");
+                }}
+            >
+                <ExamInterface 
+                    exam={exam}
+                    questions={exam?.examQuestions || examQuestions || []}
+                    student={student}
+                    onComplete={handleExamComplete}
+                    isOnline={isOnline}
+                    onBack={() => setCurrentView('home')}
+                />
+            </ExamErrorBoundary>
         )
     }
 
