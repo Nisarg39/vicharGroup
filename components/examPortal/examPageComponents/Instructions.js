@@ -17,6 +17,40 @@ export default function Instructions({ exam, onStart, onBack }) {
     const getMarkingInfo = () => {
         // Check if we have marking rule preview from server
         if (exam?.markingRulePreview?.hasMarkingRules) {
+            // Check if this is MHT-CET exam that needs subject-wise detection override
+            const isMHTCET = exam?.stream?.toLowerCase().includes('mht-cet')
+            
+            if (isMHTCET && exam?.examSubject && Array.isArray(exam.examSubject) && exam.examSubject.length > 1) {
+                console.log('🔍 MHT-CET detected in Instructions, applying subject-wise override...')
+                
+                // For MHT-CET with multiple subjects, force subject-wise display
+                // Create subject-wise marking data using exam.examSubject array
+                const subjectWiseMarks = {}
+                exam.examSubject.forEach(subject => {
+                    subjectWiseMarks[subject] = {
+                        correct: exam.markingRulePreview.positiveMarks,
+                        incorrect: Math.abs(exam.markingRulePreview.negativeMarks)
+                    }
+                })
+                
+                console.log('  MHT-CET Instructions override - subjects detected:', exam.examSubject)
+                console.log('  MHT-CET Instructions override - subject-wise marks:', subjectWiseMarks)
+                
+                // Return subject-wise marking scheme for MHT-CET
+                return {
+                    positiveMarks: exam.markingRulePreview.positiveMarks,
+                    negativeMarks: exam.markingRulePreview.negativeMarks,
+                    hasSpecificRules: true,
+                    ruleDescription: 'MHT-CET subject-wise marking scheme',
+                    ruleSource: exam.markingRulePreview.ruleSource,
+                    stream: exam?.stream || "",
+                    totalMarks: exam?.totalMarks || null,
+                    isSubjectWise: true,  // Override to true for MHT-CET
+                    subjects: subjectWiseMarks  // Override with subject-wise data
+                }
+            }
+            
+            // For non-MHT-CET or MHT-CET with single subject, use original server data
             return {
                 positiveMarks: exam.markingRulePreview.positiveMarks,
                 negativeMarks: exam.markingRulePreview.negativeMarks,
@@ -24,7 +58,9 @@ export default function Instructions({ exam, onStart, onBack }) {
                 ruleDescription: exam.markingRulePreview.ruleDescription,
                 ruleSource: exam.markingRulePreview.ruleSource,
                 stream: exam?.stream || "",
-                totalMarks: exam?.totalMarks || null
+                totalMarks: exam?.totalMarks || null,
+                isSubjectWise: exam.markingRulePreview.isSubjectWise || false,
+                subjects: exam.markingRulePreview.subjects || {}
             }
         }
         
@@ -38,7 +74,9 @@ export default function Instructions({ exam, onStart, onBack }) {
             ruleDescription: "Exam-specific marking",
             ruleSource: "exam_specific",
             stream: exam?.stream || "",
-            totalMarks: exam?.totalMarks || null
+            totalMarks: exam?.totalMarks || null,
+            isSubjectWise: false,
+            subjects: {}
         }
     }
 
@@ -160,40 +198,88 @@ export default function Instructions({ exam, onStart, onBack }) {
                     </CardHeader>
                     <CardContent className="space-y-6 relative z-10">
                         {markingInfo.hasSpecificRules ? (
-                            // Show specific marking info if available
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Correct Answer */}
-                                <div className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-all duration-300">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                                        <span className="text-green-900 font-bold text-lg">Correct Answer</span>
+                            markingInfo.isSubjectWise ? (
+                                // Show subject-wise marking scheme (for MHT-CET)
+                                <div className="space-y-6">
+                                    {/* Subject-wise Header */}
+                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100/50">
+                                        <h4 className="font-bold text-blue-900 mb-2 text-lg">Subject-wise Marking Scheme</h4>
+                                        <p className="text-blue-800 text-sm">Different subjects may have different marking patterns</p>
                                     </div>
-                                    <p className="text-2xl font-bold text-green-800">+{markingInfo.positiveMarks}</p>
-                                    <p className="text-sm text-green-700 mt-1">marks awarded</p>
+                                    
+                                    {/* Subject-wise marking display */}
+                                    <div className="space-y-4">
+                                        {Object.entries(markingInfo.subjects).map(([subject, marks]) => (
+                                            <div key={subject} className="bg-gradient-to-r from-gray-50/50 to-blue-50/30 rounded-2xl p-5 border border-gray-200/50">
+                                                <h5 className="font-bold text-gray-900 mb-4 text-lg capitalize">{subject}</h5>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                    {/* Correct */}
+                                                    <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 border border-green-200/50">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                            <span className="text-green-900 font-medium">Correct</span>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-green-800">+{marks.correct}</p>
+                                                    </div>
+                                                    
+                                                    {/* Incorrect */}
+                                                    <div className="bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl p-4 border border-red-200/50">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                                            <span className="text-red-900 font-medium">Incorrect</span>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-red-800">-{marks.incorrect}</p>
+                                                    </div>
+                                                    
+                                                    {/* Unanswered */}
+                                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-4 border border-gray-200/50">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                                                            <span className="text-gray-900 font-medium">Unanswered</span>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-gray-800">0</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+                            ) : (
+                                // Show regular marking info if not subject-wise
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Correct Answer */}
+                                    <div className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-all duration-300">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                                            <span className="text-green-900 font-bold text-lg">Correct Answer</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-green-800">+{markingInfo.positiveMarks}</p>
+                                        <p className="text-sm text-green-700 mt-1">marks awarded</p>
+                                    </div>
 
-                                {/* Incorrect Answer */}
-                                <div className="p-5 bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl border border-red-200/50 hover:shadow-md transition-all duration-300">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                                        <span className="text-red-900 font-bold text-lg">Incorrect Answer</span>
+                                    {/* Incorrect Answer */}
+                                    <div className="p-5 bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl border border-red-200/50 hover:shadow-md transition-all duration-300">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                                            <span className="text-red-900 font-bold text-lg">Incorrect Answer</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-red-800">
+                                            {markingInfo.negativeMarks !== null ? markingInfo.negativeMarks : 'As per admin rules'}
+                                        </p>
+                                        <p className="text-sm text-red-700 mt-1">marks deducted</p>
                                     </div>
-                                    <p className="text-2xl font-bold text-red-800">
-                                        {markingInfo.negativeMarks !== null ? markingInfo.negativeMarks : 'As per admin rules'}
-                                    </p>
-                                    <p className="text-sm text-red-700 mt-1">marks deducted</p>
-                                </div>
 
-                                {/* Unanswered */}
-                                <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200/50 hover:shadow-md transition-all duration-300">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
-                                        <span className="text-gray-900 font-bold text-lg">Unanswered</span>
+                                    {/* Unanswered */}
+                                    <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl border border-gray-200/50 hover:shadow-md transition-all duration-300">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
+                                            <span className="text-gray-900 font-bold text-lg">Unanswered</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-gray-800">0</p>
+                                        <p className="text-sm text-gray-700 mt-1">no marks</p>
                                     </div>
-                                    <p className="text-2xl font-bold text-gray-800">0</p>
-                                    <p className="text-sm text-gray-700 mt-1">no marks</p>
                                 </div>
-                            </div>
+                            )
                         ) : (
                             // Show generic message when no specific rules available
                             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100/50">
@@ -239,6 +325,12 @@ export default function Instructions({ exam, onStart, onBack }) {
                                             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                                             <span>Marking scheme is configured by system administrators based on exam type and subject</span>
                                         </li>
+                                        {markingInfo.isSubjectWise && (
+                                            <li className="flex items-start gap-2">
+                                                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                                                <span className="text-purple-800 font-medium">This exam has subject-wise marking - each subject may have different marking patterns</span>
+                                            </li>
+                                        )}
                                         <li className="flex items-start gap-2">
                                             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                                             <span>Multiple choice questions: Only one correct answer unless marked as multiple correct</span>

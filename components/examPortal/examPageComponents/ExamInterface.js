@@ -508,8 +508,85 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isExamStarted, 
         competitiveExamAccess.allUnlocked,
         competitiveExamAccess.subjectAccess,
-        // REMOVED selectedSubject from dependencies to prevent fighting with manual selections
+        // CRITICAL FIX: Removed selectedSubject dependency to prevent race condition with manual selection
+        // The effect will now only run when access rules change, not when user manually changes subject
         allSubjects.join(',') // Stable string representation
+    ]);
+
+    // CRITICAL FIX: Separate timer-based check for locked subjects to prevent race conditions
+    useEffect(() => {
+        if (!isCompetitiveExam || !isExamStarted || !startTime) return;
+        
+        const checkCurrentSubjectLock = () => {
+            // Skip if manual selection is in progress
+            if (manualSubjectSelectionRef.current || subjectSwitchInProgressRef.current) {
+                return;
+            }
+            
+            try {
+                if (competitiveExamAccess.allUnlocked) return;
+                
+                // Check if current subject is locked using same variation logic
+                let currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
+                
+                // For CET exams, also check subject name variations
+                if (isCetExam && !currentSubjectAccess) {
+                    const subjectVariations = [selectedSubject];
+                    if (selectedSubject.toLowerCase().includes('math')) {
+                        subjectVariations.push('Mathematics', 'Maths', 'Math');
+                    } else if (selectedSubject.toLowerCase().includes('bio')) {
+                        subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
+                    } else if (selectedSubject === 'Biology') {
+                        subjectVariations.push('Bio');
+                    } else if (selectedSubject === 'Mathematics') {
+                        subjectVariations.push('Maths', 'Math');
+                    }
+                    
+                    for (const variation of subjectVariations) {
+                        const access = competitiveExamAccess.subjectAccess?.[variation];
+                        if (access) {
+                            currentSubjectAccess = access;
+                            break;
+                        }
+                    }
+                }
+                
+                // If current subject becomes locked, switch to available subject
+                if (currentSubjectAccess?.isLocked) {
+                    const availableSubject = allSubjects.find(subject => {
+                        const subjectAccess = competitiveExamAccess.subjectAccess?.[subject];
+                        return !subjectAccess?.isLocked;
+                    });
+                    
+                    if (availableSubject && availableSubject !== selectedSubject) {
+                        subjectSwitchInProgressRef.current = true;
+                        setSelectedSubject(availableSubject);
+                        
+                        const remainingTime = Math.ceil(currentSubjectAccess.remainingTime / 1000 / 60);
+                        toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
+                        
+                        setTimeout(() => {
+                            subjectSwitchInProgressRef.current = false;
+                        }, 1000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in timer-based subject lock check:', error);
+            }
+        };
+        
+        // Check every 30 seconds instead of on every state change
+        const interval = setInterval(checkCurrentSubjectLock, 30000);
+        
+        return () => clearInterval(interval);
+    }, [
+        isCompetitiveExam, 
+        isExamStarted, 
+        startTime,
+        competitiveExamAccess.allUnlocked,
+        competitiveExamAccess.subjectAccess,
+        allSubjects.join(','),
+        isCetExam
     ]);
 
     // 2. Auto-save to localStorage only (no server calls during exam)
@@ -1260,9 +1337,41 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
                         <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
-                                // Check if subject is locked for competitive exams
-                                const isLocked = isCompetitiveExam && competitiveExamAccess.subjectAccess && competitiveExamAccess.subjectAccess[subject]?.isLocked;
-                                const remainingTime = isLocked ? getSubjectUnlockTime(competitiveExamAccess.subjectAccess, subject) : 0;
+                                // FIXED: Check if subject is locked for competitive exams - Use consistent variation logic
+                                let isLocked = false;
+                                let remainingTime = 0;
+                                
+                                if (isCompetitiveExam && competitiveExamAccess.subjectAccess) {
+                                    // Check direct match first
+                                    let subjectAccess = competitiveExamAccess.subjectAccess[subject];
+                                    
+                                    // For CET exams, also check subject name variations (same logic as auto-switch)
+                                    if (isCetExam && !subjectAccess) {
+                                        const subjectVariations = [subject];
+                                        if (subject.toLowerCase().includes('math')) {
+                                            subjectVariations.push('Mathematics', 'Maths', 'Math');
+                                        } else if (subject.toLowerCase().includes('bio')) {
+                                            subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
+                                        } else if (subject === 'Biology') {
+                                            subjectVariations.push('Bio');
+                                        } else if (subject === 'Mathematics') {
+                                            subjectVariations.push('Maths', 'Math');
+                                        }
+                                        
+                                        for (const variation of subjectVariations) {
+                                            const access = competitiveExamAccess.subjectAccess[variation];
+                                            if (access) {
+                                                subjectAccess = access;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (subjectAccess?.isLocked) {
+                                        isLocked = true;
+                                        remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, subject);
+                                    }
+                                }
                                 
                                 return (
                                     <TabsTrigger 

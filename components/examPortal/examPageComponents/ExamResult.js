@@ -255,7 +255,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
           )
           
           const uniquePositiveMarks = [...new Set(positiveMarksBySubject)]
-          const isSubjectWise = uniquePositiveMarks.length > 1
+          // For MHT-CET, always show subject-wise display when multiple subjects exist
+          // regardless of whether marks are uniform (PCB: all +1) or different (PCM: +1,+1,+2)
+          const isSubjectWise = subjectsWithCorrectAnswers.length > 1
 
           console.log('  MHT-CET subjectsWithCorrectAnswers:', subjectsWithCorrectAnswers)
           console.log('  MHT-CET positiveMarksBySubject:', positiveMarksBySubject)
