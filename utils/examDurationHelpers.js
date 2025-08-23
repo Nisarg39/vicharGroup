@@ -186,12 +186,30 @@ export const getSubjectUnlockSchedule = (exam, startTime) => {
         }
       }
       
-      subjectAccess[subject] = {
+      // Create access entry for the configured subject name
+      const accessEntry = {
         isLocked,
         remainingTime,
         unlockDelay: config.unlockDelay,
         duration: config.duration
       };
+      
+      subjectAccess[subject] = accessEntry;
+      
+      // CRITICAL FIX: For CET exams, create aliases for common subject name variations
+      if (streamConfig === EXAM_DURATION_CONFIGS['MHT-CET']) {
+        if (subject === 'Mathematics') {
+          subjectAccess['Maths'] = { ...accessEntry };
+          subjectAccess['Math'] = { ...accessEntry };
+        } else if (subject === 'Maths') {
+          subjectAccess['Mathematics'] = { ...accessEntry };
+          subjectAccess['Math'] = { ...accessEntry };
+        } else if (subject === 'Biology') {
+          subjectAccess['Bio'] = { ...accessEntry };
+          subjectAccess['Botany'] = { ...accessEntry };
+          subjectAccess['Zoology'] = { ...accessEntry };
+        }
+      }
       
       if (isLocked) hasLockedSubjects = true;
     }

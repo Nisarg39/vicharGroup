@@ -112,19 +112,44 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [selectedSubject]);
 
-    // Prevent switching to locked subjects in competitive exams - using proper helper functions
+    // Handle manual subject changes with improved CET support
     const handleSubjectChange = (newSubject) => {
-        if (isCompetitiveExam && competitiveExamAccess.subjectAccess && competitiveExamAccess.subjectAccess[newSubject]?.isLocked) {
-            try {
-                const remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, newSubject);
-                toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
-            } catch (error) {
-                console.error('Error getting subject unlock time:', error);
-                toast.error(`${newSubject} is currently locked`);
+        console.log('Manual subject change attempted:', { newSubject, currentSubject: selectedSubject, competitiveExamAccess });
+        
+        // Check if subject is locked with better subject name matching for CET
+        if (isCompetitiveExam && competitiveExamAccess.subjectAccess) {
+            // Try multiple subject name variations for CET exams
+            const subjectVariations = [newSubject];
+            if (isCetExam) {
+                if (newSubject.toLowerCase().includes('math')) {
+                    subjectVariations.push('Mathematics', 'Maths', 'Math');
+                } else if (newSubject.toLowerCase().includes('bio')) {
+                    subjectVariations.push('Biology', 'Botany', 'Zoology');
+                }
             }
-            return;
+            
+            // Check if any variation is locked
+            let isLocked = false;
+            let remainingTime = 0;
+            for (const variation of subjectVariations) {
+                const subjectAccess = competitiveExamAccess.subjectAccess[variation];
+                if (subjectAccess?.isLocked) {
+                    isLocked = true;
+                    remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, variation);
+                    break;
+                }
+            }
+            
+            if (isLocked) {
+                toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
+                return;
+            }
         }
+        
+        // Mark this as a manual selection to prevent auto-switching
+        manualSubjectSelectionRef.current = true;
         setSelectedSubject(newSubject);
+        console.log('Subject changed manually to:', newSubject);
     };
 
     // Filter and organize questions by selected subject
@@ -199,6 +224,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             
             // Use the utility function but ensure stable object references
             const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
+            
+            // DEBUG: Log subject access for CET exams
+            if (isCetExam) {
+                console.log('CET Subject Access Debug:', {
+                    allUnlocked: unlockSchedule.allUnlocked,
+                    subjectAccess: unlockSchedule.subjectAccess,
+                    currentTime: new Date().toISOString(),
+                    startTime: new Date(startTime).toISOString(),
+                    examEndTime: exam.endTime ? new Date(exam.endTime).toISOString() : 'N/A'
+                });
+            }
             
             // STABLE RETURN: Create consistent object structure
             return {
@@ -349,9 +385,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // FIXED: Check subject lock status using computed access state
     // Prevents circular dependencies and stabilizes subject switching
     const subjectSwitchInProgressRef = useRef(false);
+    const manualSubjectSelectionRef = useRef(false); // Track manual selections
     
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime || subjectSwitchInProgressRef.current) return;
+        
+        // CRITICAL FIX: Don't auto-switch if user just made a manual selection
+        if (manualSubjectSelectionRef.current) {
+            manualSubjectSelectionRef.current = false;
+            return;
+        }
         
         try {
             // Use already computed competitiveExamAccess to avoid recalculation
@@ -390,7 +433,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isExamStarted, 
         competitiveExamAccess.allUnlocked,
         competitiveExamAccess.subjectAccess,
-        selectedSubject,
+        // REMOVED selectedSubject from dependencies to prevent fighting with manual selections
         allSubjects.join(',') // Stable string representation
     ]);
 
