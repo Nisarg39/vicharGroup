@@ -210,8 +210,88 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   // Helper function to get actual marking scheme used for evaluation
   const getGeneralMarkingScheme = () => {
+    // DEBUG: Log available data sources
+    console.log('🔍 DEBUG getGeneralMarkingScheme:')
+    console.log('  exam?.markingRulePreview:', exam?.markingRulePreview)
+    console.log('  result?.negativeMarkingInfo:', result?.negativeMarkingInfo)
+    
     // Priority 1: Use actual evaluation rules from exam's markingRulePreview (set by super admin rules)
     if (exam?.markingRulePreview?.hasMarkingRules) {
+      console.log('✅ Using Priority 1: markingRulePreview')
+      
+      // Check if this is MHT-CET exam that needs subject-wise detection override
+      const isMHTCET = exam?.stream?.toLowerCase().includes('mht-cet')
+      
+      if (isMHTCET && questionAnalysis && questionAnalysis.length > 0) {
+        console.log('🔍 MHT-CET detected, checking for subject-wise marking override...')
+        
+        // Apply our subject-wise detection logic for MHT-CET
+        const subjectMarkingMap = {}
+        
+        questionAnalysis.forEach(analysis => {
+          const question = getQuestionById(analysis.questionId)
+          if (question?.subject) {
+            const subject = question.subject
+            if (!subjectMarkingMap[subject]) {
+              subjectMarkingMap[subject] = { correctMarks: [], incorrectMarks: [] }
+            }
+            
+            if (analysis.status === 'correct' && analysis.marks > 0) {
+              subjectMarkingMap[subject].correctMarks.push(analysis.marks)
+            } else if (analysis.status === 'incorrect' && analysis.marks < 0) {
+              subjectMarkingMap[subject].incorrectMarks.push(Math.abs(analysis.marks))
+            }
+          }
+        })
+
+        // Only check subjects that have correct answers (avoid zero contamination)
+        const subjectsWithCorrectAnswers = Object.keys(subjectMarkingMap).filter(subject => 
+          subjectMarkingMap[subject].correctMarks.length > 0
+        )
+
+        if (subjectsWithCorrectAnswers.length > 1) {
+          const positiveMarksBySubject = subjectsWithCorrectAnswers.map(subject => 
+            subjectMarkingMap[subject].correctMarks[0]
+          )
+          
+          const uniquePositiveMarks = [...new Set(positiveMarksBySubject)]
+          const isSubjectWise = uniquePositiveMarks.length > 1
+
+          console.log('  MHT-CET subjectsWithCorrectAnswers:', subjectsWithCorrectAnswers)
+          console.log('  MHT-CET positiveMarksBySubject:', positiveMarksBySubject)
+          console.log('  MHT-CET uniquePositiveMarks:', uniquePositiveMarks)
+          console.log('  MHT-CET isSubjectWise detected:', isSubjectWise)
+
+          if (isSubjectWise) {
+            // Build complete subjects mapping for all subjects (not just those with correct answers)
+            const subjectWiseMarks = {}
+            Object.keys(subjectMarkingMap).forEach(subject => {
+              const correctMarks = subjectMarkingMap[subject].correctMarks
+              const incorrectMarks = subjectMarkingMap[subject].incorrectMarks
+              subjectWiseMarks[subject] = {
+                correct: correctMarks.length > 0 ? correctMarks[0] : 1,
+                incorrect: incorrectMarks.length > 0 ? incorrectMarks[0] : 0
+              }
+            })
+
+            console.log('  MHT-CET override - detected subject-wise marks:', subjectWiseMarks)
+
+            // Return subject-wise marking scheme for MHT-CET
+            return {
+              positiveMarks: exam.markingRulePreview.positiveMarks,
+              negativeMarks: exam.markingRulePreview.negativeMarks,
+              isSubjectWise: true,  // Override to true
+              subjects: subjectWiseMarks,  // Override with detected subjects
+              ruleSource: exam.markingRulePreview.ruleSource || 'super_admin_default',
+              ruleDescription: 'MHT-CET subject-wise marking scheme (auto-detected)'
+            }
+          }
+        }
+        
+        console.log('  MHT-CET subject-wise detection failed, using original server data')
+      }
+      
+      // For non-MHT-CET or if subject-wise detection failed, use original server data
       return {
         positiveMarks: exam.markingRulePreview.positiveMarks,
         negativeMarks: exam.markingRulePreview.negativeMarks,
@@ -224,6 +304,9 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
     // Priority 2: If no preview rules, derive from actual result's negativeMarkingInfo (this contains what was actually applied)
     if (result?.negativeMarkingInfo) {
+      console.log('✅ Using Priority 2: negativeMarkingInfo')
+      console.log('  questionAnalysis length:', questionAnalysis?.length)
+      
       // For subject-wise marking (like MHT-CET), analyze question analysis to build subject breakdown
       const subjectWiseMarks = {}
       let isSubjectWise = false
@@ -248,18 +331,28 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         })
 
         // Check if different subjects have different positive marks (indicates subject-wise marking)
-        const subjectKeys = Object.keys(subjectMarkingMap)
-        if (subjectKeys.length > 1) {
-          const positiveMarksBySubject = subjectKeys.map(subject => {
-            const correctMarks = subjectMarkingMap[subject].correctMarks
-            return correctMarks.length > 0 ? correctMarks[0] : 0
-          })
+        // Only check subjects that have correct answers (avoid zero contamination)
+        const subjectsWithCorrectAnswers = Object.keys(subjectMarkingMap).filter(subject => 
+          subjectMarkingMap[subject].correctMarks.length > 0
+        )
+
+        if (subjectsWithCorrectAnswers.length > 1) {
+          const positiveMarksBySubject = subjectsWithCorrectAnswers.map(subject => 
+            subjectMarkingMap[subject].correctMarks[0] // First correct answer's marks
+          )
+          
+          console.log('  subjectsWithCorrectAnswers:', subjectsWithCorrectAnswers)
+          console.log('  positiveMarksBySubject:', positiveMarksBySubject)
           
           const uniquePositiveMarks = [...new Set(positiveMarksBySubject)]
-          isSubjectWise = uniquePositiveMarks.length > 1
+          isSubjectWise = uniquePositiveMarks.length > 1  // Now works correctly for PCB
+          
+          console.log('  uniquePositiveMarks:', uniquePositiveMarks)
+          console.log('  isSubjectWise detected:', isSubjectWise)
           
           if (isSubjectWise) {
-            subjectKeys.forEach(subject => {
+            // Map all subjects (not just those with correct answers)
+            Object.keys(subjectMarkingMap).forEach(subject => {
               const correctMarks = subjectMarkingMap[subject].correctMarks
               const incorrectMarks = subjectMarkingMap[subject].incorrectMarks
               subjectWiseMarks[subject] = {
@@ -271,7 +364,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         }
       }
 
-      return {
+      const finalResult = {
         positiveMarks: result.negativeMarkingInfo.positiveMarks || exam?.positiveMarks || exam?.marks || 1,
         negativeMarks: result.negativeMarkingInfo.negativeMarks || 0,
         isSubjectWise,
@@ -279,9 +372,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         ruleSource: result.negativeMarkingInfo.ruleSource || 'super_admin_default',
         ruleDescription: result.negativeMarkingInfo.ruleDescription || 'Applied marking scheme from super admin rules'
       }
+      
+      console.log('  Priority 2 final result:', finalResult)
+      return finalResult
     }
 
     // Priority 3: Final fallback to exam basic properties (least preferred)
+    console.log('✅ Using Priority 3: fallback to exam properties')
     return {
       positiveMarks: exam?.positiveMarks || exam?.marks || 1,
       negativeMarks: exam?.negativeMarks || 0,
@@ -1179,6 +1276,13 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {(() => {
+                console.log('🎯 DEBUG MARKING SCHEME DISPLAY:')
+                console.log('  markingDetails:', markingDetails)
+                console.log('  markingDetails.isSubjectWise:', markingDetails.isSubjectWise)
+                console.log('  markingDetails.subjects:', markingDetails.subjects)
+                return null
+              })()}
               
               <div className="space-y-4">
                 {markingDetails.isSubjectWise ? (
