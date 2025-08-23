@@ -18,7 +18,7 @@ export const EXAM_DURATION_CONFIGS = {
     subjectTimings: {
       Physics: { duration: 60, unlockDelay: 0 },
       Chemistry: { duration: 60, unlockDelay: 0 },
-      Maths: { duration: 60, unlockDelay: 0 }
+      Mathematics: { duration: 60, unlockDelay: 0 } // Use consistent naming
     }
   },
   'MHT-CET': {
@@ -27,7 +27,10 @@ export const EXAM_DURATION_CONFIGS = {
       Physics: { duration: 60, unlockDelay: 0 },
       Chemistry: { duration: 60, unlockDelay: 0 },
       Biology: { duration: 60, unlockDelay: 90 }, // Bio unlocks after 90 min
-      Maths: { duration: 60, unlockDelay: 90 } // Maths unlocks after 90 min
+      Mathematics: { duration: 60, unlockDelay: 90 }, // Mathematics unlocks after 90 min
+      // Handle common variations of Mathematics subject name
+      Maths: { duration: 60, unlockDelay: 90 },
+      Math: { duration: 60, unlockDelay: 90 }
     }
   }
 };

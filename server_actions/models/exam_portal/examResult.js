@@ -126,6 +126,10 @@ const ExamResultSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "DefaultNegativeMarkingRule",
     },
+    positiveMarks: {
+      type: Number,
+      default: 4, // Default positive marks per question
+    },
     negativeMarks: {
       type: Number,
       default: 0,

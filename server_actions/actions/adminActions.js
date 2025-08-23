@@ -2435,7 +2435,20 @@ export async function getPredefinedMarks(questionData) {
         
         const { stream, subject, standard, questionType = 'MCQ' } = questionData
         
+        // DEBUG: Log incoming parameters
+        console.log('=== getPredefinedMarks DEBUG START ===')
+        console.log('Incoming parameters:', {
+            stream,
+            subject,
+            standard,
+            questionType,
+            standardIsNull: standard === null,
+            standardIsEmpty: standard === '',
+            standardIsUndefined: standard === undefined
+        })
+        
         if (!stream || !subject) {
+            console.log('ERROR: Missing required parameters - stream or subject')
             return {
                 success: false,
                 message: "Stream and subject are required",
@@ -2457,6 +2470,21 @@ export async function getPredefinedMarks(questionData) {
             stream: stream,
             isActive: true
         }).sort({ priority: -1 })
+        
+        // DEBUG: Log all matching rules for this stream
+        console.log(`Found ${rules.length} rules for stream: ${stream}`)
+        rules.forEach((rule, index) => {
+            console.log(`Rule ${index + 1}:`, {
+                _id: rule._id,
+                stream: rule.stream,
+                subject: rule.subject,
+                standard: rule.standard,
+                questionType: rule.questionType,
+                positiveMarks: rule.positiveMarks,
+                priority: rule.priority,
+                isActive: rule.isActive
+            })
+        })
         
         for (const rule of rules) {
             // 1. Question type + Subject + Standard specific (highest priority)
@@ -2513,14 +2541,27 @@ export async function getPredefinedMarks(questionData) {
                 }
             }
             // 6. Subject specific (no question type)
-            else if (!rule.questionType && rule.subject && !rule.standard) {
+            else if ((!rule.questionType || rule.questionType === questionType) && rule.subject && !rule.standard) {
+                console.log(`Priority 6 - Checking rule ${rule._id}:`, {
+                    ruleSubject: rule.subject,
+                    inputSubject: subject,
+                    subjectsMatch: subject === rule.subject,
+                    ruleQuestionType: rule.questionType,
+                    inputQuestionType: questionType,
+                    questionTypeMatch: (!rule.questionType || rule.questionType === questionType),
+                    ruleHasSubject: !!rule.subject,
+                    ruleHasNoStandard: !rule.standard
+                })
                 if (subject === rule.subject) {
+                    console.log(`✅ MATCH FOUND - Priority 6! Using rule ${rule._id}`)
                     return {
                         success: true,
                         marks: rule.positiveMarks,
                         ruleSource: `Subject rule: ${rule.stream} > ${rule.subject}`,
                         ruleId: rule._id
                     }
+                } else {
+                    console.log(`❌ Subject mismatch: "${subject}" !== "${rule.subject}"`)
                 }
             }
             // 7. Standard specific (no question type, no subject)
@@ -2546,6 +2587,8 @@ export async function getPredefinedMarks(questionData) {
         }
         
         // Default fallback if no rules match
+        console.log('❌ NO RULES MATCHED - Using default fallback (4 marks)')
+        console.log('=== getPredefinedMarks DEBUG END ===')
         return {
             success: true,
             marks: 4, // Default marks

@@ -34,6 +34,42 @@ import {
 import { validateExamDuration } from "../../../utils/examDurationHelpers";
 import { getEffectiveExamDuration } from "../../../utils/examTimingUtils";
 
+// Subject normalization function for consistent matching across all exam evaluation logic
+function normalizeSubject(subject) {
+  if (!subject) return null;
+  
+  const normalized = subject.toString().toLowerCase().trim();
+  
+  // Handle math variations - normalize to 'mathematics'
+  if (['math', 'maths', 'mathematics'].includes(normalized)) {
+    return 'mathematics';
+  }
+  
+  // Handle physics variations - normalize to 'physics'
+  if (['phy', 'physics'].includes(normalized)) {
+    return 'physics';
+  }
+  
+  // Handle chemistry variations - normalize to 'chemistry' 
+  if (['chem', 'chemistry'].includes(normalized)) {
+    return 'chemistry';
+  }
+  
+  // Handle biology variations - normalize to 'biology'
+  if (['bio', 'biology'].includes(normalized)) {
+    return 'biology';
+  }
+  
+  // Return normalized version for any other subjects
+  return normalized;
+}
+
+// Data type normalization function for consistent comparison
+function normalizeStandard(standard) {
+  if (!standard) return null;
+  return standard.toString().trim();
+}
+
 
 // im getting error - Error: Maximum call stack size exceeded this has happened to me alot of times in this project and to solve it use JSON.parse(JSON.stringify(exam)) wherever needed
 // or also use lean() 
@@ -50,9 +86,16 @@ async function getNegativeMarkingRuleForExam(exam) {
     }).sort({ priority: -1 });
 
     for (const rule of defaultRules) {
-      // Check for exact match with subject and standard
+      // Check for exact match with subject and standard - ENHANCED with normalization
       if (rule.subject && rule.standard) {
-        if (exam.examSubject.includes(rule.subject) && rule.standard === exam.standard) {
+        // Normalize exam subjects array for comparison
+        const normalizedExamSubjects = (exam.examSubject || []).map(subj => normalizeSubject(subj));
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (normalizedExamSubjects.includes(normalizedRuleSubject) && 
+            ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -64,7 +107,10 @@ async function getNegativeMarkingRuleForExam(exam) {
       }
       // Check for standard-specific rule
       else if (!rule.subject && rule.standard) {
-        if (rule.standard === exam.standard) {
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -179,7 +225,13 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       
       // 1. Section + Question type + Subject + Standard specific (highest priority)
       if (isRuleSectionMatch && rule.questionType === questionType && rule.subject && rule.standard && rule.section && rule.section !== "All") {
-        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject && 
+            ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -193,7 +245,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 2. Section + Question type + Subject specific
       else if (isRuleSectionMatch && rule.questionType === questionType && rule.subject && !rule.standard && rule.section && rule.section !== "All") {
-        if (questionSubject === rule.subject) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -207,7 +262,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 3. Section + Question type + Standard specific
       else if (isRuleSectionMatch && rule.questionType === questionType && !rule.subject && rule.standard && rule.section && rule.section !== "All") {
-        if (rule.standard === exam.standard) {
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -233,7 +291,13 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 5. Question type + Subject + Standard specific (no section specified or "All")
       else if (rule.questionType === questionType && rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
-        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject && 
+            ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -247,7 +311,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 6. Question type + Subject specific (no section specified or "All")
       else if (rule.questionType === questionType && rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
-        if (questionSubject === rule.subject) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -261,7 +328,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 7. Question type + Standard specific (no section specified or "All")
       else if (rule.questionType === questionType && !rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
-        if (rule.standard === exam.standard) {
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -287,7 +357,13 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 9. Section + Subject + Standard specific (no question type)
       else if (isRuleSectionMatch && !rule.questionType && rule.subject && rule.standard && rule.section && rule.section !== "All") {
-        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject && 
+            ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -301,7 +377,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 10. Section + Subject specific (no question type)
       else if (isRuleSectionMatch && !rule.questionType && rule.subject && !rule.standard && rule.section && rule.section !== "All") {
-        if (questionSubject === rule.subject) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -315,7 +394,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 11. Section + Standard specific (no question type)
       else if (isRuleSectionMatch && !rule.questionType && !rule.subject && rule.standard && rule.section && rule.section !== "All") {
-        if (rule.standard === exam.standard) {
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -341,7 +423,13 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 13. Subject + Standard specific (no question type, no section specified or "All")
       else if (!rule.questionType && rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
-        if (questionSubject === rule.subject && rule.standard === exam.standard) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject && 
+            ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -355,7 +443,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 14. Subject specific (no question type, no section specified or "All")
       else if (!rule.questionType && rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
-        if (questionSubject === rule.subject) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -369,7 +460,10 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
       }
       // 15. Standard specific (no question type, no subject, no section specified or "All")
       else if (!rule.questionType && !rule.subject && rule.standard && (!rule.section || rule.section === "All")) {
-        if (rule.standard === exam.standard) {
+        const examStandardStr = normalizeStandard(exam.standard);
+        const ruleStandardStr = normalizeStandard(rule.standard);
+        
+        if (ruleStandardStr === examStandardStr) {
           return {
             source: "super_admin_default",
             negativeMarks: rule.negativeMarks,
@@ -964,6 +1058,7 @@ async function submitExamResultInternal(examData) {
       negativeMarkingInfo: {
         ruleUsed: null, // College-specific rules no longer exist
         defaultRuleUsed: examNegativeMarkingRule.defaultRuleId,
+        positiveMarks: examNegativeMarkingRule.positiveMarks || 4, // Include positive marks from marking rule
         negativeMarks: examNegativeMarkingRule.negativeMarks,
         ruleDescription: "Question-specific rules applied (see questionAnalysis for details)",
         ruleSource: examNegativeMarkingRule.source

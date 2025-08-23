@@ -97,74 +97,11 @@ export function calculateRemainingTimeLegacy(startTimeMs, exam) {
     return Math.floor(remainingMs / 1000); // Return seconds
 }
 
-/**
- * Get subject unlock schedule for competitive exams
- * @param {Object} exam - The exam object
- * @param {Date} startTime - Exam start time
- * @returns {Object} Subject access information
- */
-export function getSubjectUnlockSchedule(exam, startTime) {
-    if (!exam || !startTime) {
-        return { allUnlocked: true };
-    }
-    
-    const stream = exam.stream?.toLowerCase() || '';
-    const currentTime = new Date();
-    const elapsedMinutes = Math.floor((currentTime - startTime) / (1000 * 60));
-    
-    // NEET: All subjects available immediately (no locking)
-    if (stream.includes('neet')) {
-        return { allUnlocked: true };
-    }
-    
-    // MHT-CET: Biology and Mathematics unlock after 90 minutes (but NOT JEE)
-    if ((stream.includes('mht') && stream.includes('cet')) || 
-        (stream.includes('cet') && !stream.includes('jee'))) {
-        const unlockTime = 90; // 90 minutes
-        const subjectAccess = {};
-        
-        // Physics and Chemistry are always unlocked
-        subjectAccess['Physics'] = { isLocked: false, remainingTime: 0 };
-        subjectAccess['Chemistry'] = { isLocked: false, remainingTime: 0 };
-        
-        // Biology and Mathematics unlock after 90 minutes
-        const restrictedSubjects = ['Biology', 'Mathematics', 'Maths', 'Math'];
-        restrictedSubjects.forEach(subject => {
-            if (elapsedMinutes >= unlockTime) {
-                subjectAccess[subject] = { isLocked: false, remainingTime: 0 };
-            } else {
-                const remainingTime = unlockTime - elapsedMinutes;
-                subjectAccess[subject] = { isLocked: true, remainingTime };
-            }
-        });
-        
-        return {
-            allUnlocked: elapsedMinutes >= unlockTime,
-            subjectAccess,
-            streamConfig: {
-                name: 'MHT-CET',
-                unlockTime,
-                restrictedSubjects
-            }
-        };
-    }
-    
-    // JEE and other exams: All subjects unlocked by default
-    return { allUnlocked: true };
-}
+// NOTE: getSubjectUnlockSchedule function moved to examDurationHelpers.js to avoid duplication
+// Import it from there if needed: import { getSubjectUnlockSchedule } from './examDurationHelpers.js'
 
-/**
- * Get remaining time for a specific subject to unlock
- * @param {Object} subjectAccess - Subject access object from getSubjectUnlockSchedule
- * @param {string} subject - Subject name
- * @returns {number} Remaining time in minutes
- */
-export function getSubjectUnlockTime(subjectAccess, subject) {
-    if (!subjectAccess || !subject) return 0;
-    
-    const access = subjectAccess[subject];
-    return access ? access.remainingTime : 0;
-}
+// NOTE: getSubjectUnlockTime function moved to examDurationHelpers.js to avoid duplication
+// Import it from there if needed: import { getSubjectUnlockTime } from './examDurationHelpers.js'
 
 /**
  * Format duration from seconds to human readable format
@@ -186,35 +123,8 @@ export function formatDuration(seconds) {
     return parts.join(' ');
 }
 
-/**
- * Get exam access rules for different competitive exam types
- * @param {Object} exam - The exam object
- * @returns {Object} Access rules and restrictions
- */
-export function getExamAccessRules(exam) {
-    if (!exam) return { restrictedSubjects: [] };
-    
-    const stream = exam.stream?.toLowerCase() || '';
-    
-    if (stream.includes('neet')) {
-        return {
-            restrictedSubjects: [], // No restrictions for NEET
-            unlockAfterMinutes: 0,
-            examType: 'NEET'
-        };
-    }
-    
-    if ((stream.includes('mht') && stream.includes('cet')) || 
-        (stream.includes('cet') && !stream.includes('jee'))) {
-        return {
-            restrictedSubjects: ['Biology', 'Mathematics', 'Maths', 'Math'],
-            unlockAfterMinutes: 90,
-            examType: 'MHT-CET'
-        };
-    }
-    
-    return { restrictedSubjects: [] };
-}
+// NOTE: getExamAccessRules function moved to examDurationHelpers.js to avoid duplication
+// Import it from there if needed: import { getExamAccessRules } from './examDurationHelpers.js'
 
 /**
  * Validate exam duration based on stream requirements

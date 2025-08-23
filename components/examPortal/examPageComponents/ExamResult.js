@@ -272,7 +272,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
       }
 
       return {
-        positiveMarks: result.negativeMarkingInfo.positiveMarks || 4,
+        positiveMarks: result.negativeMarkingInfo.positiveMarks || exam?.positiveMarks || exam?.marks || 1,
         negativeMarks: result.negativeMarkingInfo.negativeMarks || 0,
         isSubjectWise,
         subjects: subjectWiseMarks,
@@ -283,7 +283,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
     // Priority 3: Final fallback to exam basic properties (least preferred)
     return {
-      positiveMarks: exam?.positiveMarks || exam?.marks || 4,
+      positiveMarks: exam?.positiveMarks || exam?.marks || 1,
       negativeMarks: exam?.negativeMarks || 0,
       isSubjectWise: false,
       subjects: {},
