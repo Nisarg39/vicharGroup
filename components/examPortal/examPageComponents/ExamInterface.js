@@ -114,31 +114,53 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Handle manual subject changes with improved CET support
     const handleSubjectChange = (newSubject) => {
-        console.log('Manual subject change attempted:', { newSubject, currentSubject: selectedSubject, competitiveExamAccess });
+        console.log('CET Debug: Manual subject change attempted:', { 
+            newSubject, 
+            currentSubject: selectedSubject, 
+            isCetExam,
+            competitiveExamAccess: competitiveExamAccess.subjectAccess 
+        });
         
-        // Check if subject is locked with better subject name matching for CET
+        // Check if subject is locked with enhanced subject name matching for CET
         if (isCompetitiveExam && competitiveExamAccess.subjectAccess) {
-            // Try multiple subject name variations for CET exams
+            // Enhanced subject name variations for CET exams
             const subjectVariations = [newSubject];
+            
             if (isCetExam) {
+                // Mathematics variations
                 if (newSubject.toLowerCase().includes('math')) {
                     subjectVariations.push('Mathematics', 'Maths', 'Math');
-                } else if (newSubject.toLowerCase().includes('bio')) {
-                    subjectVariations.push('Biology', 'Botany', 'Zoology');
+                }
+                // Biology variations  
+                else if (newSubject.toLowerCase().includes('bio')) {
+                    subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
+                }
+                // Handle reverse matching - if selecting "Biology", also check "Bio"
+                else if (newSubject === 'Biology') {
+                    subjectVariations.push('Bio', 'Botany', 'Zoology');
+                } else if (newSubject === 'Mathematics') {
+                    subjectVariations.push('Maths', 'Math');
                 }
             }
+            
+            console.log('CET Debug: Checking subject variations:', subjectVariations);
             
             // Check if any variation is locked
             let isLocked = false;
             let remainingTime = 0;
+            let lockedVariation = null;
+            
             for (const variation of subjectVariations) {
                 const subjectAccess = competitiveExamAccess.subjectAccess[variation];
                 if (subjectAccess?.isLocked) {
                     isLocked = true;
                     remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, variation);
+                    lockedVariation = variation;
                     break;
                 }
             }
+            
+            console.log('CET Debug: Lock check result:', { isLocked, remainingTime, lockedVariation });
             
             if (isLocked) {
                 toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
@@ -146,10 +168,23 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             }
         }
         
+        // Clear any existing manual selection timeout
+        if (manualSelectionTimeoutRef.current) {
+            clearTimeout(manualSelectionTimeoutRef.current);
+        }
+        
         // Mark this as a manual selection to prevent auto-switching
         manualSubjectSelectionRef.current = true;
+        console.log('CET Debug: Setting manual selection flag to prevent auto-override');
+        
+        // Set timeout to clear manual selection flag after 3 seconds
+        manualSelectionTimeoutRef.current = setTimeout(() => {
+            manualSubjectSelectionRef.current = false;
+            console.log('CET Debug: Manual selection flag cleared after timeout');
+        }, 3000);
+        
         setSelectedSubject(newSubject);
-        console.log('Subject changed manually to:', newSubject);
+        console.log('CET Debug: Subject changed manually to:', newSubject);
     };
 
     // Filter and organize questions by selected subject
@@ -386,28 +421,62 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Prevents circular dependencies and stabilizes subject switching
     const subjectSwitchInProgressRef = useRef(false);
     const manualSubjectSelectionRef = useRef(false); // Track manual selections
+    const manualSelectionTimeoutRef = useRef(null); // Track timeout for manual selection reset
     
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime || subjectSwitchInProgressRef.current) return;
         
         // CRITICAL FIX: Don't auto-switch if user just made a manual selection
         if (manualSubjectSelectionRef.current) {
-            manualSubjectSelectionRef.current = false;
+            console.log('CET Debug: Skipping auto-switch due to recent manual selection');
             return;
         }
         
         try {
             // Use already computed competitiveExamAccess to avoid recalculation
-            if (competitiveExamAccess.allUnlocked) return;
+            if (competitiveExamAccess.allUnlocked) {
+                if (isCetExam) {
+                    console.log('CET Debug: All subjects unlocked, no auto-switching needed');
+                }
+                return;
+            }
             
-            // Check if current subject is locked
-            const currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
+            // Enhanced subject lock checking with CET-specific name matching
+            let currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
+            
+            // For CET exams, also check subject name variations
+            if (isCetExam && !currentSubjectAccess) {
+                const subjectVariations = [selectedSubject];
+                if (selectedSubject.toLowerCase().includes('math')) {
+                    subjectVariations.push('Mathematics', 'Maths', 'Math');
+                } else if (selectedSubject.toLowerCase().includes('bio')) {
+                    subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
+                } else if (selectedSubject === 'Biology') {
+                    subjectVariations.push('Bio');
+                } else if (selectedSubject === 'Mathematics') {
+                    subjectVariations.push('Maths', 'Math');
+                }
+                
+                for (const variation of subjectVariations) {
+                    const access = competitiveExamAccess.subjectAccess?.[variation];
+                    if (access) {
+                        currentSubjectAccess = access;
+                        console.log('CET Debug: Found subject access via variation:', { selectedSubject, variation, access });
+                        break;
+                    }
+                }
+            }
+            
             if (currentSubjectAccess?.isLocked) {
+                console.log('CET Debug: Current subject is locked, finding alternative:', { selectedSubject, currentSubjectAccess });
+                
                 // Find the first available (unlocked) subject
                 const availableSubject = allSubjects.find(subject => {
                     const subjectAccess = competitiveExamAccess.subjectAccess?.[subject];
                     return !subjectAccess?.isLocked;
                 });
+                
+                console.log('CET Debug: Available subject found:', { availableSubject, allSubjects });
                 
                 if (availableSubject && availableSubject !== selectedSubject) {
                     // Prevent cascading subject switches
@@ -416,6 +485,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     
                     const remainingTime = Math.ceil(currentSubjectAccess.remainingTime / 1000 / 60);
                     toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
+                    
+                    console.log('CET Debug: Auto-switched subjects:', { 
+                        from: selectedSubject, 
+                        to: availableSubject, 
+                        remainingTime 
+                    });
                     
                     // Reset the flag after a short delay
                     setTimeout(() => {
@@ -553,6 +628,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         exam.examAvailability,
         exam.endTime
     ]);
+
+    // Cleanup manual selection timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (manualSelectionTimeoutRef.current) {
+                clearTimeout(manualSelectionTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // --- FULLSCREEN LOGIC START ---
     const [warningDialog, setWarningDialog] = useState(false);
