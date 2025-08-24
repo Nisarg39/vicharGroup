@@ -11,6 +11,7 @@ import ExamNavigation from "./examInterfaceComponents/ExamNavigation"
 import ExamStartScreen from "./examInterfaceComponents/ExamStartScreen"
 import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
+import ExamTimer from "./ExamTimer"
 import { VicharCard } from "../../ui/vichar-card"
 import { VicharButton } from "../../ui/vichar-button"
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs"
@@ -35,7 +36,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [isExamStarted, setIsExamStarted] = useState(false)
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
     // Removed: examProgress state - simplified progress tracking
-    const timerRef = useRef(null)
+    const timerRef = useRef(null) // Used for cleanup, actual timer in ExamTimer component
     const mainExamRef = useRef(null); // For fullscreen
     const warningsShownRef = useRef(new Set()); // Track which warnings have been shown
     const timerInitializedRef = useRef(false); // Track if timer has been initialized
@@ -633,78 +634,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         toast.success("Exam started! Good luck!");
     };
 
-    // FIXED: Timer countdown with stable dependencies and debounced updates
-    // Prevents cascading state updates and React error #185
-    const lastTimeUpdateRef = useRef(0);
-    const autoSubmitTriggeredRef = useRef(false);
-    
-    useEffect(() => {
-        if (!isExamStarted || !startTime) return;
-        
-        timerRef.current = setInterval(() => {
-            try {
-                // Use consistent helper function for time calculation
-                const calculatedTimeLeft = calculateRemainingTime(exam, startTime);
-                
-                // STABLE UPDATE: Only update state if time has actually changed by at least 1 second
-                // This prevents unnecessary re-renders and cascading effects
-                if (Math.abs(calculatedTimeLeft - lastTimeUpdateRef.current) >= 1) {
-                    lastTimeUpdateRef.current = calculatedTimeLeft;
-                    setTimeLeft(calculatedTimeLeft);
-                }
-                
-                // Show time warnings - using stable warning thresholds
-                const warnings = [
-                    { time: 300, message: "⚠️ 5 minutes remaining! Please review your answers.", type: "warning" },
-                    { time: 60, message: "🚨 1 minute remaining! Exam will auto-submit soon.", type: "error" },
-                    { time: 30, message: "⏰ 30 seconds remaining! Auto-submit imminent.", type: "error" },
-                    { time: 10, message: "🔥 10 seconds remaining! Submitting now...", type: "error" }
-                ];
-                
-                // STABLE WARNING SYSTEM: Check warnings without triggering state changes
-                warnings.forEach(warning => {
-                    if (calculatedTimeLeft === warning.time && !warningsShownRef.current.has(warning.time)) {
-                        warningsShownRef.current.add(warning.time);
-                        if (warning.type === "error") {
-                            toast.error(warning.message, { duration: 4000 });
-                        } else {
-                            toast(warning.message, {
-                                icon: '⚠️',
-                                style: {
-                                    background: '#f59e0b',
-                                    color: '#fff',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                },
-                                duration: 4000
-                            });
-                        }
-                    }
-                });
-                
-                // STABLE AUTO-SUBMIT: Prevent multiple auto-submit calls
-                if (calculatedTimeLeft <= 0 && !autoSubmitTriggeredRef.current) {
-                    autoSubmitTriggeredRef.current = true;
-                    handleAutoSubmit();
-                }
-            } catch (error) {
-                console.error('Timer calculation error:', error);
-                // Continue timer but skip this update
-            }
-        }, 1000);
-        
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-        };
-    }, [
-        isExamStarted, 
-        startTime,
-        exam._id, // Only essential exam properties
-        exam.examAvailability,
-        exam.endTime
-    ]);
+    // Timer logic moved to ExamTimer component
 
     // Cleanup manual selection timeout on unmount
     useEffect(() => {
@@ -1283,6 +1213,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             ref={mainExamRef}
             className={`bg-gray-50 ${isExamStarted ? 'exam-mode' : ''}`}
         >
+            {/* ExamTimer Component - Handles timer logic */}
+            <ExamTimer
+                isExamStarted={isExamStarted}
+                startTime={startTime}
+                exam={exam}
+                onTimeUpdate={setTimeLeft}
+                onTimeExpired={handleAutoSubmit}
+                warningsShownRef={warningsShownRef}
+            />
             {/* Warning Dialog */}
             {warningDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
