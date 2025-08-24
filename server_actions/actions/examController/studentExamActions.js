@@ -326,7 +326,7 @@ function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
         }
 
         return {
-          source: "bulk_optimized_default",
+          source: "super_admin_default",
           negativeMarks: rule.negativeMarks,
           positiveMarks: rule.positiveMarks,
           description: rule.description || `Optimized rule: ${rule.stream} > ${questionType}`,
@@ -341,7 +341,7 @@ function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
     // Fallback to exam's negativeMarks field if no specific rule found
     if (exam.negativeMarks !== undefined && exam.negativeMarks !== null) {
       return {
-        source: "exam_fallback",
+        source: "exam_specific",
         negativeMarks: exam.negativeMarks,
         positiveMarks: question.marks || 4,
         description: `Exam default: ${exam.negativeMarks} negative marks`,
@@ -353,7 +353,7 @@ function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
 
     // Final fallback
     return {
-      source: "system_fallback",
+      source: "exam_specific",
       negativeMarks: 1,
       positiveMarks: 4,
       description: "System default: 1 negative mark, 4 positive marks",
@@ -366,7 +366,7 @@ function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
     console.error("Error getting marking rule from bulk data:", error);
     // System fallback
     return {
-      source: "error_fallback",
+      source: "exam_specific",
       negativeMarks: 1,
       positiveMarks: 4,
       description: "Error fallback: 1 negative mark, 4 positive marks",
