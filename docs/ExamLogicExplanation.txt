@@ -1,0 +1,30 @@
+let me give you an idea of how the exam portal   │
+│   timming works . the student starts the exam      │
+│   from @components/classroom/examViewComponents/M  │
+│   yTestSeries.js where there are 2 types of exam   │
+│   shown that go to same Exam Portal i.e Schdeuled  │
+│   Exam and Practice Exam. For Schdeule Exam the    │
+│   start exam button appears based on System        │
+│   Timming but when he clicks on Start Exam a       │
+│   server function validates the actual time and    │
+│   does not let the student go to the exam page .   │
+│   the student is given a buffer time of 2-3 mins   │
+│   i dont know exactly to go to exam portal         │
+│   earlier but this happens only when he changes    │
+│   the system time forward . so as also he wont     │
+│   reach the exact exam portal page too earlier     │
+│   and also cant go the exam page exactly because   │
+│   the exam page requires id of the exam which is   │
+│   not exposed to him . then talking about          │
+│   duration of exam . for scheduled exam duration   │
+│   is based on end time of the exam that info       │
+│   comes from server and the timer in the exam      │
+│   portal always readjust when the student          │
+│   bymistakly goes out and comes to the exam page   │
+│   again with coninue exam option where the timer   │
+│   is readjusted again with end time . for          │
+│   practice exam the timing security does not       │
+│   matter because it does not require any strict    │
+│   timing requirement and it is build for the       │
+│   student to have fair timing practice and does    │
+│   not require any timing security . 

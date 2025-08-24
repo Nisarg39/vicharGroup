@@ -12,6 +12,16 @@ import ExamStartScreen from "./examInterfaceComponents/ExamStartScreen"
 import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
 import ExamTimer from "./ExamTimer"
+
+// PROGRESSIVE COMPUTATION: Import progressive scoring integration
+import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/progressive-scoring/ExamInterfaceIntegration"
+
+// DIRECT STORAGE SYSTEM: Import enhanced submission handler for 15ms target
+import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
+
+// PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
+import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
+
 import { VicharCard } from "../../ui/vichar-card"
 import { VicharButton } from "../../ui/vichar-button"
 import { Tabs, TabsList, TabsTrigger } from "../../ui/tabs"
@@ -20,7 +30,8 @@ import { useState as useStateReact } from "react"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { getSubjectUnlockTime, getExamAccessRules, getSubjectUnlockSchedule } from "../../../utils/examDurationHelpers"
 import { calculateRemainingTime, getEffectiveExamDuration } from "../../../utils/examTimingUtils"
-// Server auto-save removed - only saves locally until submission
+// Progressive Computation System
+import { handleProgressiveSubmission } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 
 // Removed: normalizeSubject function - now using consistent subject names from helper functions
 
@@ -52,11 +63,87 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [showMobileNavigator, setShowMobileNavigator] = useState(false);
     const [warningCount, setWarningCount] = useState(0); // Track total warnings
 
+    // ENHANCED SUBMISSION FEEDBACK STATE
+    const [submissionState, setSubmissionState] = useState({
+        status: 'idle', // 'idle', 'submitting', 'success', 'error'
+        message: '',
+        performanceMetrics: null,
+        showProgress: false,
+        performanceBadge: null,
+        submissionTime: 0
+    });
+    
+    // ACCESSIBILITY: Focus management for submission modals
+    const modalRef = useRef(null);
+    
+    // Handle keyboard navigation for modals
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            // Only handle keyboard events when modal is open
+            if (submissionState.status === 'idle') return;
+            
+            // Handle Escape key for error modal
+            if (event.key === 'Escape' && submissionState.status === 'error') {
+                setSubmissionState({ 
+                    status: 'idle', 
+                    message: '', 
+                    performanceMetrics: null, 
+                    showProgress: false, 
+                    performanceBadge: null, 
+                    submissionTime: 0 
+                });
+                return;
+            }
+            
+            // Handle Tab key for focus trapping in error modal
+            if (event.key === 'Tab' && submissionState.status === 'error') {
+                const modal = modalRef.current;
+                if (!modal) return;
+                
+                const focusableElements = modal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+                
+                if (event.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        event.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        event.preventDefault();
+                    }
+                }
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [submissionState.status]);
+    
+    // Focus management when modals open/close
+    useEffect(() => {
+        if (submissionState.status === 'error' && modalRef.current) {
+            // Focus the first button in error modal
+            const firstButton = modalRef.current.querySelector('button');
+            if (firstButton) {
+                setTimeout(() => firstButton.focus(), 100);
+            }
+        }
+    }, [submissionState.status]);
+
+    // PROGRESSIVE COMPUTATION: Initialize progressive scoring engine
+    const progressiveScoring = useProgressiveScoring(exam, questions, student);
+
     // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
 
     // 2. Add state for startTime
     const [startTime, setStartTime] = useState(null);
+
 
     // --- SUBJECTWISE FILTERING ---
     // Check exam stream types for specialized logic
@@ -347,6 +434,43 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [progressKey]);
 
+    // PROGRESSIVE COMPUTATION: Initialize when exam starts
+    useEffect(() => {
+        if (isExamStarted && progressiveScoring?.isSupported) {
+            console.log('🔧 Initializing progressive scoring engine with performance monitoring...');
+            
+            // Initialize performance monitoring for 15ms target tracking
+            const performanceMonitor = getPerformanceMonitor();
+            performanceMonitor.initializeSession(
+                exam._id, 
+                student._id, 
+                exam.stream || 'general'
+            );
+            
+            progressiveScoring.initializeProgressive().then(result => {
+                if (result.success) {
+                    console.log('✅ Progressive scoring activated for exam');
+                    console.log(`📊 Engine loaded ${result.questionsLoaded} questions`);
+                    console.log('📈 Performance monitoring active for 15ms target tracking');
+                    toast.success("Ultra-fast scoring activated!");
+                } else {
+                    console.log('⚠️ Progressive scoring failed, using server computation');
+                    console.log('Reason:', result.reason);
+                }
+            }).catch(error => {
+                console.error('❌ Progressive initialization error:', error);
+            });
+        }
+    }, [isExamStarted, progressiveScoring]);
+
+    // PROGRESSIVE COMPUTATION: Update answers in real-time
+    useEffect(() => {
+        if (progressiveScoring?.isInitialized?.() && Object.keys(answers).length > 0) {
+            progressiveScoring.updateProgressiveAnswers(answers);
+        }
+    }, [answers, progressiveScoring]);
+
+
 
     // Mark initial question as visited when exam starts or when navigating
     useEffect(() => {
@@ -631,6 +755,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // Clear any previous warnings for this exam session
         warningsShownRef.current.clear();
         timerInitializedRef.current = false; // Reset timer initialization flag
+        
+        // Progressive scoring initialization now handled by useEffect above
+        
         toast.success("Exam started! Good luck!");
     };
 
@@ -857,15 +984,204 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         };
     }, [isExamStarted]);
 
-    // On exam submit, exit fullscreen
-    const submitExam = () => {
-        examCompletedRef.current = true;
-        setWarningDialog(false); // Close warning dialog
-        exitFullscreen();
-        // Calculate score (basic implementation)
-        let score = 0;
-        let totalMarks = 0;
+    // Enhanced exam submission with progressive computation support and performance feedback
+    const submitExam = async () => {
+        try {
+            examCompletedRef.current = true;
+            setWarningDialog(false); // Close warning dialog
+            exitFullscreen();
 
+            // ENHANCED SUBMISSION FEEDBACK: Show loading state immediately
+            setSubmissionState({ 
+                status: 'submitting', 
+                message: 'Processing your exam...',
+                showProgress: true,
+                performanceMetrics: null,
+                performanceBadge: null,
+                submissionTime: 0
+            });
+        
+        // Prepare exam data for submission
+        const examSubmissionData = {
+            answers,
+            score: 0, // Will be calculated by progressive system or server
+            totalMarks: 0,
+            timeTaken: exam.examAvailability === 'scheduled' 
+                ? Math.floor((Date.now() - startTime) / 1000) 
+                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+            completedAt: new Date().toISOString(),
+            visitedQuestions: Array.from(visitedQuestions),
+            markedQuestions: Array.from(markedQuestions),
+            warnings: warningCount,
+            examAvailability: exam?.examAvailability,
+            examEndTime: exam?.endTime,
+            isAutoSubmit: true,
+            timeRemaining: timeLeft
+        };
+
+        const submissionStartTime = Date.now();
+
+        // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
+        if (progressiveScoring?.isInitialized?.()) {
+            try {
+                console.log('🚀 Attempting enhanced progressive submission with direct storage...');
+                
+                // Get complete ExamResult data from progressive engine
+                const progressiveResult = await progressiveScoring.getProgressiveResults();
+                
+                if (progressiveResult.success && progressiveResult.results && progressiveResult.isPreComputed) {
+                    console.log('📊 Progressive computation data ready, submitting via direct storage...');
+                    
+                    // Prepare complete data structure for direct storage
+                    const directStorageData = {
+                        ...progressiveResult.results,
+                        examId: exam._id,
+                        studentId: student._id,
+                        timeTaken: exam.examAvailability === 'scheduled' 
+                            ? Math.floor((Date.now() - startTime) / 1000) 
+                            : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                        completedAt: new Date().toISOString(),
+                        submittedAt: new Date().toISOString(),
+                        visitedQuestions: Array.from(visitedQuestions),
+                        markedQuestions: Array.from(markedQuestions),
+                        warnings: warningCount,
+                        examAvailability: exam?.examAvailability,
+                        examEndTime: exam?.endTime,
+                        isAutoSubmit: true,
+                        timeRemaining: timeLeft,
+                        
+                        // Raw data for fallback
+                        rawExamData: {
+                            examId: exam._id,
+                            studentId: student._id,
+                            answers,
+                            timeTaken: exam.examAvailability === 'scheduled' 
+                                ? Math.floor((Date.now() - startTime) / 1000) 
+                                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                            completedAt: new Date().toISOString(),
+                            visitedQuestions: Array.from(visitedQuestions),
+                            markedQuestions: Array.from(markedQuestions),
+                            warnings: warningCount
+                        }
+                    };
+                    
+                    // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
+                    const submissionStartTime = Date.now();
+                    const directResult = await submitProgressiveResultDirect(directStorageData);
+                    
+                    // Track performance metrics
+                    const performanceMonitor = getPerformanceMonitor();
+                    const performanceResults = performanceMonitor.logSubmissionAttempt(directResult, submissionStartTime);
+                    
+                    if (directResult.success) {
+                        const totalSubmissionTime = Date.now() - submissionStartTime;
+                        
+                        console.log(`✅ ULTRA-FAST submission completed in ${directResult.processingTime}ms`);
+                        console.log(`⚡ Performance improvement: ${directResult.performanceImprovement}`);
+                        console.log(`🎯 Target achieved: ${directResult.performanceMetrics?.targetAchieved}`);
+                        console.log(`📊 Performance rank: ${performanceResults.performanceRank}`);
+                        
+                        // ENHANCED SUBMISSION FEEDBACK: Success state with performance metrics
+                        const performanceBadge = performanceResults.target15msAchieved ? '⚡ Ultra-Fast' : 
+                                               totalSubmissionTime <= 50 ? '🚀 Very Fast' : 
+                                               totalSubmissionTime <= 100 ? '✅ Fast' : '✅ Complete';
+                        
+                        setSubmissionState({ 
+                            status: 'success', 
+                            message: 'Exam submitted successfully!',
+                            performanceMetrics: {
+                                submissionTime: totalSubmissionTime,
+                                target15msAchieved: performanceResults.target15msAchieved,
+                                performanceRank: performanceResults.performanceRank,
+                                processingTime: directResult.processingTime
+                            },
+                            performanceBadge: performanceBadge,
+                            submissionTime: totalSubmissionTime,
+                            showProgress: false 
+                        });
+                        
+                        if (performanceResults.target15msAchieved) {
+                            console.log('🏆 15ms TARGET ACHIEVED! ULTRA-FAST SUBMISSION SUCCESS!');
+                            // Show special toast for ultra-fast achievement
+                            toast.success(`🏆 Ultra-Fast Submission! Completed in ${totalSubmissionTime}ms`, { duration: 4000 });
+                        } else {
+                            toast.success(`Exam submitted successfully in ${totalSubmissionTime}ms`);
+                        }
+                        
+                        // Clear saved progress
+                        localStorage.removeItem(progressKey);
+                        
+                        // Call onComplete with enhanced results after brief delay to show feedback
+                        setTimeout(() => {
+                            if (typeof onComplete === 'function') {
+                                onComplete({
+                                    ...directResult,
+                                    performanceMetrics: {
+                                        ...directResult.performanceMetrics,
+                                        submissionTime: performanceResults.submissionTime,
+                                        target15msAchieved: performanceResults.target15msAchieved,
+                                        performanceRank: performanceResults.performanceRank
+                                    }
+                                });
+                            }
+                        }, 1500); // Show success feedback for 1.5 seconds
+                        return;
+                    } else {
+                        console.warn('⚠️ Direct storage submission failed, falling back to traditional method');
+                        console.log('🔍 Failure reason:', directResult.validationFailure?.reason);
+                        
+                        // Update submission state to show fallback
+                        setSubmissionState({ 
+                            status: 'submitting', 
+                            message: 'Switching to backup processing...',
+                            showProgress: true,
+                            performanceMetrics: null,
+                            performanceBadge: null,
+                            submissionTime: 0
+                        });
+                    }
+                } else {
+                    console.warn('⚠️ Progressive computation data not available, falling back to traditional method');
+                    console.log('🔍 Reason:', progressiveResult.reason);
+                    
+                    // Update submission state for traditional fallback
+                    setSubmissionState({ 
+                        status: 'submitting', 
+                        message: 'Processing with traditional computation...',
+                        showProgress: true,
+                        performanceMetrics: null,
+                        performanceBadge: null,
+                        submissionTime: 0
+                    });
+                }
+                
+                console.log('🔄 Using traditional submission fallback');
+            } catch (error) {
+                console.error('❌ Enhanced progressive submission error:', error);
+                console.log('🔄 Falling back to traditional server-side computation');
+                
+                // Update submission state for error recovery
+                setSubmissionState({ 
+                    status: 'submitting', 
+                    message: 'Recovering submission process...',
+                    showProgress: true,
+                    performanceMetrics: null,
+                    performanceBadge: null,
+                    submissionTime: 0
+                });
+            }
+        }
+
+        // FALLBACK: Traditional server-side computation
+        console.log('🔄 Using traditional server-side computation...');
+        
+        // Calculate score using traditional method
+        let score = 0;
+        
+        // FIXED: Use exam.totalMarks from database instead of summing individual question marks
+        // This prevents the 540 (180×3) bug where client calculation was incorrect
+        const totalMarks = exam.totalMarks || 0;
+        
         // Calculate score for ALL questions, not just current subject
         (questions || []).forEach(question => {
             const userAnswer = answers[question._id];
@@ -884,7 +1200,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     }
                 }
             }
-            totalMarks += question.marks || 4;
+            // REMOVED: totalMarks += question.marks || 4;  
+            // This was causing the 540 bug by incorrectly summing individual question marks
         });
 
         const examData = {
@@ -892,53 +1209,153 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             score,
             totalMarks,
             timeTaken: exam.examAvailability === 'scheduled' 
-                ? Math.floor((Date.now() - startTime) / 1000) // Actual time spent for scheduled exams
-                : (getEffectiveExamDuration(exam) * 60) - timeLeft, // Traditional calculation for practice exams
+                ? Math.floor((Date.now() - startTime) / 1000) 
+                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
             completedAt: new Date().toISOString(),
             visitedQuestions: Array.from(visitedQuestions),
             markedQuestions: Array.from(markedQuestions),
-            warnings: warningCount, // Include warnings in submission
-            examAvailability: exam?.examAvailability, // Pass exam availability type
-            examEndTime: exam?.endTime // Pass exam end time for scheduled exams
+            warnings: warningCount,
+            examAvailability: exam?.examAvailability,
+            examEndTime: exam?.endTime,
+            isAutoSubmit: true,
+            timeRemaining: timeLeft,
+            submissionType: 'traditional_server'
         };
 
+        const totalSubmissionTime = Date.now() - submissionStartTime;
+        
+        // ENHANCED SUBMISSION FEEDBACK: Traditional completion with performance metrics
+        const performanceBadge = totalSubmissionTime <= 100 ? '✅ Fast' : 
+                               totalSubmissionTime <= 500 ? '📊 Good' : 
+                               '✅ Complete';
+        
+        setSubmissionState({ 
+            status: 'success', 
+            message: 'Exam submitted successfully!',
+            performanceMetrics: {
+                submissionTime: totalSubmissionTime,
+                target15msAchieved: false,
+                performanceRank: totalSubmissionTime <= 100 ? 'FAST' : totalSubmissionTime <= 500 ? 'GOOD' : 'AVERAGE',
+                computationMethod: 'server_traditional'
+            },
+            performanceBadge: performanceBadge,
+            submissionTime: totalSubmissionTime,
+            showProgress: false 
+        });
+        
+        toast.success(`Exam submitted successfully in ${totalSubmissionTime}ms`);
+        
         // Clear saved progress
         localStorage.removeItem(progressKey);
         
-        // Calling onComplete with exam submission data
+        // Call onComplete with traditional data after brief delay to show feedback
+        setTimeout(() => {
+            if (typeof onComplete === 'function') {
+                onComplete({
+                    ...examData,
+                    performanceMetrics: {
+                        submissionTime: totalSubmissionTime,
+                        target15msAchieved: false,
+                        performanceRank: totalSubmissionTime <= 100 ? 'FAST' : 'AVERAGE',
+                        computationMethod: 'server_traditional'
+                    }
+                });
+            } else {
+                console.error('onComplete is not a function:', onComplete);
+            }
+        }, 1200); // Show success feedback for 1.2 seconds
         
-        if (typeof onComplete === 'function') {
-            onComplete(examData);
-        } else {
-            console.error('onComplete is not a function:', onComplete);
+        } catch (globalError) {
+            // COMPREHENSIVE ERROR HANDLING: Catch any unhandled errors in submission process
+            const totalSubmissionTime = Date.now() - submissionStartTime;
+            
+            console.error('❌ Global submission error:', globalError);
+            
+            setSubmissionState({ 
+                status: 'error', 
+                message: 'Unexpected Submission Error',
+                showProgress: false,
+                performanceMetrics: {
+                    submissionTime: totalSubmissionTime,
+                    errorType: 'global_submission_failure',
+                    fallbackAvailable: true,
+                    errorMessage: globalError.message
+                },
+                performanceBadge: null,
+                submissionTime: totalSubmissionTime
+            });
+            
+            // Show error toast with recovery guidance
+            toast.error('Unexpected error during submission. Please try again.', { duration: 5000 });
+            
+            console.log('🛡️ Global error handler activated - User can retry submission');
         }
     }
     // --- FULLSCREEN LOGIC END ---
 
     // Handle answer selection
-    const handleAnswerChange = (questionId, answer) => {
-        setAnswers(prev => ({
-            ...prev,
+    const handleAnswerChange = async (questionId, answer) => {
+        // Reset submission state when user makes changes
+        if (submissionState.status !== 'idle') {
+            setSubmissionState({
+                status: 'idle',
+                message: '',
+                performanceMetrics: null,
+                showProgress: false,
+                performanceBadge: null,
+                submissionTime: 0
+            });
+        }
+
+        // Update local answers state
+        const newAnswers = {
+            ...answers,
             [questionId]: answer
-        }))
+        };
+        
+        setAnswers(newAnswers);
+
+        // PROGRESSIVE COMPUTATION: Update progressive scoring in background
+        if (progressiveScoring?.isInitialized?.()) {
+            progressiveScoring.updateProgressiveAnswers(newAnswers);
+        }
     }
 
     // Handle multiple choice answers
-    const handleMultipleAnswerChange = (questionId, option, isChecked) => {
+    const handleMultipleAnswerChange = async (questionId, option, isChecked) => {
+        // Reset submission state when user makes changes
+        if (submissionState.status !== 'idle') {
+            setSubmissionState({
+                status: 'idle',
+                message: '',
+                performanceMetrics: null,
+                showProgress: false,
+                performanceBadge: null,
+                submissionTime: 0
+            });
+        }
+
+        let newAnswer;
+        
+        // Update local answers state and get new answer
         setAnswers(prev => {
             const currentAnswers = prev[questionId] || []
             if (isChecked) {
+                newAnswer = [...currentAnswers, option];
                 return {
                     ...prev,
-                    [questionId]: [...currentAnswers, option]
+                    [questionId]: newAnswer
                 }
             } else {
+                newAnswer = currentAnswers.filter(a => a !== option);
                 return {
                     ...prev,
-                    [questionId]: currentAnswers.filter(a => a !== option)
+                    [questionId]: newAnswer
                 }
             }
-        })
+        });
+
+        // OLD PROGRESSIVE COMPUTATION CODE REMOVED - Now handled by new progressive hook above
     }
 
     // Toggle question marking
@@ -1025,14 +1442,25 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }
 
-    // Auto-submit when time expires
+    // Auto-submit when time expires with enhanced feedback
     const handleAutoSubmit = () => {
+        console.log('🚨 AUTO-SUBMIT TRIGGERED!', {
+            examId: exam._id,
+            studentId: student._id,
+            timeLeft: timeLeft,
+            timestamp: new Date().toISOString(),
+            totalAnswers: Object.keys(answers).length,
+            visitedQuestions: visitedQuestions.size,
+            markedQuestions: markedQuestions.size,
+            warningCount: warningCount
+        });
+        
         // Clear any existing timers
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
-        // Auto-save removed - only local storage during exam
         
+        console.log('📢 Showing auto-submit toast notification to student');
         toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
             duration: 6000,
             style: {
@@ -1041,8 +1469,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             }
         });
         
+        console.log('⏳ Auto-submit waiting 1 second before calling submitExam()');
         // Small delay to ensure toast is visible before submission
         setTimeout(() => {
+            console.log('🎯 Auto-submit calling submitExam() - Emergency Queue System should activate now!');
             submitExam();
         }, 1000);
     }
@@ -1144,13 +1574,31 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }
 
-    const handleClear = () => {
+    const handleClear = async () => {
         if (currentQuestion && currentQuestion._id) {
+            // Reset submission state when user makes changes
+            if (submissionState.status !== 'idle') {
+                setSubmissionState({
+                    status: 'idle',
+                    message: '',
+                    performanceMetrics: null,
+                    showProgress: false,
+                    performanceBadge: null,
+                    submissionTime: 0
+                });
+            }
+
+            const questionId = currentQuestion._id;
+            
+            // Update local answers state
             setAnswers(prev => {
                 const newAnswers = { ...prev }
-                delete newAnswers[currentQuestion._id]
+                delete newAnswers[questionId]
                 return newAnswers
-            })
+            });
+
+            // OLD PROGRESSIVE COMPUTATION CODE REMOVED - Now handled by new progressive hook
+
             toast.success("Selection cleared!")
         }
     }
@@ -1213,6 +1661,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             ref={mainExamRef}
             className={`bg-gray-50 ${isExamStarted ? 'exam-mode' : ''}`}
         >
+            
             {/* ExamTimer Component - Handles timer logic */}
             <ExamTimer
                 isExamStarted={isExamStarted}
@@ -1222,6 +1671,258 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 onTimeExpired={handleAutoSubmit}
                 warningsShownRef={warningsShownRef}
             />
+            {/* Enhanced Submission Feedback Modal with Smooth Transitions - Responsive & Accessible */}
+            {submissionState.status === 'submitting' && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 transition-all duration-300 animate-in fade-in px-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="submission-dialog-title"
+                    aria-describedby="submission-dialog-description"
+                >
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md text-center transform transition-all duration-500 animate-in slide-in-from-bottom-4 fade-in">
+                        <div className="mb-4 sm:mb-6">
+                            {submissionState.showProgress && (
+                                <div className="relative mb-3 sm:mb-4">
+                                    {/* Ultra-fast submission spinner - responsive sizing */}
+                                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 sm:border-4 border-blue-100 border-b-blue-600 transition-all duration-200"></div>
+                                    {/* Pulse effect for ultra-fast feedback */}
+                                    <div className="absolute inset-0 rounded-full animate-pulse bg-blue-50 opacity-30"></div>
+                                </div>
+                            )}
+                            <h3 
+                                id="submission-dialog-title"
+                                className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 animate-in slide-in-from-left-2 duration-300"
+                            >
+                                {submissionState.message}
+                            </h3>
+                            <p 
+                                id="submission-dialog-description"
+                                className="text-gray-600 text-sm sm:text-base animate-in slide-in-from-left-2 duration-300 delay-100"
+                            >
+                                Please wait while we process your exam...
+                            </p>
+                            
+                            {/* Screen reader live region for submission updates */}
+                            <div className="sr-only" aria-live="polite" aria-atomic="true">
+                                {submissionState.message} - Processing exam submission, please wait.
+                            </div>
+                        </div>
+                        
+                        {/* Progress dots animation for ultra-fast submissions - responsive & accessible */}
+                        <div className="flex justify-center space-x-1" role="progressbar" aria-label="Processing submission">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-600 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Success Feedback Modal with Performance Metrics and Celebrations - Responsive & Accessible */}
+            {submissionState.status === 'success' && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 transition-all duration-500 animate-in fade-in px-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="success-dialog-title"
+                    aria-describedby="success-dialog-description"
+                >
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md text-center transform transition-all duration-700 animate-in zoom-in-95 fade-in">
+                        <div className="mb-4 sm:mb-6">
+                            {/* Success icon with celebration animation - responsive */}
+                            <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4">
+                                <div className="absolute inset-0 bg-green-100 rounded-full animate-ping opacity-30"></div>
+                                <div className="relative bg-green-100 rounded-full p-3 sm:p-4 transform animate-in zoom-in-50 duration-500">
+                                    <CheckCircle 
+                                        className="w-10 h-10 sm:w-12 sm:h-12 text-green-600 animate-in zoom-in-95 duration-300 delay-200" 
+                                        aria-hidden="true"
+                                    />
+                                </div>
+                                
+                                {/* Celebration particles for 15ms achievement */}
+                                {submissionState.performanceMetrics?.target15msAchieved && (
+                                    <>
+                                        <div className="absolute -top-2 -right-2 text-yellow-400 animate-bounce text-2xl">🎉</div>
+                                        <div className="absolute -top-2 -left-2 text-yellow-400 animate-bounce text-2xl" style={{animationDelay: '0.1s'}}>✨</div>
+                                        <div className="absolute -bottom-2 -right-2 text-yellow-400 animate-bounce text-2xl" style={{animationDelay: '0.2s'}}>⚡</div>
+                                        <div className="absolute -bottom-2 -left-2 text-yellow-400 animate-bounce text-2xl" style={{animationDelay: '0.3s'}}>🏆</div>
+                                    </>
+                                )}
+                            </div>
+                            
+                            <h3 
+                                id="success-dialog-title"
+                                className="text-xl sm:text-2xl font-bold text-green-600 mb-2 sm:mb-3 animate-in slide-in-from-bottom-2 duration-500 delay-300"
+                            >
+                                {submissionState.message}
+                            </h3>
+                            
+                            {/* Screen reader announcement for success */}
+                            <div className="sr-only" aria-live="polite" aria-atomic="true">
+                                Exam submitted successfully! 
+                                {submissionState.performanceMetrics?.target15msAchieved && 'Ultra-fast target achieved! '}
+                                Submission completed in {submissionState.submissionTime} milliseconds.
+                            </div>
+                            
+                            {/* Performance badge with special styling for ultra-fast - responsive */}
+                            {submissionState.performanceBadge && (
+                                <div className={`inline-block text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-4 transform animate-in scale-in duration-500 delay-500 ${
+                                    submissionState.performanceMetrics?.target15msAchieved 
+                                        ? 'bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 shadow-lg animate-pulse'
+                                        : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                    {submissionState.performanceBadge}
+                                </div>
+                            )}
+                            
+                            {/* Performance metrics with enhanced styling - responsive & accessible */}
+                            <div 
+                                id="success-dialog-description"
+                                className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm space-y-2 animate-in slide-in-from-bottom-4 duration-500 delay-700"
+                                role="region"
+                                aria-label="Performance metrics"
+                            >
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">Submission Time:</span>
+                                    <span className={`font-bold ${
+                                        submissionState.submissionTime <= 15 ? 'text-green-600' :
+                                        submissionState.submissionTime <= 50 ? 'text-blue-600' :
+                                        'text-gray-900'
+                                    }`}>
+                                        {submissionState.submissionTime}ms
+                                    </span>
+                                </div>
+                                
+                                {submissionState.performanceMetrics?.target15msAchieved && (
+                                    <div className="text-center p-2 bg-gradient-to-r from-green-100 to-green-200 rounded-lg">
+                                        <p className="text-green-800 font-bold text-base">
+                                            🏆 15ms Ultra-Fast Target Achieved!
+                                        </p>
+                                        <p className="text-green-700 text-xs mt-1">
+                                            You've experienced the fastest possible submission!
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {submissionState.performanceMetrics?.performanceRank && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600">Performance Rank:</span>
+                                        <span className="font-bold text-blue-600">
+                                            {submissionState.performanceMetrics.performanceRank}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Error Feedback Modal with Progressive-Aware Error Messages - Responsive & Accessible */}
+            {submissionState.status === 'error' && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 transition-all duration-500 animate-in fade-in px-4"
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-labelledby="error-dialog-title"
+                    aria-describedby="error-dialog-description"
+                >
+                    <div 
+                        ref={modalRef}
+                        className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md text-center transform transition-all duration-700 animate-in zoom-in-95 fade-in"
+                    >
+                        <div className="mb-4 sm:mb-6">
+                            {/* Error icon with warning animation - responsive */}
+                            <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4">
+                                <div className="absolute inset-0 bg-red-100 rounded-full animate-ping opacity-30"></div>
+                                <div className="relative bg-red-100 rounded-full p-3 sm:p-4 transform animate-in zoom-in-50 duration-500">
+                                    <X 
+                                        className="w-10 h-10 sm:w-12 sm:h-12 text-red-600 animate-in zoom-in-95 duration-300 delay-200" 
+                                        aria-hidden="true"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <h3 
+                                id="error-dialog-title"
+                                className="text-lg sm:text-xl font-bold text-red-600 mb-2 sm:mb-3 animate-in slide-in-from-bottom-2 duration-500 delay-300"
+                            >
+                                {submissionState.message}
+                            </h3>
+                            
+                            {/* Screen reader announcement for errors */}
+                            <div className="sr-only" aria-live="assertive" aria-atomic="true">
+                                Error: {submissionState.message}. 
+                                {submissionState.performanceMetrics?.fallbackAvailable && 'Backup system available. '}
+                                You can try again.
+                            </div>
+                            
+                            {/* Error details with performance context - responsive & accessible */}
+                            <div 
+                                id="error-dialog-description"
+                                className="bg-red-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm space-y-3 animate-in slide-in-from-bottom-4 duration-500 delay-700"
+                                role="region"
+                                aria-label="Error details"
+                            >
+                                <div className="text-red-800">
+                                    <p className="font-medium mb-2">What happened:</p>
+                                    <p className="text-sm">
+                                        {submissionState.performanceMetrics?.errorType === 'progressive_submission_failure' 
+                                            ? 'The ultra-fast submission system encountered an issue, but don\'t worry - we\'re automatically switching to our backup system.'
+                                            : 'There was an issue processing your submission. We\'re working to resolve it.'}
+                                    </p>
+                                </div>
+                                
+                                {submissionState.performanceMetrics?.fallbackAvailable && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="text-blue-800 font-medium text-sm">
+                                            ✓ Backup system available - Your exam is safe!
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                <div className="text-gray-600">
+                                    <p className="text-xs">
+                                        Time elapsed: {submissionState.submissionTime}ms
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Recovery actions - responsive */}
+                            <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
+                                <button
+                                    onClick={() => {
+                                        setSubmissionState({ status: 'idle', message: '', performanceMetrics: null, showProgress: false, performanceBadge: null, submissionTime: 0 });
+                                        submitExam(); // Retry submission
+                                    }}
+                                    className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 rounded-lg sm:rounded-xl font-medium hover:bg-blue-700 transition-colors active:scale-95 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                    aria-describedby="retry-button-description"
+                                >
+                                    Try Again with Backup System
+                                </button>
+                                <div id="retry-button-description" className="sr-only">
+                                    Retry submitting your exam using the backup processing system
+                                </div>
+                                
+                                <button
+                                    onClick={() => {
+                                        setSubmissionState({ status: 'idle', message: '', performanceMetrics: null, showProgress: false, performanceBadge: null, submissionTime: 0 });
+                                    }}
+                                    className="w-full bg-gray-200 text-gray-700 py-2 sm:py-2.5 px-4 rounded-lg sm:rounded-xl font-medium hover:bg-gray-300 transition-colors active:scale-95 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                                    aria-describedby="cancel-button-description"
+                                >
+                                    Cancel
+                                </button>
+                                <div id="cancel-button-description" className="sr-only">
+                                    Cancel the retry attempt and return to the exam interface
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Warning Dialog */}
             {warningDialog && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">

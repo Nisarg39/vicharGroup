@@ -891,7 +891,26 @@ async function checkExamEligibilityUncached(details) {
       }
     };
 
-    // 7. Return eligibility result
+    // 7. PROGRESSIVE COMPUTATION: Add secure answers for client-side computation
+    // Include correct answers and marking scheme for progressive scoring
+    if (examWithMarkingRules.examQuestions && examWithMarkingRules.examQuestions.length > 0) {
+      examWithMarkingRules.examQuestions = examWithMarkingRules.examQuestions.map(question => ({
+        ...question,
+        // Include correct answers for progressive computation
+        correctAnswer: question.answer,
+        multipleCorrectAnswers: question.multipleAnswer,
+        // Include question-specific marking rules
+        questionMarkingRule: question.negativeMarkingRule || null,
+        // Progressive computation metadata
+        progressiveEnabled: true
+      }));
+      
+      // Add progressive computation flag to exam
+      examWithMarkingRules.progressiveComputationEnabled = true;
+      examWithMarkingRules.progressiveVersion = '1.0';
+    }
+
+    // 8. Return eligibility result with progressive computation data
     return {
       success: true,
       message: "You are eligible to give this exam",
@@ -2026,6 +2045,94 @@ export async function retryFailedSubmission(submissionId) {
     return {
       success: false,
       message: "Error retrying submission: " + error.message
+    };
+  }
+}
+
+/**
+ * Get exam data with secure answers for progressive computation
+ */
+export async function getExamForProgressiveComputation(examId, studentId) {
+  "use server";
+  try {
+    await connectDB();
+    
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return { 
+        success: false, 
+        message: "Invalid exam or student ID" 
+      };
+    }
+    
+    // Verify student access to exam
+    const accessResult = await validateExamAccess(examId, studentId);
+    if (!accessResult.success) {
+      return accessResult;
+    }
+    
+    // Get exam with questions including secure answers
+    const exam = await Exam.findById(examId)
+      .populate({
+        path: "examQuestions",
+        select: "questionText options answer multipleAnswer isMultipleAnswer questionType subject marks section questionNumber imageUrl"
+      })
+      .select("examName examDurationMinutes totalMarks negativeMarks stream standard examSubject examAvailability startTime endTime")
+      .lean();
+      
+    if (!exam) {
+      return { 
+        success: false, 
+        message: "Exam not found" 
+      };
+    }
+    
+    // Get secure marking scheme
+    const { getSecureMarkingScheme } = await import('./progressiveSubmissionHandler');
+    const markingSchemeResult = await getSecureMarkingScheme(examId, studentId);
+    
+    // Transform questions for progressive computation (include answers)
+    const questionsWithAnswers = exam.examQuestions.map(question => ({
+      _id: question._id.toString(),
+      questionText: question.questionText,
+      options: question.options,
+      questionType: question.questionType,
+      subject: question.subject,
+      marks: question.marks || 4,
+      section: question.section,
+      questionNumber: question.questionNumber,
+      imageUrl: question.imageUrl,
+      
+      // Secure answer inclusion for progressive computation
+      answer: question.answer,
+      multipleAnswer: question.multipleAnswer,
+      isMultipleAnswer: question.isMultipleAnswer
+    }));
+    
+    return {
+      success: true,
+      exam: {
+        ...exam,
+        _id: exam._id.toString()
+      },
+      questions: questionsWithAnswers,
+      markingScheme: markingSchemeResult.success ? markingSchemeResult.markingScheme : null,
+      progressiveEnabled: true,
+      securityMetadata: {
+        requestTime: new Date().toISOString(),
+        studentId: studentId,
+        examId: examId,
+        answerInclusionAuthorized: true
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ Progressive exam data loading error:', error);
+    return {
+      success: false,
+      message: "Error loading exam data for progressive computation",
+      error: error.message,
+      fallbackToTraditional: true
     };
   }
 }

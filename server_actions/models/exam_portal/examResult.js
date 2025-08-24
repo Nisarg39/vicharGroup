@@ -302,6 +302,37 @@ const ExamResultSchema = new mongoose.Schema({
       enum: ["pending", "synced", "failed"],
       default: "pending",
     },
+    // Progressive computation metadata
+    computationSource: {
+      type: String,
+      enum: ["server_computation", "progressive_direct", "hybrid"],
+      default: "server_computation",
+    },
+    processingTime: {
+      type: Number, // in milliseconds
+      default: null,
+    },
+    validationHash: {
+      type: String, // SHA-256 hash for integrity verification
+    },
+    engineVersion: {
+      type: String, // Version of progressive computation engine
+    },
+    directStorageUsed: {
+      type: Boolean,
+      default: false,
+    },
+    validationLayers: [{
+      type: String,
+      enum: ["hash", "statistical", "spot_check", "security", "temporal"]
+    }],
+    performanceMetrics: {
+      validationTime: { type: Number }, // ms
+      storageTime: { type: Number }, // ms
+      totalProcessingTime: { type: Number }, // ms
+      concurrentSubmissions: { type: Number },
+      serverLoad: { type: Number }
+    }
   },
 }, {
   timestamps: true,
@@ -313,6 +344,12 @@ ExamResultSchema.index({ exam: 1, student: 1, attemptNumber: 1 }, { unique: true
 ExamResultSchema.index({ student: 1, completedAt: -1 });
 ExamResultSchema.index({ exam: 1, completedAt: -1 });
 ExamResultSchema.index({ "submissionMetadata.syncStatus": 1 });
+
+// Performance-optimized indexes for direct storage
+ExamResultSchema.index({ "submissionMetadata.computationSource": 1, completedAt: -1 });
+ExamResultSchema.index({ "submissionMetadata.directStorageUsed": 1, createdAt: -1 });
+ExamResultSchema.index({ exam: 1, "submissionMetadata.processingTime": 1 }); // For performance monitoring
+ExamResultSchema.index({ "submissionMetadata.validationHash": 1 }); // For hash verification queries
 
 // Virtual for percentage score
 ExamResultSchema.virtual('percentage').get(function() {
@@ -382,6 +419,103 @@ ExamResultSchema.statics.getStudentPerformance = async function(studentId) {
     completedAt: result.completedAt,
     performanceCategory: result.getPerformanceCategory(),
   }));
+};
+
+// Static method for optimized direct storage submission
+ExamResultSchema.statics.createDirectSubmission = async function(progressiveData) {
+  const examResult = new this({
+    exam: progressiveData.examId,
+    student: progressiveData.studentId,
+    attemptNumber: progressiveData.attemptNumber || 1,
+    answers: progressiveData.answers,
+    score: progressiveData.finalScore,
+    totalMarks: progressiveData.totalMarks,
+    timeTaken: progressiveData.timeTaken,
+    completedAt: progressiveData.completedAt,
+    warnings: progressiveData.warnings || 0,
+    
+    // Pre-computed analysis
+    questionAnalysis: progressiveData.questionAnalysis,
+    statistics: {
+      correctAnswers: progressiveData.correctAnswers,
+      incorrectAnswers: progressiveData.incorrectAnswers,
+      unattempted: progressiveData.unattempted,
+      accuracy: progressiveData.accuracy || 0,
+      totalQuestionsAttempted: progressiveData.correctAnswers + progressiveData.incorrectAnswers
+    },
+    
+    // Subject performance
+    subjectPerformance: progressiveData.subjectPerformance || [],
+    
+    // Navigation data
+    visitedQuestions: progressiveData.visitedQuestions || [],
+    markedQuestions: progressiveData.markedQuestions || [],
+    
+    // Progressive computation metadata
+    submissionMetadata: {
+      isOffline: false,
+      syncStatus: 'synced',
+      computationSource: 'progressive_direct',
+      processingTime: progressiveData.processingTime,
+      validationHash: progressiveData.computationHash,
+      engineVersion: progressiveData.engineVersion,
+      directStorageUsed: true,
+      validationLayers: progressiveData.validationLayers || [],
+      performanceMetrics: progressiveData.performanceMetrics || {}
+    }
+  });
+  
+  // Optimized save with write concern for performance
+  await examResult.save({ 
+    writeConcern: { w: 1, j: true },
+    maxTimeMS: 5000 // 5 second timeout
+  });
+  
+  return examResult;
+};
+
+// Static method to get performance analytics for direct storage
+ExamResultSchema.statics.getDirectStorageAnalytics = async function(timeRange = 24) {
+  const startTime = new Date(Date.now() - (timeRange * 60 * 60 * 1000));
+  
+  const analytics = await this.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startTime },
+        'submissionMetadata.directStorageUsed': true
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalDirectSubmissions: { $sum: 1 },
+        averageProcessingTime: { $avg: '$submissionMetadata.processingTime' },
+        maxProcessingTime: { $max: '$submissionMetadata.processingTime' },
+        minProcessingTime: { $min: '$submissionMetadata.processingTime' },
+        sub15msSubmissions: {
+          $sum: {
+            $cond: [
+              { $lte: ['$submissionMetadata.processingTime', 15] },
+              1, 0
+            ]
+          }
+        }
+      }
+    }
+  ]);
+  
+  const result = analytics[0] || {
+    totalDirectSubmissions: 0,
+    averageProcessingTime: 0,
+    maxProcessingTime: 0,
+    minProcessingTime: 0,
+    sub15msSubmissions: 0
+  };
+  
+  result.performanceTargetAchieved = result.totalDirectSubmissions > 0 ? 
+    (result.sub15msSubmissions / result.totalDirectSubmissions * 100).toFixed(2) + '%' : '0%';
+    
+  return result;
 };
 
 const ExamResult = mongoose.models?.ExamResult || mongoose.model("ExamResult", ExamResultSchema);

@@ -28,6 +28,29 @@ export default function RootLayout({ children }) {
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','GTM-5LHN5XWP');
+          `
+        }}
+      />
+      
+      {/* PROGRESSIVE COMPUTATION: Service Worker Registration */}
+      <Script 
+        id="progressive-scoring-sw"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw-progressive-scoring.js')
+                  .then(function(registration) {
+                    console.log('✅ Progressive Scoring Service Worker registered:', registration.scope);
+                  })
+                  .catch(function(error) {
+                    console.warn('⚠️ Progressive Scoring Service Worker registration failed:', error);
+                  });
+              });
+            } else {
+              console.warn('⚠️ Service Worker not supported - progressive computation will fallback to server');
+            }
           `,
         }}
       />
