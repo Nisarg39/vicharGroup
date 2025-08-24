@@ -105,6 +105,22 @@ async function getNegativeMarkingRuleForExam(exam) {
           };
         }
       }
+      // Check for subject-specific rule without standard requirement (e.g., MHT-CET subject rules)
+      else if (rule.subject && !rule.standard) {
+        // Normalize exam subjects array for comparison
+        const normalizedExamSubjects = (exam.examSubject || []).map(subj => normalizeSubject(subj));
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedExamSubjects.includes(normalizedRuleSubject)) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Default rule: ${rule.stream} > ${rule.subject}`,
+            defaultRuleId: rule._id
+          };
+        }
+      }
       // Check for standard-specific rule
       else if (!rule.subject && rule.standard) {
         const examStandardStr = normalizeStandard(exam.standard);
@@ -213,15 +229,36 @@ async function getBulkNegativeMarkingRules(exam) {
 
     return { markingRules, ruleMap };
   } catch (error) {
-    console.error("Error fetching bulk marking rules:", error);
-    // Return empty structure for fallback
-    return { markingRules: [], ruleMap: { examWideRules: [], combinedRules: {} } };
+    console.error("🚨 Error fetching bulk marking rules:", error);
+    console.error("🚨 Exam details:", { stream: exam?.stream, _id: exam?._id, examName: exam?.examName });
+    // Return empty structure for fallback  
+    return { 
+      markingRules: [], 
+      ruleMap: { 
+        examWideRules: [], 
+        combinedRules: {},
+        questionTypeRules: {},
+        subjectRules: {},
+        sectionRules: {}
+      } 
+    };
   }
 }
 
 // OPTIMIZED: Get marking rule for specific question using pre-fetched bulk data
 function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
   try {
+    // CRITICAL: Validate input parameters
+    if (!bulkRuleData || !bulkRuleData.ruleMap) {
+      console.error('🚨 CRITICAL: Invalid bulkRuleData passed to getNegativeMarkingRuleFromBulk:', bulkRuleData);
+      throw new Error('Invalid bulk rule data structure');
+    }
+    
+    if (!exam || !question) {
+      console.error('🚨 CRITICAL: Missing exam or question data:', { exam: !!exam, question: !!question });
+      throw new Error('Missing required exam or question data');
+    }
+    
     const { ruleMap } = bulkRuleData;
     
     // Determine question type
@@ -1013,7 +1050,13 @@ async function submitExamResultInternal(examData) {
     console.time('BulkMarkingRulesFetch');
     const bulkMarkingRules = await getBulkNegativeMarkingRules(exam);
     console.timeEnd('BulkMarkingRulesFetch');
-    console.log(`📊 Bulk fetched ${bulkMarkingRules.markingRules.length} marking rules for ${exam.examQuestions.length} questions`);
+    console.log(`📊 Bulk fetched ${bulkMarkingRules?.markingRules?.length || 0} marking rules for ${exam.examQuestions?.length || 0} questions`);
+    
+    // CRITICAL: Validate bulk rules data structure
+    if (!bulkMarkingRules || !bulkMarkingRules.ruleMap || !bulkMarkingRules.markingRules) {
+      console.error('🚨 CRITICAL: Invalid bulk marking rules structure:', bulkMarkingRules);
+      throw new Error('Failed to fetch marking rules for exam scoring');
+    }
 
     // Process each question with its specific negative marking rule (OPTIMIZED)
     console.time('QuestionScoring');
@@ -1024,9 +1067,20 @@ async function submitExamResultInternal(examData) {
       // Get question-specific negative marking rule (OPTIMIZED - no DB query)
       const questionNegativeMarkingRule = getNegativeMarkingRuleFromBulk(exam, question, bulkMarkingRules);
       
-      // Get admin-configured marks using proper fallback logic
-      const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || questionMarks || 4;
-      const adminNegativeMarks = questionNegativeMarkingRule.negativeMarks !== undefined ? questionNegativeMarkingRule.negativeMarks : 1;
+      // CRITICAL: Validate rule structure before using it
+      if (!questionNegativeMarkingRule || typeof questionNegativeMarkingRule !== 'object') {
+        console.error('🚨 CRITICAL: Invalid marking rule returned for question:', question._id, questionNegativeMarkingRule);
+        throw new Error(`Failed to get marking rule for question ${question._id}`);
+      }
+      
+      // Get admin-configured marks using robust fallback logic
+      const adminPositiveMarks = questionNegativeMarkingRule?.positiveMarks || questionMarks || 4;
+      const adminNegativeMarks = questionNegativeMarkingRule?.negativeMarks !== undefined ? questionNegativeMarkingRule.negativeMarks : 1;
+      
+      // LOG for debugging
+      if (exam.examQuestions.indexOf(question) < 3) { // Log first 3 questions only
+        console.log(`📝 Question ${exam.examQuestions.indexOf(question) + 1} marks: +${adminPositiveMarks}, -${adminNegativeMarks}, rule: ${questionNegativeMarkingRule?.source}`);
+      }
 
       if (!userAnswer || (Array.isArray(userAnswer) && userAnswer.length === 0)) {
         unattempted++;
@@ -1037,7 +1091,7 @@ async function submitExamResultInternal(examData) {
           marks: 0,
           userAnswer: null,
           correctAnswer: correctAnswer,
-          negativeMarkingRule: questionNegativeMarkingRule.description,
+          negativeMarkingRule: questionNegativeMarkingRule?.description || 'Unknown rule',
         });
       } else if (question.isMultipleAnswer) {
         // MCMA (Multiple Choice Multiple Answer) logic - JEE Advanced Rules
@@ -1107,7 +1161,7 @@ async function submitExamResultInternal(examData) {
           marks: marksAwarded,
           userAnswer: normalizedUserAnswer,
           correctAnswer: normalizedCorrectAnswers,
-          negativeMarkingRule: questionNegativeMarkingRule.description,
+          negativeMarkingRule: questionNegativeMarkingRule?.description || 'Unknown rule',
           mcmaDetails: {
             totalCorrectOptions: totalCorrectOptions,
             correctSelected: correctSelected.length,
@@ -1129,7 +1183,7 @@ async function submitExamResultInternal(examData) {
             marks: adminPositiveMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,
             correctAnswer: evaluationResult.details?.correctValue || question.answer,
-            negativeMarkingRule: questionNegativeMarkingRule.description,
+            negativeMarkingRule: questionNegativeMarkingRule?.description || 'Unknown rule',
             evaluationType: evaluationResult.evaluationType,
             evaluationDetails: evaluationResult.details,
             isNumericalEvaluation: evaluationResult.evaluationType === 'numerical'
@@ -1144,7 +1198,7 @@ async function submitExamResultInternal(examData) {
             marks: -adminNegativeMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,
             correctAnswer: evaluationResult.details?.correctValue || question.answer,
-            negativeMarkingRule: questionNegativeMarkingRule.description,
+            negativeMarkingRule: questionNegativeMarkingRule?.description || 'Unknown rule',
             evaluationType: evaluationResult.evaluationType,
             evaluationDetails: evaluationResult.details,
             isNumericalEvaluation: evaluationResult.evaluationType === 'numerical',
