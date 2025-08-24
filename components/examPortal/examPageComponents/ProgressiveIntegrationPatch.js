@@ -15,6 +15,7 @@
  * USAGE: Apply this patch by importing and using the enhanced submitExam function
  */
 
+import React from 'react';
 import { useProgressiveScoring } from '../../../lib/progressive-scoring/ExamInterfaceIntegration';
 import { handleProgressiveSubmission } from '../../../server_actions/actions/examController/progressiveSubmissionHandler';
 
@@ -24,11 +25,8 @@ import { handleProgressiveSubmission } from '../../../server_actions/actions/exa
  * This function wraps the existing submitExam logic and adds progressive
  * computation capabilities without changing the original behavior.
  */
-export function createEnhancedSubmitExam(originalSubmitExam, examData) {
+export function createEnhancedSubmitExam(progressive, originalSubmitExam, examData) {
   const { exam, questions, student } = examData;
-  
-  // Initialize progressive scoring hook
-  const progressive = useProgressiveScoring(exam, questions, student);
   
   return async function enhancedSubmitExam() {
     const startTime = Date.now();
@@ -245,8 +243,12 @@ To integrate progressive scoring with your existing ExamInterface.js:
 
 2. MODIFY THE submitExam FUNCTION:
    \`\`\`javascript
+   // First get the progressive hook instance
+   const progressive = useProgressiveAnswerUpdates({ exam, questions, student }, answers);
+   
    // Replace your existing submitExam function with:
    const enhancedSubmitExam = createEnhancedSubmitExam(
+     progressive,
      originalSubmitExam, 
      { exam, questions, student, answers, timeTaken, completedAt, visitedQuestions, markedQuestions, warnings }
    );
@@ -319,7 +321,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     };
     
     // Create enhanced submit function
-    const enhancedSubmit = createEnhancedSubmitExam(originalSubmit, {
+    const enhancedSubmit = createEnhancedSubmitExam(progressive, originalSubmit, {
       exam, questions, student, answers, timeTaken, completedAt: new Date().toISOString(),
       visitedQuestions: Array.from(visitedQuestions), markedQuestions: Array.from(markedQuestions),
       warnings: warningCount
