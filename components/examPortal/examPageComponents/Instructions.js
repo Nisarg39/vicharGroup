@@ -17,40 +17,7 @@ export default function Instructions({ exam, onStart, onBack }) {
     const getMarkingInfo = () => {
         // Check if we have marking rule preview from server
         if (exam?.markingRulePreview?.hasMarkingRules) {
-            // Check if this is MHT-CET exam that needs subject-wise detection override
-            const isMHTCET = exam?.stream?.toLowerCase().includes('mht-cet')
-            
-            if (isMHTCET && exam?.examSubject && Array.isArray(exam.examSubject) && exam.examSubject.length > 1) {
-                console.log('🔍 MHT-CET detected in Instructions, applying subject-wise override...')
-                
-                // For MHT-CET with multiple subjects, force subject-wise display
-                // Create subject-wise marking data using exam.examSubject array
-                const subjectWiseMarks = {}
-                exam.examSubject.forEach(subject => {
-                    subjectWiseMarks[subject] = {
-                        correct: exam.markingRulePreview.positiveMarks,
-                        incorrect: Math.abs(exam.markingRulePreview.negativeMarks)
-                    }
-                })
-                
-                console.log('  MHT-CET Instructions override - subjects detected:', exam.examSubject)
-                console.log('  MHT-CET Instructions override - subject-wise marks:', subjectWiseMarks)
-                
-                // Return subject-wise marking scheme for MHT-CET
-                return {
-                    positiveMarks: exam.markingRulePreview.positiveMarks,
-                    negativeMarks: exam.markingRulePreview.negativeMarks,
-                    hasSpecificRules: true,
-                    ruleDescription: 'MHT-CET subject-wise marking scheme',
-                    ruleSource: exam.markingRulePreview.ruleSource,
-                    stream: exam?.stream || "",
-                    totalMarks: exam?.totalMarks || null,
-                    isSubjectWise: true,  // Override to true for MHT-CET
-                    subjects: subjectWiseMarks  // Override with subject-wise data
-                }
-            }
-            
-            // For non-MHT-CET or MHT-CET with single subject, use original server data
+            // Use server-provided marking data directly (database-driven)
             return {
                 positiveMarks: exam.markingRulePreview.positiveMarks,
                 negativeMarks: exam.markingRulePreview.negativeMarks,

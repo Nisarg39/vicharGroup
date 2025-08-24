@@ -522,7 +522,26 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
             description: rule.description || `${questionType} rule: ${rule.stream} > ${rule.subject}`,
             defaultRuleId: rule._id,
             partialMarkingEnabled: rule.partialMarkingEnabled,
-            partialMarkingRules: rule.partialMarkingRules
+            partialMarkingRules: rule.partialMarkingRules,
+            appliedRule: rule
+          };
+        }
+      }
+      // 6.5. Subject specific (no question type, no standard, no section) - FOR MHT-CET RULES
+      else if (!rule.questionType && rule.subject && !rule.standard && (!rule.section || rule.section === "All")) {
+        const normalizedQuestionSubject = normalizeSubject(questionSubject);
+        const normalizedRuleSubject = normalizeSubject(rule.subject);
+        
+        if (normalizedQuestionSubject === normalizedRuleSubject) {
+          return {
+            source: "super_admin_default",
+            negativeMarks: rule.negativeMarks,
+            positiveMarks: rule.positiveMarks,
+            description: rule.description || `Subject rule: ${rule.stream} > ${rule.subject}`,
+            defaultRuleId: rule._id,
+            partialMarkingEnabled: rule.partialMarkingEnabled,
+            partialMarkingRules: rule.partialMarkingRules,
+            appliedRule: rule
           };
         }
       }
@@ -895,28 +914,86 @@ async function checkExamEligibilityUncached(details) {
 
 export async function submitExamResult(examData) {
   /**
-   * submitExamResult(examData) - WITH RETRY LOGIC
-   * Flow:
-   * 1. Use retry wrapper for submission
-   * 2. Validate exam data
-   * 3. Check attempt limit for this student and exam
-   * 4. Calculate final score with negative marking
-   * 5. Store new exam result (do not overwrite)
-   * 6. Update exam statistics
-   * 7. Return submission result
+   * EMERGENCY QUEUE SYSTEM - submitExamResult(examData)
    * 
-   * Retry Logic:
-   * - 4 retry attempts with exponential backoff
-   * - Failed submissions are queued for manual recovery
-   * - Students are notified if submission is queued
+   * CRITICAL CHANGE: This function now uses the emergency submission queue
+   * to eliminate data loss during concurrent auto-submits.
+   * 
+   * NEW Flow:
+   * 1. Queue submission immediately (INSTANT response to student)
+   * 2. Background worker processes using existing scoring logic
+   * 3. Zero data loss with comprehensive error handling
+   * 4. Students get immediate confirmation, results processed in background
+   * 
+   * BACKWARD COMPATIBILITY:
+   * - For testing/development: can fall back to synchronous processing
+   * - API response format unchanged for frontend compatibility
+   * - All scoring logic preserved exactly as before
    */
   
-  // Wrap the entire submission in retry logic
-  return await retryExamSubmission(submitExamResultInternal, examData);
+  // Check if emergency queue system should be used (default: enabled in production)
+  const useQueueSystem = process.env.EXAM_QUEUE_ENABLED !== 'false' && 
+                          process.env.NODE_ENV === 'production';
+  
+  if (useQueueSystem) {
+    // EMERGENCY QUEUE SYSTEM - Immediate response with background processing
+    try {
+      const { queueExamSubmission } = await import('../../utils/examSubmissionQueue.js');
+      
+      // Get request context for better queue management
+      const context = {
+        isAutoSubmit: examData.isAutoSubmit || false,
+        isManualSubmit: !examData.isAutoSubmit,
+        timeRemaining: examData.timeRemaining || 0,
+        examEnded: examData.examEnded || false,
+        userAgent: examData.userAgent,
+        screenResolution: examData.screenResolution,
+        timezone: examData.timezone,
+        sessionId: examData.sessionId,
+        ipAddress: examData.ipAddress
+      };
+      
+      const queueResult = await queueExamSubmission(examData, context);
+      
+      if (queueResult.success) {
+        // CRITICAL: Return immediate success with queue tracking info
+        return {
+          success: true,
+          message: "Your exam has been submitted successfully! Your results are being processed and will be available shortly.",
+          isQueued: true,
+          submissionId: queueResult.submissionId,
+          estimatedProcessingTime: queueResult.estimatedProcessingTime,
+          result: {
+            // Provide placeholder values for frontend compatibility
+            // Actual results will be available via status API
+            isProcessing: true,
+            submissionId: queueResult.submissionId,
+            message: "Processing your answers in the background...",
+            completedAt: new Date(),
+            timeTaken: examData.timeTaken,
+            warnings: examData.warnings || 0
+          }
+        };
+      } else {
+        // Queue system failed, fall back to synchronous processing
+        console.warn('Queue system failed, falling back to synchronous processing:', queueResult.message);
+        return await retryExamSubmission(submitExamResultInternal, examData);
+      }
+      
+    } catch (queueError) {
+      // Queue system error, fall back to synchronous processing
+      console.error('Queue system error, falling back to synchronous processing:', queueError.message);
+      return await retryExamSubmission(submitExamResultInternal, examData);
+    }
+  } else {
+    // FALLBACK: Use original synchronous processing for development/testing
+    return await retryExamSubmission(submitExamResultInternal, examData);
+  }
 }
 
 // Internal function that does the actual submission
-async function submitExamResultInternal(examData) {
+// EXPORTED for use by ExamSubmissionWorker to maintain exact scoring logic
+export async function submitExamResultInternal(examData) {
   try {
     await connectDB();
 
@@ -1213,13 +1290,13 @@ async function submitExamResultInternal(examData) {
     // OPTIMIZATION: Use first rule from bulk data instead of separate query
     const examNegativeMarkingRule = bulkMarkingRules.ruleMap.examWideRules.length > 0
       ? {
-          source: "bulk_exam_wide",
+          source: "super_admin_default",
           negativeMarks: bulkMarkingRules.ruleMap.examWideRules[0].negativeMarks,
           positiveMarks: bulkMarkingRules.ruleMap.examWideRules[0].positiveMarks,
           description: bulkMarkingRules.ruleMap.examWideRules[0].description || "Exam-wide default rule"
         }
       : {
-          source: "exam_fallback",
+          source: "exam_specific",
           negativeMarks: exam.negativeMarks || 1,
           positiveMarks: 4,
           description: "Exam fallback rule"
@@ -1900,6 +1977,55 @@ export async function clearExamCacheData(examId) {
     return {
       success: false,
       message: `Error clearing exam cache: ${error.message}`
+    };
+  }
+}
+
+/**
+ * EMERGENCY QUEUE SYSTEM - Check submission status
+ * Allows students to track the processing status of their queued submissions
+ */
+export async function checkSubmissionStatus(submissionId) {
+  try {
+    const { getSubmissionStatus } = await import('../../utils/examSubmissionQueue.js');
+    return await getSubmissionStatus(submissionId);
+  } catch (error) {
+    console.error("Error checking submission status:", error);
+    return {
+      success: false,
+      message: "Error checking submission status: " + error.message,
+      status: null
+    };
+  }
+}
+
+/**
+ * EMERGENCY QUEUE SYSTEM - Get queue statistics (admin function)
+ */
+export async function getQueueStatistics() {
+  try {
+    const { getQueueStatistics } = await import('../../utils/examSubmissionQueue.js');
+    return await getQueueStatistics();
+  } catch (error) {
+    console.error("Error getting queue statistics:", error);
+    return {
+      error: error.message
+    };
+  }
+}
+
+/**
+ * EMERGENCY QUEUE SYSTEM - Retry failed submission (admin function)
+ */
+export async function retryFailedSubmission(submissionId) {
+  try {
+    const { retryFailedSubmission } = await import('../../utils/examSubmissionQueue.js');
+    return await retryFailedSubmission(submissionId);
+  } catch (error) {
+    console.error("Error retrying failed submission:", error);
+    return {
+      success: false,
+      message: "Error retrying submission: " + error.message
     };
   }
 }

@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 import { useSelector, useDispatch } from "react-redux"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { studentDetails } from "../../../features/login/LoginSlice"
-import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
+import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData, checkSubmissionStatus } from "../../../server_actions/actions/examController/studentExamActions"
 
 // Import sub-components
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
@@ -43,6 +43,9 @@ export default function ExamHome({ examId }) {
     const [allAttempts, setAllAttempts] = useState([]);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
     const [isEligible, setIsEligible] = useState(false); // NEW: eligibility state
+    // EMERGENCY QUEUE SYSTEM: Add states for tracking queued submissions
+    const [queuedSubmissionId, setQueuedSubmissionId] = useState(null);
+    const [isPollingResult, setIsPollingResult] = useState(false);
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -704,14 +707,52 @@ export default function ExamHome({ examId }) {
                     score: examData.score,
                     totalMarks: exam?.totalMarks || 0,
                     timeTaken: examData.timeTaken || 0,
-                    warnings: examData.warnings || 0, // Include warnings
+                    warnings: examData.warnings || 0,
                     completedAt: new Date().toISOString(),
-                    isOfflineSubmission: false
+                    isOfflineSubmission: false,
+                    visitedQuestions: examData.visitedQuestions || [],
+                    markedQuestions: examData.markedQuestions || [],
+                    // EMERGENCY QUEUE SYSTEM: Add context for queue prioritization
+                    isAutoSubmit: examData.isAutoSubmit || false,
+                    timeRemaining: examData.timeRemaining || 0,
+                    examEnded: examData.examEnded || false,
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+                    screenResolution: typeof screen !== 'undefined' ? `${screen.width}x${screen.height}` : 'unknown',
+                    timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown'
                 });
                 
                 // Exam submission completed
 
                 if (result.success) {
+                    // EMERGENCY QUEUE SYSTEM: Handle queued submissions
+                    if (result.isQueued) {
+                        // NEW: Handle immediate confirmation with background processing
+                        const queuedResult = {
+                            isQueued: true,
+                            submissionId: result.submissionId,
+                            message: result.message,
+                            estimatedProcessingTime: result.estimatedProcessingTime,
+                            status: 'processing',
+                            timeTaken: examData.timeTaken || 0,
+                            warnings: examData.warnings || 0,
+                            completedAt: new Date(),
+                            // Placeholder values for UI compatibility
+                            score: 0,
+                            totalMarks: exam?.totalMarks || 0,
+                            percentage: '0.00'
+                        };
+                        
+                        setExamResult(queuedResult);
+                        setQueuedSubmissionId(result.submissionId);
+                        setCurrentView('result');
+                        toast.success("✅ " + result.message);
+                        
+                        // Start polling for actual results
+                        startResultPolling(result.submissionId);
+                        return;
+                    }
+                    
+                    // Original synchronous processing (development/testing)
                     // Check if this is a scheduled exam and if current time is before end time
                     const isScheduledExam = examData.examAvailability === 'scheduled';
                     const examEndTime = examData.examEndTime ? new Date(examData.examEndTime) : null;
@@ -841,6 +882,96 @@ export default function ExamHome({ examId }) {
             // Don't change the view on error, stay on exam page
         }
     };
+
+    // EMERGENCY QUEUE SYSTEM: Result polling for queued submissions
+    const startResultPolling = useCallback((submissionId) => {
+        if (!submissionId || isPollingResult) return;
+        
+        setIsPollingResult(true);
+        
+        const pollInterval = setInterval(async () => {
+            try {
+                const statusResult = await checkSubmissionStatus(submissionId);
+                
+                if (statusResult.success) {
+                    const { status, result } = statusResult;
+                    
+                    if (status === 'completed' && result) {
+                        // Processing completed - update with actual results
+                        clearInterval(pollInterval);
+                        setIsPollingResult(false);
+                        
+                        // Refresh attempts to get the latest data
+                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
+                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
+                            setAllAttempts(updatedAttempts.attempts);
+                            setHasAttempted(true);
+                            
+                            const latestAttempt = updatedAttempts.attempts[0];
+                            const formattedResult = {
+                                score: latestAttempt.score,
+                                totalMarks: latestAttempt.totalMarks,
+                                percentage: latestAttempt.percentage,
+                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                                unanswered: latestAttempt.statistics?.unattempted || 0,
+                                timeTaken: latestAttempt.timeTaken,
+                                completedAt: latestAttempt.completedAt,
+                                questionAnalysis: latestAttempt.questionAnalysis || [],
+                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                                statistics: latestAttempt.statistics || {},
+                                isQueued: false // No longer queued
+                            };
+                            
+                            setExamResult(formattedResult);
+                            setPreviousResult(formattedResult);
+                            toast.success(\"✅ Your results are now ready!\", { duration: 5000 });
+                        }
+                        
+                    } else if (status === 'failed') {
+                        // Processing failed
+                        clearInterval(pollInterval);
+                        setIsPollingResult(false);
+                        
+                        setExamResult(prev => ({
+                            ...prev,
+                            status: 'failed',
+                            message: 'There was an error processing your submission. Support has been notified.'
+                        }));
+                        
+                        toast.error(\"⚠️ Error processing your submission. Your answers are safe and support has been notified.\", { duration: 8000 });
+                        
+                    } else if (status === 'processing' || status === 'queued' || status === 'retrying') {
+                        // Still processing - update progress if available
+                        if (statusResult.progress) {
+                            setExamResult(prev => ({
+                                ...prev,
+                                status: status,
+                                processingMessage: statusResult.progress.message,
+                                processingPercentage: statusResult.progress.percentage
+                            }));
+                        }
+                    }
+                } else {
+                    console.warn('Failed to check submission status:', statusResult.message);
+                }
+                
+            } catch (error) {
+                console.error('Error polling submission status:', error);
+            }
+        }, 5000); // Poll every 5 seconds
+        
+        // Stop polling after 10 minutes to avoid infinite polling
+        setTimeout(() => {
+            clearInterval(pollInterval);
+            setIsPollingResult(false);
+            
+            if (isPollingResult) {
+                toast.error(\"⏰ Processing is taking longer than expected. Please refresh the page in a few minutes.\", { duration: 10000 });
+            }
+        }, 600000); // 10 minutes
+        
+    }, [examId, student._id, isPollingResult]);
 
     // Add a helper to check for saved progress
     const hasUncompletedExam = (() => {
