@@ -85,6 +85,26 @@ DefaultNegativeMarkingRuleSchema.index({
     partialFilterExpression: { isActive: true }
 });
 
+// PERFORMANCE INDEX: Optimized for bulk query fetch pattern used in exam scoring
+DefaultNegativeMarkingRuleSchema.index({ 
+    stream: 1, 
+    isActive: 1,
+    priority: -1  // Descending to match the sort order in getBulkNegativeMarkingRules
+}, {
+    name: 'bulk_fetch_optimized'
+});
+
+// PERFORMANCE INDEX: Additional index for efficient rule lookup during exam scoring
+DefaultNegativeMarkingRuleSchema.index({ 
+    stream: 1,
+    questionType: 1,
+    subject: 1,
+    standard: 1,
+    isActive: 1
+}, {
+    name: 'exam_scoring_lookup'
+});
+
 const DefaultNegativeMarkingRule = mongoose.models?.DefaultNegativeMarkingRule || mongoose.model("DefaultNegativeMarkingRule", DefaultNegativeMarkingRuleSchema);
 export default DefaultNegativeMarkingRule;
 

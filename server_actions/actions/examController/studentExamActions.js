@@ -178,6 +178,169 @@ function getQuestionSection(exam, question) {
   return "All";
 }
 
+// PERFORMANCE OPTIMIZATION: Bulk fetch all marking rules for exam to eliminate N+1 queries
+async function getBulkNegativeMarkingRules(exam) {
+  try {
+    // Fetch ALL relevant marking rules for the exam in a single query
+    const markingRules = await DefaultNegativeMarkingRule.find({
+      stream: exam.stream,
+      isActive: true
+    }).sort({ priority: -1 }).lean(); // Use lean() for better performance
+
+    // Create a lookup map for efficient rule matching
+    const ruleMap = {
+      examWideRules: [],
+      questionTypeRules: {},
+      subjectRules: {},
+      sectionRules: {},
+      combinedRules: {}
+    };
+
+    // Organize rules by type for efficient lookup
+    for (const rule of markingRules) {
+      const key = `${rule.questionType || 'ALL'}_${rule.subject || 'ALL'}_${rule.standard || 'ALL'}_${rule.section || 'All'}`;
+      
+      if (!ruleMap.combinedRules[key]) {
+        ruleMap.combinedRules[key] = [];
+      }
+      ruleMap.combinedRules[key].push(rule);
+
+      // Also categorize for fallback matching
+      if (!rule.questionType && !rule.subject && !rule.standard) {
+        ruleMap.examWideRules.push(rule);
+      }
+    }
+
+    return { markingRules, ruleMap };
+  } catch (error) {
+    console.error("Error fetching bulk marking rules:", error);
+    // Return empty structure for fallback
+    return { markingRules: [], ruleMap: { examWideRules: [], combinedRules: {} } };
+  }
+}
+
+// OPTIMIZED: Get marking rule for specific question using pre-fetched bulk data
+function getNegativeMarkingRuleFromBulk(exam, question, bulkRuleData) {
+  try {
+    const { ruleMap } = bulkRuleData;
+    
+    // Determine question type
+    let questionType = 'MCQ'; // Default
+    if (question.userInputAnswer) {
+      questionType = 'Numerical';
+    } else if (question.isMultipleAnswer) {
+      questionType = 'MCMA';
+    }
+    
+    // Determine section for this question
+    const questionSection = getQuestionSection(exam, question);
+    const questionSubject = question.subject;
+
+    // Enhanced Priority order for rule matching - using pre-organized rule map
+    const searchKeys = [
+      // Section + Question type + Subject + Standard specific (highest priority)
+      `${questionType}_${questionSubject || 'ALL'}_${exam.standard || 'ALL'}_${questionSection}`,
+      // Section + Question type + Subject specific
+      `${questionType}_${questionSubject || 'ALL'}_ALL_${questionSection}`,
+      // Section + Question type + Standard specific
+      `${questionType}_ALL_${exam.standard || 'ALL'}_${questionSection}`,
+      // Section + Question type specific
+      `${questionType}_ALL_ALL_${questionSection}`,
+      // Question type + Subject + Standard specific
+      `${questionType}_${questionSubject || 'ALL'}_${exam.standard || 'ALL'}_All`,
+      // Question type + Subject specific
+      `${questionType}_${questionSubject || 'ALL'}_ALL_All`,
+      // Question type + Standard specific
+      `${questionType}_ALL_${exam.standard || 'ALL'}_All`,
+      // Question type specific
+      `${questionType}_ALL_ALL_All`,
+      // Subject + Standard specific (no question type)
+      `ALL_${questionSubject || 'ALL'}_${exam.standard || 'ALL'}_All`,
+      // Subject specific
+      `ALL_${questionSubject || 'ALL'}_ALL_All`,
+      // Standard specific
+      `ALL_ALL_${exam.standard || 'ALL'}_All`,
+      // Stream-wide rule
+      `ALL_ALL_ALL_All`
+    ];
+
+    // Find the first matching rule using priority order
+    for (const searchKey of searchKeys) {
+      const rules = ruleMap.combinedRules[searchKey];
+      if (rules && rules.length > 0) {
+        const rule = rules[0]; // Take highest priority rule
+        
+        // Validate the match with normalized subjects if applicable
+        if (rule.subject && questionSubject) {
+          const normalizedQuestionSubject = normalizeSubject(questionSubject);
+          const normalizedRuleSubject = normalizeSubject(rule.subject);
+          if (normalizedQuestionSubject !== normalizedRuleSubject) {
+            continue; // Skip this rule and try next
+          }
+        }
+
+        // Validate standard match if applicable
+        if (rule.standard) {
+          const examStandardStr = normalizeStandard(exam.standard);
+          const ruleStandardStr = normalizeStandard(rule.standard);
+          if (ruleStandardStr !== examStandardStr) {
+            continue; // Skip this rule and try next
+          }
+        }
+
+        return {
+          source: "bulk_optimized_default",
+          negativeMarks: rule.negativeMarks,
+          positiveMarks: rule.positiveMarks,
+          description: rule.description || `Optimized rule: ${rule.stream} > ${questionType}`,
+          partialMarkingEnabled: rule.partialMarkingEnabled,
+          partialMarkingRules: rule.partialMarkingRules,
+          questionType: questionType,
+          appliedRule: rule
+        };
+      }
+    }
+
+    // Fallback to exam's negativeMarks field if no specific rule found
+    if (exam.negativeMarks !== undefined && exam.negativeMarks !== null) {
+      return {
+        source: "exam_fallback",
+        negativeMarks: exam.negativeMarks,
+        positiveMarks: question.marks || 4,
+        description: `Exam default: ${exam.negativeMarks} negative marks`,
+        partialMarkingEnabled: false,
+        partialMarkingRules: null,
+        questionType: questionType
+      };
+    }
+
+    // Final fallback
+    return {
+      source: "system_fallback",
+      negativeMarks: 1,
+      positiveMarks: 4,
+      description: "System default: 1 negative mark, 4 positive marks",
+      partialMarkingEnabled: false,
+      partialMarkingRules: null,
+      questionType: questionType
+    };
+
+  } catch (error) {
+    console.error("Error getting marking rule from bulk data:", error);
+    // System fallback
+    return {
+      source: "error_fallback",
+      negativeMarks: 1,
+      positiveMarks: 4,
+      description: "Error fallback: 1 negative mark, 4 positive marks",
+      partialMarkingEnabled: false,
+      partialMarkingRules: null,
+      questionType: 'MCQ'
+    };
+  }
+}
+
+// DEPRECATED - keeping for backward compatibility only, DO NOT USE in performance-critical code
 // Enhanced helper function to get negative marking rule for a specific question type
 export async function getNegativeMarkingRuleForQuestion(exam, question) {
   try {
@@ -630,6 +793,9 @@ async function checkExamEligibilityUncached(details) {
     let isSubjectWise = false;
     
     if (exam.examQuestions && exam.examQuestions.length > 0) {
+      // PERFORMANCE OPTIMIZATION: Bulk fetch marking rules for eligibility preview
+      const eligibilityBulkRules = await getBulkNegativeMarkingRules(exam);
+      
       // Get unique subjects and their marking rules
       const uniqueSubjects = [...new Set(exam.examQuestions.map(q => q.subject).filter(Boolean))];
       
@@ -637,7 +803,8 @@ async function checkExamEligibilityUncached(details) {
         // Find a question from this subject to get its marking rule
         const sampleQuestion = exam.examQuestions.find(q => q.subject === subject);
         if (sampleQuestion) {
-          const subjectRule = await getNegativeMarkingRuleForQuestion(exam, sampleQuestion);
+          // OPTIMIZED: Use bulk data instead of individual queries
+          const subjectRule = getNegativeMarkingRuleFromBulk(exam, sampleQuestion, eligibilityBulkRules);
           subjectMarkingMap[subject] = {
             correct: subjectRule.positiveMarks || previewMarkingRules.positiveMarks,
             incorrect: -Math.abs(subjectRule.negativeMarks || previewMarkingRules.negativeMarks),
@@ -842,13 +1009,20 @@ async function submitExamResultInternal(examData) {
     let unattempted = 0;
     const questionAnalysis = [];
 
-    // Process each question with its specific negative marking rule
+    // PERFORMANCE OPTIMIZATION: Fetch all marking rules once to eliminate N+1 queries
+    console.time('BulkMarkingRulesFetch');
+    const bulkMarkingRules = await getBulkNegativeMarkingRules(exam);
+    console.timeEnd('BulkMarkingRulesFetch');
+    console.log(`📊 Bulk fetched ${bulkMarkingRules.markingRules.length} marking rules for ${exam.examQuestions.length} questions`);
+
+    // Process each question with its specific negative marking rule (OPTIMIZED)
+    console.time('QuestionScoring');
     for (const question of exam.examQuestions) {
       const userAnswer = answers[question._id];
       const questionMarks = question.marks || 4;
       
-      // Get question-specific negative marking rule
-      const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, question);
+      // Get question-specific negative marking rule (OPTIMIZED - no DB query)
+      const questionNegativeMarkingRule = getNegativeMarkingRuleFromBulk(exam, question, bulkMarkingRules);
       
       // Get admin-configured marks using proper fallback logic
       const adminPositiveMarks = questionNegativeMarkingRule.positiveMarks || questionMarks || 4;
@@ -979,11 +1153,26 @@ async function submitExamResultInternal(examData) {
         }
       }
     }
+    console.timeEnd('QuestionScoring');
 
     // 4. Get exam-wide negative marking summary for legacy compatibility
-    const examNegativeMarkingRule = await getNegativeMarkingRuleForExam(exam);
+    // OPTIMIZATION: Use first rule from bulk data instead of separate query
+    const examNegativeMarkingRule = bulkMarkingRules.ruleMap.examWideRules.length > 0
+      ? {
+          source: "bulk_exam_wide",
+          negativeMarks: bulkMarkingRules.ruleMap.examWideRules[0].negativeMarks,
+          positiveMarks: bulkMarkingRules.ruleMap.examWideRules[0].positiveMarks,
+          description: bulkMarkingRules.ruleMap.examWideRules[0].description || "Exam-wide default rule"
+        }
+      : {
+          source: "exam_fallback",
+          negativeMarks: exam.negativeMarks || 1,
+          positiveMarks: 4,
+          description: "Exam fallback rule"
+        };
 
-    // 5. Calculate subject-wise performance
+    // 5. Calculate subject-wise performance (OPTIMIZED - reuse bulk data)
+    console.time('SubjectPerformanceCalculation');
     const subjectPerformance = {};
     
     for (let index = 0; index < exam.examQuestions.length; index++) {
@@ -991,8 +1180,8 @@ async function submitExamResultInternal(examData) {
       const subject = question.subject || 'Unknown';
       const questionResult = questionAnalysis[index];
       
-      // Get question-specific marking rule for accurate total marks calculation
-      const questionNegativeMarkingRule = await getNegativeMarkingRuleForQuestion(exam, question);
+      // OPTIMIZED: Get question-specific marking rule (no DB query - reuse bulk data)
+      const questionNegativeMarkingRule = getNegativeMarkingRuleFromBulk(exam, question, bulkMarkingRules);
       const questionMaxMarks = questionNegativeMarkingRule.positiveMarks || question.marks || 4;
       
       if (!subjectPerformance[subject]) {
@@ -1025,6 +1214,7 @@ async function submitExamResultInternal(examData) {
         subjectStats.unanswered++;
       }
     }
+    console.timeEnd('SubjectPerformanceCalculation');
     
     // Calculate accuracy and percentage for each subject - Fixed double rounding
     Object.values(subjectPerformance).forEach(subject => {
