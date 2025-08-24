@@ -3,7 +3,7 @@
 import { connectDB } from "../config/mongoose";
 import ExamSubmissionQueue from "../models/exam_portal/examSubmissionQueue";
 import Exam from "../models/exam_portal/exam";
-import Student from "../models/exam_portal/student";
+import Student from "../models/student";
 import EnrolledStudent from "../models/exam_portal/enrolledStudent";
 import mongoose from "mongoose";
 import ExamResult from "../models/exam_portal/examResult";
@@ -802,7 +802,7 @@ class ExamSubmissionWorker {
 // Singleton worker instance
 let workerInstance = null;
 
-export function getExamSubmissionWorker() {
+export async function getExamSubmissionWorker() {
   if (!workerInstance) {
     workerInstance = new ExamSubmissionWorker();
   }
@@ -810,20 +810,20 @@ export function getExamSubmissionWorker() {
 }
 
 // Auto-start the worker
-export function startExamSubmissionWorker() {
-  const worker = getExamSubmissionWorker();
+export async function startExamSubmissionWorker() {
+  const worker = await getExamSubmissionWorker();
   worker.start();
   return worker;
 }
 
-export function stopExamSubmissionWorker() {
+export async function stopExamSubmissionWorker() {
   if (workerInstance) {
     workerInstance.stop();
   }
 }
 
-export function getWorkerStats() {
-  const worker = getExamSubmissionWorker();
+export async function getWorkerStats() {
+  const worker = await getExamSubmissionWorker();
   return worker.getStats();
 }
 

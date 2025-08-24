@@ -925,7 +925,7 @@ export default function ExamHome({ examId }) {
                             
                             setExamResult(formattedResult);
                             setPreviousResult(formattedResult);
-                            toast.success(\"✅ Your results are now ready!\", { duration: 5000 });
+                            toast.success("Your results are now ready!", { duration: 5000 });
                         }
                         
                     } else if (status === 'failed') {
@@ -939,7 +939,7 @@ export default function ExamHome({ examId }) {
                             message: 'There was an error processing your submission. Support has been notified.'
                         }));
                         
-                        toast.error(\"⚠️ Error processing your submission. Your answers are safe and support has been notified.\", { duration: 8000 });
+                        toast.error("Error processing your submission. Your answers are safe and support has been notified.", { duration: 8000 });
                         
                     } else if (status === 'processing' || status === 'queued' || status === 'retrying') {
                         // Still processing - update progress if available
@@ -967,7 +967,7 @@ export default function ExamHome({ examId }) {
             setIsPollingResult(false);
             
             if (isPollingResult) {
-                toast.error(\"⏰ Processing is taking longer than expected. Please refresh the page in a few minutes.\", { duration: 10000 });
+                toast.error("Processing is taking longer than expected. Please refresh the page in a few minutes.", { duration: 10000 });
             }
         }, 600000); // 10 minutes
         

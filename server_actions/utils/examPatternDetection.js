@@ -126,7 +126,7 @@ const EXAM_PATTERNS = {
  * @param {Object} examDetails - Exam details containing name, stream, type etc.
  * @returns {Object|null} - Detected pattern or null if no pattern matches
  */
-export function detectExamPattern(examDetails) {
+export async function detectExamPattern(examDetails) {
   const { examName, examType, stream, conductedBy } = examDetails;
   
   // Search text includes exam name, type, stream, and conductor
@@ -311,7 +311,7 @@ export async function autoConfigureExamRules(examDetails, createdBy) {
  * Gets all available standard patterns for manual selection
  * @returns {Object} - Available patterns with descriptions
  */
-export function getAvailablePatterns() {
+export async function getAvailablePatterns() {
   const patterns = {};
   
   for (const [key, config] of Object.entries(EXAM_PATTERNS)) {
@@ -341,7 +341,7 @@ export function getAvailablePatterns() {
  * @param {string} expectedPattern - Expected pattern name
  * @returns {Object} - Validation result with suggestions
  */
-export function validateExamPattern(exam, expectedPattern) {
+export async function validateExamPattern(exam, expectedPattern) {
   if (!EXAM_PATTERNS[expectedPattern]) {
     return {
       valid: false,

@@ -554,7 +554,7 @@ class ExamSubmissionQueueService {
 // Singleton instance
 let queueServiceInstance = null;
 
-export function getExamSubmissionQueueService() {
+export async function getExamSubmissionQueueService() {
   if (!queueServiceInstance) {
     queueServiceInstance = new ExamSubmissionQueueService();
   }
@@ -563,22 +563,22 @@ export function getExamSubmissionQueueService() {
 
 // Export individual functions for direct use
 export async function queueExamSubmission(examData, context = {}) {
-  const service = getExamSubmissionQueueService();
+  const service = await getExamSubmissionQueueService();
   return await service.queueSubmission(examData, context);
 }
 
 export async function getSubmissionStatus(submissionId) {
-  const service = getExamSubmissionQueueService();
+  const service = await getExamSubmissionQueueService();
   return await service.getSubmissionStatus(submissionId);
 }
 
 export async function getQueueStatistics() {
-  const service = getExamSubmissionQueueService();
+  const service = await getExamSubmissionQueueService();
   return await service.getQueueStats();
 }
 
 export async function retryFailedSubmission(submissionId) {
-  const service = getExamSubmissionQueueService();
+  const service = await getExamSubmissionQueueService();
   return await service.retryFailedSubmission(submissionId);
 }
 

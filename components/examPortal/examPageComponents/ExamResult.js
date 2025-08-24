@@ -23,6 +23,104 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
   // Get student info from Redux
   const student = useSelector(state => state.login.studentDetails)
   
+  // State for subject filtering (moved to top)
+  const [selectedSubject, setSelectedSubject] = useState('All')
+  
+  // Add print-specific CSS for clean PDF/print output (moved to top)
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.innerHTML = `
+      @media print {
+        html, body {
+          background: #fff !important;
+          color: #222 !important;
+          font-family: system-ui, Arial, 'Segoe UI', 'Liberation Sans', sans-serif !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body * { visibility: hidden !important; }
+        #pdf-result-content, #pdf-result-content * { visibility: visible !important; }
+        #pdf-result-content {
+          position: absolute !important;
+          left: 0; top: 0;
+          width: 100vw !important;
+          max-width: 800px !important;
+          margin: 0 auto !important;
+          padding: 32px 32px 32px 32px !important;
+          background: #f8f9fa !important;
+          color: #222 !important;
+          border-radius: 8px !important;
+        }
+        .no-print, .no-print * { display: none !important; }
+        .print-question { page-break-inside: avoid !important; break-inside: avoid !important; }
+        /* Show all questions in print, regardless of filter */
+        .print-all-questions { display: block !important; }
+        .screen-only { display: none !important; }
+        /* Card backgrounds and borders */
+        .bg-white, .bg-white\/95, .bg-white\/90, .bg-gray-50 {
+          background: #f8f9fa !important;
+        }
+        .border, .border-gray-100, .border-gray-200, .border-blue-200, .border-green-200, .border-red-200, .border-purple-200, .border-yellow-200, .border-orange-200 {
+          border-color: #bbb !important;
+        }
+        /* Remove box-shadows and blurs */
+        .shadow, .shadow-xl, .shadow-sm, .backdrop-blur-xl {
+          box-shadow: none !important;
+          filter: none !important;
+        }
+        /* Typography */
+        .text-xs, .text-sm, .text-lg, .text-2xl, .text-4xl, .text-5xl {
+          font-size: 12pt !important;
+        }
+        .font-bold, .font-semibold, .font-medium {
+          font-weight: 600 !important;
+        }
+        /* Icon handling: grayscale for print */
+        svg, [class*="lucide-"] {
+          filter: grayscale(100%) !important;
+        }
+        /* Padding and margin adjustments */
+        .p-2, .p-3, .p-4, .p-6, .p-8, .px-2, .px-3, .px-4, .px-5, .px-6, .px-8, .py-2, .py-3, .py-4, .py-6 {
+          padding: 0.5em 1em !important;
+        }
+        .mb-1, .mb-2, .mb-3, .mb-4, .mb-6, .mt-1, .mt-2, .mt-3, .mt-4, .mt-6, .mt-8 {
+          margin-bottom: 0.7em !important;
+          margin-top: 0.7em !important;
+        }
+        /* Hide action buttons and navigation */
+        button, .no-print, .no-print * {
+          display: none !important;
+        }
+        /* Ensure page breaks between questions if needed */
+        .print-question {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        /* Avoid breaking inside cards */
+        .card, .Card, [class*="card"], [class*="Card"] {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      }
+    `
+    document.head.appendChild(style)
+    return () => { document.head.removeChild(style) }
+  }, [])
+  
+  // Helper function to check if exam is scheduled and still in progress
+  const isScheduledExamInProgress = () => {
+    // Check if exam is scheduled type
+    const isScheduled = exam?.examAvailability === 'scheduled'
+    
+    if (isScheduled && exam?.endTime) {
+      const currentTime = new Date()
+      const examEndTime = new Date(exam.endTime)
+      return currentTime < examEndTime
+    }
+    
+    return false
+  }
+  
   // EMERGENCY QUEUE SYSTEM: Handle queued submissions
   if (result?.isQueued) {
     return (
@@ -111,104 +209,6 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
         </Card>
       </div>
     );
-  }
-  
-  // State for subject filtering
-  const [selectedSubject, setSelectedSubject] = useState('All')
-  
-  // Add print-specific CSS for clean PDF/print output
-  useEffect(() => {
-    const style = document.createElement('style')
-    style.innerHTML = `
-      @media print {
-        html, body {
-          background: #fff !important;
-          color: #222 !important;
-          font-family: system-ui, Arial, 'Segoe UI', 'Liberation Sans', sans-serif !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        body * { visibility: hidden !important; }
-        #pdf-result-content, #pdf-result-content * { visibility: visible !important; }
-        #pdf-result-content {
-          position: absolute !important;
-          left: 0; top: 0;
-          width: 100vw !important;
-          max-width: 800px !important;
-          margin: 0 auto !important;
-          padding: 32px 32px 32px 32px !important;
-          background: #f8f9fa !important;
-          color: #222 !important;
-          border-radius: 8px !important;
-        }
-        .no-print, .no-print * { display: none !important; }
-        .print-question { page-break-inside: avoid !important; break-inside: avoid !important; }
-        /* Show all questions in print, regardless of filter */
-        .print-all-questions { display: block !important; }
-        .screen-only { display: none !important; }
-        /* Card backgrounds and borders */
-        .bg-white, .bg-white\/95, .bg-white\/90, .bg-gray-50 {
-          background: #f8f9fa !important;
-        }
-        .border, .border-gray-100, .border-gray-200, .border-blue-200, .border-green-200, .border-red-200, .border-purple-200, .border-yellow-200, .border-orange-200 {
-          border-color: #bbb !important;
-        }
-        /* Remove box-shadows and blurs */
-        .shadow, .shadow-xl, .shadow-sm, .backdrop-blur-xl {
-          box-shadow: none !important;
-          filter: none !important;
-        }
-        /* Typography */
-        .text-xs, .text-sm, .text-lg, .text-2xl, .text-4xl, .text-5xl {
-          font-size: 12pt !important;
-        }
-        .font-bold, .font-semibold, .font-medium {
-          font-weight: 600 !important;
-        }
-        /* Icon handling: grayscale for print */
-        svg, [class*="lucide-"] {
-          filter: grayscale(100%) !important;
-        }
-        /* Padding and margin adjustments */
-        .p-2, .p-3, .p-4, .p-6, .p-8, .px-2, .px-3, .px-4, .px-5, .px-6, .px-8, .py-2, .py-3, .py-4, .py-6 {
-          padding: 0.5em 1em !important;
-        }
-        .mb-1, .mb-2, .mb-3, .mb-4, .mb-6, .mt-1, .mt-2, .mt-3, .mt-4, .mt-6, .mt-8 {
-          margin-bottom: 0.7em !important;
-          margin-top: 0.7em !important;
-        }
-        /* Hide action buttons and navigation */
-        button, .no-print, .no-print * {
-          display: none !important;
-        }
-        /* Ensure page breaks between questions if needed */
-        .print-question {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-        /* Avoid breaking inside cards */
-        .card, .Card, [class*="card"], [class*="Card"] {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
-        }
-      }
-    `
-    document.head.appendChild(style)
-    return () => { document.head.removeChild(style) }
-  }, [])
-  
-  // Check if exam is scheduled and still in progress
-  const isScheduledExamInProgress = () => {
-    // Check if exam is scheduled type
-    const isScheduled = exam?.examAvailability === 'scheduled'
-    
-    if (isScheduled && exam?.endTime) {
-      const currentTime = new Date()
-      const examEndTime = new Date(exam.endTime)
-      return currentTime < examEndTime
-    }
-    
-    return false
   }
 
   // Early return with warning if scheduled exam is still in progress

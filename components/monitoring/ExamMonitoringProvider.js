@@ -354,7 +354,7 @@ export const useMonitoring = () => {
 
 // Higher-order component to add monitoring to any component
 export const withMonitoring = (WrappedComponent, componentName) => {
-  return React.forwardRef((props, ref) => {
+  const MonitoredComponent = React.forwardRef((props, ref) => {
     const monitoring = useMonitoring();
     const renderStartTime = useRef(Date.now());
     
@@ -370,6 +370,9 @@ export const withMonitoring = (WrappedComponent, componentName) => {
       </ExamErrorBoundary>
     );
   });
+  
+  MonitoredComponent.displayName = `withMonitoring(${componentName || WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  return MonitoredComponent;
 };
 
 export default ExamMonitoringProvider;
