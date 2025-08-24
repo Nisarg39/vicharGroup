@@ -140,6 +140,94 @@ Use specialized agents for complex tasks:
 
 See `.bmad-project.md` for detailed workflows.
 
+## Emergency Refactoring Status
+
+**CRITICAL REFACTORING IN PROGRESS** (Started: 2025-08-24)
+
+### Current State:
+- 27 critical issues identified requiring urgent fixes
+- Phase 0 safety setup COMPLETED (monitoring, backups, feature branches)
+- Ready for Phase 1 critical fixes
+
+### MANDATORY Multi-Agent Orchestrator:
+```bash
+# REQUIRED: Use orchestrator for ALL refactoring tasks (automatically coordinates multiple agents)
+node .claude/agent_orchestrator.js "describe your task here"
+
+# Check refactoring status and get auto-resume instructions
+node .claude/auto_resume.js
+```
+
+**⚠️ IMPORTANT: Claude Code MUST use the agent orchestrator for ALL refactoring tasks, regardless of session. Never use single agents for complex refactoring work.**
+
+### Auto-Resume Instructions:
+**To continue refactoring in any new session, simply say:**
+> "continue exam portal refactoring"
+
+Claude Code will automatically:
+1. **ANALYZE** task using agent orchestrator
+2. **PRESENT** multi-agent coordination plan for approval  
+3. **WAIT** for your approval ("yes", "modify", or "skip")
+4. **EXECUTE** with coordinated agents if approved
+5. **UPDATE** progress and move to next priority
+
+**🤖 Multi-Agent Workflow Integration:**
+- System automatically selects optimal agent combinations
+- Coordinates sequential and parallel agent execution
+- Ensures proper testing and validation workflow
+- Maintains progress tracking across agent handoffs
+
+**To see detailed plan immediately:**
+```bash
+node .claude/auto_resume.js --plan
+```
+
+### Priority Fixes Needed:
+1. Database N+1 queries (server crashes)
+2. Monolithic component breakdown (ExamInterface.js - 1,719 lines)
+3. Client-side timer vulnerability (security risk)
+4. Exam submission failures (data loss risk)
+5. Memory leaks in timer management
+
+### Safety Infrastructure Active:
+- Comprehensive monitoring system deployed
+- Feature flags for safe rollouts
+- Error boundaries and logging
+- Git backup tags and branches
+
+**SEE:** `.claude/REFACTORING_SESSION_STATE.md` for detailed status and next steps
+
+## Refactoring Trigger
+When user says: **"continue exam portal refactoring"**
+
+Claude Code will automatically:
+1. Load refactoring context from persistent state
+2. Present detailed execution plan for next critical issue
+3. Wait for approval ("yes", "modify", or "skip")  
+4. Execute with coordinated agents if approved
+5. Update progress and move to next priority
+
+**Implementation:** All refactoring tasks automatically use `.claude/agent_orchestrator.js` for proper multi-agent coordination
+
+## REFACTORING WORKFLOW RULES
+
+**🚨 MANDATORY ORCHESTRATOR USAGE:**
+Claude Code MUST use the agent orchestrator for:
+- Component refactoring and extraction
+- Database query optimization  
+- Architecture restructuring
+- Performance improvements
+- Security implementations
+- Any task involving >1 file or >100 lines of code
+
+**⚡ Orchestrator Integration Steps:**
+1. Run orchestrator analysis for task planning
+2. Execute selected agents in coordination
+3. Apply proper testing workflow
+4. Commit only after multi-agent validation
+
+**❌ Never bypass orchestrator for complex tasks**
+
 ## Testing Checklist
 1. Database connections
 2. Authentication flows
