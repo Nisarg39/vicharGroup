@@ -378,7 +378,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         exam.examAvailability, 
         exam.endTime,
         Math.floor(startTime / 60000), // Rounded startTime for stability
-        isExamStarted
+        isExamStarted,
+        // CRITICAL FIX: Add current time for MHT-CET exams to enable automatic Biology/Maths unlock
+        // This only affects exams with time-locked subjects (MHT-CET), preventing performance impact on NEET/JEE
+        isCetExam ? Math.floor(Date.now() / 60000) : null
     ]);
 
     // For submit button logic
