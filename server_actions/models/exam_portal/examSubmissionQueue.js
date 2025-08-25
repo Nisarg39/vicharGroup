@@ -259,6 +259,41 @@ ExamSubmissionQueueSchema.statics.getNextQueuedSubmission = function(workerId) {
   );
 };
 
+// CRITICAL: Batch processing method for Vercel cron-based processing
+ExamSubmissionQueueSchema.statics.getBatchQueuedSubmissions = function(batchSize = 20, cronJobId = null) {
+  const now = new Date();
+  
+  return this.updateMany(
+    {
+      $or: [
+        { status: "queued" },
+        { 
+          status: "retrying", 
+          "processing.nextRetryAt": { $lte: now }
+        }
+      ]
+    },
+    {
+      status: "processing",
+      "processing.startedAt": now,
+      "processing.workerId": cronJobId || `cron-${Date.now()}`,
+      $inc: { "processing.attempts": 1 },
+      "processing.lastAttemptAt": now
+    },
+    {
+      sort: { priority: -1, createdAt: 1 }, // High priority first, then FIFO
+      limit: batchSize
+    }
+  ).then(() => {
+    // Return the updated documents
+    return this.find({
+      status: "processing",
+      "processing.workerId": cronJobId || `cron-${Date.now()}`,
+      "processing.lastAttemptAt": { $gte: new Date(now.getTime() - 5000) } // Within last 5 seconds
+    }).limit(batchSize).sort({ priority: -1, createdAt: 1 });
+  });
+};
+
 ExamSubmissionQueueSchema.statics.getQueueStats = function() {
   return this.aggregate([
     {

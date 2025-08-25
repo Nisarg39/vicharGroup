@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { checkSubmissionStatus } from '../../../../../server_actions/actions/examController/studentExamActions';
 
+// Mark as dynamic route to prevent static generation
+export const dynamic = 'force-dynamic';
+
 /**
  * EMERGENCY QUEUE SYSTEM - API Endpoint
  * Check the status of a queued exam submission

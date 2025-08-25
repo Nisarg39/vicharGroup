@@ -37,6 +37,9 @@ class ExamSubmissionQueueService {
       processedCount: 0,
       errorCount: 0
     };
+    
+    // Check if running in cron mode (Vercel environment)
+    this.isCronMode = process.env.VERCEL || process.env.VERCEL_ENV;
   }
 
   /**
@@ -105,8 +108,10 @@ class ExamSubmissionQueueService {
 
       await queueEntry.save();
 
-      // Start processing if not already running
-      this.ensureProcessingActive();
+      // Start processing if not already running (only in setInterval mode)
+      if (!this.isCronMode) {
+        this.ensureProcessingActive();
+      }
 
       const responseTime = Date.now() - startTime;
       
@@ -126,7 +131,8 @@ class ExamSubmissionQueueService {
         message: "Your exam has been submitted successfully! Your results are being processed.",
         submissionId,
         queueStatus: "queued",
-        estimatedProcessingTime: "1-2 minutes",
+        estimatedProcessingTime: this.isCronMode ? "30-60 seconds" : "1-2 minutes",
+        processingMode: this.isCronMode ? "cron-batch" : "setInterval",
         responseTimeMs: responseTime
       };
 
@@ -399,27 +405,34 @@ class ExamSubmissionQueueService {
   }
 
   /**
-   * Ensure queue processing is active
+   * Ensure queue processing is active (only for setInterval mode)
    */
   ensureProcessingActive() {
-    if (!this.isProcessing) {
+    if (!this.isProcessing && !this.isCronMode) {
       this.startQueueProcessor();
     }
   }
 
   /**
-   * Start the background queue processor
+   * Start the background queue processor (disabled in cron mode)
    */
   startQueueProcessor() {
-    if (this.isProcessing) {
-      return; // Already running
+    if (this.isProcessing || this.isCronMode) {
+      if (this.isCronMode) {
+        MonitoringService.logActivity('ExamSubmissionQueue', 'Skipping worker start - running in cron mode', {
+          workerId: this.workerInfo.id,
+          cronMode: true
+        });
+      }
+      return; // Already running or in cron mode
     }
 
     this.isProcessing = true;
     
     MonitoringService.logActivity('ExamSubmissionQueue', 'Starting separate worker for queue processing', {
       workerId: this.workerInfo.id,
-      processId: process.pid
+      processId: process.pid,
+      cronMode: false
     });
 
     // Start the separate worker to avoid circular imports
@@ -470,7 +483,7 @@ class ExamSubmissionQueueService {
   }
 
   /**
-   * Get queue statistics for monitoring
+   * Get queue statistics for monitoring (enhanced for cron mode)
    */
   async getQueueStats() {
     try {
@@ -479,11 +492,16 @@ class ExamSubmissionQueueService {
       const stats = await ExamSubmissionQueue.getQueueStats();
       const failedSubmissions = await ExamSubmissionQueue.getFailedSubmissions(5);
       
+      // Get cron-specific stats if in cron mode
+      const cronStats = this.isCronMode ? await this.getCronProcessingStats() : null;
+      
       return {
         stats,
         failedSubmissions,
         worker: this.workerInfo,
-        isProcessing: this.isProcessing
+        isProcessing: this.isProcessing,
+        processingMode: this.isCronMode ? "cron-batch" : "setInterval",
+        cronStats
       };
       
     } catch (error) {
@@ -494,6 +512,56 @@ class ExamSubmissionQueueService {
       return {
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Get cron processing statistics
+   */
+  async getCronProcessingStats() {
+    try {
+      const cronProcessedToday = await ExamSubmissionQueue.countDocuments({
+        status: "completed",
+        "metrics.cronJobId": { $exists: true },
+        "processing.completedAt": {
+          $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+        }
+      });
+
+      const avgBatchProcessingTime = await ExamSubmissionQueue.aggregate([
+        {
+          $match: {
+            status: "completed",
+            "metrics.cronJobId": { $exists: true },
+            "processing.completedAt": {
+              $gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgProcessingTime: { $avg: "$metrics.totalProcessingTimeMs" }
+          }
+        }
+      ]);
+
+      const batchSize = parseInt(process.env.EXAM_BATCH_SIZE) || 20;
+      const cronInterval = 30; // seconds
+
+      return {
+        processedLast24h: cronProcessedToday,
+        avgProcessingTimeMs: avgBatchProcessingTime[0]?.avgProcessingTime || 0,
+        batchSize,
+        cronIntervalSeconds: cronInterval,
+        estimatedThroughputPerHour: (batchSize * (3600 / cronInterval)) // theoretical max
+      };
+      
+    } catch (error) {
+      MonitoringService.logError('ExamSubmissionQueue', 'Failed to get cron stats', {
+        error: error.message
+      });
+      return null;
     }
   }
 

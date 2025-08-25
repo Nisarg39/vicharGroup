@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "src/app/api/cron/process-submissions/route.js": {
+      "maxDuration": 800
+    },
+    "src/app/api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/process-submissions",
+      "schedule": "*/30 * * * * *"
+    }
+  ]
+}

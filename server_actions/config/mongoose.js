@@ -14,26 +14,37 @@ export const connectDB = async () => {
     try {
         
        await mongoose.connect(process.env.MONGODB_URI, {
-           // Connection Pool Configuration
-           maxPoolSize: 100,              // Maximum number of connections in the pool
-           minPoolSize: 10,               // Minimum number of connections to maintain
-           serverSelectionTimeoutMS: 5000, // How long to try to connect before timing out
-           socketTimeoutMS: 45000,        // How long a socket stays open when idle
+           // M10-Optimized Connection Pool Configuration
+           maxPoolSize: 400,              // Use 27% of M10's 1,490 connections (was 100)
+           minPoolSize: 20,               // Maintain warm connections (was 10)
            
-           // Additional optimizations for production
-           maxIdleTimeMS: 10000,          // Close idle connections after 10 seconds
-           waitQueueTimeoutMS: 5000,      // Max time to wait for a connection from pool
+           // M10-Specific Timeouts (account for CPU throttling)
+           serverSelectionTimeoutMS: 10000,  // Longer timeout for M10 (was 5000)
+           socketTimeoutMS: 60000,            // Account for M10 performance delays (was 45000)
+           connectTimeoutMS: 10000,           // Initial connection timeout
            
-           // Connection retry logic
-           retryWrites: true,             // Retry failed writes automatically
-           w: 'majority',                 // Write concern for data durability
+           // M10 Performance Optimizations
+           maxIdleTimeMS: 15000,              // Keep connections alive longer (was 10000)
+           waitQueueTimeoutMS: 15000,         // Longer wait for M10 connection pool (was 5000)
+           heartbeatFrequencyMS: 10000,       // Monitor connection health
+           
+           // Utilize Secondary Nodes for Reads (KEY M10 OPTIMIZATION)
+           readPreference: 'secondaryPreferred', // Leverage 2,980 secondary connections
+           readConcern: { level: 'local' },       // Faster reads for M10
+           
+           // Write Optimizations for M10
+           retryWrites: true,                     // Retry failed writes automatically
+           writeConcern: { w: 'majority', j: false }, // Optimized write concern for M10
+           
+           // M10-Appropriate Buffer Settings
+           bufferCommands: true,
        });
 
        isConnected = true
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {
-        //    console.log('✅ MongoDB connected with connection pooling enabled');
+        //    console.log('✅ M10 MongoDB connected - maxPoolSize: 400 (4x optimized for M10)');
        });
        
        mongoose.connection.on('error', (err) => {

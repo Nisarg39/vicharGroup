@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { retryFailedSubmission } from '../../../../../server_actions/actions/examController/studentExamActions';
 
+// Mark as dynamic route to prevent static generation
+export const dynamic = 'force-dynamic';
+
 /**
  * EMERGENCY QUEUE SYSTEM - Admin API Endpoint
  * Retry a failed submission

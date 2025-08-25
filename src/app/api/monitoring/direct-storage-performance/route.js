@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getDashboardMetrics, generatePerformanceReport } from '../../../../../server_actions/services/performance/DirectStorageMonitor';
 import { ConcurrentSubmissionTest } from '../../../../../server_actions/utils/performance/ConcurrentSubmissionTest';
 
+// Mark as dynamic route to prevent static generation
+export const dynamic = 'force-dynamic';
+
 /**
  * DIRECT STORAGE PERFORMANCE MONITORING API
  * 
