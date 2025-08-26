@@ -1258,14 +1258,6 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
                           <span>Unanswered</span>
                         </div>
                       </div>
-                      <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                        <p className="text-blue-800 font-medium text-sm">
-                          <strong>General Rule:</strong> {markingDetails.ruleDescription}
-                        </p>
-                        <p className="text-blue-700 text-xs mt-1">
-                          Source: {markingDetails.ruleSource === 'super_admin_default' ? 'Super Admin Default Rules' : markingDetails.ruleSource === 'exam_specific' ? 'Basic Exam Configuration' : 'Unknown Source'}
-                        </p>
-                      </div>
                     </div>
                   </div>
                 ) : (

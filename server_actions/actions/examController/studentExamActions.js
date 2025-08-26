@@ -933,30 +933,54 @@ async function checkExamEligibilityUncached(details) {
 
 export async function submitExamResult(examData) {
   /**
-   * EMERGENCY QUEUE SYSTEM - submitExamResult(examData)
+   * OPTIMIZED SUBMISSION ROUTING - submitExamResult(examData)
    * 
-   * CRITICAL CHANGE: This function now uses the emergency submission queue
-   * to eliminate data loss during concurrent auto-submits.
+   * NEW ARCHITECTURE:
+   * 1. Check for pre-computed client evaluation results (Priority 1)
+   * 2. Route to ultra-fast optimized endpoint (15-50ms target)
+   * 3. Fallback to emergency queue system (Background processing)
+   * 4. Final fallback to traditional computation (Synchronous)
    * 
-   * NEW Flow:
-   * 1. Queue submission immediately (INSTANT response to student)
-   * 2. Background worker processes using existing scoring logic
-   * 3. Zero data loss with comprehensive error handling
-   * 4. Students get immediate confirmation, results processed in background
-   * 
-   * BACKWARD COMPATIBILITY:
-   * - For testing/development: can fall back to synchronous processing
-   * - API response format unchanged for frontend compatibility
-   * - All scoring logic preserved exactly as before
+   * PERFORMANCE TARGETS:
+   * - Client evaluation + optimized endpoint: 15-50ms total
+   * - Queue system: Immediate response + background processing
+   * - Traditional computation: 400-1,350ms (fallback only)
    */
   
-  // Check if emergency queue system should be used (default: enabled in production)
+  const routingStartTime = Date.now();
+  
+  // PRIORITY 1: Check for pre-computed client evaluation results
+  if (examData.clientEvaluationResult || examData.progressiveResults || examData.isPreComputed) {
+    try {
+      console.log('⚡ ROUTING: Pre-computed results detected, using optimized submission...');
+      
+      const { routeOptimizedSubmission } = await import('./optimizedSubmissionEndpoint');
+      
+      const optimizedResult = await routeOptimizedSubmission(examData);
+      
+      const totalRoutingTime = Date.now() - routingStartTime;
+      
+      return {
+        ...optimizedResult,
+        routingDecision: 'optimized_endpoint',
+        routingTime: totalRoutingTime,
+        performanceAchieved: optimizedResult.performanceMetrics?.totalTime <= 50
+      };
+      
+    } catch (optimizedError) {
+      console.warn('⚠️ Optimized submission failed, falling back to queue system:', optimizedError.message);
+      // Continue to queue system fallback
+    }
+  }
+  
+  // PRIORITY 2: Emergency queue system for background processing
   const useQueueSystem = process.env.EXAM_QUEUE_ENABLED !== 'false' && 
                           process.env.NODE_ENV === 'production';
   
   if (useQueueSystem) {
-    // EMERGENCY QUEUE SYSTEM - Immediate response with background processing
     try {
+      console.log('📋 ROUTING: Using emergency queue system for background processing...');
+      
       const { queueExamSubmission } = await import('../../utils/examSubmissionQueue.js');
       
       // Get request context for better queue management
@@ -969,22 +993,24 @@ export async function submitExamResult(examData) {
         screenResolution: examData.screenResolution,
         timezone: examData.timezone,
         sessionId: examData.sessionId,
-        ipAddress: examData.ipAddress
+        ipAddress: examData.ipAddress,
+        hasClientEvaluation: !!(examData.clientEvaluationResult || examData.progressiveResults)
       };
       
       const queueResult = await queueExamSubmission(examData, context);
       
       if (queueResult.success) {
-        // CRITICAL: Return immediate success with queue tracking info
+        const totalRoutingTime = Date.now() - routingStartTime;
+        
         return {
           success: true,
           message: "Your exam has been submitted successfully! Your results are being processed and will be available shortly.",
           isQueued: true,
           submissionId: queueResult.submissionId,
           estimatedProcessingTime: queueResult.estimatedProcessingTime,
+          routingDecision: 'queue_system',
+          routingTime: totalRoutingTime,
           result: {
-            // Provide placeholder values for frontend compatibility
-            // Actual results will be available via status API
             isProcessing: true,
             submissionId: queueResult.submissionId,
             message: "Processing your answers in the background...",
@@ -994,20 +1020,26 @@ export async function submitExamResult(examData) {
           }
         };
       } else {
-        // Queue system failed, fall back to synchronous processing
-        console.warn('Queue system failed, falling back to synchronous processing:', queueResult.message);
-        return await retryExamSubmission(submitExamResultInternal, examData);
+        console.warn('Queue system failed, falling back to traditional processing:', queueResult.message);
       }
       
     } catch (queueError) {
-      // Queue system error, fall back to synchronous processing
-      console.error('Queue system error, falling back to synchronous processing:', queueError.message);
-      return await retryExamSubmission(submitExamResultInternal, examData);
+      console.error('Queue system error, falling back to traditional processing:', queueError.message);
     }
-  } else {
-    // FALLBACK: Use original synchronous processing for development/testing
-    return await retryExamSubmission(submitExamResultInternal, examData);
   }
+  
+  // PRIORITY 3: Traditional synchronous processing (final fallback)
+  console.log('🔄 ROUTING: Using traditional synchronous processing as final fallback...');
+  
+  const traditionalResult = await retryExamSubmission(submitExamResultInternal, examData);
+  const totalRoutingTime = Date.now() - routingStartTime;
+  
+  return {
+    ...traditionalResult,
+    routingDecision: 'traditional_computation',
+    routingTime: totalRoutingTime,
+    isFallback: true
+  };
 }
 
 // Internal function that does the actual submission

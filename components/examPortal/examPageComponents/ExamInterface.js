@@ -13,11 +13,17 @@ import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
 import ExamTimer from "./ExamTimer"
 
+// CLIENT-SIDE EVALUATION ENGINE: Import new evaluation system
+import { ClientEvaluation } from "../../../lib/progressive-scoring/ClientEvaluationEngine"
+import { getServiceWorkerIntegration } from "../../../lib/progressive-scoring/ServiceWorkerIntegration"
+
 // PROGRESSIVE COMPUTATION: Import progressive scoring integration
 import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/progressive-scoring/ExamInterfaceIntegration"
 
 // DIRECT STORAGE SYSTEM: Import enhanced submission handler for 15ms target
 import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
+import { shouldCloseExamImmediately, getSubmissionSuccessMessage } from "../../../config/examFeatureFlags"
+import { logSubmissionStart, logImmediateClose, logSubmissionError } from "../../../lib/examBottleneckMonitor"
 
 // PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
 import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
@@ -46,6 +52,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const [timeLeft, setTimeLeft] = useState(0) // Initialize to 0, let useEffect handle calculation
     const [isExamStarted, setIsExamStarted] = useState(false)
     const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
+    
+    // CLIENT-SIDE EVALUATION ENGINE STATE
+    const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
+    const [evaluationInitialized, setEvaluationInitialized] = useState(false)
+    const [progressiveResults, setProgressiveResults] = useState(null)
+    const [evaluationError, setEvaluationError] = useState(null)
+    const [offlineCapable, setOfflineCapable] = useState(false)
+    
+    // Service Worker integration
+    const serviceWorkerIntegration = useRef(null)
+    const evaluationEngineRef = useRef(null)
     // Removed: examProgress state - simplified progress tracking
     const timerRef = useRef(null) // Used for cleanup, actual timer in ExamTimer component
     const mainExamRef = useRef(null); // For fullscreen
@@ -73,8 +90,106 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         submissionTime: 0
     });
     
+    // Track submission type for appropriate messaging
+    const [submissionType, setSubmissionType] = useState('manual_submit'); // 'manual_submit', 'auto_submit'
+    
+    // Track submission for monitoring
+    const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
+    
     // ACCESSIBILITY: Focus management for submission modals
     const modalRef = useRef(null);
+    
+    // WINDOW CLOSE UTILITY: Handle exam completion by closing browser window/tab
+    const handleExamWindowClose = async (completionData) => {
+        try {
+            const { submissionType, success = true, error = false, message } = completionData;
+            
+            // 1. Exit fullscreen mode first
+            if (document.fullscreenElement) {
+                console.log('🖥️ Exiting fullscreen mode before window close...');
+                await document.exitFullscreen().catch(err => {
+                    console.log('ℹ️ Fullscreen exit failed (normal for some browsers):', err.message);
+                });
+            }
+            
+            // 2. Show appropriate success/error message
+            const displayMessage = message || (success 
+                ? `Exam submitted successfully! This window will close automatically.`
+                : `Submission encountered an issue but has been saved. This window will close automatically.`);
+            
+            console.log(`✅ ${success ? 'Success' : 'Error'} - ${displayMessage}`);
+            
+            // 3. Show toast notification
+            if (success) {
+                toast.success(displayMessage, { 
+                    duration: 3000,
+                    style: { fontSize: '16px', fontWeight: 'bold' }
+                });
+            } else {
+                toast.error(displayMessage, { 
+                    duration: 4000,
+                    style: { fontSize: '16px', fontWeight: 'bold' }
+                });
+            }
+            
+            // 4. Close browser window/tab after delay
+            setTimeout(() => {
+                console.log('🔄 Attempting to close browser window/tab...');
+                
+                // Try to close the window (works for popups, new tabs opened by JS)
+                try {
+                    window.close();
+                    
+                    // If window.close() doesn't work (direct URL access), provide fallback
+                    setTimeout(() => {
+                        console.log('ℹ️ Window close may have failed - providing fallback navigation');
+                        
+                        // Show additional message to user
+                        toast.info('You can now close this tab or navigate back to your dashboard.', {
+                            duration: 8000,
+                            style: { fontSize: '14px' }
+                        });
+                        
+                        // Fallback: Navigate to dashboard after additional delay
+                        setTimeout(() => {
+                            try {
+                                window.location.href = '/dashboard';
+                            } catch (navError) {
+                                console.log('ℹ️ Navigation fallback failed:', navError);
+                                // Final fallback: Navigate to root
+                                window.location.href = '/';
+                            }
+                        }, 3000);
+                    }, 1000);
+                } catch (closeError) {
+                    console.log('ℹ️ Window close failed (expected for direct URL access):', closeError);
+                    
+                    // Direct fallback for browsers that prevent window.close()
+                    toast.info('Exam completed! You can now close this tab.', {
+                        duration: 8000,
+                        style: { fontSize: '16px', fontWeight: 'bold' }
+                    });
+                    
+                    // Navigate to dashboard as fallback
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                }
+            }, success ? 2000 : 3000); // Longer delay for errors
+            
+        } catch (error) {
+            console.error('❌ Error during window close handling:', error);
+            
+            // Ultimate fallback
+            toast.error('Exam submitted but window close failed. Please close this tab manually.', {
+                duration: 8000
+            });
+            
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 3000);
+        }
+    };
     
     // Handle keyboard navigation for modals
     useEffect(() => {
@@ -137,6 +252,62 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // PROGRESSIVE COMPUTATION: Initialize progressive scoring engine
     const progressiveScoring = useProgressiveScoring(exam, questions, student);
+
+    // CLIENT-SIDE EVALUATION ENGINE: Initialize client evaluation engine
+    useEffect(() => {
+        const initializeClientEvaluation = async () => {
+            try {
+                console.log('🎯 Initializing client-side evaluation engine...');
+                
+                // Initialize Service Worker integration for offline capabilities
+                serviceWorkerIntegration.current = getServiceWorkerIntegration({
+                    enableBackgroundSync: true,
+                    cacheExpiry: 24 * 60 * 60 * 1000 // 24 hours
+                });
+                
+                const swResult = await serviceWorkerIntegration.current.initialize();
+                if (swResult.success) {
+                    setOfflineCapable(swResult.offlineCapable);
+                    console.log(`📡 Service Worker initialized - Offline capable: ${swResult.offlineCapable}`);
+                }
+                
+                // Prepare evaluation data
+                const evaluationData = {
+                    exam,
+                    questions,
+                    student,
+                    timestamp: Date.now()
+                };
+                
+                // Initialize client evaluation engine
+                const initResult = await ClientEvaluation.initialize(evaluationData);
+                
+                if (initResult.success) {
+                    setEvaluationInitialized(true);
+                    setEvaluationError(null);
+                    console.log(`✅ Client evaluation engine initialized in ${initResult.initializationTime.toFixed(2)}ms`);
+                    
+                    // Initialize offline evaluation if supported
+                    if (serviceWorkerIntegration.current && swResult.offlineCapable) {
+                        await serviceWorkerIntegration.current.initializeOfflineEvaluation(evaluationData);
+                    }
+                    
+                } else {
+                    console.warn('⚠️ Client evaluation engine initialization failed, will use server evaluation');
+                    setEvaluationError(initResult.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Client evaluation initialization error:', error);
+                setEvaluationError(error.message);
+            }
+        };
+        
+        // Initialize when exam starts
+        if (isExamStarted && exam && questions && student) {
+            initializeClientEvaluation();
+        }
+    }, [isExamStarted, exam, questions, student]);
 
     // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
@@ -989,6 +1160,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
+        // BOTTLENECK MONITORING: Log submission start
+        const monitoringId = logSubmissionStart(student?._id, exam?._id, submissionType);
+        setCurrentSubmissionId(monitoringId);
         try {
             examCompletedRef.current = true;
             setWarningDialog(false); // Close warning dialog
@@ -1024,20 +1198,61 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
         const submissionStartTime = Date.now();
 
+        // CLIENT-SIDE EVALUATION FINALIZATION: Generate complete exam result
+        let clientEvaluationResult = null;
+        if (evaluationInitialized && !evaluationError) {
+            try {
+                console.log('🎯 Finalizing client-side evaluation for submission...');
+                
+                const finalizationResult = await ClientEvaluation.finalize({
+                    submissionType,
+                    submittedAt: new Date().toISOString(),
+                    timeTaken: exam.examAvailability === 'scheduled' 
+                        ? Math.floor((Date.now() - startTime) / 1000) 
+                        : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                    visitedQuestions: Array.from(visitedQuestions),
+                    markedQuestions: Array.from(markedQuestions),
+                    warnings: warningCount,
+                    userAgent: navigator.userAgent,
+                    processingTime: 0 // Will be calculated during finalization
+                });
+                
+                if (finalizationResult.success) {
+                    clientEvaluationResult = finalizationResult;
+                    console.log(`✅ Client evaluation finalized in ${finalizationResult.finalizationTime.toFixed(2)}ms`);
+                    console.log(`📊 Final Score: ${finalizationResult.examResult.finalScore}/${finalizationResult.examResult.totalMarks}`);
+                    
+                    // Update submission data with client evaluation result
+                    examSubmissionData.clientEvaluationResult = finalizationResult.examResult;
+                    examSubmissionData.evaluationSource = 'client_side_engine';
+                    examSubmissionData.score = finalizationResult.examResult.finalScore;
+                    examSubmissionData.totalMarks = finalizationResult.examResult.totalMarks;
+                    examSubmissionData.percentage = finalizationResult.examResult.percentage;
+                } else {
+                    console.warn('⚠️ Client evaluation finalization failed:', finalizationResult.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Client evaluation finalization error:', error);
+                // Continue with normal submission flow
+            }
+        }
+
         // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
-        if (progressiveScoring?.isInitialized?.()) {
+        if ((progressiveScoring?.isInitialized?.()) || clientEvaluationResult) {
             try {
                 console.log('🚀 Attempting enhanced progressive submission with direct storage...');
                 
-                // Get complete ExamResult data from progressive engine
-                const progressiveResult = await progressiveScoring.getProgressiveResults();
+                // Use client evaluation result if available, otherwise try progressive computation
+                let directStorageData;
                 
-                if (progressiveResult.success && progressiveResult.results && progressiveResult.isPreComputed) {
-                    console.log('📊 Progressive computation data ready, submitting via direct storage...');
+                if (clientEvaluationResult) {
+                    console.log('📊 Client evaluation result ready, submitting via direct storage...');
                     
-                    // Prepare complete data structure for direct storage
-                    const directStorageData = {
-                        ...progressiveResult.results,
+                    // Prepare complete data structure for direct storage using client evaluation
+                    directStorageData = {
+                        ...clientEvaluationResult.examResult,
+                        // Ensure required fields are set
                         examId: exam._id,
                         studentId: student._id,
                         timeTaken: exam.examAvailability === 'scheduled' 
@@ -1050,8 +1265,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         warnings: warningCount,
                         examAvailability: exam?.examAvailability,
                         examEndTime: exam?.endTime,
-                        isAutoSubmit: true,
+                        isAutoSubmit: submissionType === 'auto_submit',
                         timeRemaining: timeLeft,
+                        evaluationSource: 'client_evaluation_engine',
                         
                         // Raw data for fallback
                         rawExamData: {
@@ -1067,6 +1283,52 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             warnings: warningCount
                         }
                     };
+                    
+                } else {
+                    // Fallback to progressive computation
+                    const progressiveResult = await progressiveScoring?.getProgressiveResults();
+                    
+                    if (progressiveResult?.success && progressiveResult.results && progressiveResult.isPreComputed) {
+                        console.log('📊 Progressive computation data ready, submitting via direct storage...');
+                        
+                        directStorageData = {
+                            ...progressiveResult.results,
+                            examId: exam._id,
+                            studentId: student._id,
+                            timeTaken: exam.examAvailability === 'scheduled' 
+                                ? Math.floor((Date.now() - startTime) / 1000) 
+                                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                            completedAt: new Date().toISOString(),
+                            submittedAt: new Date().toISOString(),
+                            visitedQuestions: Array.from(visitedQuestions),
+                            markedQuestions: Array.from(markedQuestions),
+                            warnings: warningCount,
+                            examAvailability: exam?.examAvailability,
+                            examEndTime: exam?.endTime,
+                            isAutoSubmit: submissionType === 'auto_submit',
+                            timeRemaining: timeLeft,
+                            evaluationSource: 'progressive_computation',
+                            
+                            // Raw data for fallback
+                            rawExamData: {
+                                examId: exam._id,
+                                studentId: student._id,
+                                answers,
+                                timeTaken: exam.examAvailability === 'scheduled' 
+                                    ? Math.floor((Date.now() - startTime) / 1000) 
+                                    : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                                completedAt: new Date().toISOString(),
+                                visitedQuestions: Array.from(visitedQuestions),
+                                markedQuestions: Array.from(markedQuestions),
+                                warnings: warningCount
+                            }
+                        };
+                    } else {
+                        throw new Error('No evaluation result available for direct storage');
+                    }
+                }
+                
+                if (directStorageData) {
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
                     const submissionStartTime = Date.now();
@@ -1114,19 +1376,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         // Clear saved progress
                         localStorage.removeItem(progressKey);
                         
-                        // Call onComplete with enhanced results after brief delay to show feedback
-                        setTimeout(() => {
-                            if (typeof onComplete === 'function') {
-                                onComplete({
-                                    ...directResult,
-                                    performanceMetrics: {
-                                        ...directResult.performanceMetrics,
-                                        submissionTime: performanceResults.submissionTime,
-                                        target15msAchieved: performanceResults.target15msAchieved,
-                                        performanceRank: performanceResults.performanceRank
-                                    }
-                                });
-                            }
+                        // EMERGENCY BOTTLENECK FIX: Close exam window instead of navigating to result
+                        // This eliminates mass DB calls during simultaneous submissions
+                        setTimeout(async () => {
+                            await handleExamWindowClose({
+                                submissionType,
+                                success: true,
+                                message: getSubmissionSuccessMessage(submissionType),
+                                performanceMetrics: {
+                                    ...directResult.performanceMetrics,
+                                    submissionTime: performanceResults.submissionTime,
+                                    target15msAchieved: performanceResults.target15msAchieved,
+                                    performanceRank: performanceResults.performanceRank
+                                }
+                            });
                         }, 1500); // Show success feedback for 1.5 seconds
                         return;
                     } else {
@@ -1251,21 +1514,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // Clear saved progress
         localStorage.removeItem(progressKey);
         
-        // Call onComplete with traditional data after brief delay to show feedback
-        setTimeout(() => {
-            if (typeof onComplete === 'function') {
-                onComplete({
-                    ...examData,
-                    performanceMetrics: {
-                        submissionTime: totalSubmissionTime,
-                        target15msAchieved: false,
-                        performanceRank: totalSubmissionTime <= 100 ? 'FAST' : 'AVERAGE',
-                        computationMethod: 'server_traditional'
-                    }
-                });
-            } else {
-                console.error('onComplete is not a function:', onComplete);
-            }
+        // EMERGENCY BOTTLENECK FIX: Close exam window instead of navigating to result
+        // This eliminates mass DB calls during simultaneous submissions
+        setTimeout(async () => {
+            await handleExamWindowClose({
+                submissionType,
+                success: true,
+                message: getSubmissionSuccessMessage(submissionType),
+                performanceMetrics: {
+                    submissionTime: totalSubmissionTime,
+                    target15msAchieved: false,
+                    performanceRank: totalSubmissionTime <= 100 ? 'FAST' : 'AVERAGE',
+                    computationMethod: 'server_traditional'
+                }
+            });
         }, 1200); // Show success feedback for 1.2 seconds
         
         } catch (globalError) {
@@ -1292,6 +1554,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             toast.error('Unexpected error during submission. Please try again.', { duration: 5000 });
             
             console.log('🛡️ Global error handler activated - User can retry submission');
+            
+            // EMERGENCY FIX: Close exam window even on error to prevent bottleneck
+            console.log('🚨 Error during submission but closing exam to prevent bottleneck');
+            setTimeout(async () => {
+                await handleExamWindowClose({
+                    submissionType,
+                    success: false,
+                    error: true,
+                    message: "There was an issue with your submission, but it has been saved. Please check your dashboard for status updates."
+                });
+            }, 2000);
         }
     }
     // --- FULLSCREEN LOGIC END ---
@@ -1318,7 +1591,35 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         
         setAnswers(newAnswers);
 
-        // PROGRESSIVE COMPUTATION: Update progressive scoring in background
+        // CLIENT-SIDE EVALUATION: Real-time evaluation if engine is initialized
+        if (evaluationInitialized && !evaluationError) {
+            try {
+                const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, answer);
+                
+                if (evaluationResult.success) {
+                    // Update progressive results with real-time scoring
+                    setProgressiveResults(prev => ({
+                        ...prev,
+                        totalScore: evaluationResult.progressiveScore || prev?.totalScore || 0,
+                        percentage: evaluationResult.progressivePercentage || prev?.percentage || 0,
+                        quickStats: evaluationResult.quickStats,
+                        lastUpdated: Date.now()
+                    }));
+                    
+                    // Log performance if evaluation time exceeds target
+                    if (evaluationResult.evaluationTime > 5) {
+                        console.warn(`⚠️ Answer evaluation slow: ${evaluationResult.evaluationTime.toFixed(2)}ms for question ${questionId}`);
+                    }
+                } else {
+                    console.warn(`⚠️ Client evaluation failed for question ${questionId}:`, evaluationResult.error);
+                }
+            } catch (error) {
+                console.error('❌ Client evaluation error:', error);
+                // Don't break the UI - continue with normal flow
+            }
+        }
+
+        // PROGRESSIVE COMPUTATION: Update progressive scoring in background (fallback)
         if (progressiveScoring?.isInitialized?.()) {
             progressiveScoring.updateProgressiveAnswers(newAnswers);
         }
@@ -1358,7 +1659,28 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             }
         });
 
-        // OLD PROGRESSIVE COMPUTATION CODE REMOVED - Now handled by new progressive hook above
+        // CLIENT-SIDE EVALUATION: Real-time evaluation for multiple choice answers
+        if (evaluationInitialized && !evaluationError && newAnswer) {
+            try {
+                const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, newAnswer);
+                
+                if (evaluationResult.success) {
+                    // Update progressive results with real-time scoring
+                    setProgressiveResults(prev => ({
+                        ...prev,
+                        totalScore: evaluationResult.progressiveScore || prev?.totalScore || 0,
+                        percentage: evaluationResult.progressivePercentage || prev?.percentage || 0,
+                        quickStats: evaluationResult.quickStats,
+                        lastUpdated: Date.now()
+                    }));
+                } else {
+                    console.warn(`⚠️ Client evaluation failed for question ${questionId}:`, evaluationResult.error);
+                }
+            } catch (error) {
+                console.error('❌ Client evaluation error for multiple choice:', error);
+                // Don't break the UI - continue with normal flow
+            }
+        }
     }
 
     // Toggle question marking
@@ -1476,6 +1798,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // Small delay to ensure toast is visible before submission
         setTimeout(() => {
             console.log('🎯 Auto-submit calling submitExam() - Emergency Queue System should activate now!');
+            setSubmissionType('auto_submit'); // Mark as auto-submit for proper messaging
             submitExam();
         }, 1000);
     }
@@ -1612,6 +1935,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     const handleConfirmSubmit = () => {
         setShowConfirmSubmit(false)
+        setSubmissionType('manual_submit'); // Mark as manual submit for proper messaging
         submitExam()
     }
 

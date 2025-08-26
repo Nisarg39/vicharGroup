@@ -32,17 +32,14 @@ export function createEnhancedSubmitExam(progressive, originalSubmitExam, examDa
     const startTime = Date.now();
     
     try {
-      console.log('🚀 Enhanced submission starting with progressive computation check');
       
       // Check if progressive computation is available and has results
       if (progressive.isSupported && progressive.isInitialized()) {
-        console.log('⚡ Attempting progressive submission');
         
         const progressiveResults = await progressive.getProgressiveResults();
         
         if (progressiveResults.success && progressiveResults.isPreComputed) {
           // PROGRESSIVE PATH: Use pre-computed results for instant submission
-          console.log('🎯 Using progressive computation for instant submission');
           
           // Calculate totals and create submission data
           const submissionData = {
@@ -68,7 +65,6 @@ export function createEnhancedSubmitExam(progressive, originalSubmitExam, examDa
           
           const totalTime = Date.now() - startTime;
           
-          console.log(`✅ Progressive submission completed in ${totalTime}ms`);
           
           return {
             ...result,
@@ -77,14 +73,11 @@ export function createEnhancedSubmitExam(progressive, originalSubmitExam, examDa
             performanceImprovement: calculatePerformanceGain(totalTime)
           };
         } else {
-          console.warn('⚠️ Progressive results not available:', progressiveResults.reason);
         }
       } else {
-        console.log('ℹ️ Progressive computation not available, using server computation');
       }
       
       // FALLBACK PATH: Use original server computation
-      console.log('🔄 Using traditional server computation');
       
       // Call the original submitExam function
       const serverResult = await originalSubmitExam();
@@ -103,7 +96,6 @@ export function createEnhancedSubmitExam(progressive, originalSubmitExam, examDa
       
       // Last resort: try original submitExam function
       try {
-        console.log('🆘 Attempting original submission as last resort');
         const fallbackResult = await originalSubmitExam();
         
         return {
@@ -141,7 +133,6 @@ export function useProgressiveAnswerUpdates(examData, answers) {
     if (progressive.isSupported) {
       progressive.initializeProgressive().then(result => {
         if (result.success) {
-          console.log('🎯 Progressive scoring initialized for answer updates');
         }
       });
     }
@@ -156,7 +147,6 @@ export function useProgressiveAnswerUpdates(examData, answers) {
     if (answers && progressive.isInitialized()) {
       // Non-blocking update
       progressive.updateProgressiveAnswers(answers).catch(error => {
-        console.warn('⚠️ Progressive answer update failed:', error);
       });
     }
   }, [answers, progressive]);

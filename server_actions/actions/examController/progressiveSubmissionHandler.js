@@ -29,66 +29,102 @@ import { logDirectSubmission, logValidationFailure, logSystemError } from "../..
 /**
  * ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
  * 
- * New primary function that bypasses all heavy computation and validation
- * for pre-verified progressive submissions. Achieves 99.25% performance improvement.
+ * Routes submissions to the new optimized endpoint that bypasses all computation.
+ * This is the primary entry point for pre-computed client evaluation results.
  */
 export async function submitProgressiveResultDirect(progressiveData) {
   const startTime = Date.now();
   
   try {
-    // STEP 1: Ultra-fast validation (3ms target)
-    const validationStartTime = Date.now();
-    const validation = await validateProgressiveResults(progressiveData);
-    const validationTime = Date.now() - validationStartTime;
+    console.log('⚡ ROUTING: Submitting to optimized endpoint for direct storage...');
     
-    if (!validation.isValid) {
-      // Log validation failure and fallback
-      const fallbackResult = await traditionalSubmissionFallback(progressiveData.rawExamData);
-      const fallbackTime = Date.now() - startTime;
-      
-      await logValidationFailure(progressiveData, validation, fallbackTime);
-      
-      return {
-        ...fallbackResult,
-        validationFailure: {
-          reason: validation.reason,
-          fallbackTime: fallbackTime
-        }
-      };
-    }
+    // Import the new optimized submission endpoint
+    const { submitOptimizedExamResult } = await import('./optimizedSubmissionEndpoint');
     
-    // STEP 2: Direct ExamResult storage (7ms target)  
-    const result = await storeProgressiveResultDirect(progressiveData);
+    // Transform progressive data to optimized format
+    const optimizedData = transformToOptimizedFormat(progressiveData);
+    
+    // Route to ultra-fast optimized endpoint
+    const result = await submitOptimizedExamResult(optimizedData);
     
     const totalTime = Date.now() - startTime;
-    console.log(`✅ Progressive direct storage completed in ${totalTime}ms`);
     
-    // STEP 3: Comprehensive performance monitoring
-    await logDirectSubmission(progressiveData, totalTime, validationTime);
+    // Log performance monitoring
+    await logDirectSubmission(progressiveData, totalTime, result.performanceMetrics?.validationTime || 0);
+    
+    return {
+      ...result,
+      routingTime: totalTime - (result.processingTime || 0),
+      routedVia: 'optimized_endpoint'
+    };
+    
+  } catch (error) {
+    console.error('❌ Optimized endpoint routing failed:', error);
+    
+    // Fallback to legacy progressive submission
+    console.log('🔄 Falling back to legacy progressive submission...');
+    return await legacyProgressiveSubmission(progressiveData);
+  }
+}
+
+/**
+ * Transform progressive data to optimized format
+ */
+function transformToOptimizedFormat(progressiveData) {
+  // Handle both client evaluation and progressive computation formats
+  const baseData = progressiveData.clientEvaluationResult || progressiveData;
+  
+  return {
+    examId: progressiveData.examId || baseData.examId,
+    studentId: progressiveData.studentId || baseData.studentId,
+    answers: progressiveData.answers || baseData.answers,
+    finalScore: baseData.finalScore || baseData.score || 0,
+    totalMarks: baseData.totalMarks || 0,
+    percentage: baseData.percentage || 0,
+    correctAnswers: baseData.correctAnswers || 0,
+    incorrectAnswers: baseData.incorrectAnswers || 0,
+    unattempted: baseData.unattempted || 0,
+    questionAnalysis: baseData.questionAnalysis || [],
+    subjectPerformance: baseData.subjectPerformance || [],
+    timeTaken: progressiveData.timeTaken || baseData.timeTaken || 0,
+    completedAt: progressiveData.completedAt || baseData.completedAt || new Date().toISOString(),
+    visitedQuestions: progressiveData.visitedQuestions || [],
+    markedQuestions: progressiveData.markedQuestions || [],
+    warnings: progressiveData.warnings || 0,
+    
+    // Progressive metadata
+    computationHash: baseData.computationHash || progressiveData.validationHash,
+    engineVersion: baseData.engineVersion || progressiveData.engineVersion || '1.3.0',
+    evaluationSource: progressiveData.evaluationSource || baseData.evaluationSource || 'progressive_computation'
+  };
+}
+
+/**
+ * Legacy progressive submission (fallback when optimized endpoint fails)
+ */
+async function legacyProgressiveSubmission(progressiveData) {
+  try {
+    console.log('📁 Using legacy progressive submission system...');
+    
+    // Use existing legacy validation and storage
+    const validation = await validateProgressiveResults(progressiveData);
+    
+    if (!validation.isValid) {
+      return await traditionalSubmissionFallback(progressiveData.rawExamData);
+    }
+    
+    const result = await storeProgressiveResultDirect(progressiveData);
     
     return {
       success: true,
       message: "Your exam has been submitted successfully!",
       result: result,
-      processingTime: totalTime,
-      computationSource: 'progressive_direct',
-      performanceImprovement: `${((2000 - totalTime) / 2000 * 100).toFixed(2)}%`,
-      validationLayers: validation.validationMethods,
-      performanceMetrics: {
-        totalTime: totalTime,
-        validationTime: validationTime,
-        storageTime: totalTime - validationTime,
-        targetAchieved: totalTime <= 15
-      }
+      submissionType: 'legacy_progressive',
+      fallbackUsed: true
     };
     
   } catch (error) {
-    console.error('❌ Progressive direct storage failed:', error);
-    
-    // Log system error and attempt recovery
-    await logSystemError(progressiveData, error, 'traditional_fallback');
-    
-    // Emergency fallback
+    console.error('❌ Legacy progressive submission failed:', error);
     return await traditionalSubmissionFallback(progressiveData.rawExamData);
   }
 }

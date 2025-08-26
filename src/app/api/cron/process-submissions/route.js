@@ -35,6 +35,9 @@ import {
 import { validateExamDuration } from "../../../../../utils/examDurationHelpers";
 import { getEffectiveExamDuration } from "../../../../../utils/examTimingUtils";
 
+// AUTO-SCALING: Import database tier detector for automatic batch size optimization
+import { getAutoScaledBatchSize } from "../../../../../server_actions/services/database/DatabaseTierDetector.js";
+
 /**
  * VERCEL CRON-BASED BATCH EXAM SUBMISSION PROCESSOR
  * 
@@ -78,8 +81,28 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get configuration
-    const batchSize = parseInt(process.env.EXAM_BATCH_SIZE) || 20;
+    // AUTO-SCALING: Get optimal batch size based on database tier
+    let batchSize = parseInt(process.env.EXAM_BATCH_SIZE) || 20;
+    
+    try {
+      // Use auto-scaled batch size if auto-scaling is enabled
+      const autoScalingEnabled = process.env.ENABLE_AUTO_SCALING === 'true' || !process.env.EXAM_BATCH_SIZE;
+      
+      if (autoScalingEnabled) {
+        const autoScaledSize = await getAutoScaledBatchSize('moderate');
+        batchSize = autoScaledSize;
+        
+        console.log('🔄 Auto-scaling enabled: Using optimal batch size', {
+          defaultSize: parseInt(process.env.EXAM_BATCH_SIZE) || 20,
+          autoScaledSize: autoScaledSize,
+          scalingReason: 'Database tier optimization'
+        });
+      }
+    } catch (autoScaleError) {
+      console.warn('⚠️ Auto-scaling failed, using configured batch size:', autoScaleError.message);
+      // Fall back to configured or default batch size
+    }
+    
     const maxProcessingTime = parseInt(process.env.CRON_MAX_PROCESSING_TIME) || 750000; // 12.5 minutes
     
     console.log('ExamCronProcessor', 'Cron job started', {
