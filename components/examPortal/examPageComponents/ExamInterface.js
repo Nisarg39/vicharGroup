@@ -75,6 +75,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Track if exam is completed to avoid fullscreen warning after submit
     const examCompletedRef = useRef(false);
+    
+    // Simple race condition prevention for submissions
+    const submissionInProgress = useRef(false);
 
     // State for mobile floating question navigator
     const [showMobileNavigator, setShowMobileNavigator] = useState(false);
@@ -1160,6 +1163,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
+        // Simple race condition prevention
+        if (submissionInProgress.current) {
+            console.log('Submission already in progress, ignoring duplicate call');
+            return;
+        }
+        
+        submissionInProgress.current = true;
+        
         // BOTTLENECK MONITORING: Log submission start
         const monitoringId = logSubmissionStart(student?._id, exam?._id, submissionType);
         setCurrentSubmissionId(monitoringId);
@@ -1565,6 +1576,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     message: "There was an issue with your submission, but it has been saved. Please check your dashboard for status updates."
                 });
             }, 2000);
+        } finally {
+            submissionInProgress.current = false;
         }
     }
     // --- FULLSCREEN LOGIC END ---
@@ -2220,8 +2233,18 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
                                 <button
                                     onClick={() => {
-                                        setSubmissionState({ status: 'idle', message: '', performanceMetrics: null, showProgress: false, performanceBadge: null, submissionTime: 0 });
-                                        submitExam(); // Retry submission
+                                        // FLICKERING FIX: Directly transition to submitting state instead of idle
+                                        // This prevents the brief flash when error modal disappears before loading modal appears
+                                        setSubmissionState({ 
+                                            status: 'submitting', 
+                                            message: 'Retrying submission...', 
+                                            performanceMetrics: null, 
+                                            showProgress: true, 
+                                            performanceBadge: null, 
+                                            submissionTime: 0 
+                                        });
+                                        // Use setTimeout to ensure state update completes before submitExam
+                                        setTimeout(() => submitExam(), 0);
                                     }}
                                     className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 rounded-lg sm:rounded-xl font-medium hover:bg-blue-700 transition-colors active:scale-95 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                     aria-describedby="retry-button-description"

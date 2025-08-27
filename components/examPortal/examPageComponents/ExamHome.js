@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 import { useSelector, useDispatch } from "react-redux"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { studentDetails } from "../../../features/login/LoginSlice"
-import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData, checkSubmissionStatus } from "../../../server_actions/actions/examController/studentExamActions"
+import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
 
 // Import sub-components
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
@@ -43,9 +43,7 @@ export default function ExamHome({ examId }) {
     const [allAttempts, setAllAttempts] = useState([]);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
     const [isEligible, setIsEligible] = useState(false); // NEW: eligibility state
-    // EMERGENCY QUEUE SYSTEM: Add states for tracking queued submissions
-    const [queuedSubmissionId, setQueuedSubmissionId] = useState(null);
-    const [isPollingResult, setIsPollingResult] = useState(false);
+    // EMERGENCY QUEUE SYSTEM: Queue submission tracking removed - now uses immediate messaging approach
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -136,7 +134,7 @@ export default function ExamHome({ examId }) {
         }
     };
 
-    // Sync offline submissions
+    // Sync offline submissions - OPTIMIZED: No unnecessary API calls, auto-close tab after sync
     const syncOfflineData = useCallback(async () => {
         if (!isOnline || offlineSubmissions.length === 0) return
 
@@ -163,8 +161,6 @@ export default function ExamHome({ examId }) {
                 if (result.success) {
                     // Exam submitted successfully
                     successfulSubmissions.push(submission)
-                    // Store the result to show to the student
-                    setExamResult(result.result)
                 } else {
                     console.error('Failed to submit exam:', result.message)
                     // Don't throw error for duplicate submissions, just log them
@@ -177,7 +173,7 @@ export default function ExamHome({ examId }) {
                 }
             }
             
-            // Remove only the successfully synced submissions
+            // Remove only the successfully synced submissions from localStorage
             const remainingSubmissions = offlineSubmissions.filter(sub =>
                 !successfulSubmissions.some(successSub =>
                     successSub.examId === sub.examId && successSub.timestamp === sub.timestamp
@@ -192,56 +188,50 @@ export default function ExamHome({ examId }) {
                 setOfflineSubmissions([]);
             }
             
+            // Handle successful submissions
             if (successfulSubmissions.length > 0) {
+                // Show success message
                 toast.success(`${successfulSubmissions.length} exam(s) synced successfully!`)
                 
-                // IMMEDIATELY refresh attempts after sync to validate reattempt logic
-                const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                if (updatedAttempts.success) {
-                    setAllAttempts(updatedAttempts.attempts);
-                    // Update hasAttempted state since we now have at least one attempt
-                    if (updatedAttempts.attempts.length > 0) {
-                        setHasAttempted(true);
-                    }
-                }
-                
-                // Show result if this was a recent submission
-                if (examResult) {
-                    setCurrentView('result')
-                } else {
-                    // Fetch the latest result from database and show it using consistent method
+                // Give user time to see the success message, then close tab
+                setTimeout(() => {
+                    // Try different methods to close tab based on browser compatibility
                     try {
-                        const result = await getAllExamAttempts(student._id, examId);
-                        if (result.success && result.attempts && result.attempts.length > 0) {
-                            const latestAttempt = result.attempts[0];
-                            const formattedResult = {
-                                score: latestAttempt.score,
-                                totalMarks: latestAttempt.totalMarks,
-                                percentage: latestAttempt.percentage,
-                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
-                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
-                                unattempted: latestAttempt.statistics?.unattempted || 0,
-                                timeTaken: latestAttempt.timeTaken,
-                                completedAt: latestAttempt.completedAt,
-                                questionAnalysis: latestAttempt.questionAnalysis || [],
-                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
-                                statistics: latestAttempt.statistics || {}
-                            };
-                            setExamResult(formattedResult);
-                            setCurrentView('result');
-                        }
-                    } catch (error) {
-                        console.error('Error fetching latest result:', error);
+                        // Primary method: close the current tab/window
+                        window.close();
+                        
+                        // Fallback 1: If window.close() doesn't work (some browsers block it)
+                        // Try to navigate away or show a message
+                        setTimeout(() => {
+                            // Check if tab is still open after close attempt
+                            if (!window.closed) {
+                                // Alternative: redirect to a closing page or back to main portal
+                                const shouldNavigateAway = confirm(
+                                    'Sync completed successfully! Click OK to navigate away from this page.'
+                                );
+                                if (shouldNavigateAway) {
+                                    window.history.back(); // Go back to previous page
+                                }
+                            }
+                        }, 100);
+                    } catch (closeError) {
+                        console.log('Could not auto-close tab:', closeError);
+                        // Inform user that sync is complete
+                        toast.info('Sync complete! You can now safely close this tab.', {
+                            duration: 5000
+                        });
                     }
-                }
+                }, 1500); // 1.5 second delay to ensure user sees success message
             }
             
+            // Handle failed submissions (but don't close tab in this case)
             if (failedSubmissions.length > 0) {
                 toast.error(`${failedSubmissions.length} exam(s) failed to sync`)
             }
         } catch (error) {
             console.error('Error syncing offline data:', error)
             toast.error('Failed to sync some offline submissions')
+            // Don't close tab on error - user needs to see the error
         }
     }, [isOnline, offlineSubmissions, exam])
 
@@ -652,15 +642,7 @@ export default function ExamHome({ examId }) {
     const refreshExamState = async () => {
         if (student?._id && examId) {
             try {
-                // Refresh attempts data
-                const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                if (updatedAttempts.success) {
-                    setAllAttempts(updatedAttempts.attempts);
-                    // Update hasAttempted state based on actual attempts
-                    setHasAttempted(updatedAttempts.attempts.length > 0);
-                }
-                
-                // Refresh previous attempt data
+                // Only refresh previous attempt data since useEffect handles getAllExamAttempts
                 const result = await getStudentExamResult(student._id, examId);
                 if (result.success && result.result) {
                     setPreviousResult({
@@ -726,29 +708,18 @@ export default function ExamHome({ examId }) {
                 if (result.success) {
                     // EMERGENCY QUEUE SYSTEM: Handle queued submissions
                     if (result.isQueued) {
-                        // NEW: Handle immediate confirmation with background processing
-                        const queuedResult = {
-                            isQueued: true,
-                            submissionId: result.submissionId,
-                            message: result.message,
-                            estimatedProcessingTime: result.estimatedProcessingTime,
-                            status: 'processing',
-                            timeTaken: examData.timeTaken || 0,
-                            warnings: examData.warnings || 0,
-                            completedAt: new Date(),
-                            // Placeholder values for UI compatibility
-                            score: 0,
-                            totalMarks: exam?.totalMarks || 0,
-                            percentage: '0.00'
-                        };
-                        
-                        setExamResult(queuedResult);
-                        setQueuedSubmissionId(result.submissionId);
-                        setCurrentView('result');
+                        // NEW: Immediate confirmation with clear messaging - no polling
                         toast.success("✅ " + result.message);
+                        toast.info(
+                            "Your exam has been submitted successfully! Results are being processed in the background and will be available shortly. You can check back later to view your results.",
+                            { duration: 8000 }
+                        );
                         
-                        // Start polling for actual results
-                        startResultPolling(result.submissionId);
+                        // Return to home view with updated state
+                        setCurrentView('home');
+                        
+                        // Refresh exam state to show updated attempts
+                        await refreshExamState();
                         return;
                     }
                     
@@ -765,34 +736,25 @@ export default function ExamHome({ examId }) {
                         const minutesUntilEnd = Math.ceil(timeUntilEnd / (1000 * 60));
                         
                         // Store the result but don't display it yet
+                        // useEffect will handle fetching attempts when examResult changes
                         setExamResult(result.result);
                         setHasAttempted(true);
                         
-                        // Update attempts
-                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
-                            setAllAttempts(updatedAttempts.attempts);
-                            
-                            // Use the latest attempt data for consistent structure
-                            const latestAttempt = updatedAttempts.attempts[0];
-                            const formattedResult = {
-                                score: latestAttempt.score,
-                                totalMarks: latestAttempt.totalMarks,
-                                percentage: latestAttempt.percentage,
-                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
-                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
-                                unattempted: latestAttempt.statistics?.unattempted || 0,
-                                timeTaken: latestAttempt.timeTaken,
-                                completedAt: latestAttempt.completedAt,
-                                questionAnalysis: latestAttempt.questionAnalysis || [],
-                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
-                                statistics: latestAttempt.statistics || {}
-                            };
-                            
-                            // Store the properly formatted result and update previous result
-                            setExamResult(formattedResult);
-                            setPreviousResult(formattedResult);
-                        }
+                        // Update previous result state using the submission result
+                        const formattedResult = {
+                            score: result.result.score,
+                            totalMarks: result.result.totalMarks,
+                            percentage: result.result.percentage,
+                            correctAnswers: result.result.statistics?.correctAnswers || 0,
+                            incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                            unattempted: result.result.statistics?.unattempted || 0,
+                            timeTaken: result.result.timeTaken,
+                            completedAt: result.result.completedAt,
+                            questionAnalysis: result.result.questionAnalysis || [],
+                            negativeMarkingInfo: result.result.negativeMarkingInfo,
+                            statistics: result.result.statistics || {}
+                        };
+                        setPreviousResult(formattedResult);
                         
                         // Show home view with a special message
                         setCurrentView('home');
@@ -809,37 +771,28 @@ export default function ExamHome({ examId }) {
                         );
                     } else {
                         // For practice exams or scheduled exams after end time, show results immediately
-                        // IMMEDIATELY refresh attempts after submission to validate reattempt logic
-                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
-                            setAllAttempts(updatedAttempts.attempts);
-                            // Update hasAttempted state since we now have at least one attempt
-                            setHasAttempted(true);
-                            
-                            // Use the latest attempt data for consistent structure
-                            const latestAttempt = updatedAttempts.attempts[0];
-                            const formattedResult = {
-                                score: latestAttempt.score,
-                                totalMarks: latestAttempt.totalMarks,
-                                percentage: latestAttempt.percentage,
-                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
-                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
-                                unattempted: latestAttempt.statistics?.unattempted || 0,
-                                timeTaken: latestAttempt.timeTaken,
-                                completedAt: latestAttempt.completedAt,
-                                questionAnalysis: latestAttempt.questionAnalysis || [],
-                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
-                                statistics: latestAttempt.statistics || {}
-                            };
-                            
-                            setExamResult(formattedResult);
-                            
-                            // Update previous result state for the "View Previous Result" functionality
-                            setPreviousResult(formattedResult);
-                        } else {
-                            // Fallback to original result if fetching attempts fails
-                            setExamResult(result.result);
-                        }
+                        // useEffect will handle fetching attempts when examResult changes
+                        setHasAttempted(true);
+                        
+                        // Use the submission result directly
+                        const formattedResult = {
+                            score: result.result.score,
+                            totalMarks: result.result.totalMarks,
+                            percentage: result.result.percentage,
+                            correctAnswers: result.result.statistics?.correctAnswers || 0,
+                            incorrectAnswers: result.result.statistics?.incorrectAnswers || 0,
+                            unattempted: result.result.statistics?.unattempted || 0,
+                            timeTaken: result.result.timeTaken,
+                            completedAt: result.result.completedAt,
+                            questionAnalysis: result.result.questionAnalysis || [],
+                            negativeMarkingInfo: result.result.negativeMarkingInfo,
+                            statistics: result.result.statistics || {}
+                        };
+                        
+                        setExamResult(formattedResult);
+                        
+                        // Update previous result state for the "View Previous Result" functionality
+                        setPreviousResult(formattedResult);
                         
                         setCurrentView('result');
                         toast.success('Exam submitted successfully!');
@@ -883,95 +836,7 @@ export default function ExamHome({ examId }) {
         }
     };
 
-    // EMERGENCY QUEUE SYSTEM: Result polling for queued submissions
-    const startResultPolling = useCallback((submissionId) => {
-        if (!submissionId || isPollingResult) return;
-        
-        setIsPollingResult(true);
-        
-        const pollInterval = setInterval(async () => {
-            try {
-                const statusResult = await checkSubmissionStatus(submissionId);
-                
-                if (statusResult.success) {
-                    const { status, result } = statusResult;
-                    
-                    if (status === 'completed' && result) {
-                        // Processing completed - update with actual results
-                        clearInterval(pollInterval);
-                        setIsPollingResult(false);
-                        
-                        // Refresh attempts to get the latest data
-                        const updatedAttempts = await getAllExamAttempts(student._id, examId);
-                        if (updatedAttempts.success && updatedAttempts.attempts.length > 0) {
-                            setAllAttempts(updatedAttempts.attempts);
-                            setHasAttempted(true);
-                            
-                            const latestAttempt = updatedAttempts.attempts[0];
-                            const formattedResult = {
-                                score: latestAttempt.score,
-                                totalMarks: latestAttempt.totalMarks,
-                                percentage: latestAttempt.percentage,
-                                correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
-                                incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
-                                unanswered: latestAttempt.statistics?.unattempted || 0,
-                                timeTaken: latestAttempt.timeTaken,
-                                completedAt: latestAttempt.completedAt,
-                                questionAnalysis: latestAttempt.questionAnalysis || [],
-                                negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
-                                statistics: latestAttempt.statistics || {},
-                                isQueued: false // No longer queued
-                            };
-                            
-                            setExamResult(formattedResult);
-                            setPreviousResult(formattedResult);
-                            toast.success("Your results are now ready!", { duration: 5000 });
-                        }
-                        
-                    } else if (status === 'failed') {
-                        // Processing failed
-                        clearInterval(pollInterval);
-                        setIsPollingResult(false);
-                        
-                        setExamResult(prev => ({
-                            ...prev,
-                            status: 'failed',
-                            message: 'There was an error processing your submission. Support has been notified.'
-                        }));
-                        
-                        toast.error("Error processing your submission. Your answers are safe and support has been notified.", { duration: 8000 });
-                        
-                    } else if (status === 'processing' || status === 'queued' || status === 'retrying') {
-                        // Still processing - update progress if available
-                        if (statusResult.progress) {
-                            setExamResult(prev => ({
-                                ...prev,
-                                status: status,
-                                processingMessage: statusResult.progress.message,
-                                processingPercentage: statusResult.progress.percentage
-                            }));
-                        }
-                    }
-                } else {
-                    console.warn('Failed to check submission status:', statusResult.message);
-                }
-                
-            } catch (error) {
-                console.error('Error polling submission status:', error);
-            }
-        }, 5000); // Poll every 5 seconds
-        
-        // Stop polling after 10 minutes to avoid infinite polling
-        setTimeout(() => {
-            clearInterval(pollInterval);
-            setIsPollingResult(false);
-            
-            if (isPollingResult) {
-                toast.error("Processing is taking longer than expected. Please refresh the page in a few minutes.", { duration: 10000 });
-            }
-        }, 600000); // 10 minutes
-        
-    }, [examId, student._id, isPollingResult]);
+    // EMERGENCY QUEUE SYSTEM: Polling removed - background processing handled by Vercel cron jobs
 
     // Add a helper to check for saved progress
     const hasUncompletedExam = (() => {
@@ -1032,8 +897,33 @@ export default function ExamHome({ examId }) {
             return;
         }
         
-        // Use getAllExamAttempts for consistency with other paths
+        // OPTIMIZATION: Use cached allAttempts first, fallback to API if needed
         try {
+            // Check if we have cached attempts data with proper validation
+            if (allAttempts && Array.isArray(allAttempts) && allAttempts.length > 0) {
+                const latestAttempt = allAttempts[0];
+                // Validate that the cached attempt has required properties
+                if (latestAttempt && typeof latestAttempt.score !== 'undefined' && latestAttempt.totalMarks) {
+                    const formattedResult = {
+                        score: latestAttempt.score,
+                        totalMarks: latestAttempt.totalMarks,
+                        percentage: latestAttempt.percentage,
+                        correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                        incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                        unattempted: latestAttempt.statistics?.unattempted || 0,
+                        timeTaken: latestAttempt.timeTaken,
+                        completedAt: latestAttempt.completedAt,
+                        questionAnalysis: latestAttempt.questionAnalysis || [],
+                        negativeMarkingInfo: latestAttempt.negativeMarkingInfo,
+                        statistics: latestAttempt.statistics || {}
+                    };
+                    setExamResult(formattedResult);
+                    setCurrentView('result');
+                    return;
+                }
+            }
+            
+            // Fallback: Use getAllExamAttempts if cache is empty or invalid
             const result = await getAllExamAttempts(student._id, examId);
             if (result.success && result.attempts && result.attempts.length > 0) {
                 const latestAttempt = result.attempts[0];
@@ -1082,10 +972,15 @@ export default function ExamHome({ examId }) {
                         }
                     }
                     
-                    // Still fetch all attempts for completeness
-                    const result = await getAllExamAttempts(studentData._id, examId);
-                    if (result.success && result.attempts) {
-                        allAttemptsData = result.attempts;
+                    // OPTIMIZATION: Use cached allAttempts if available, otherwise fetch
+                    if (allAttempts && Array.isArray(allAttempts) && allAttempts.length > 0) {
+                        allAttemptsData = allAttempts;
+                    } else {
+                        // Fallback to API when cache is not available
+                        const result = await getAllExamAttempts(studentData._id, examId);
+                        if (result.success && result.attempts) {
+                            allAttemptsData = result.attempts;
+                        }
                     }
                 } catch (parseError) {
                     console.error('Error parsing attempt data from localStorage:', parseError);
@@ -1094,16 +989,38 @@ export default function ExamHome({ examId }) {
                 }
             }
             
-            // If no attempt data in localStorage or parsing failed, fetch normally
+            // If no attempt data in localStorage or parsing failed, use cache-first approach
             if (!attemptRefParam || !latestAttempt) {
-                const result = await getAllExamAttempts(studentData._id, examId);
-                if (result.success && result.attempts && result.attempts.length > 0) {
-                    latestAttempt = result.attempts[0];
-                    allAttemptsData = result.attempts;
+                // OPTIMIZATION: Try cached allAttempts first
+                if (allAttempts && Array.isArray(allAttempts) && allAttempts.length > 0) {
+                    // Validate cached data has required properties
+                    const cachedAttempt = allAttempts[0];
+                    if (cachedAttempt && typeof cachedAttempt.score !== 'undefined' && cachedAttempt.totalMarks) {
+                        latestAttempt = cachedAttempt;
+                        allAttemptsData = allAttempts;
+                    } else {
+                        // Cached data is invalid, fetch fresh data
+                        const result = await getAllExamAttempts(studentData._id, examId);
+                        if (result.success && result.attempts && result.attempts.length > 0) {
+                            latestAttempt = result.attempts[0];
+                            allAttemptsData = result.attempts;
+                        } else {
+                            toast.error('No exam results found');
+                            setCurrentView('home');
+                            return;
+                        }
+                    }
                 } else {
-                    toast.error('No exam results found');
-                    setCurrentView('home');
-                    return;
+                    // No cached data available, fetch from API
+                    const result = await getAllExamAttempts(studentData._id, examId);
+                    if (result.success && result.attempts && result.attempts.length > 0) {
+                        latestAttempt = result.attempts[0];
+                        allAttemptsData = result.attempts;
+                    } else {
+                        toast.error('No exam results found');
+                        setCurrentView('home');
+                        return;
+                    }
                 }
             }
             
