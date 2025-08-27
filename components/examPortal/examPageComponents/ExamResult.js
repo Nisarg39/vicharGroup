@@ -354,7 +354,7 @@ export default function ExamResult({ result, exam, onBack, onRetake, allAttempts
 
   // Calculate safe values for accuracy, time efficiency, and completion rate with comprehensive validation
   const totalQuestions = safeNumber(correctAnswers + incorrectAnswers + unattempted, 0, 0)
-  const accuracy = totalQuestions > 0 ? safeNumber(((correctAnswers / totalQuestions) * 100), 0, 0, 100).toFixed(2) : "0.00"
+  const accuracy = result?.statistics?.accuracy?.toFixed(2) || "0.00"
   const timePerQuestion = totalQuestions > 0 ? Math.round(safeNumber(timeTaken / totalQuestions, 0, 0)) : 0
   const completionRate = totalQuestions > 0 ? safeNumber((((correctAnswers + incorrectAnswers) / totalQuestions) * 100), 0, 0, 100).toFixed(1) : "0.0"
 

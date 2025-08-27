@@ -931,119 +931,813 @@ async function checkExamEligibilityUncached(details) {
   }
 }
 
-export async function submitExamResult(examData) {
-  /**
-   * OPTIMIZED SUBMISSION ROUTING - submitExamResult(examData)
-   * 
-   * NEW ARCHITECTURE:
-   * 1. Check for pre-computed client evaluation results (Priority 1)
-   * 2. Route to ultra-fast optimized endpoint (15-50ms target)
-   * 3. Fallback to emergency queue system (Background processing)
-   * 4. Final fallback to traditional computation (Synchronous)
-   * 
-   * PERFORMANCE TARGETS:
-   * - Client evaluation + optimized endpoint: 15-50ms total
-   * - Queue system: Immediate response + background processing
-   * - Traditional computation: 400-1,350ms (fallback only)
-   */
+
+// Old submitExamResult did calculation on server side . kept it for reference 
+// export async function submitExamResult(examData) {
+//   /**
+//    * OPTIMIZED SUBMISSION ROUTING - submitExamResult(examData)
+//    * 
+//    * NEW ARCHITECTURE:
+//    * 1. Check for pre-computed client evaluation results (Priority 1)
+//    * 2. Route to ultra-fast optimized endpoint (15-50ms target)
+//    * 3. Fallback to emergency queue system (Background processing)
+//    * 4. Final fallback to traditional computation (Synchronous)
+//    * 
+//    * PERFORMANCE TARGETS:
+//    * - Client evaluation + optimized endpoint: 15-50ms total
+//    * - Queue system: Immediate response + background processing
+//    * - Traditional computation: 400-1,350ms (fallback only)
+//    */
   
-  const routingStartTime = Date.now();
+//   const routingStartTime = Date.now();
   
-  // PRIORITY 1: Check for pre-computed client evaluation results
-  if (examData.clientEvaluationResult || examData.progressiveResults || examData.isPreComputed) {
-    try {
-      console.log('⚡ ROUTING: Pre-computed results detected, using optimized submission...');
+//   // PRIORITY 1: Check for pre-computed client evaluation results
+//   if (examData.clientEvaluationResult || examData.progressiveResults || examData.isPreComputed) {
+//     try {
+//       console.log('⚡ ROUTING: Pre-computed results detected, using optimized submission...');
       
-      const { routeOptimizedSubmission } = await import('./optimizedSubmissionEndpoint');
+//       const { routeOptimizedSubmission } = await import('./optimizedSubmissionEndpoint');
       
-      const optimizedResult = await routeOptimizedSubmission(examData);
+//       const optimizedResult = await routeOptimizedSubmission(examData);
       
-      const totalRoutingTime = Date.now() - routingStartTime;
+//       const totalRoutingTime = Date.now() - routingStartTime;
       
-      return {
-        ...optimizedResult,
-        routingDecision: 'optimized_endpoint',
-        routingTime: totalRoutingTime,
-        performanceAchieved: optimizedResult.performanceMetrics?.totalTime <= 50
-      };
+//       return {
+//         ...optimizedResult,
+//         routingDecision: 'optimized_endpoint',
+//         routingTime: totalRoutingTime,
+//         performanceAchieved: optimizedResult.performanceMetrics?.totalTime <= 50
+//       };
       
-    } catch (optimizedError) {
-      console.warn('⚠️ Optimized submission failed, falling back to queue system:', optimizedError.message);
-      // Continue to queue system fallback
-    }
-  }
+//     } catch (optimizedError) {
+//       console.warn('⚠️ Optimized submission failed, falling back to queue system:', optimizedError.message);
+//       // Continue to queue system fallback
+//     }
+//   }
   
-  // PRIORITY 2: Emergency queue system for background processing
-  const useQueueSystem = process.env.EXAM_QUEUE_ENABLED !== 'false' && 
-                          process.env.NODE_ENV === 'production';
+//   // PRIORITY 2: Emergency queue system for background processing
+//   const useQueueSystem = process.env.EXAM_QUEUE_ENABLED !== 'false' && 
+//                           process.env.NODE_ENV === 'production';
   
-  if (useQueueSystem) {
-    try {
-      console.log('📋 ROUTING: Using emergency queue system for background processing...');
+//   if (useQueueSystem) {
+//     try {
+//       console.log('📋 ROUTING: Using emergency queue system for background processing...');
       
-      const { queueExamSubmission } = await import('../../utils/examSubmissionQueue.js');
+//       const { queueExamSubmission } = await import('../../utils/examSubmissionQueue.js');
       
-      // Get request context for better queue management
-      const context = {
-        isAutoSubmit: examData.isAutoSubmit || false,
-        isManualSubmit: !examData.isAutoSubmit,
-        timeRemaining: examData.timeRemaining || 0,
-        examEnded: examData.examEnded || false,
-        userAgent: examData.userAgent,
-        screenResolution: examData.screenResolution,
-        timezone: examData.timezone,
-        sessionId: examData.sessionId,
-        ipAddress: examData.ipAddress,
-        hasClientEvaluation: !!(examData.clientEvaluationResult || examData.progressiveResults)
-      };
+//       // Get request context for better queue management
+//       const context = {
+//         isAutoSubmit: examData.isAutoSubmit || false,
+//         isManualSubmit: !examData.isAutoSubmit,
+//         timeRemaining: examData.timeRemaining || 0,
+//         examEnded: examData.examEnded || false,
+//         userAgent: examData.userAgent,
+//         screenResolution: examData.screenResolution,
+//         timezone: examData.timezone,
+//         sessionId: examData.sessionId,
+//         ipAddress: examData.ipAddress,
+//         hasClientEvaluation: !!(examData.clientEvaluationResult || examData.progressiveResults)
+//       };
       
-      const queueResult = await queueExamSubmission(examData, context);
+//       const queueResult = await queueExamSubmission(examData, context);
       
-      if (queueResult.success) {
-        const totalRoutingTime = Date.now() - routingStartTime;
+//       if (queueResult.success) {
+//         const totalRoutingTime = Date.now() - routingStartTime;
         
-        return {
-          success: true,
-          message: "Your exam has been submitted successfully! Your results are being processed and will be available shortly.",
-          isQueued: true,
-          submissionId: queueResult.submissionId,
-          estimatedProcessingTime: queueResult.estimatedProcessingTime,
-          routingDecision: 'queue_system',
-          routingTime: totalRoutingTime,
-          result: {
-            isProcessing: true,
-            submissionId: queueResult.submissionId,
-            message: "Processing your answers in the background...",
-            completedAt: new Date(),
-            timeTaken: examData.timeTaken,
-            warnings: examData.warnings || 0
-          }
-        };
-      } else {
-        console.warn('Queue system failed, falling back to traditional processing:', queueResult.message);
-      }
+//         return {
+//           success: true,
+//           message: "Your exam has been submitted successfully! Your results are being processed and will be available shortly.",
+//           isQueued: true,
+//           submissionId: queueResult.submissionId,
+//           estimatedProcessingTime: queueResult.estimatedProcessingTime,
+//           routingDecision: 'queue_system',
+//           routingTime: totalRoutingTime,
+//           result: {
+//             isProcessing: true,
+//             submissionId: queueResult.submissionId,
+//             message: "Processing your answers in the background...",
+//             completedAt: new Date(),
+//             timeTaken: examData.timeTaken,
+//             warnings: examData.warnings || 0
+//           }
+//         };
+//       } else {
+//         console.warn('Queue system failed, falling back to traditional processing:', queueResult.message);
+//       }
       
-    } catch (queueError) {
-      console.error('Queue system error, falling back to traditional processing:', queueError.message);
-    }
-  }
+//     } catch (queueError) {
+//       console.error('Queue system error, falling back to traditional processing:', queueError.message);
+//     }
+//   }
   
-  // PRIORITY 3: Traditional synchronous processing (final fallback)
-  console.log('🔄 ROUTING: Using traditional synchronous processing as final fallback...');
+//   // PRIORITY 3: Traditional synchronous processing (final fallback)
+//   console.log('🔄 ROUTING: Using traditional synchronous processing as final fallback...');
   
-  const traditionalResult = await retryExamSubmission(submitExamResultInternal, examData);
-  const totalRoutingTime = Date.now() - routingStartTime;
+//   const traditionalResult = await retryExamSubmission(submitExamResultInternal, examData);
+//   const totalRoutingTime = Date.now() - routingStartTime;
   
-  return {
-    ...traditionalResult,
-    routingDecision: 'traditional_computation',
-    routingTime: totalRoutingTime,
-    isFallback: true
-  };
-}
+//   return {
+//     ...traditionalResult,
+//     routingDecision: 'traditional_computation',
+//     routingTime: totalRoutingTime,
+//     isFallback: true
+//   };
+// }
 
 // Internal function that does the actual submission
 // EXPORTED for use by ExamSubmissionWorker to maintain exact scoring logic
+
+
+// Write the duplicate submitExamResult below this line
+
+
+
+/**
+ * 
+ * TRANSACTION-PROTECTED CLIENT EVALUATION SUBMISSION SYSTEM
+ * 
+ * Enhanced function for client evaluation results with transaction-protected database operations,
+ * queue processing capability, and comprehensive fallback mechanisms.
+ * 
+ * FEATURES:
+ * ✅ Transaction-protected direct storage (Priority 1) - Ensures data consistency
+ * ✅ Legacy storage fallback - Automatic fallback for transaction failures
+ * ✅ Queue processing for background handling (Priority 2)
+ * ✅ Essential business validations (eligibility, attempts, timing)
+ * ✅ Multiple processing paths with fallback hierarchy
+ * ✅ Retry mechanism for network/database resilience
+ * ✅ Race condition protection - Prevents concurrent submission conflicts
+ * ✅ Atomic database operations - All operations succeed or all fail
+ * 
+ * PROCESSING HIERARCHY:
+ * 1. Transaction-protected direct storage (preferred)
+ * 2. Legacy direct storage (transaction failure fallback)
+ * 3. Queue system (production background processing)
+ * 4. Final transaction-protected fallback
+ * 5. Final legacy fallback (last resort)
+ */
+export async function submitExamResult(examData) {
+  // Wrap entire submission logic with retry mechanism for maximum reliability
+  return await retryExamSubmission(async (data) => {
+    const submissionStartTime = Date.now();
+    
+    try {
+      // PRIORITY 1: Transaction-protected direct storage of client evaluation results
+      if (data.clientEvaluationResult || data.progressiveResults || data.isPreComputed) {
+        try {
+          const directResult = await processDirectClientStorageWithTransactions(data);
+          const totalProcessingTime = Date.now() - submissionStartTime;
+          
+          // Check for transaction-specific failures that might need retry
+          if (!directResult.success && directResult.isTransactionError) {
+            console.warn('⚠️ Transaction error detected, allowing retry mechanism to handle:', directResult.errorType);
+            throw new Error(`Transaction failed: ${directResult.message}`);
+          }
+          
+          return {
+            ...directResult,
+            processingMethod: 'direct_client_storage_transactional',
+            processingTime: totalProcessingTime,
+            performanceAchieved: totalProcessingTime <= 50,
+            transactionProtected: true,
+            dataConsistencyGuaranteed: directResult.dataConsistencyGuaranteed || false
+          };
+          
+        } catch (directError) {
+          const isTransactionError = directError.message?.includes('Transaction failed') ||
+                                   directError.message?.includes('WriteConflict') ||
+                                   directError.message?.includes('TransientTransactionError');
+          
+          if (isTransactionError) {
+            console.warn('⚠️ Transaction-protected storage failed, attempting fallback to legacy storage:', directError.message);
+            
+            // Try fallback to legacy non-transactional version
+            try {
+              const fallbackResult = await processDirectClientStorage(data);
+              const totalProcessingTime = Date.now() - submissionStartTime;
+              
+              if (fallbackResult.success) {
+                return {
+                  ...fallbackResult,
+                  processingMethod: 'direct_client_storage_legacy_fallback',
+                  processingTime: totalProcessingTime,
+                  performanceAchieved: totalProcessingTime <= 50,
+                  transactionProtected: false,
+                  fallbackReason: 'transaction_failure'
+                };
+              }
+            } catch (fallbackError) {
+              console.error('❌ Both transaction and legacy storage failed:', fallbackError.message);
+            }
+          }
+          
+          console.warn('⚠️ Direct storage failed completely, falling back to queue system:', directError.message);
+          // Continue to queue system fallback
+        }
+      }
+      
+      // PRIORITY 2: Queue system for background processing
+      const useQueueSystem = process.env.EXAM_QUEUE_ENABLED !== 'false' && 
+                            process.env.NODE_ENV === 'production';
+      
+      if (useQueueSystem) {
+        try {
+          
+          const { queueExamSubmission } = await import('../../utils/examSubmissionQueue.js');
+          
+          // Get request context for better queue management
+          const context = {
+            isAutoSubmit: data.isAutoSubmit || false,
+            isManualSubmit: !data.isAutoSubmit,
+            timeRemaining: data.timeRemaining || 0,
+            examEnded: data.examEnded || false,
+            userAgent: data.userAgent,
+            screenResolution: data.screenResolution,
+            timezone: data.timezone,
+            sessionId: data.sessionId,
+            ipAddress: data.ipAddress,
+            hasClientEvaluation: !!(data.clientEvaluationResult || data.progressiveResults)
+          };
+          
+          const queueResult = await queueExamSubmission(data, context);
+          
+          if (queueResult.success) {
+            const totalProcessingTime = Date.now() - submissionStartTime;
+            
+            return {
+              success: true,
+              message: "Your exam has been submitted successfully! Your results are being processed and will be available shortly.",
+              isQueued: true,
+              submissionId: queueResult.submissionId,
+              estimatedProcessingTime: queueResult.estimatedProcessingTime,
+              processingMethod: 'queue_system',
+              processingTime: totalProcessingTime,
+              result: {
+                isProcessing: true,
+                submissionId: queueResult.submissionId,
+                message: "Processing your answers in the background...",
+                completedAt: new Date(),
+                timeTaken: data.timeTaken,
+                warnings: data.warnings || 0
+              }
+            };
+          } else {
+            console.warn('Queue system failed, falling back to direct storage:', queueResult.message);
+          }
+          
+        } catch (queueError) {
+          console.error('Queue system error, falling back to direct storage:', queueError.message);
+        }
+      }
+      
+      // PRIORITY 3: Transaction-protected direct storage fallback (always available)
+      try {
+        const fallbackResult = await processDirectClientStorageWithTransactions(data);
+        const totalProcessingTime = Date.now() - submissionStartTime;
+        
+        // If transaction-protected fallback succeeds
+        if (fallbackResult.success) {
+          return {
+            ...fallbackResult,
+            processingMethod: 'direct_storage_transactional_fallback',
+            processingTime: totalProcessingTime,
+            transactionProtected: true,
+            isFallback: true
+          };
+        }
+        
+        // If transaction-protected fallback has transaction errors, try legacy
+        if (fallbackResult.isTransactionError) {
+          console.warn('Transaction fallback failed, trying legacy storage as final attempt:', fallbackResult.errorType);
+          const legacyFallbackResult = await processDirectClientStorage(data);
+          
+          return {
+            ...legacyFallbackResult,
+            processingMethod: 'direct_storage_legacy_final_fallback',
+            processingTime: Date.now() - submissionStartTime,
+            transactionProtected: false,
+            isFallback: true,
+            fallbackReason: 'transaction_fallback_failure'
+          };
+        }
+        
+        // Return the unsuccessful transaction result
+        return fallbackResult;
+        
+      } catch (fallbackError) {
+        console.error('🔄 Transaction fallback failed, attempting final legacy fallback:', fallbackError.message);
+        
+        // Final attempt with legacy storage
+        const legacyFallbackResult = await processDirectClientStorage(data);
+        const totalProcessingTime = Date.now() - submissionStartTime;
+        
+        return {
+          ...legacyFallbackResult,
+          processingMethod: 'direct_storage_legacy_final_fallback',
+          processingTime: totalProcessingTime,
+          transactionProtected: false,
+          isFallback: true,
+          fallbackReason: 'transaction_exception'
+        };
+      }
+      
+    } catch (error) {
+      console.error('submitExamResult Error:', error);
+      throw error; // Re-throw for retry mechanism to handle
+    }
+  }, examData); // Pass examData to retry wrapper
+}
+
+
+
+/**
+ * PRE-TRANSACTION VALIDATION HELPER
+ * 
+ * Performs all validations that don't require database consistency
+ * before starting expensive transaction operations.
+ */
+async function performPreTransactionValidations(examData) {
+  const {
+    examId,
+    studentId,
+    answers,
+    clientEvaluationResult,
+    timeTaken,
+    completedAt,
+    warnings = 0,
+    visitedQuestions = [],
+    markedQuestions = [],
+    isOfflineSubmission = false
+  } = examData;
+
+  // 1. ID validation
+  if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+    return {
+      isValid: false,
+      error: { success: false, message: "Invalid exam or student ID" }
+    };
+  }
+
+  // 2. Fetch exam and student (outside transaction for better performance)
+  const [exam, student] = await Promise.all([
+    Exam.findById(examId).lean(),
+    Student.findById(studentId).lean()
+  ]);
+
+  if (!exam) {
+    return {
+      isValid: false,
+      error: { success: false, message: "Exam not found" }
+    };
+  }
+
+  if (!student) {
+    return {
+      isValid: false,
+      error: { success: false, message: "Student not found" }
+    };
+  }
+
+  // 3. Check exam timing (if scheduled) - business rule validation
+  if (exam.examAvailability === 'scheduled') {
+    const now = new Date();
+    const examStart = new Date(exam.startTime);
+    const examEnd = new Date(exam.endTime);
+
+    if (now < examStart) {
+      return {
+        isValid: false,
+        error: { success: false, message: "Exam has not started yet" }
+      };
+    }
+
+    if (now > examEnd) {
+      return {
+        isValid: false,
+        error: { success: false, message: "Exam has ended" }
+      };
+    }
+  }
+
+  // 4. Process client evaluation results (outside transaction)
+  let finalScore, totalMarks, questionAnalysis, subjectPerformance, statistics;
+  
+  if (clientEvaluationResult) {
+    finalScore = clientEvaluationResult.finalScore || clientEvaluationResult.score || 0;
+    totalMarks = clientEvaluationResult.totalMarks || exam.totalMarks || 0;
+    questionAnalysis = clientEvaluationResult.questionAnalysis || [];
+    subjectPerformance = clientEvaluationResult.subjectPerformance || [];
+    statistics = {
+      correctAnswers: clientEvaluationResult.correctAnswers || 0,
+      incorrectAnswers: clientEvaluationResult.incorrectAnswers || 0,
+      unattempted: clientEvaluationResult.unattempted || 0,
+      accuracy: clientEvaluationResult.accuracy || 0,
+      totalQuestionsAttempted: (clientEvaluationResult.correctAnswers || 0) + (clientEvaluationResult.incorrectAnswers || 0)
+    };
+  } else {
+    finalScore = examData.score || 0;
+    totalMarks = examData.totalMarks || exam.totalMarks || 0;
+    questionAnalysis = [];
+    subjectPerformance = [];
+    statistics = {
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      unattempted: 0,
+      accuracy: 0,
+      totalQuestionsAttempted: 0
+    };
+  }
+
+  return {
+    isValid: true,
+    data: {
+      examId,
+      studentId,
+      exam,
+      student,
+      answers: answers || {},
+      visitedQuestions,
+      markedQuestions,
+      warnings,
+      timeTaken: timeTaken || 0,
+      completedAt: new Date(completedAt || Date.now()),
+      isOfflineSubmission,
+      finalScore,
+      totalMarks,
+      questionAnalysis,
+      subjectPerformance,
+      statistics,
+      clientEvaluationResult
+    }
+  };
+}
+
+/**
+ * TRANSACTION-PROTECTED DIRECT CLIENT STORAGE PROCESSOR
+ * 
+ * Handles direct storage of client evaluation results with database transaction protection.
+ * Ensures atomic operations for data consistency and prevents race conditions.
+ */
+async function processDirectClientStorageWithTransactions(examData) {
+  let session;
+  
+  try {
+    await connectDB();
+    
+    // PHASE 1: Pre-transaction validations (no transaction overhead)
+    const validationResult = await performPreTransactionValidations(examData);
+    if (!validationResult.isValid) {
+      return validationResult.error;
+    }
+
+    const {
+      examId,
+      studentId,
+      exam,
+      student,
+      answers,
+      visitedQuestions,
+      markedQuestions,
+      warnings,
+      timeTaken,
+      completedAt,
+      isOfflineSubmission,
+      finalScore,
+      totalMarks,
+      questionAnalysis,
+      subjectPerformance,
+      statistics,
+      clientEvaluationResult
+    } = validationResult.data;
+
+    // PHASE 2: Transaction-protected critical operations
+    session = await mongoose.startSession();
+    
+    const result = await session.withTransaction(async () => {
+      // Re-check attempt limits within transaction (prevents race conditions)
+      const maxAttempts = exam.reattempt || 1;
+      const currentAttempts = await ExamResult.countDocuments({ 
+        exam: examId, 
+        student: studentId 
+      }).session(session);
+
+      if (currentAttempts >= maxAttempts) {
+        throw new Error(`Maximum allowed attempts (${maxAttempts}) exceeded`);
+      }
+
+      // Create exam result with all processed data
+      const examResult = new ExamResult({
+        exam: examId,
+        student: studentId,
+        attemptNumber: currentAttempts + 1,
+        answers,
+        visitedQuestions,
+        markedQuestions,
+        warnings,
+        score: finalScore,
+        totalMarks,
+        timeTaken,
+        completedAt,
+        isOfflineSubmission,
+        questionAnalysis,
+        statistics,
+        subjectPerformance: Object.values(subjectPerformance),
+        
+        // Default negative marking info
+        negativeMarkingInfo: {
+          defaultRuleUsed: null,
+          positiveMarks: 4,
+          negativeMarks: exam.negativeMarks || 1,
+          ruleDescription: "Client evaluation result",
+          ruleSource: "client_side_computation"
+        },
+        
+        // Client evaluation metadata with transaction info
+        submissionMetadata: {
+          isOffline: isOfflineSubmission,
+          syncStatus: 'synced',
+          computationSource: 'client_side_engine',
+          processingTime: clientEvaluationResult?.processingTime || 0,
+          validationHash: clientEvaluationResult?.computationHash || null,
+          engineVersion: clientEvaluationResult?.engineVersion || '1.0.0',
+          directStorageUsed: true,
+          transactionProtected: true,
+          validationLayers: clientEvaluationResult?.validationLayers || ['client_computed', 'transaction_protected'],
+          performanceMetrics: {
+            validationTime: 0,
+            storageTime: Date.now(),
+            totalProcessingTime: clientEvaluationResult?.processingTime || 0
+          }
+        }
+      });
+
+      // Save result within transaction
+      await examResult.save({ session });
+
+      // Update exam with result reference within same transaction
+      await Exam.findByIdAndUpdate(
+        examId, 
+        { $push: { examResults: examResult._id } },
+        { session }
+      );
+
+      return examResult;
+
+    }, {
+      // MongoDB Atlas M10 optimized transaction options
+      readConcern: { level: 'local' },
+      writeConcern: { w: 'majority', j: false },
+      readPreference: 'primary',
+      maxTimeMS: 10000
+    });
+
+    // PHASE 3: Success response
+    return {
+      success: true,
+      message: "Exam submitted successfully",
+      result: {
+        _id: result._id,
+        score: finalScore,
+        totalMarks,
+        percentage: totalMarks > 0 ? ((finalScore / totalMarks) * 100).toFixed(2) : '0.00',
+        timeTaken,
+        completedAt: result.completedAt,
+        attemptNumber: result.attemptNumber,
+        statistics,
+        questionAnalysis,
+        subjectPerformance
+      },
+      transactionProtected: true,
+      dataConsistencyGuaranteed: true
+    };
+
+  } catch (error) {
+    console.error('processDirectClientStorageWithTransactions Error:', error);
+    
+    // Enhanced error context for transaction failures
+    const isTransactionError = error.errorLabels?.includes('TransientTransactionError') || 
+                              error.codeName === 'WriteConflict' ||
+                              error.name?.includes('Transaction');
+    
+    return {
+      success: false,
+      message: error.message || "Error processing direct client storage",
+      isTransactionError,
+      errorType: error.codeName || error.name || 'UnknownError'
+    };
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+  }
+}
+
+/**
+ * LEGACY DIRECT CLIENT STORAGE PROCESSOR (Fallback)
+ * 
+ * Original implementation without transactions for fallback scenarios.
+ * Maintains backward compatibility and fallback capability.
+ */
+async function processDirectClientStorage(examData) {
+  try {
+    await connectDB();
+    
+    // Extract required data from client evaluation
+    const {
+      examId,
+      studentId,
+      answers,
+      clientEvaluationResult, // Pre-computed client results
+      timeTaken,
+      completedAt,
+      warnings = 0,
+      visitedQuestions = [],
+      markedQuestions = [],
+      isOfflineSubmission = false
+    } = examData;
+
+    // 1. ESSENTIAL VALIDATIONS - Business Rules Only
+    
+    // Validate required IDs
+    if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return {
+        success: false,
+        message: "Invalid exam or student ID"
+      };
+    }
+
+    // Fetch exam and student for validation
+    const [exam, student] = await Promise.all([
+      Exam.findById(examId).lean(),
+      Student.findById(studentId).lean()
+    ]);
+
+    if (!exam) {
+      return {
+        success: false,
+        message: "Exam not found"
+      };
+    }
+
+    if (!student) {
+      return {
+        success: false,
+        message: "Student not found"
+      };
+    }
+
+    // Check attempt limits
+    const maxAttempts = exam.reattempt || 1;
+    const previousAttempts = await ExamResult.countDocuments({ 
+      exam: examId, 
+      student: studentId 
+    });
+
+    if (previousAttempts >= maxAttempts) {
+      return {
+        success: false,
+        message: `Maximum allowed attempts (${maxAttempts}) exceeded`
+      };
+    }
+
+    // Check exam timing (if scheduled)
+    if (exam.examAvailability === 'scheduled') {
+      const now = new Date();
+      const examStart = new Date(exam.startTime);
+      const examEnd = new Date(exam.endTime);
+
+      if (now < examStart) {
+        return {
+          success: false,
+          message: "Exam has not started yet"
+        };
+      }
+
+      if (now > examEnd) {
+        return {
+          success: false,
+          message: "Exam has ended"
+        };
+      }
+    }
+
+    // 2. EXTRACT CLIENT EVALUATION RESULTS
+    
+    // Use client-computed results directly
+    let finalScore, totalMarks, questionAnalysis, subjectPerformance, statistics;
+    
+    if (clientEvaluationResult) {
+      // Client evaluation engine results
+      finalScore = clientEvaluationResult.finalScore || clientEvaluationResult.score || 0;
+      totalMarks = clientEvaluationResult.totalMarks || exam.totalMarks || 0;
+      questionAnalysis = clientEvaluationResult.questionAnalysis || [];
+      subjectPerformance = clientEvaluationResult.subjectPerformance || [];
+      statistics = {
+        correctAnswers: clientEvaluationResult.correctAnswers || 0,
+        incorrectAnswers: clientEvaluationResult.incorrectAnswers || 0,
+        unattempted: clientEvaluationResult.unattempted || 0,
+        accuracy: clientEvaluationResult.accuracy || 0,
+        totalQuestionsAttempted: (clientEvaluationResult.correctAnswers || 0) + (clientEvaluationResult.incorrectAnswers || 0)
+      };
+    } else {
+      // Fallback to basic score data from examData
+      finalScore = examData.score || 0;
+      totalMarks = examData.totalMarks || exam.totalMarks || 0;
+      questionAnalysis = [];
+      subjectPerformance = [];
+      statistics = {
+        correctAnswers: 0,
+        incorrectAnswers: 0,
+        unattempted: 0,
+        accuracy: 0,
+        totalQuestionsAttempted: 0
+      };
+    }
+
+    // 3. DIRECT DATABASE STORAGE
+
+    const examResult = new ExamResult({
+      exam: examId,
+      student: studentId,
+      attemptNumber: previousAttempts + 1,
+      answers: answers || {},
+      visitedQuestions,
+      markedQuestions,
+      warnings,
+      score: finalScore,
+      totalMarks,
+      timeTaken: timeTaken || 0,
+      completedAt: new Date(completedAt || Date.now()),
+      isOfflineSubmission,
+      questionAnalysis,
+      statistics,
+      subjectPerformance: Object.values(subjectPerformance),
+      
+      // Default negative marking info
+      negativeMarkingInfo: {
+        defaultRuleUsed: null,
+        positiveMarks: 4,
+        negativeMarks: exam.negativeMarks || 1,
+        ruleDescription: "Client evaluation result",
+        ruleSource: "client_side_computation"
+      },
+      
+      // Client evaluation metadata
+      submissionMetadata: {
+        isOffline: isOfflineSubmission,
+        syncStatus: 'synced',
+        computationSource: 'client_side_engine',
+        processingTime: clientEvaluationResult?.processingTime || 0,
+        validationHash: clientEvaluationResult?.computationHash || null,
+        engineVersion: clientEvaluationResult?.engineVersion || '1.0.0',
+        directStorageUsed: true,
+        validationLayers: clientEvaluationResult?.validationLayers || ['client_computed'],
+        performanceMetrics: {
+          validationTime: 0,
+          storageTime: Date.now(),
+          totalProcessingTime: clientEvaluationResult?.processingTime || 0
+        }
+      }
+    });
+
+    // Save result to database
+    await examResult.save();
+
+    // Update exam with result reference
+    await Exam.findByIdAndUpdate(examId, {
+      $push: { examResults: examResult._id }
+    });
+
+    // 4. RETURN SUCCESS RESPONSE
+
+    return {
+      success: true,
+      message: "Exam submitted successfully",
+      result: {
+        _id: examResult._id,
+        score: finalScore,
+        totalMarks,
+        percentage: totalMarks > 0 ? ((finalScore / totalMarks) * 100).toFixed(2) : '0.00',
+        timeTaken: timeTaken || 0,
+        completedAt: examResult.completedAt,
+        attemptNumber: examResult.attemptNumber,
+        statistics,
+        questionAnalysis,
+        subjectPerformance
+      }
+    };
+
+  } catch (error) {
+    console.error('processDirectClientStorage Error:', error);
+    return {
+      success: false,
+      message: error.message || "Error processing direct client storage"
+    };
+  }
+}
+
+
+
 export async function submitExamResultInternal(examData) {
   try {
     await connectDB();
@@ -1423,7 +2117,7 @@ export async function submitExamResultInternal(examData) {
         correctAnswers: correctAnswersCount,
         incorrectAnswers,
         unattempted,
-        accuracy: (correctAnswersCount / exam.examQuestions.length) * 100,
+        accuracy: (correctAnswersCount + incorrectAnswers) > 0 ? (correctAnswersCount / (correctAnswersCount + incorrectAnswers)) * 100 : 0,
         totalQuestionsAttempted: correctAnswersCount + incorrectAnswers,
       },
       subjectPerformance: Object.values(subjectPerformance),
@@ -1608,6 +2302,7 @@ export async function syncOfflineSubmissions(studentId, submissions) {
   }
 }
 
+
 export async function getStudentExamResult(studentId, examId) {
   /**
    * getStudentExamResult(studentId, examId)
@@ -1709,84 +2404,90 @@ export async function getStudentExamResult(studentId, examId) {
   }
 }
 
-export async function getStudentExamResults(studentId) {
-  /**
-   * getStudentExamResults(studentId)
-   * Flow:
-   * 1. Validate student ID
-   * 2. Fetch all exam results for student
-   * 3. Return results with exam details
-   */
-  try {
-    await connectDB();
+// export async function getStudentExamResults(studentId) {
+//   /**
+//    * getStudentExamResults(studentId)
+//    * Flow:
+//    * 1. Validate student ID
+//    * 2. Fetch all exam results for student
+//    * 3. Return results with exam details
+//    */
+//   try {
+//     await connectDB();
 
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return {
-        success: false,
-        message: "Invalid student ID",
-      };
-    }
+//     if (!mongoose.Types.ObjectId.isValid(studentId)) {
+//       return {
+//         success: false,
+//         message: "Invalid student ID",
+//       };
+//     }
 
-    const results = await ExamResult.find({ student: studentId })
-      .populate({
-        path: "exam",
-        select: "examName examSubject stream standard completedAt",
-      })
-      .populate({
-        path: "negativeMarkingInfo.defaultRuleUsed", 
-        select: "negativeMarks description stream standard subject examType isActive"
-      })
-      .sort({ completedAt: -1 });
+//     const results = await ExamResult.find({ student: studentId })
+//       .populate({
+//         path: "exam",
+//         select: "examName examSubject stream standard completedAt",
+//       })
+//       .populate({
+//         path: "negativeMarkingInfo.defaultRuleUsed", 
+//         select: "negativeMarks description stream standard subject examType isActive"
+//       })
+//       .sort({ completedAt: -1 });
 
-    // Properly serialize results to avoid circular references
-    const cleanResults = results.map((result) => {
-      const resultObj = result.toObject();
-      return {
-        _id: resultObj._id,
-        exam: resultObj.exam,
-        examName: resultObj.exam.examName,
-        examSubject: resultObj.exam.examSubject,
-        stream: resultObj.exam.stream,
-        standard: resultObj.exam.standard,
-        score: resultObj.score,
-        totalMarks: resultObj.totalMarks,
-        percentage: ((resultObj.score / resultObj.totalMarks) * 100).toFixed(2),
-        timeTaken: resultObj.timeTaken,
-        completedAt: resultObj.completedAt,
-        isOfflineSubmission: resultObj.isOfflineSubmission,
-        statistics: resultObj.statistics,
-        questionAnalysis: resultObj.questionAnalysis,
-        negativeMarkingInfo: resultObj.negativeMarkingInfo ? {
-          negativeMarks: resultObj.negativeMarkingInfo.negativeMarks,
-          ruleDescription: resultObj.negativeMarkingInfo.ruleDescription,
-          ruleSource: resultObj.negativeMarkingInfo.ruleSource,
-          ruleUsed: null, // College-specific rules no longer exist
-          defaultRuleUsed: resultObj.negativeMarkingInfo.defaultRuleUsed ? {
-            _id: resultObj.negativeMarkingInfo.defaultRuleUsed._id,
-            negativeMarks: resultObj.negativeMarkingInfo.defaultRuleUsed.negativeMarks,
-            description: resultObj.negativeMarkingInfo.defaultRuleUsed.description,
-            stream: resultObj.negativeMarkingInfo.defaultRuleUsed.stream,
-            standard: resultObj.negativeMarkingInfo.defaultRuleUsed.standard,
-            subject: resultObj.negativeMarkingInfo.defaultRuleUsed.subject,
-            examType: resultObj.negativeMarkingInfo.defaultRuleUsed.examType
-          } : null
-        } : null,
-      };
-    });
+//     // Properly serialize results to avoid circular references
+//     const cleanResults = results.map((result) => {
+//       const resultObj = result.toObject();
+//       return {
+//         _id: resultObj._id,
+//         exam: resultObj.exam,
+//         examName: resultObj.exam.examName,
+//         examSubject: resultObj.exam.examSubject,
+//         stream: resultObj.exam.stream,
+//         standard: resultObj.exam.standard,
+//         score: resultObj.score,
+//         totalMarks: resultObj.totalMarks,
+//         percentage: ((resultObj.score / resultObj.totalMarks) * 100).toFixed(2),
+//         timeTaken: resultObj.timeTaken,
+//         completedAt: resultObj.completedAt,
+//         isOfflineSubmission: resultObj.isOfflineSubmission,
+//         statistics: resultObj.statistics,
+//         questionAnalysis: resultObj.questionAnalysis,
+//         negativeMarkingInfo: resultObj.negativeMarkingInfo ? {
+//           negativeMarks: resultObj.negativeMarkingInfo.negativeMarks,
+//           ruleDescription: resultObj.negativeMarkingInfo.ruleDescription,
+//           ruleSource: resultObj.negativeMarkingInfo.ruleSource,
+//           ruleUsed: null, // College-specific rules no longer exist
+//           defaultRuleUsed: resultObj.negativeMarkingInfo.defaultRuleUsed ? {
+//             _id: resultObj.negativeMarkingInfo.defaultRuleUsed._id,
+//             negativeMarks: resultObj.negativeMarkingInfo.defaultRuleUsed.negativeMarks,
+//             description: resultObj.negativeMarkingInfo.defaultRuleUsed.description,
+//             stream: resultObj.negativeMarkingInfo.defaultRuleUsed.stream,
+//             standard: resultObj.negativeMarkingInfo.defaultRuleUsed.standard,
+//             subject: resultObj.negativeMarkingInfo.defaultRuleUsed.subject,
+//             examType: resultObj.negativeMarkingInfo.defaultRuleUsed.examType
+//           } : null
+//         } : null,
+//       };
+//     });
 
-    return {
-      success: true,
-      message: "Results fetched successfully",
-      results: cleanResults,
-    };
-  } catch (error) {
-    console.error("Error fetching student exam results:", error);
-    return {
-      success: false,
-      message: "Error fetching exam results",
-    };
-  }
-}
+//     return {
+//       success: true,
+//       message: "Results fetched successfully",
+//       results: cleanResults,
+//     };
+//   } catch (error) {
+//     console.error("Error fetching student exam results:", error);
+//     return {
+//       success: false,
+//       message: "Error fetching exam results",
+//     };
+//   }
+// }
+
+
+
+
+
+
 
 export async function getAllExamAttempts(studentId, examId) {
   try {

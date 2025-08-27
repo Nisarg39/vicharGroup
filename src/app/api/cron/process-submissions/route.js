@@ -113,13 +113,106 @@ export async function GET(request) {
 
     await connectDB();
 
-    // Get batch of queued submissions with priority ordering
-    const submissions = await ExamSubmissionQueue.getBatchQueuedSubmissions(batchSize, cronJobId);
-    
-    if (!submissions || submissions.length === 0) {
+    // CONTINUOUS BATCH PROCESSING: Process multiple batches until timeout approach
+    let totalProcessed = 0;
+    let totalSuccessful = 0; 
+    let totalFailed = 0;
+    let batchCount = 0;
+    let allBatchResults = [];
+
+    console.log('ExamCronProcessor', 'Starting continuous batch processing', {
+      cronJobId,
+      configuredBatchSize: batchSize,
+      maxProcessingTimeMs: maxProcessingTime,
+      safetyMarginMs: 60000
+    });
+
+    while (true) {
+      const timeElapsed = Date.now() - cronStartTime;
+      const timeRemaining = maxProcessingTime - timeElapsed;
+      
+      // Stop if less than 60 seconds remaining (safety margin for cleanup)
+      if (timeRemaining < 60000) {
+        console.log('ExamCronProcessor', 'Approaching timeout, stopping continuous processing', {
+          cronJobId,
+          timeElapsedMs: timeElapsed,
+          timeRemainingMs: timeRemaining,
+          batchesProcessed: batchCount,
+          totalProcessed
+        });
+        break;
+      }
+      
+      const submissions = await ExamSubmissionQueue.getBatchQueuedSubmissions(batchSize, `${cronJobId}-batch-${batchCount}`);
+      
+      if (!submissions || submissions.length === 0) {
+        console.log('ExamCronProcessor', 'No more submissions in queue, stopping', {
+          cronJobId,
+          batchesProcessed: batchCount,
+          totalProcessed,
+          timeElapsedMs: timeElapsed
+        });
+        break; // No more submissions to process
+      }
+
+      console.log('ExamCronProcessor', `Processing batch ${batchCount + 1}`, {
+        cronJobId,
+        batchSize: submissions.length,
+        submissionIds: submissions.map(s => s.submissionId),
+        timeElapsedMs: timeElapsed,
+        timeRemainingMs: timeRemaining
+      });
+
+      const batchStartTime = Date.now();
+
+      // Process submissions in parallel with individual error isolation
+      const processingPromises = submissions.map(submission => 
+        processSubmissionWithIsolation(submission, cronJobId)
+      );
+
+      // Use Promise.allSettled for proper error isolation
+      const results = await Promise.allSettled(processingPromises);
+
+      // Analyze batch results
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
+      
+      const batchProcessingTime = Date.now() - batchStartTime;
+
+      // Aggregate totals
+      totalProcessed += submissions.length;
+      totalSuccessful += successful;
+      totalFailed += failed;
+      batchCount++;
+
+      // Store batch results for detailed reporting
+      allBatchResults.push({
+        batchNumber: batchCount,
+        submissions: submissions.length,
+        successful,
+        failed,
+        processingTimeMs: batchProcessingTime,
+        averageTimePerSubmission: Math.round(batchProcessingTime / submissions.length)
+      });
+
+      console.log('ExamCronProcessor', `Batch ${batchCount} completed`, {
+        cronJobId,
+        batchSubmissions: submissions.length,
+        batchSuccessful: successful,
+        batchFailed: failed,
+        batchProcessingTimeMs: batchProcessingTime,
+        runningTotalProcessed: totalProcessed,
+        runningTotalSuccessful: totalSuccessful
+      });
+    }
+
+    const cronProcessingTime = Date.now() - cronStartTime;
+
+    // Final results logging
+    if (totalProcessed === 0) {
       console.log('ExamCronProcessor', 'No submissions to process', {
         cronJobId,
-        processingTimeMs: Date.now() - cronStartTime
+        processingTimeMs: cronProcessingTime
       });
       
       return NextResponse.json({
@@ -130,55 +223,43 @@ export async function GET(request) {
       });
     }
 
-    console.log('ExamCronProcessor', 'Processing submission batch', {
-      cronJobId,
-      batchSize: submissions.length,
-      submissionIds: submissions.map(s => s.submissionId)
-    });
-
-    // Process submissions in parallel with individual error isolation
-    const processingPromises = submissions.map(submission => 
-      processSubmissionWithIsolation(submission, cronJobId)
-    );
-
-    // Use Promise.allSettled for proper error isolation
-    const results = await Promise.allSettled(processingPromises);
-
-    // Analyze results
-    const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
-
-    const cronProcessingTime = Date.now() - cronStartTime;
-
-    // Check if we're approaching timeout limit
+    // Check if we used time efficiently
     if (cronProcessingTime > maxProcessingTime * 0.9) {
       console.error('ExamCronProcessor', 'Processing time approaching timeout limit', {
         cronJobId,
         processingTimeMs: cronProcessingTime,
         maxTimeMs: maxProcessingTime,
-        batchSize: submissions.length,
+        totalProcessed,
+        batchCount,
         performance: 'WARNING'
       });
     }
 
-    console.log('ExamCronProcessor', 'Batch processing completed', {
+    console.log('ExamCronProcessor', 'Continuous batch processing completed', {
       cronJobId,
-      totalSubmissions: submissions.length,
-      successful,
-      failed,
+      totalBatches: batchCount,
+      totalSubmissions: totalProcessed,
+      totalSuccessful,
+      totalFailed,
       processingTimeMs: cronProcessingTime,
-      averageTimePerSubmission: Math.round(cronProcessingTime / submissions.length)
+      averageTimePerSubmission: totalProcessed > 0 ? Math.round(cronProcessingTime / totalProcessed) : 0,
+      averageTimePerBatch: batchCount > 0 ? Math.round(cronProcessingTime / batchCount) : 0,
+      efficiency: `${Math.round((cronProcessingTime / maxProcessingTime) * 100)}% of available time used`
     });
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${successful}/${submissions.length} submissions successfully`,
+      message: `Processed ${totalSuccessful}/${totalProcessed} submissions successfully across ${batchCount} batches`,
       cronJobId,
-      batch: {
-        total: submissions.length,
-        successful,
-        failed,
-        processingTimeMs: cronProcessingTime
+      continuousProcessing: {
+        totalBatches: batchCount,
+        totalSubmissions: totalProcessed,
+        totalSuccessful,
+        totalFailed,
+        processingTimeMs: cronProcessingTime,
+        averageTimePerSubmission: totalProcessed > 0 ? Math.round(cronProcessingTime / totalProcessed) : 0,
+        efficiency: Math.round((cronProcessingTime / maxProcessingTime) * 100),
+        batchDetails: allBatchResults
       }
     });
 
