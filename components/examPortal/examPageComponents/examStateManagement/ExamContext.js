@@ -73,6 +73,11 @@ export const EXAM_ACTIONS = {
   SET_SUBMISSION_STATE: 'SET_SUBMISSION_STATE',
   UPDATE_SUBMISSION_PROGRESS: 'UPDATE_SUBMISSION_PROGRESS',
   
+  // Atomic Submission Control
+  ACQUIRE_SUBMISSION_LOCK: 'ACQUIRE_SUBMISSION_LOCK',
+  RELEASE_SUBMISSION_LOCK: 'RELEASE_SUBMISSION_LOCK',
+  SET_SUBMISSION_LOCK_STATUS: 'SET_SUBMISSION_LOCK_STATUS',
+  
   // Performance Monitoring
   ADD_PERFORMANCE_METRIC: 'ADD_PERFORMANCE_METRIC',
   UPDATE_WARNING_COUNT: 'UPDATE_WARNING_COUNT',
@@ -151,6 +156,18 @@ const initialState = {
     showProgress: false,
     performanceBadge: null,
     submissionTime: 0
+  },
+  
+  // Atomic Submission Lock State
+  submissionLock: {
+    hasLock: false,
+    lockId: null,
+    submissionType: null,
+    state: 'idle', // 'idle', 'acquired', 'expired', 'released'
+    acquiredAt: null,
+    expiresAt: null,
+    remainingTime: 0,
+    lastError: null
   },
   
   // Performance Monitoring
@@ -312,6 +329,46 @@ function examStateReducer(state, action) {
         }
       }
 
+    case EXAM_ACTIONS.SET_SUBMISSION_LOCK_STATUS:
+      return {
+        ...state,
+        submissionLock: {
+          ...state.submissionLock,
+          ...action.payload
+        }
+      }
+
+    case EXAM_ACTIONS.ACQUIRE_SUBMISSION_LOCK:
+      return {
+        ...state,
+        submissionLock: {
+          ...state.submissionLock,
+          hasLock: true,
+          lockId: action.payload.lockId,
+          submissionType: action.payload.submissionType,
+          state: 'acquired',
+          acquiredAt: action.payload.acquiredAt || Date.now(),
+          expiresAt: action.payload.expiresAt,
+          remainingTime: action.payload.remainingTime,
+          lastError: null
+        }
+      }
+
+    case EXAM_ACTIONS.RELEASE_SUBMISSION_LOCK:
+      return {
+        ...state,
+        submissionLock: {
+          hasLock: false,
+          lockId: null,
+          submissionType: null,
+          state: 'released',
+          acquiredAt: null,
+          expiresAt: null,
+          remainingTime: 0,
+          lastError: null
+        }
+      }
+
     case EXAM_ACTIONS.UPDATE_WARNING_COUNT:
       return {
         ...state,
@@ -418,7 +475,12 @@ export const examSelectors = {
   
   // Performance selectors
   getWarningCount: (state) => state.warningCount,
-  getSubmissionState: (state) => state.submissionState
+  getSubmissionState: (state) => state.submissionState,
+  
+  // Atomic submission selectors
+  getSubmissionLock: (state) => state.submissionLock,
+  hasSubmissionLock: (state) => state.submissionLock.hasLock,
+  getSubmissionLockId: (state) => state.submissionLock.lockId
 }
 
 // Main Provider Component
@@ -569,6 +631,20 @@ export const examActions = {
   setSubmissionState: (submissionState) => ({
     type: EXAM_ACTIONS.SET_SUBMISSION_STATE,
     payload: submissionState
+  }),
+  
+  acquireSubmissionLock: (lockData) => ({
+    type: EXAM_ACTIONS.ACQUIRE_SUBMISSION_LOCK,
+    payload: lockData
+  }),
+  
+  releaseSubmissionLock: () => ({
+    type: EXAM_ACTIONS.RELEASE_SUBMISSION_LOCK
+  }),
+  
+  setSubmissionLockStatus: (lockStatus) => ({
+    type: EXAM_ACTIONS.SET_SUBMISSION_LOCK_STATUS,
+    payload: lockStatus
   }),
   
   batchUpdate: (updates) => ({

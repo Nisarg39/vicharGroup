@@ -39,6 +39,9 @@ import { calculateRemainingTime, getEffectiveExamDuration } from "../../../utils
 // Progressive Computation System
 import { handleProgressiveSubmission } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 
+// ATOMIC SUBMISSION SYSTEM: Import atomic submission manager to eliminate race conditions
+import { getAtomicSubmissionManager, SUBMISSION_TYPES } from "../../../utils/atomicSubmissionManager"
+
 // Removed: normalizeSubject function - now using consistent subject names from helper functions
 
 // Removed: isRestrictedSubject function - now using proper helper functions from examDurationHelpers.js
@@ -76,8 +79,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Track if exam is completed to avoid fullscreen warning after submit
     const examCompletedRef = useRef(false);
     
-    // Simple race condition prevention for submissions
-    const submissionInProgress = useRef(false);
+    // ATOMIC SUBMISSION SYSTEM: Replace simple race condition prevention with atomic manager
+    const atomicSubmissionManager = useRef(null);
+    const [submissionLockStatus, setSubmissionLockStatus] = useState({
+        hasLock: false,
+        lockId: null,
+        submissionType: null,
+        state: 'idle',
+        lastError: null
+    });
 
     // State for mobile floating question navigator
     const [showMobileNavigator, setShowMobileNavigator] = useState(false);
@@ -252,6 +262,23 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             }
         }
     }, [submissionState.status]);
+
+    // ATOMIC SUBMISSION SYSTEM: Initialize atomic submission manager on mount
+    useEffect(() => {
+        // Initialize the atomic submission manager
+        atomicSubmissionManager.current = getAtomicSubmissionManager();
+        
+        console.log('🔒 Atomic submission manager initialized');
+        
+        // Cleanup on unmount
+        return () => {
+            if (atomicSubmissionManager.current) {
+                // Force release any held locks on component cleanup
+                atomicSubmissionManager.current.forceReleaseLock();
+                console.log('🗑️ Atomic submission manager cleaned up');
+            }
+        };
+    }, []);
 
     // PROGRESSIVE COMPUTATION: Initialize progressive scoring engine
     const progressiveScoring = useProgressiveScoring(exam, questions, student);
@@ -1163,13 +1190,43 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
-        // Simple race condition prevention
-        if (submissionInProgress.current) {
-            console.log('Submission already in progress, ignoring duplicate call');
-            return;
+        // ATOMIC SUBMISSION SYSTEM: Acquire lock to prevent race conditions
+        const lockResult = await atomicSubmissionManager.current?.acquireLock(
+            submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
+            {
+                examId: exam?._id,
+                studentId: student?._id,
+                triggerType: submissionType,
+                attemptTime: new Date().toISOString()
+            }
+        );
+        
+        if (!lockResult?.success) {
+            console.warn('🚫 Cannot submit exam - submission lock acquisition failed:', lockResult);
+            
+            // Handle different lock failure scenarios
+            if (lockResult?.error === 'LOCK_ALREADY_HELD') {
+                const message = `Another ${lockResult.existingLock?.submissionType || 'submission'} is in progress. Please wait.`;
+                toast.error(message, { duration: 4000 });
+                return;
+            } else {
+                toast.error('Unable to submit exam at this time. Please try again.', { duration: 4000 });
+                return;
+            }
         }
         
-        submissionInProgress.current = true;
+        // Update submission lock status
+        setSubmissionLockStatus({
+            hasLock: true,
+            lockId: lockResult.lockId,
+            submissionType: submissionType,
+            state: 'acquired',
+            lastError: null
+        });
+        
+        console.log(`🔐 Submission lock acquired successfully: ${lockResult.lockId} (${submissionType})`);
+        
+        const lockId = lockResult.lockId;
         
         // BOTTLENECK MONITORING: Log submission start
         const monitoringId = logSubmissionStart(student?._id, exam?._id, submissionType);
@@ -1577,7 +1634,37 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 });
             }, 2000);
         } finally {
-            submissionInProgress.current = false;
+            // ATOMIC SUBMISSION SYSTEM: Always release lock in finally block
+            try {
+                const releaseResult = await atomicSubmissionManager.current?.releaseLock(lockId);
+                if (releaseResult?.success) {
+                    console.log(`🔓 Submission lock released successfully: ${lockId}`);
+                } else {
+                    console.warn('⚠️ Lock release failed:', releaseResult);
+                }
+                
+                // Update submission lock status
+                setSubmissionLockStatus({
+                    hasLock: false,
+                    lockId: null,
+                    submissionType: null,
+                    state: 'released',
+                    lastError: releaseResult?.error || null
+                });
+                
+            } catch (lockError) {
+                console.error('❌ Error releasing submission lock:', lockError);
+                // Force release as fallback
+                atomicSubmissionManager.current?.forceReleaseLock();
+                
+                setSubmissionLockStatus({
+                    hasLock: false,
+                    lockId: null,
+                    submissionType: null,
+                    state: 'released',
+                    lastError: lockError.message
+                });
+            }
         }
     }
     // --- FULLSCREEN LOGIC END ---
@@ -2243,6 +2330,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                             performanceBadge: null, 
                                             submissionTime: 0 
                                         });
+                                        // Set submission type for retry (treat as manual submission)
+                                        setSubmissionType('manual_submit');
                                         // Use setTimeout to ensure state update completes before submitExam
                                         setTimeout(() => submitExam(), 0);
                                     }}

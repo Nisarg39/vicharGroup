@@ -12,34 +12,34 @@ function generateUUID() {
 }
 
 /**
- * EMERGENCY EXAM SUBMISSION QUEUE SYSTEM
+ * VERCEL CRON EXAM SUBMISSION QUEUE SYSTEM
  * 
  * This system eliminates the 10-40% data loss during concurrent auto-submits
- * by implementing immediate response with background processing.
+ * by implementing immediate response with Vercel cron job processing.
  * 
  * CRITICAL FEATURES:
  * ✅ Immediate confirmation to students (no waiting)
- * ✅ Background processing queue for heavy computation
+ * ✅ Background processing handled by Vercel cron jobs
  * ✅ Zero data loss (all submissions preserved)
  * ✅ Retry logic with exponential backoff
  * ✅ Comprehensive error handling and monitoring
  * ✅ Student notification system
  * ✅ Performance metrics and audit trails
+ * ✅ No setInterval workers - cron-only architecture
  */
 
 class ExamSubmissionQueueService {
   constructor() {
-    this.isProcessing = false;
-    this.processingInterval = null;
     this.workerInfo = {
-      id: `worker-${process.env.NODE_ENV || 'dev'}-${Date.now()}`,
+      id: `queue-service-${process.env.NODE_ENV || 'production'}-${Date.now()}`,
       startedAt: new Date(),
       processedCount: 0,
       errorCount: 0
     };
     
-    // Check if running in cron mode (Vercel environment)
-    this.isCronMode = process.env.VERCEL || process.env.VERCEL_ENV;
+    // Always use cron mode - setInterval worker has been removed
+    this.isCronMode = true;
+    console.log('ExamSubmissionQueueService initialized in cron-only mode');
   }
 
   /**
@@ -108,10 +108,7 @@ class ExamSubmissionQueueService {
 
       await queueEntry.save();
 
-      // Start processing if not already running (only in setInterval mode)
-      if (!this.isCronMode) {
-        this.ensureProcessingActive();
-      }
+      // Processing handled by Vercel cron jobs - no need to start worker
 
       const responseTime = Date.now() - startTime;
       
@@ -131,8 +128,8 @@ class ExamSubmissionQueueService {
         message: "Your exam has been submitted successfully! Your results are being processed.",
         submissionId,
         queueStatus: "queued",
-        estimatedProcessingTime: this.isCronMode ? "30-60 seconds" : "1-2 minutes",
-        processingMode: this.isCronMode ? "cron-batch" : "setInterval",
+        estimatedProcessingTime: "30-60 seconds",
+        processingMode: "cron-batch",
         responseTimeMs: responseTime
       };
 
@@ -405,80 +402,35 @@ class ExamSubmissionQueueService {
   }
 
   /**
-   * Ensure queue processing is active (only for setInterval mode)
+   * Processing handled by Vercel cron jobs - no queue processor needed
+   * These methods are kept for backwards compatibility but are no-ops
    */
   ensureProcessingActive() {
-    if (!this.isProcessing && !this.isCronMode) {
-      this.startQueueProcessor();
-    }
+    // No-op: Processing handled by Vercel cron jobs
+    MonitoringService.logActivity('ExamSubmissionQueue', 'Processing handled by Vercel cron jobs', {
+      serviceId: this.workerInfo.id,
+      cronMode: true
+    });
   }
 
-  /**
-   * Start the background queue processor (disabled in cron mode)
-   */
   startQueueProcessor() {
-    if (this.isProcessing || this.isCronMode) {
-      if (this.isCronMode) {
-        MonitoringService.logActivity('ExamSubmissionQueue', 'Skipping worker start - running in cron mode', {
-          workerId: this.workerInfo.id,
-          cronMode: true
-        });
-      }
-      return; // Already running or in cron mode
-    }
-
-    this.isProcessing = true;
-    
-    MonitoringService.logActivity('ExamSubmissionQueue', 'Starting separate worker for queue processing', {
-      workerId: this.workerInfo.id,
-      processId: process.pid,
-      cronMode: false
-    });
-
-    // Start the separate worker to avoid circular imports
-    import('./examSubmissionWorker.js').then(({ startExamSubmissionWorker }) => {
-      startExamSubmissionWorker();
-      MonitoringService.logActivity('ExamSubmissionQueue', 'Separate worker started successfully', {
-        workerId: this.workerInfo.id
-      });
-    }).catch(error => {
-      MonitoringService.logError('ExamSubmissionQueue', 'Failed to start separate worker', {
-        error: error.message,
-        workerId: this.workerInfo.id
-      });
-    });
+    // No-op: Processing handled by Vercel cron jobs
+    console.log('Queue processing handled by Vercel cron jobs - no setInterval worker needed');
   }
 
-  /**
-   * Stop the queue processor (for graceful shutdown)
-   */
   stopQueueProcessor() {
-    this.isProcessing = false;
-    
-    // Stop the separate worker
-    import('./examSubmissionWorker.js').then(({ stopExamSubmissionWorker }) => {
-      stopExamSubmissionWorker();
-      MonitoringService.logActivity('ExamSubmissionQueue', 'Queue processor stopped', {
-        workerId: this.workerInfo.id,
-        processedCount: this.workerInfo.processedCount,
-        errorCount: this.workerInfo.errorCount
-      });
-    }).catch(error => {
-      MonitoringService.logError('ExamSubmissionQueue', 'Error stopping worker', {
-        error: error.message,
-        workerId: this.workerInfo.id
-      });
-    });
+    // No-op: No setInterval worker to stop
+    console.log('No setInterval worker to stop - processing handled by Vercel cron jobs');
   }
 
   /**
    * Process the next submission in the queue
-   * NOTE: This method is deprecated - processing now handled by separate worker
+   * NOTE: This method is deprecated - processing now handled by Vercel cron jobs
    */
   async processNextSubmission() {
-    // Processing now handled by ExamSubmissionWorker to avoid circular imports
+    // Processing now handled by Vercel cron jobs exclusively
     // This method is kept for compatibility but does nothing
-    console.warn('ExamSubmissionQueue.processNextSubmission is deprecated - use ExamSubmissionWorker instead');
+    console.warn('ExamSubmissionQueue.processNextSubmission is deprecated - processing handled by Vercel cron jobs');
     return;
   }
 
@@ -493,14 +445,14 @@ class ExamSubmissionQueueService {
       const failedSubmissions = await ExamSubmissionQueue.getFailedSubmissions(5);
       
       // Get cron-specific stats if in cron mode
-      const cronStats = this.isCronMode ? await this.getCronProcessingStats() : null;
+      const cronStats = await this.getCronProcessingStats();
       
       return {
         stats,
         failedSubmissions,
         worker: this.workerInfo,
-        isProcessing: this.isProcessing,
-        processingMode: this.isCronMode ? "cron-batch" : "setInterval",
+        isProcessing: false, // No setInterval processing
+        processingMode: "cron-batch",
         cronStats
       };
       
@@ -650,15 +602,5 @@ export async function retryFailedSubmission(submissionId) {
   return await service.retryFailedSubmission(submissionId);
 }
 
-// Graceful shutdown handler
-process.on('SIGTERM', () => {
-  if (queueServiceInstance) {
-    queueServiceInstance.stopQueueProcessor();
-  }
-});
-
-process.on('SIGINT', () => {
-  if (queueServiceInstance) {
-    queueServiceInstance.stopQueueProcessor();
-  }
-});
+// No graceful shutdown handlers needed - no setInterval workers to stop
+// Processing is handled by Vercel cron jobs which are managed by the platform

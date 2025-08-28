@@ -36,21 +36,19 @@ import { validateExamDuration } from "../../utils/examDurationHelpers";
 import { getEffectiveExamDuration } from "../../utils/examTimingUtils";
 
 /**
- * EXAM SUBMISSION BACKGROUND PROCESSOR
+ * EXAM SUBMISSION PROCESSOR (CRON-ONLY)
  * 
- * This worker processes queued exam submissions in the background using
- * the existing scoring logic from studentExamActions.js to maintain
- * accuracy while eliminating blocking behavior during concurrent submissions.
+ * This module provides the core exam submission processing logic
+ * used by Vercel cron jobs. The setInterval worker functionality
+ * has been removed to standardize on cron-based processing only.
  * 
  * CRITICAL: This uses the EXACT same scoring logic as the original 
  * submitExamResultInternal function to ensure scoring accuracy.
  */
 
-class ExamSubmissionWorker {
+class ExamSubmissionProcessor {
   constructor() {
-    this.workerId = `worker-${process.env.NODE_ENV || 'dev'}-${Date.now()}`;
-    this.isProcessing = false;
-    this.processingInterval = null;
+    this.processorId = `processor-cron-${process.env.NODE_ENV || 'production'}-${Date.now()}`;
     this.stats = {
       startedAt: new Date(),
       processedCount: 0,
@@ -60,142 +58,9 @@ class ExamSubmissionWorker {
   }
 
   /**
-   * Start the background worker
-   */
-  start() {
-    if (this.isProcessing) {
-      return;
-    }
-
-    this.isProcessing = true;
-    
-    MonitoringService.logActivity('ExamSubmissionWorker', 'Worker started', {
-      workerId: this.workerId,
-      processId: process.pid
-    });
-
-    // Process queue every 3 seconds
-    this.processingInterval = setInterval(async () => {
-      try {
-        await this.processNextSubmission();
-      } catch (error) {
-        MonitoringService.logError('ExamSubmissionWorker', 'Worker cycle error', {
-          error: error.message,
-          stack: error.stack,
-          workerId: this.workerId
-        });
-      }
-    }, 3000);
-  }
-
-  /**
-   * Stop the worker gracefully
-   */
-  stop() {
-    if (this.processingInterval) {
-      clearInterval(this.processingInterval);
-      this.processingInterval = null;
-    }
-    
-    this.isProcessing = false;
-    
-    MonitoringService.logActivity('ExamSubmissionWorker', 'Worker stopped', {
-      workerId: this.workerId,
-      stats: this.stats
-    });
-  }
-
-  /**
-   * Process the next queued submission
-   */
-  async processNextSubmission() {
-    try {
-      await connectDB();
-      
-      // Get next submission (this handles priority and retry logic)
-      const submission = await ExamSubmissionQueue.getNextQueuedSubmission(this.workerId);
-      
-      if (!submission) {
-        return; // No work to do
-      }
-
-      const processingStartTime = Date.now();
-      
-      MonitoringService.logActivity('ExamSubmissionWorker', 'Processing submission', {
-        submissionId: submission.submissionId,
-        examId: submission.exam,
-        studentId: submission.student,
-        attempt: submission.processing.attempts,
-        workerId: this.workerId
-      });
-
-      try {
-        // Process using the extracted scoring logic
-        const result = await this.processExamSubmission(submission.submissionData);
-        
-        const processingTime = Date.now() - processingStartTime;
-        
-        if (result.success) {
-          // Mark as completed with metrics
-          await submission.markAsCompleted(result.examResultId, {
-            totalProcessingTimeMs: processingTime,
-            scoringTimeMs: result.metrics?.scoringTimeMs || processingTime,
-            bulkRulesLoadTimeMs: result.metrics?.bulkRulesLoadTimeMs || 0,
-            questionProcessingTimeMs: result.metrics?.questionProcessingTimeMs || 0
-          });
-          
-          this.stats.processedCount++;
-          this.updateAverageProcessingTime(processingTime);
-          
-          MonitoringService.logActivity('ExamSubmissionWorker', 'Submission processed successfully', {
-            submissionId: submission.submissionId,
-            processingTimeMs: processingTime,
-            score: result.score,
-            totalMarks: result.totalMarks,
-            workerId: this.workerId
-          });
-          
-        } else {
-          // Processing failed
-          const error = new Error(result.message || 'Processing failed');
-          await submission.markAsFailed(error, true);
-          
-          this.stats.errorCount++;
-          
-          MonitoringService.logError('ExamSubmissionWorker', 'Submission processing failed', {
-            submissionId: submission.submissionId,
-            error: result.message,
-            attempt: submission.processing.attempts,
-            workerId: this.workerId
-          });
-        }
-        
-      } catch (processingError) {
-        // Unexpected error during processing
-        await submission.markAsFailed(processingError, true);
-        
-        this.stats.errorCount++;
-        
-        MonitoringService.logError('ExamSubmissionWorker', 'Unexpected processing error', {
-          submissionId: submission.submissionId,
-          error: processingError.message,
-          stack: processingError.stack,
-          workerId: this.workerId
-        });
-      }
-      
-    } catch (error) {
-      MonitoringService.logError('ExamSubmissionWorker', 'Worker processing error', {
-        error: error.message,
-        stack: error.stack,
-        workerId: this.workerId
-      });
-    }
-  }
-
-  /**
    * CRITICAL: Process exam submission using EXACT same logic as original system
    * This is extracted from submitExamResultInternal to maintain scoring accuracy
+   * Used exclusively by Vercel cron jobs for batch processing
    */
   async processExamSubmission(examData) {
     const processingMetrics = {
@@ -799,34 +664,33 @@ class ExamSubmissionWorker {
   }
 }
 
-// Singleton worker instance
-let workerInstance = null;
+// Singleton processor instance for cron jobs
+let processorInstance = null;
 
-export async function getExamSubmissionWorker() {
-  if (!workerInstance) {
-    workerInstance = new ExamSubmissionWorker();
+export async function getExamSubmissionProcessor() {
+  if (!processorInstance) {
+    processorInstance = new ExamSubmissionProcessor();
   }
-  return workerInstance;
+  return processorInstance;
 }
 
-// Auto-start the worker
+// Legacy function names maintained for compatibility
+export async function getExamSubmissionWorker() {
+  console.warn('getExamSubmissionWorker is deprecated - use getExamSubmissionProcessor');
+  return await getExamSubmissionProcessor();
+}
+
+// Deprecated functions - cron jobs handle processing directly
 export async function startExamSubmissionWorker() {
-  const worker = await getExamSubmissionWorker();
-  worker.start();
-  return worker;
+  console.warn('startExamSubmissionWorker is deprecated - processing handled by Vercel cron jobs');
+  return await getExamSubmissionProcessor();
 }
 
 export async function stopExamSubmissionWorker() {
-  if (workerInstance) {
-    workerInstance.stop();
-  }
+  console.warn('stopExamSubmissionWorker is deprecated - no setInterval worker to stop');
 }
 
 export async function getWorkerStats() {
-  const worker = await getExamSubmissionWorker();
-  return worker.getStats();
+  const processor = await getExamSubmissionProcessor();
+  return processor.getStats();
 }
-
-// Graceful shutdown
-process.on('SIGTERM', stopExamSubmissionWorker);
-process.on('SIGINT', stopExamSubmissionWorker);

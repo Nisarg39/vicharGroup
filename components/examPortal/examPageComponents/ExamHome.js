@@ -43,7 +43,7 @@ export default function ExamHome({ examId }) {
     const [allAttempts, setAllAttempts] = useState([]);
     const [selectedAttempt, setSelectedAttempt] = useState(null);
     const [isEligible, setIsEligible] = useState(false); // NEW: eligibility state
-    // EMERGENCY QUEUE SYSTEM: Queue submission tracking removed - now uses immediate messaging approach
+    // VERCEL CRON PROCESSING: Processing handled by cron jobs - immediate messaging approach
 
     // Add state for continue exam prompt
     const [showContinuePrompt, setShowContinuePrompt] = useState(false);
@@ -694,7 +694,7 @@ export default function ExamHome({ examId }) {
                     isOfflineSubmission: false,
                     visitedQuestions: examData.visitedQuestions || [],
                     markedQuestions: examData.markedQuestions || [],
-                    // EMERGENCY QUEUE SYSTEM: Add context for queue prioritization
+                    // VERCEL CRON PROCESSING: Add context for queue prioritization
                     isAutoSubmit: examData.isAutoSubmit || false,
                     timeRemaining: examData.timeRemaining || 0,
                     examEnded: examData.examEnded || false,
@@ -706,12 +706,12 @@ export default function ExamHome({ examId }) {
                 // Exam submission completed
 
                 if (result.success) {
-                    // EMERGENCY QUEUE SYSTEM: Handle queued submissions
+                    // VERCEL CRON PROCESSING: Handle queued submissions
                     if (result.isQueued) {
-                        // NEW: Immediate confirmation with clear messaging - no polling
+                        // Immediate confirmation - processing handled by Vercel cron jobs
                         toast.success("✅ " + result.message);
                         toast.info(
-                            "Your exam has been submitted successfully! Results are being processed in the background and will be available shortly. You can check back later to view your results.",
+                            "Your exam has been submitted successfully! Results are being processed by our cron system and will be available shortly. You can check back later to view your results.",
                             { duration: 8000 }
                         );
                         
@@ -723,7 +723,7 @@ export default function ExamHome({ examId }) {
                         return;
                     }
                     
-                    // Original synchronous processing (development/testing)
+                    // Synchronous processing (fallback for development/testing)
                     // Check if this is a scheduled exam and if current time is before end time
                     const isScheduledExam = examData.examAvailability === 'scheduled';
                     const examEndTime = examData.examEndTime ? new Date(examData.examEndTime) : null;
@@ -836,7 +836,7 @@ export default function ExamHome({ examId }) {
         }
     };
 
-    // EMERGENCY QUEUE SYSTEM: Polling removed - background processing handled by Vercel cron jobs
+    // VERCEL CRON PROCESSING: Background processing handled exclusively by Vercel cron jobs
 
     // Add a helper to check for saved progress
     const hasUncompletedExam = (() => {

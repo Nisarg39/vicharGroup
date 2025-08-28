@@ -41,13 +41,13 @@ import { getAutoScaledBatchSize } from "../../../../../server_actions/services/d
 /**
  * VERCEL CRON-BASED BATCH EXAM SUBMISSION PROCESSOR
  * 
- * This replaces the setInterval worker with a cron-based batch processing system
- * that processes submissions in batches of 20 every 30 seconds, optimized for
- * Vercel's 800s timeout limit on Pro plans.
+ * This is the sole processing system for exam submissions, using cron-based
+ * batch processing that handles submissions in batches every 30 seconds,
+ * optimized for Vercel's 800s timeout limit on Pro plans.
  * 
  * CRITICAL FEATURES:
- * ✅ Processes 20 submissions per 30-second cycle (40-50% faster than setInterval)
- * ✅ No function timeout interruptions (800s limit vs 300s for setInterval)
+ * ✅ Processes submissions in optimized batches per 30-second cycle
+ * ✅ No function timeout interruptions (800s timeout limit)
  * ✅ Maintains exact same scoring logic as existing system
  * ✅ Zero data loss guarantee preserved
  * ✅ Priority system maintained (auto-submit gets higher priority)

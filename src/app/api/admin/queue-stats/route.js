@@ -3,8 +3,8 @@ import { getQueueStatistics } from '../../../../../server_actions/utils/examSubm
 import { getWorkerStats } from '../../../../../server_actions/utils/examSubmissionWorker';
 
 /**
- * ENHANCED EMERGENCY QUEUE SYSTEM - Admin API Endpoint
- * Get queue statistics and worker information for monitoring both setInterval and cron modes
+ * VERCEL CRON QUEUE SYSTEM - Admin API Endpoint
+ * Get queue statistics for monitoring cron-based processing
  * GET /api/admin/queue-stats
  */
 // Mark as dynamic route to prevent static generation
@@ -24,28 +24,28 @@ export async function GET(request) {
       );
     }
 
-    // Detect processing mode
-    const isCronMode = process.env.VERCEL || process.env.VERCEL_ENV;
+    // Always cron mode - setInterval worker removed
+    const isCronMode = true;
     
-    // Get queue statistics (enhanced with cron support)
+    // Get queue statistics (cron-only)
     const queueStats = await getQueueStatistics();
     
-    // Get worker statistics (only in setInterval mode)
-    const workerStats = isCronMode ? null : await getWorkerStats();
+    // Get processor statistics (legacy compatibility)
+    const processorStats = await getWorkerStats();
 
     // Get cron-specific environment variables
-    const cronConfig = isCronMode ? {
+    const cronConfig = {
       batchSize: parseInt(process.env.EXAM_BATCH_SIZE) || 20,
       maxProcessingTime: parseInt(process.env.CRON_MAX_PROCESSING_TIME) || 750000,
       cronSecret: process.env.VERCEL_CRON_SECRET ? 'configured' : 'missing',
       vercelEnv: process.env.VERCEL_ENV || 'unknown'
-    } : null;
+    };
 
     // Combine stats
     const combinedStats = {
       queue: queueStats,
-      worker: workerStats,
-      processingMode: isCronMode ? "cron-batch" : "setInterval",
+      processor: processorStats, // Renamed from worker
+      processingMode: "cron-batch",
       cronConfig: cronConfig,
       timestamp: new Date().toISOString(),
       systemInfo: {
