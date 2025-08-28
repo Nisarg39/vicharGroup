@@ -42,7 +42,19 @@ export async function submitOptimizedExamResult(optimizedData) {
   try {
     console.log('⚡ OPTIMIZED ENDPOINT: Processing pre-computed submission...');
     
-    await connectDB();
+    console.log('🔥 CRITICAL DATABASE CONNECTION: Attempting to connect to database...');
+    try {
+      await connectDB();
+      console.log('✅ CRITICAL DATABASE CONNECTION: Database connected successfully');
+    } catch (dbError) {
+      console.error('❌ CRITICAL DATABASE CONNECTION ERROR:', {
+        error: dbError.message,
+        code: dbError.code,
+        name: dbError.name,
+        stack: dbError.stack
+      });
+      throw new Error(`Database connection failed: ${dbError.message}`);
+    }
     
     // STEP 1: Ultra-fast validation (5ms target)
     const validationStartTime = Date.now();
@@ -208,13 +220,25 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
     } = optimizedData;
     
     // Get basic exam and student info (minimal queries)
+    console.log('🔥 CRITICAL DATABASE QUERIES: Fetching exam and student data...', {
+      examId: examId,
+      studentId: studentId
+    });
+    
     const [exam, student] = await Promise.all([
       Exam.findById(examId).select('examResults totalMarks college').lean(),
       Student.findById(studentId).populate('college', 'collegeName collegeCode collegeLogo collegeLocation').lean()
     ]);
     
+    console.log('🔥 CRITICAL DATABASE QUERIES RESULT:', {
+      examFound: !!exam,
+      studentFound: !!student,
+      examData: exam ? { id: exam._id, totalMarks: exam.totalMarks } : null,
+      studentData: student ? { id: student._id, name: student.firstName } : null
+    });
+    
     if (!exam || !student) {
-      throw new Error('Exam or student not found');
+      throw new Error(`Exam or student not found - exam: ${!!exam}, student: ${!!student}`);
     }
     
     // Check attempt limit (fast query)
@@ -284,8 +308,38 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
     };
     
     // Single database write operation
+    console.log('🔥 CRITICAL DATABASE SAVE: About to create and save ExamResult');
+    console.log('📦 CRITICAL EXAM RESULT DATA:', {
+      hasExamId: !!examResultData.exam,
+      hasStudentId: !!examResultData.student,
+      hasAnswers: !!examResultData.answers,
+      answersCount: Object.keys(examResultData.answers || {}).length,
+      hasScore: examResultData.score !== undefined,
+      score: examResultData.score,
+      totalMarks: examResultData.totalMarks,
+      dataStructure: Object.keys(examResultData)
+    });
+    
     const examResult = new ExamResult(examResultData);
-    await examResult.save();
+    console.log('🔥 CRITICAL DATABASE SAVE: ExamResult model created, attempting save...');
+    
+    try {
+      const savedResult = await examResult.save();
+      console.log('✅ CRITICAL DATABASE SUCCESS: ExamResult saved successfully!', {
+        resultId: savedResult._id,
+        saveTimestamp: new Date().toISOString()
+      });
+    } catch (saveError) {
+      console.error('❌ CRITICAL DATABASE SAVE ERROR:', {
+        error: saveError.message,
+        code: saveError.code,
+        name: saveError.name,
+        validationErrors: saveError.errors,
+        stack: saveError.stack,
+        examResultData: JSON.stringify(examResultData, null, 2)
+      });
+      throw saveError;
+    }
     
     // Update exam results array (single update operation)
     await Exam.findByIdAndUpdate(
