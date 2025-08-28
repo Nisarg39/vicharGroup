@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic';
  * GET /api/exam/submission-status?submissionId=<id>
  */
 export async function GET(request) {
+  console.log('🔍 BASIC LOGGING TEST - submission-status endpoint hit');
   try {
     const { searchParams } = new URL(request.url);
     const submissionId = searchParams.get('submissionId');
+    console.log('📋 Submission ID received:', submissionId);
 
     if (!submissionId) {
       return NextResponse.json(

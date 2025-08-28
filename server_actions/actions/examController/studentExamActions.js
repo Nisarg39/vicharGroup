@@ -1,4 +1,8 @@
 "use server";
+
+// BASIC LOGGING TEST - Server Action File Loaded
+console.log("🚀 SERVER: studentExamActions.js loaded at", new Date().toISOString());
+
 import { connectDB } from "../../config/mongoose";
 import Exam from "../../models/exam_portal/exam";
 import Student from "../../models/student";
@@ -958,6 +962,17 @@ async function checkExamEligibilityUncached(details) {
  * 5. Final legacy fallback (last resort)
  */
 export async function submitExamResult(examData) {
+  // ENTRY POINT LOGGING - Main submission function called
+  console.log("🎯 SUBMISSION ENTRY: submitExamResult called at", new Date().toISOString());
+  console.log("📦 SUBMISSION DATA:", {
+    studentId: examData?.studentId,
+    examId: examData?.examId,
+    hasClientEvaluation: !!examData?.clientEvaluationResult,
+    hasProgressiveResults: !!examData?.progressiveResults,
+    isPreComputed: !!examData?.isPreComputed,
+    answersCount: examData?.answers?.length || 0
+  });
+  
   // Wrap entire submission logic with retry mechanism for maximum reliability
   return await retryExamSubmission(async (data) => {
     const submissionStartTime = Date.now();
@@ -1741,6 +1756,14 @@ async function processDirectClientStorage(examData) {
 
 
 export async function submitExamResultInternal(examData) {
+  // ENTRY POINT LOGGING - Internal submission function called
+  console.log("🔧 INTERNAL SUBMISSION ENTRY: submitExamResultInternal called at", new Date().toISOString());
+  console.log("📦 INTERNAL SUBMISSION DATA:", {
+    studentId: examData?.studentId,
+    examId: examData?.examId,
+    answersCount: examData?.answers?.length || 0
+  });
+  
   try {
     await connectDB();
 
@@ -2405,6 +2428,13 @@ export async function getExamQuestions(examId) {
 }
 
 export async function syncOfflineSubmissions(studentId, submissions) {
+  // ENTRY POINT LOGGING - Offline sync function called
+  console.log("📱 OFFLINE SYNC ENTRY: syncOfflineSubmissions called at", new Date().toISOString());
+  console.log("📦 OFFLINE SYNC DATA:", {
+    studentId,
+    submissionsCount: submissions?.length || 0
+  });
+  
   /**
    * syncOfflineSubmissions(studentId, submissions)
    * Flow:

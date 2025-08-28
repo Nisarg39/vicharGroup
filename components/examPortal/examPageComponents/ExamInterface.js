@@ -1248,7 +1248,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             examId: exam?._id,
             submissionType,
             answersCount: Object.keys(answers).length,
-            isExamActive: isExamActive,
+            isExamActive: isExamStarted && timeLeft > 0,
             clientHasEvaluation: !!evaluationEngineRef.current
         });
         console.log("🚨 CLIENT DEBUG: Function entry confirmed - starting execution...");
@@ -1694,11 +1694,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     try {
                         console.log('⏱️ CLIENT DEBUG: Calling submitProgressiveResultDirect now...');
                         
-                        // EMERGENCY FIX: Add timeout to detect hangs
-                        const SUBMISSION_TIMEOUT = 10000; // 10 seconds
+                        // EMERGENCY FIX: Add timeout to detect hangs (increased for database verification)
+                        const SUBMISSION_TIMEOUT = 30000; // 30 seconds (increased from 10 to allow for database verification)
                         const timeoutPromise = new Promise((_, reject) => {
                             setTimeout(() => {
-                                reject(new Error('EMERGENCY: Submission timed out after 10 seconds - likely hanging in submitProgressiveResultDirect'));
+                                reject(new Error('EMERGENCY: Submission timed out after 30 seconds - likely hanging in submitProgressiveResultDirect'));
                             }, SUBMISSION_TIMEOUT);
                         });
                         
@@ -2357,17 +2357,24 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         
         try {
             console.log("🎯 EXAM INTERFACE: Calling submitExam() now...")
-            const submissionPromise = submitExam()
-            console.log("🎯 EXAM INTERFACE: submitExam() promise created:", submissionPromise)
             
-            // Close modal immediately after submission starts (don't wait for completion)
+            // Wait for submission to complete before closing modal
+            await submitExam()
+            
+            console.log("✅ EXAM INTERFACE: submitExam() completed successfully")
+            
+            // Only close modal after successful submission
             setShowConfirmSubmit(false)
             
-            console.log("🎯 EXAM INTERFACE: Modal closed, submission is running in background")
+            console.log("🎯 EXAM INTERFACE: Modal closed after successful submission")
         } catch (error) {
-            console.error("❌ EXAM INTERFACE: Error calling submitExam:", error)
-            // Still close modal on error to avoid stuck state
+            console.error("❌ EXAM INTERFACE: Error in submitExam:", error)
+            
+            // On error, still close the modal to prevent stuck state
+            // The submitExam function should handle its own error states and navigation
             setShowConfirmSubmit(false)
+            
+            console.log("⚠️ EXAM INTERFACE: Modal closed after submission error")
         }
     }
 

@@ -4,7 +4,9 @@ let isConnected = false;    // to track connection status
 
 
 export const connectDB = async () => {
-
+    // DATABASE CONNECTION LOGGING
+    console.log("🔌 DATABASE: connectDB() called at", new Date().toISOString());
+    
     // ENHANCED: Proper error handling for missing MONGODB_URI
     if(!process.env.MONGODB_URI) {
         const errorMessage = "MONGODB_URI is not defined. Database connection cannot be established.";
@@ -13,11 +15,12 @@ export const connectDB = async () => {
     }
 
     if(isConnected){
-        // return console.log("+> using existing database connection");
+        console.log("♻️ DATABASE: Using existing connection");
         return;
     } 
 
     try {
+        console.log("🌐 DATABASE: Attempting new MongoDB connection...");
         
        await mongoose.connect(process.env.MONGODB_URI, {
            // M10-Optimized Connection Pool Configuration
@@ -47,6 +50,7 @@ export const connectDB = async () => {
        });
 
        isConnected = true
+       console.log("✅ DATABASE: MongoDB connection established successfully");
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {

@@ -1,5 +1,8 @@
 "use server";
 
+// BASIC LOGGING TEST - Optimized Submission Endpoint File Loaded
+console.log("🚀 SERVER: optimizedSubmissionEndpoint.js loaded at", new Date().toISOString());
+
 import { connectDB } from "../../config/mongoose";
 import Exam from "../../models/exam_portal/exam";
 import ExamResult from "../../models/exam_portal/examResult";
@@ -7,7 +10,6 @@ import Student from "../../models/student";
 import mongoose from "mongoose";
 import crypto from 'crypto';
 import { logOptimizedSubmissionPerformance, logSubmissionFallback } from "../../services/performance/OptimizedSubmissionMonitor";
-import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submissionDataTracer";
 
 /**
  * ULTRA-FAST OPTIMIZED SUBMISSION ENDPOINT
@@ -40,73 +42,20 @@ import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submis
 export async function submitOptimizedExamResult(optimizedData) {
   const startTime = Date.now();
   
-  // INITIALIZE COMPREHENSIVE DATA TRACING
-  const tracer = createSubmissionTracer();
-  
   try {
-    console.log('⚡ OPTIMIZED ENDPOINT: Processing pre-computed submission...');
-    
-    // LOG ENTRY POINT - COMPREHENSIVE DATA RECEPTION TRACE
-    tracer.logEntryPoint('optimizedSubmissionEndpoint', optimizedData, {
-      endpoint: 'submitOptimizedExamResult',
-      method: 'optimized_direct_storage',
-      clientVersion: optimizedData.engineVersion,
-      evaluationSource: optimizedData.evaluationSource
-    });
-    
-    // CRITICAL DATA VALIDATION AT ENTRY
-    const criticalMissing = SubmissionTraceUtils.logCriticalDataCheck(
-      tracer.requestId,
-      'ENTRY_VALIDATION',
-      optimizedData,
-      ['examId', 'studentId', 'answers', 'finalScore', 'totalMarks']
-    );
-    
-    if (criticalMissing.length > 0) {
-      tracer.logError('ENTRY_VALIDATION', new Error(`Critical fields missing: ${criticalMissing.join(', ')}`), optimizedData);
-    }
-    
-    // SCORE VALIDATION AT ENTRY
-    SubmissionTraceUtils.logScoreValidation(tracer.requestId, 'ENTRY_VALIDATION', {
-      finalScore: optimizedData.finalScore,
-      totalMarks: optimizedData.totalMarks,
-      percentage: optimizedData.percentage
-    });
-    
-    // ANSWER INTEGRITY CHECK AT ENTRY
-    SubmissionTraceUtils.logAnswerIntegrity(tracer.requestId, 'ENTRY_VALIDATION', optimizedData.answers);
-    
-    console.log('📊 SUBMISSION DEBUG: Received data structure:', {
+    console.log('⚡ OPTIMIZED ENDPOINT: Processing pre-computed submission...', {
       examId: optimizedData.examId,
       studentId: optimizedData.studentId,
       finalScore: optimizedData.finalScore,
-      totalMarks: optimizedData.totalMarks,
-      percentage: optimizedData.percentage,
-      correctAnswers: optimizedData.correctAnswers,
-      incorrectAnswers: optimizedData.incorrectAnswers,
-      unattempted: optimizedData.unattempted,
-      answersCount: Object.keys(optimizedData.answers || {}).length,
-      hasQuestionAnalysis: !!(optimizedData.questionAnalysis && optimizedData.questionAnalysis.length > 0),
-      hasSubjectPerformance: !!(optimizedData.subjectPerformance && optimizedData.subjectPerformance.length > 0),
-      timeTaken: optimizedData.timeTaken,
-      warnings: optimizedData.warnings,
-      evaluationSource: optimizedData.evaluationSource,
-      traceId: tracer.requestId
+      totalMarks: optimizedData.totalMarks
     });
     
     await connectDB();
     
-    // STEP 1: Ultra-fast validation (5ms target)
+    // STEP 1: Ultra-fast validation (5ms target) - OPTIMIZED: Reduced logging
     const validationStartTime = Date.now();
-    const validation = await performUltraFastValidation(optimizedData, tracer);
+    const validation = await performUltraFastValidation(optimizedData);
     const validationTime = Date.now() - validationStartTime;
-    
-    // LOG VALIDATION RESULTS
-    tracer.logValidation('ultra_fast_validation', optimizedData, validation, {
-      validationTime: `${validationTime}ms`,
-      targetTime: '5ms',
-      performanceTarget: validationTime <= 5 ? 'MET' : 'EXCEEDED'
-    });
     
     if (!validation.isValid) {
       console.warn(`⚠️ Validation failed in ${validationTime}ms:`, validation.reason);
@@ -114,24 +63,14 @@ export async function submitOptimizedExamResult(optimizedData) {
       // Log validation failure for monitoring
       await logSubmissionFallback(optimizedData, 'validation_failed', validation.reason, validationTime);
       
-      // LOG FALLBACK DECISION
-      tracer.logFallback(
-        validation.reason,
-        'optimized_validation',
-        'traditional_computation',
-        optimizedData,
-        { validationTime: `${validationTime}ms`, validationDetails: validation.details }
-      );
-      
       // FALLBACK: Route to traditional computation
-      const fallbackResult = await fallbackToTraditionalComputation(optimizedData, tracer);
-      const traceSummary = tracer.generateTraceSummary();
-      return { ...fallbackResult, traceSummary };
+      const fallbackResult = await fallbackToTraditionalComputation(optimizedData);
+      return fallbackResult;
     }
     
-    // STEP 2: Direct storage without any computation (10ms target)
+    // STEP 2: Direct storage without any computation (10ms target) - OPTIMIZED: Reduced logging
     const storageStartTime = Date.now();
-    const result = await storeOptimizedResultDirect(optimizedData, validation, tracer);
+    const result = await storeOptimizedResultDirect(optimizedData, validation);
     const storageTime = Date.now() - storageStartTime;
     
     const totalTime = Date.now() - startTime;
@@ -155,23 +94,11 @@ export async function submitOptimizedExamResult(optimizedData) {
     // Log to monitoring system
     await logOptimizedSubmissionPerformance(optimizedData, performanceMetrics);
     
-    // GENERATE FINAL TRACE SUMMARY
-    const traceSummary = tracer.generateTraceSummary();
-    
-    // FINAL DATA INTEGRITY CHECK
-    SubmissionTraceUtils.logCriticalDataCheck(
-      tracer.requestId,
-      'FINAL_RESULT',
-      result.examResultData,
-      ['score', 'totalMarks', 'percentage']
-    );
-    
-    console.log('✅ OPTIMIZED SUBMISSION SUCCESS - TRACE COMPLETE:', {
-      traceId: tracer.requestId,
+    console.log('✅ OPTIMIZED SUBMISSION SUCCESS:', {
       totalTime: `${totalTime}ms`,
-      stages: traceSummary.stages,
-      dataIntegrity: traceSummary.dataIntegrityCheck.integrityMaintained,
-      resultId: result.examResultData?.resultId
+      resultId: result.examResultData?.resultId,
+      score: result.examResultData?.score,
+      totalMarks: result.examResultData?.totalMarks
     });
     
     return {
@@ -185,8 +112,7 @@ export async function submitOptimizedExamResult(optimizedData) {
         rulesSkipped: true,
         statisticsPreComputed: true,
         dbQueriesMinimized: true
-      },
-      traceSummary
+      }
     };
     
   } catch (error) {
@@ -194,30 +120,13 @@ export async function submitOptimizedExamResult(optimizedData) {
     
     console.error('❌ OPTIMIZED ENDPOINT error:', error);
     
-    // LOG ERROR WITH TRACER
-    tracer.logError('OPTIMIZED_ENDPOINT_EXCEPTION', error, optimizedData, {
-      totalTime: `${totalTime}ms`,
-      errorType: error.name,
-      errorCode: error.code
-    });
-    
     // Log fallback usage for monitoring
     await logSubmissionFallback(optimizedData, 'traditional_computation', error.message, totalTime);
     
-    // LOG EMERGENCY FALLBACK
-    tracer.logFallback(
-      `Exception: ${error.message}`,
-      'optimized_endpoint',
-      'emergency_traditional_computation',
-      optimizedData,
-      { totalTime: `${totalTime}ms`, errorType: error.name }
-    );
-    
     // EMERGENCY FALLBACK: Traditional computation
     console.log('🔄 Emergency fallback to traditional computation...');
-    const fallbackResult = await fallbackToTraditionalComputation(optimizedData, tracer, error);
-    const traceSummary = tracer.generateTraceSummary();
-    return { ...fallbackResult, traceSummary };
+    const fallbackResult = await fallbackToTraditionalComputation(optimizedData, error);
+    return fallbackResult;
   }
 }
 
@@ -227,15 +136,10 @@ export async function submitOptimizedExamResult(optimizedData) {
  * Performs minimal but comprehensive validation using parallel checks
  * and cached data to achieve sub-5ms validation times.
  */
-async function performUltraFastValidation(optimizedData, tracer) {
+async function performUltraFastValidation(optimizedData) {
   const startTime = Date.now();
   
   try {
-    console.log('🔍 ULTRA-FAST VALIDATION - Starting comprehensive validation:', {
-      traceId: tracer.requestId,
-      dataSize: JSON.stringify(optimizedData).length,
-      hasRequiredFields: ['examId', 'studentId', 'answers', 'finalScore'].every(f => optimizedData[f] !== undefined)
-    });
     // Parallel validation checks for maximum speed
     const [
       basicValidation,
@@ -251,54 +155,20 @@ async function performUltraFastValidation(optimizedData, tracer) {
     
     const validationTime = Date.now() - startTime;
     
-    // LOG INDIVIDUAL VALIDATION RESULTS
-    tracer.logValidation('basic_structure', optimizedData, basicValidation, { 
-      validationType: 'structure_validation',
-      validationLayer: '1_of_4' 
-    });
-    
-    tracer.logValidation('data_integrity', optimizedData, integrityValidation, { 
-      validationType: 'integrity_validation',
-      validationLayer: '2_of_4' 
-    });
-    
-    tracer.logValidation('security_constraints', optimizedData, securityValidation, { 
-      validationType: 'security_validation',
-      validationLayer: '3_of_4' 
-    });
-    
-    tracer.logValidation('temporal_constraints', optimizedData, temporalValidation, { 
-      validationType: 'temporal_validation',
-      validationLayer: '4_of_4' 
-    });
-    
     // Check if all validations passed
     if (!basicValidation.valid) {
-      tracer.logError('BASIC_STRUCTURE_VALIDATION_FAILED', new Error('Basic structure validation failed'), optimizedData, {
-        errors: basicValidation.errors,
-        failedFields: basicValidation.errors
-      });
       return { isValid: false, reason: 'basic_structure_invalid', details: basicValidation.errors };
     }
     
     if (!integrityValidation.valid) {
-      tracer.logError('DATA_INTEGRITY_VALIDATION_FAILED', new Error('Data integrity validation failed'), optimizedData, {
-        errors: integrityValidation.errors
-      });
       return { isValid: false, reason: 'data_integrity_failed', details: integrityValidation.errors };
     }
     
     if (!securityValidation.valid) {
-      tracer.logError('SECURITY_VALIDATION_FAILED', new Error('Security validation failed'), optimizedData, {
-        errors: securityValidation.errors
-      });
       return { isValid: false, reason: 'security_validation_failed', details: securityValidation.errors };
     }
     
     if (!temporalValidation.valid) {
-      tracer.logError('TEMPORAL_VALIDATION_FAILED', new Error('Temporal validation failed'), optimizedData, {
-        errors: temporalValidation.errors
-      });
       return { isValid: false, reason: 'temporal_validation_failed', details: temporalValidation.errors };
     }
     
@@ -331,12 +201,11 @@ async function performUltraFastValidation(optimizedData, tracer) {
  * Stores ExamResult directly from pre-computed data without any processing.
  * Bypasses all scoring logic, rule fetching, and statistical computation.
  */
-async function storeOptimizedResultDirect(optimizedData, validation, tracer) {
+async function storeOptimizedResultDirect(optimizedData, validation) {
   const startTime = Date.now();
   
   try {
     console.log('💾 DIRECT STORAGE - Starting optimized result storage:', {
-      traceId: tracer.requestId,
       examId: optimizedData.examId,
       studentId: optimizedData.studentId,
       finalScore: optimizedData.finalScore,
@@ -362,68 +231,24 @@ async function storeOptimizedResultDirect(optimizedData, validation, tracer) {
     } = optimizedData;
     
     // Get basic exam and student info (minimal queries)
-    console.log('🔎 DATABASE FETCH - Retrieving exam and student data:', {
-      traceId: tracer.requestId,
-      examId: examId,
-      studentId: studentId
-    });
-    
     const [exam, student] = await Promise.all([
       Exam.findById(examId).select('examResults totalMarks college').lean(),
       Student.findById(studentId).populate('college', 'collegeName collegeCode collegeLogo collegeLocation').lean()
     ]);
     
-    // LOG DATABASE FETCH RESULTS
-    tracer.logDatabaseOperation('fetch_exam_student', { examId, studentId }, {
-      examFound: !!exam,
-      studentFound: !!student,
-      examTotalMarks: exam?.totalMarks,
-      studentCollege: student?.college?.collegeName
-    }, { operation: 'parallel_fetch' });
-    
     if (!exam || !student) {
-      const error = new Error('Exam or student not found');
-      tracer.logError('EXAM_STUDENT_NOT_FOUND', error, { examId, studentId, examFound: !!exam, studentFound: !!student });
-      throw error;
+      throw new Error('Exam or student not found');
     }
     
-    // LOG DATA INTEGRITY CHECK AFTER FETCH
-    SubmissionTraceUtils.logCriticalDataCheck(
-      tracer.requestId,
-      'POST_DATABASE_FETCH',
-      { exam: exam ? 'found' : 'missing', student: student ? 'found' : 'missing' },
-      ['exam', 'student']
-    );
-    
     // Check attempt limit (fast query)
-    console.log('🔢 ATTEMPT VALIDATION - Checking previous attempts:', {
-      traceId: tracer.requestId,
-      examId: examId,
-      studentId: studentId
-    });
-    
     const previousAttempts = await ExamResult.countDocuments({ 
       exam: examId, 
       student: studentId 
     });
     
-    // LOG ATTEMPT LIMIT CHECK
-    tracer.logDatabaseOperation('check_attempt_limit', { examId, studentId }, {
-      previousAttempts,
-      maxAttempts: exam.reattempt || 1,
-      attemptsRemaining: (exam.reattempt || 1) - previousAttempts
-    }, { operation: 'attempt_validation' });
-    
     const maxAttempts = exam.reattempt || 1;
     if (previousAttempts >= maxAttempts) {
-      const error = new Error(`Maximum attempts (${maxAttempts}) exceeded`);
-      tracer.logError('MAX_ATTEMPTS_EXCEEDED', error, { 
-        examId, 
-        studentId, 
-        previousAttempts, 
-        maxAttempts 
-      });
-      throw error;
+      throw new Error(`Maximum attempts (${maxAttempts}) exceeded`);
     }
     
     // Create ExamResult directly from pre-computed data
@@ -502,31 +327,38 @@ async function storeOptimizedResultDirect(optimizedData, validation, tracer) {
       await examResult.save();
       console.log(`✅ ExamResult saved successfully with ID: ${examResult._id}`);
       
-      // LOG SUCCESSFUL SAVE
-      tracer.logDatabaseOperation('save_exam_result', examResultData, {
-        success: true,
-        resultId: examResult._id,
-        score: examResult.score,
-        totalMarks: examResult.totalMarks,
-        attemptNumber: examResult.attemptNumber
-      }, { operation: 'exam_result_save' });
+      // CRITICAL: IMMEDIATE DATABASE VERIFICATION - Check if data was actually written
+      console.log('🔍 CRITICAL DATABASE VERIFICATION: Immediately checking if data was actually saved...');
+      const verificationResult = await ExamResult.findById(examResult._id).lean();
+      
+      if (verificationResult) {
+        console.log('✅ CRITICAL SUCCESS: Database write VERIFIED - Data is persistent!', {
+          verificationId: verificationResult._id,
+          verificationScore: verificationResult.score,
+          verificationTotalMarks: verificationResult.totalMarks,
+          verificationStudent: verificationResult.student,
+          verificationExam: verificationResult.exam,
+          actualDataPersisted: true
+        });
+      } else {
+        console.error('❌ CRITICAL FAILURE: Database write NOT VERIFIED - Data not found immediately after save!', {
+          attemptedSaveId: examResult._id,
+          saveSucceeded: true,
+          verificationFailed: true,
+          criticalIssue: 'DATA_NOT_PERSISTING'
+        });
+        throw new Error('CRITICAL: Database save succeeded but verification failed - data not persisting');
+      }
+      
       
     } catch (saveError) {
       console.error('❌ CRITICAL: ExamResult save failed:', {
         error: saveError.message,
         stack: saveError.stack,
-        traceId: tracer.requestId
+        examId: examResultData.exam,
+        studentId: examResultData.student
       });
       
-      // LOG SAVE FAILURE
-      tracer.logDatabaseOperation('save_exam_result', examResultData, {
-        success: false,
-        error: saveError.message,
-        errorCode: saveError.code,
-        errorName: saveError.name
-      }, { operation: 'exam_result_save_failed' });
-      
-      tracer.logError('EXAM_RESULT_SAVE_FAILED', saveError, examResultData);
       throw new Error(`Database save failed: ${saveError.message}`);
     }
     
@@ -539,31 +371,11 @@ async function storeOptimizedResultDirect(optimizedData, validation, tracer) {
       );
       console.log(`✅ Exam updated successfully with result ID: ${examResult._id}`);
       
-      // LOG SUCCESSFUL EXAM UPDATE
-      tracer.logDatabaseOperation('update_exam_results_array', 
-        { examId, resultId: examResult._id }, 
-        { success: true, examId, resultId: examResult._id }, 
-        { operation: 'exam_array_update' }
-      );
-      
     } catch (updateError) {
       console.error('❌ CRITICAL: Exam update failed:', {
         error: updateError.message,
         examId: examId,
-        resultId: examResult._id,
-        traceId: tracer.requestId
-      });
-      
-      // LOG EXAM UPDATE FAILURE
-      tracer.logDatabaseOperation('update_exam_results_array', 
-        { examId, resultId: examResult._id }, 
-        { success: false, error: updateError.message }, 
-        { operation: 'exam_array_update_failed' }
-      );
-      
-      tracer.logError('EXAM_UPDATE_FAILED', updateError, { examId, resultId: examResult._id }, {
-        severity: 'NON_CRITICAL',
-        reason: 'Result already saved, array update failed'
+        resultId: examResult._id
       });
       
       // Don't throw here as the result is already saved
@@ -782,18 +594,11 @@ async function validateTemporalConstraints(data) {
  * When optimization validation fails, fallback to the existing
  * server-side computation system to ensure no data loss.
  */
-async function fallbackToTraditionalComputation(optimizedData, tracer, validationError = null) {
+async function fallbackToTraditionalComputation(optimizedData, validationError = null) {
   try {
     console.log('🔄 FALLBACK: Using traditional server-side computation...', {
-      traceId: tracer.requestId,
       fallbackReason: validationError?.message || 'Validation failed',
       hasOptimizedData: !!optimizedData
-    });
-    
-    // LOG FALLBACK DATA PREPARATION
-    tracer.logTransformation('prepare_traditional_data', optimizedData, null, {
-      transformationType: 'optimized_to_traditional',
-      fallbackReason: validationError?.message || 'Validation failed'
     });
     
     // Import traditional submission function
@@ -813,27 +618,7 @@ async function fallbackToTraditionalComputation(optimizedData, tracer, validatio
       optimizationFailureReason: validationError?.message || 'Validation failed'
     };
     
-    console.log('🔧 FALLBACK: Calling traditional computation with data:', {
-      traceId: tracer.requestId,
-      examId: traditionalData.examId,
-      studentId: traditionalData.studentId,
-      answersCount: Object.keys(traditionalData.answers || {}).length,
-      timeTaken: traditionalData.timeTaken
-    });
-    
-    // LOG TRADITIONAL DATA AFTER TRANSFORMATION
-    tracer.logTransformation('prepare_traditional_data', optimizedData, traditionalData, {
-      transformationType: 'optimized_to_traditional',
-      fallbackReason: validationError?.message || 'Validation failed'
-    });
-    
     const fallbackResult = await submitExamResultInternal(traditionalData);
-    
-    // LOG TRADITIONAL COMPUTATION RESULT
-    tracer.logDatabaseOperation('traditional_computation', traditionalData, fallbackResult, {
-      operation: 'fallback_traditional_submission',
-      fallbackReason: validationError?.message || 'Validation failed'
-    });
     
     console.log('📊 FALLBACK: Traditional computation result:', {
       success: fallbackResult.success,
@@ -843,23 +628,11 @@ async function fallbackToTraditionalComputation(optimizedData, tracer, validatio
     
     if (!fallbackResult.success) {
       console.error('❌ CRITICAL: Traditional fallback also failed!', {
-        traceId: tracer.requestId,
         error: fallbackResult.error,
         message: fallbackResult.message,
         examId: traditionalData.examId,
         studentId: traditionalData.studentId
       });
-      
-      // LOG CRITICAL FAILURE
-      tracer.logError('TRADITIONAL_FALLBACK_FAILED', 
-        new Error(`Traditional fallback failed: ${fallbackResult.error || fallbackResult.message}`),
-        traditionalData,
-        { 
-          severity: 'CRITICAL',
-          originalError: validationError?.message,
-          fallbackError: fallbackResult.error || fallbackResult.message
-        }
-      );
     }
     
     return {
@@ -871,24 +644,15 @@ async function fallbackToTraditionalComputation(optimizedData, tracer, validatio
     
   } catch (error) {
     console.error('❌ Fallback computation failed:', {
-      traceId: tracer.requestId,
       error: error.message,
       stack: error.stack
-    });
-    
-    // LOG FALLBACK EXCEPTION
-    tracer.logError('FALLBACK_COMPUTATION_EXCEPTION', error, optimizedData, {
-      severity: 'CRITICAL',
-      originalError: validationError?.message,
-      fallbackException: error.message
     });
     
     return {
       success: false,
       message: "Error processing your submission. Please try again or contact support.",
       error: error.message,
-      processingMethod: 'fallback_failed',
-      traceId: tracer.requestId
+      processingMethod: 'fallback_failed'
     };
   }
 }

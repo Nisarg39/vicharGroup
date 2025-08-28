@@ -1,5 +1,8 @@
 "use server";
 
+// BASIC LOGGING TEST - Progressive Submission Handler File Loaded
+console.log("🚀 SERVER: progressiveSubmissionHandler.js loaded at", new Date().toISOString());
+
 import { connectDB } from "../../config/mongoose";
 import Exam from "../../models/exam_portal/exam";
 import ExamResult from "../../models/exam_portal/examResult";
@@ -35,6 +38,15 @@ import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submis
  * This is the primary entry point for pre-computed client evaluation results.
  */
 export async function submitProgressiveResultDirect(progressiveData) {
+  // ENTRY POINT LOGGING - Progressive submission function called
+  console.log("🔥 PROGRESSIVE SUBMISSION ENTRY: submitProgressiveResultDirect called at", new Date().toISOString());
+  console.log("📦 PROGRESSIVE SUBMISSION DATA:", {
+    studentId: progressiveData?.studentId,
+    examId: progressiveData?.examId,
+    hasProgressiveResults: !!progressiveData?.progressiveResults,
+    answersCount: progressiveData?.answers?.length || 0
+  });
+  
   const startTime = Date.now();
   
   // INITIALIZE COMPREHENSIVE DATA TRACING

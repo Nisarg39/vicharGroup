@@ -8,6 +8,12 @@ import { getStudentDetails } from "../../../server_actions/actions/studentAction
 import { studentDetails } from "../../../features/login/LoginSlice"
 import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
 
+// DEBUGGING: Verify server action import on component load
+console.log("🔧 DEBUG: ExamHome server action import check:", {
+    submitExamResult: typeof submitExamResult,
+    isFunction: typeof submitExamResult === 'function'
+})
+
 // Import sub-components
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
 import ContinueExamPrompt from "./examHomeComponents/ContinueExamPrompt"
@@ -680,9 +686,28 @@ export default function ExamHome({ examId }) {
 
             if (isOnline) {
                 // Submit immediately if online
-                // Submitting exam result to server
+                console.log("🎯 EXAM SUBMISSION: Starting exam submission at", new Date().toISOString())
+                console.log("📦 SUBMISSION DATA OVERVIEW:", {
+                    studentId: student._id,
+                    examId: examId,
+                    answersCount: examData.answers?.length || 0,
+                    score: examData.score,
+                    timeTaken: examData.timeTaken
+                })
                 
-                const result = await submitExamResult({
+                // Create a timeout promise to prevent hanging
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => {
+                        reject(new Error('Server action timeout after 15 seconds'))
+                    }, 15000) // 15 second timeout
+                })
+                
+                console.log("🚀 EXAM SUBMISSION: About to call submitExamResult server action")
+                
+                try {
+                    // Race the server action against timeout
+                    const result = await Promise.race([
+                        submitExamResult({
                     examId,
                     studentId: student._id,
                     answers: examData.answers,
@@ -701,9 +726,13 @@ export default function ExamHome({ examId }) {
                     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
                     screenResolution: typeof screen !== 'undefined' ? `${screen.width}x${screen.height}` : 'unknown',
                     timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown'
-                });
-                
-                // Exam submission completed
+                        }),
+                        timeoutPromise
+                    ])
+                    
+                    console.log("✅ EXAM SUBMISSION: Server action completed successfully", result?.success ? "SUCCESS" : "FAILED")
+                    
+                    // Exam submission completed
 
                 if (result.success) {
                     // VERCEL CRON PROCESSING: Handle queued submissions
@@ -807,7 +836,35 @@ export default function ExamHome({ examId }) {
                         localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
                     }
                 } else {
+                    console.error("❌ EXAM SUBMISSION: Server action returned failure:", result.message)
                     toast.error('Failed to submit exam: ' + result.message);
+                    setCurrentView('home');
+                }
+                
+                } catch (submissionError) {
+                    console.error("💥 EXAM SUBMISSION: Server action error/timeout:", submissionError.message)
+                    
+                    if (submissionError.message.includes('timeout')) {
+                        toast.error('Submission timed out. Please check your connection and try again.');
+                    } else {
+                        toast.error('Network error during submission. Please try again.');
+                    }
+                    
+                    // Store as offline submission for retry
+                    const existingSubmission = offlineSubmissions.find(sub => sub.examId === examId);
+                    if (existingSubmission) {
+                        const updatedSubmissions = offlineSubmissions.map(sub =>
+                            sub.examId === examId ? submission : sub
+                        );
+                        setOfflineSubmissions(updatedSubmissions);
+                        localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
+                    } else {
+                        const updatedSubmissions = [...offlineSubmissions, submission];
+                        setOfflineSubmissions(updatedSubmissions);
+                        localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
+                    }
+                    
+                    toast.info('Your answers have been saved offline and will sync when connection is restored.');
                     setCurrentView('home');
                 }
             } else {
