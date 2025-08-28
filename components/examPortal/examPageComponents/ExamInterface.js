@@ -24,6 +24,7 @@ import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/pro
 import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 import { shouldCloseExamImmediately, getSubmissionSuccessMessage } from "../../../config/examFeatureFlags"
 import { logSubmissionStart, logImmediateClose, logSubmissionError } from "../../../lib/examBottleneckMonitor"
+import debugLogger from "../../../utils/debugLogger"
 
 // PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
 import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
@@ -1324,6 +1325,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // CRITICAL FIX: Always attempt evaluation, even if not properly initialized during exam
         try {
             console.log('🎯 Attempting client-side evaluation for submission...');
+            console.log('🔍 DEBUG: Evaluation initialization status:', { evaluationInitialized, evaluationError });
+            console.log('🔍 DEBUG: Current answers structure:', Object.keys(answers).length, 'answers');
+            console.log('🔍 DEBUG: First few answers:', Object.entries(answers).slice(0, 3));
             
             // Try to finalize if initialized during exam
             if (evaluationInitialized && !evaluationError) {
@@ -1346,6 +1350,19 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     clientEvaluationResult = finalizationResult;
                     console.log(`✅ Client evaluation finalized in ${finalizationResult.finalizationTime.toFixed(2)}ms`);
                     console.log(`📊 Final Score: ${finalizationResult.examResult.finalScore}/${finalizationResult.examResult.totalMarks}`);
+                    console.log('🔍 DEBUG: Client evaluation result structure:', {
+                        success: finalizationResult.success,
+                        examResult: {
+                            finalScore: finalizationResult.examResult?.finalScore,
+                            totalMarks: finalizationResult.examResult?.totalMarks,
+                            percentage: finalizationResult.examResult?.percentage,
+                            correctAnswers: finalizationResult.examResult?.correctAnswers,
+                            incorrectAnswers: finalizationResult.examResult?.incorrectAnswers,
+                            unattempted: finalizationResult.examResult?.unattempted
+                        }
+                    });
+                } else {
+                    console.error('❌ Client evaluation finalization failed:', finalizationResult.error);
                 }
             }
             
@@ -1392,6 +1409,19 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     if (emergencyFinalization.success) {
                         clientEvaluationResult = emergencyFinalization;
                         console.log(`🆘 Emergency evaluation completed: ${emergencyFinalization.examResult.finalScore}/${emergencyFinalization.examResult.totalMarks}`);
+                        console.log('🔍 DEBUG: Emergency evaluation result structure:', {
+                            success: emergencyFinalization.success,
+                            examResult: {
+                                finalScore: emergencyFinalization.examResult?.finalScore,
+                                totalMarks: emergencyFinalization.examResult?.totalMarks,
+                                percentage: emergencyFinalization.examResult?.percentage,
+                                correctAnswers: emergencyFinalization.examResult?.correctAnswers,
+                                incorrectAnswers: emergencyFinalization.examResult?.incorrectAnswers,
+                                unattempted: emergencyFinalization.examResult?.unattempted
+                            }
+                        });
+                    } else {
+                        console.error('❌ Emergency evaluation failed:', emergencyFinalization.error);
                     }
                 }
             }
@@ -1403,8 +1433,21 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 examSubmissionData.score = clientEvaluationResult.examResult.finalScore;
                 examSubmissionData.totalMarks = clientEvaluationResult.examResult.totalMarks;
                 examSubmissionData.percentage = clientEvaluationResult.examResult.percentage;
+                console.log('✅ Client evaluation result added to submission data:', {
+                    score: clientEvaluationResult.examResult.finalScore,
+                    totalMarks: clientEvaluationResult.examResult.totalMarks,
+                    percentage: clientEvaluationResult.examResult.percentage
+                });
             } else {
                 console.warn('⚠️ Client evaluation completely failed - will rely on server evaluation');
+                console.log('🔍 DEBUG: Client evaluation failure details - checking variables:', {
+                    evaluationInitialized,
+                    evaluationError,
+                    answersCount: Object.keys(answers).length,
+                    questionsCount: questions?.length,
+                    examId: exam._id,
+                    studentId: student._id
+                });
             }
             
         } catch (error) {
@@ -1424,17 +1467,31 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     console.log('📊 Client evaluation result ready, submitting via direct storage...');
                     
                     // Prepare complete data structure for direct storage using client evaluation
+                    console.log('🔍 DEBUG: Preparing direct storage data from client evaluation result');
+                    console.log('🔍 DEBUG: clientEvaluationResult.examResult:', clientEvaluationResult.examResult);
+                    
+                    const finalScore = clientEvaluationResult.examResult?.finalScore || 0;
+                    const totalMarks = clientEvaluationResult.examResult?.totalMarks || 0;
+                    const percentage = clientEvaluationResult.examResult?.percentage || 0;
+                    const correctAnswers = clientEvaluationResult.examResult?.correctAnswers || 0;
+                    const incorrectAnswers = clientEvaluationResult.examResult?.incorrectAnswers || 0;
+                    const unattempted = clientEvaluationResult.examResult?.unattempted || 0;
+                    
+                    console.log('🔍 DEBUG: Extracted values before assignment:', {
+                        finalScore, totalMarks, percentage, correctAnswers, incorrectAnswers, unattempted
+                    });
+                    
                     directStorageData = {
                         // Required validation fields at root level
                         examId: exam._id,
                         studentId: student._id,
                         answers,
-                        finalScore: clientEvaluationResult.examResult?.finalScore || 0,
-                        totalMarks: clientEvaluationResult.examResult?.totalMarks || 0,
-                        percentage: clientEvaluationResult.examResult?.percentage || 0,
-                        correctAnswers: clientEvaluationResult.examResult?.correctAnswers || 0,
-                        incorrectAnswers: clientEvaluationResult.examResult?.incorrectAnswers || 0,
-                        unattempted: clientEvaluationResult.examResult?.unattempted || 0,
+                        finalScore,
+                        totalMarks,
+                        percentage,
+                        correctAnswers,
+                        incorrectAnswers,
+                        unattempted,
                         timeTaken: exam.examAvailability === 'scheduled' 
                             ? Math.floor((Date.now() - startTime) / 1000) 
                             : (getEffectiveExamDuration(exam) * 60) - timeLeft,
@@ -1481,17 +1538,31 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     if (progressiveResult?.success && progressiveResult.results && progressiveResult.isPreComputed) {
                         console.log('📊 Progressive computation data ready, submitting via direct storage...');
                         
+                        console.log('🔍 DEBUG: Preparing direct storage data from progressive result');
+                        console.log('🔍 DEBUG: progressiveResult.results:', progressiveResult.results);
+                        
+                        const finalScore = progressiveResult.results?.finalScore || progressiveResult.results?.score || 0;
+                        const totalMarks = progressiveResult.results?.totalMarks || 0;
+                        const percentage = progressiveResult.results?.percentage || 0;
+                        const correctAnswers = progressiveResult.results?.correctAnswers || 0;
+                        const incorrectAnswers = progressiveResult.results?.incorrectAnswers || 0;
+                        const unattempted = progressiveResult.results?.unattempted || 0;
+                        
+                        console.log('🔍 DEBUG: Progressive extracted values before assignment:', {
+                            finalScore, totalMarks, percentage, correctAnswers, incorrectAnswers, unattempted
+                        });
+                        
                         directStorageData = {
                             // Required validation fields at root level
                             examId: exam._id,
                             studentId: student._id,
                             answers,
-                            finalScore: progressiveResult.results?.finalScore || progressiveResult.results?.score || 0,
-                            totalMarks: progressiveResult.results?.totalMarks || 0,
-                            percentage: progressiveResult.results?.percentage || 0,
-                            correctAnswers: progressiveResult.results?.correctAnswers || 0,
-                            incorrectAnswers: progressiveResult.results?.incorrectAnswers || 0,
-                            unattempted: progressiveResult.results?.unattempted || 0,
+                            finalScore,
+                            totalMarks,
+                            percentage,
+                            correctAnswers,
+                            incorrectAnswers,
+                            unattempted,
                             timeTaken: exam.examAvailability === 'scheduled' 
                                 ? Math.floor((Date.now() - startTime) / 1000) 
                                 : (getEffectiveExamDuration(exam) * 60) - timeLeft,
@@ -1536,6 +1607,40 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
                 
                 if (directStorageData) {
+                    console.log('🔍 DEBUG: Final directStorageData structure before submission:', {
+                        examId: directStorageData.examId,
+                        studentId: directStorageData.studentId,
+                        finalScore: directStorageData.finalScore,
+                        totalMarks: directStorageData.totalMarks,
+                        percentage: directStorageData.percentage,
+                        correctAnswers: directStorageData.correctAnswers,
+                        incorrectAnswers: directStorageData.incorrectAnswers,
+                        unattempted: directStorageData.unattempted,
+                        answersCount: Object.keys(directStorageData.answers || {}).length,
+                        evaluationSource: directStorageData.evaluationSource
+                    });
+
+                    // DEBUG: Comprehensive logging before submission
+                    debugLogger.logSubmission('PRE_SUBMISSION_DATA', {
+                        directStorageData: JSON.parse(JSON.stringify(directStorageData)),
+                        currentAnswers: JSON.parse(JSON.stringify(currentAnswers)),
+                        progressiveResultsState: progressiveResults ? JSON.parse(JSON.stringify(progressiveResults)) : null,
+                        clientEngineProgressiveResults: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null,
+                        examId: exam.id,
+                        studentId: student.id,
+                        timestamp: Date.now()
+                    });
+                    
+                    // Check for zero value anomalies before submission
+                    if (directStorageData.finalScore === 0 && Object.keys(currentAnswers).length > 0) {
+                        debugLogger.warn('ZERO FINAL SCORE BEFORE SUBMISSION', {
+                            finalScore: directStorageData.finalScore,
+                            answeredQuestions: Object.keys(currentAnswers).length,
+                            answers: JSON.parse(JSON.stringify(currentAnswers)),
+                            clientEvaluation: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null,
+                            timestamp: Date.now()
+                        });
+                    }
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
                     const directResult = await submitProgressiveResultDirect(directStorageData);

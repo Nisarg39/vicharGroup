@@ -338,6 +338,22 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
 
 async function validateBasicStructure(data) {
   try {
+    console.log('🔍 DEBUG: Server-side basic structure validation');
+    console.log('🔍 DEBUG: Received data structure:', {
+      examId: data.examId,
+      studentId: data.studentId,
+      finalScore: data.finalScore,
+      totalMarks: data.totalMarks,
+      percentage: data.percentage,
+      correctAnswers: data.correctAnswers,
+      incorrectAnswers: data.incorrectAnswers,
+      unattempted: data.unattempted,
+      completedAt: data.completedAt,
+      timeTaken: data.timeTaken,
+      answersCount: Object.keys(data.answers || {}).length,
+      evaluationSource: data.evaluationSource
+    });
+    
     const requiredFields = [
       'examId', 'studentId', 'answers', 'finalScore', 'totalMarks',
       'percentage', 'correctAnswers', 'incorrectAnswers', 'unattempted',
@@ -348,7 +364,8 @@ async function validateBasicStructure(data) {
     
     for (const field of requiredFields) {
       if (data[field] === undefined || data[field] === null) {
-        errors.push(`Missing required field: ${field}`);
+        errors.push(`Missing required field: ${field} (received: ${data[field]})`);
+        console.log(`❌ DEBUG: Missing field ${field}, value:`, data[field]);
       }
     }
     

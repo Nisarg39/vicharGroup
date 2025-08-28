@@ -8,6 +8,7 @@ import { getBulkScoringRules, getScoringRulesEngine } from "../../engines/scorin
 import crypto from 'crypto';
 import { MonitoringService } from "../../../lib/monitoring/MonitoringService";
 import { logDirectSubmission, logValidationFailure, logSystemError } from "../../services/performance/DirectStorageMonitor";
+import debugLogger from "../../../utils/debugLogger";
 
 /**
  * PROGRESSIVE SUBMISSION HANDLER
@@ -38,11 +39,29 @@ export async function submitProgressiveResultDirect(progressiveData) {
   try {
     console.log('⚡ ROUTING: Submitting to optimized endpoint for direct storage...');
     
+    // DEBUG: Log incoming progressive data to trace zero values
+    debugLogger.logSubmission('START_PROGRESSIVE_DIRECT', {
+      progressiveData: JSON.parse(JSON.stringify(progressiveData)),
+      timestamp: Date.now(),
+      totalScore: progressiveData?.progressiveResults?.totalScore,
+      totalMarks: progressiveData?.progressiveResults?.totalMarks,
+      percentage: progressiveData?.progressiveResults?.percentage,
+      attempted: progressiveData?.progressiveResults?.attempted
+    });
+    
     // Import the new optimized submission endpoint
     const { submitOptimizedExamResult } = await import('./optimizedSubmissionEndpoint');
     
     // Transform progressive data to optimized format
     const optimizedData = transformToOptimizedFormat(progressiveData);
+    
+    // DEBUG: Log transformed data
+    debugLogger.logSubmission('TRANSFORMED_DATA', {
+      optimizedData: JSON.parse(JSON.stringify(optimizedData)),
+      transformedTotalScore: optimizedData?.totalScore,
+      transformedPercentage: optimizedData?.percentage,
+      timestamp: Date.now()
+    });
     
     // Route to ultra-fast optimized endpoint
     const result = await submitOptimizedExamResult(optimizedData);
@@ -74,7 +93,19 @@ function transformToOptimizedFormat(progressiveData) {
   // Handle both client evaluation and progressive computation formats
   const baseData = progressiveData.clientEvaluationResult || progressiveData;
   
-  return {
+  // DEBUG: Log transformation input
+  debugLogger.logSubmission('TRANSFORM_INPUT', {
+    progressiveData: JSON.parse(JSON.stringify(progressiveData)),
+    baseData: JSON.parse(JSON.stringify(baseData)),
+    hasClientEvaluationResult: !!progressiveData.clientEvaluationResult,
+    basedDataFinalScore: baseData.finalScore,
+    baseDataScore: baseData.score,
+    baseDataTotalMarks: baseData.totalMarks,
+    baseDataPercentage: baseData.percentage,
+    timestamp: Date.now()
+  });
+  
+  const transformed = {
     examId: progressiveData.examId || baseData.examId,
     studentId: progressiveData.studentId || baseData.studentId,
     answers: progressiveData.answers || baseData.answers,
@@ -97,6 +128,34 @@ function transformToOptimizedFormat(progressiveData) {
     engineVersion: baseData.engineVersion || progressiveData.engineVersion || '1.3.0',
     evaluationSource: progressiveData.evaluationSource || baseData.evaluationSource || 'progressive_computation'
   };
+
+  // DEBUG: Check for zero values after transformation
+  if (transformed.finalScore === 0 && Object.keys(transformed.answers || {}).length > 0) {
+    debugLogger.warn('ZERO FINAL SCORE AFTER TRANSFORMATION', {
+      originalFinalScore: baseData.finalScore,
+      originalScore: baseData.score,
+      transformedFinalScore: transformed.finalScore,
+      answersCount: Object.keys(transformed.answers || {}).length,
+      progressiveResults: progressiveData.progressiveResults,
+      timestamp: Date.now()
+    });
+  }
+
+  if (transformed.totalMarks === 0) {
+    debugLogger.error('ZERO TOTAL MARKS AFTER TRANSFORMATION', {
+      originalTotalMarks: baseData.totalMarks,
+      transformedTotalMarks: transformed.totalMarks,
+      timestamp: Date.now()
+    });
+  }
+
+  // DEBUG: Log transformation output
+  debugLogger.logSubmission('TRANSFORM_OUTPUT', {
+    transformed: JSON.parse(JSON.stringify(transformed)),
+    timestamp: Date.now()
+  });
+  
+  return transformed;
 }
 
 /**
