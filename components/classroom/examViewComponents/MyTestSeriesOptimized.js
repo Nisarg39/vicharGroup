@@ -269,29 +269,139 @@ export default function MyTestSeriesOptimized() {
                 return
             }
 
-            // Store attempt data in localStorage with unique key and timestamp
+            // CRITICAL FIX: Store only essential data to prevent localStorage quota exceeded
             const attemptKey = `pdf_attempt_${examId}_${Date.now()}`
+            
+            // Extract only essential data for PDF generation to reduce storage size
+            const essentialAttemptData = {
+                _id: latestAttempt._id,
+                score: latestAttempt.score,
+                totalMarks: latestAttempt.totalMarks,
+                timeTaken: latestAttempt.timeTaken,
+                completedAt: latestAttempt.completedAt,
+                answers: latestAttempt.answers,
+                visitedQuestions: latestAttempt.visitedQuestions || [],
+                markedQuestions: latestAttempt.markedQuestions || [],
+                warnings: latestAttempt.warnings || 0,
+                
+                // Essential statistics only
+                statistics: {
+                    correctAnswers: latestAttempt.statistics?.correctAnswers || 0,
+                    incorrectAnswers: latestAttempt.statistics?.incorrectAnswers || 0,
+                    unattempted: latestAttempt.statistics?.unattempted || 0,
+                    accuracy: latestAttempt.statistics?.accuracy || 0,
+                    percentage: latestAttempt.statistics?.percentage || 0
+                },
+                
+                // Simplified question analysis - only marks and status
+                questionAnalysis: (latestAttempt.questionAnalysis || []).map(qa => ({
+                    questionId: qa.questionId,
+                    marks: qa.marks,
+                    status: qa.status
+                })),
+                
+                // Simplified subject performance
+                subjectPerformance: (latestAttempt.subjectPerformance || []).map(sp => ({
+                    subject: sp.subject,
+                    score: sp.score,
+                    totalMarks: sp.totalMarks,
+                    percentage: sp.percentage
+                }))
+            };
+            
             const attemptDataWithTimestamp = {
-                attempt: latestAttempt,
+                attempt: essentialAttemptData,
                 timestamp: Date.now(),
                 examId: examId
             }
-            localStorage.setItem(attemptKey, JSON.stringify(attemptDataWithTimestamp))
+            
+            try {
+                const dataString = JSON.stringify(attemptDataWithTimestamp);
+                console.log(`📊 PDF attempt data size: ${(dataString.length / 1024).toFixed(2)} KB`);
+                
+                // Check if we have enough localStorage space
+                const estimatedSize = dataString.length * 2; // UTF-16 encoding
+                if (estimatedSize > 1024 * 1024) { // Larger than 1MB
+                    console.warn('⚠️ PDF attempt data is very large, truncating...');
+                    // Further reduce data if still too large
+                    attemptDataWithTimestamp.attempt.questionAnalysis = attemptDataWithTimestamp.attempt.questionAnalysis.slice(0, 50);
+                    attemptDataWithTimestamp.attempt.subjectPerformance = attemptDataWithTimestamp.attempt.subjectPerformance.slice(0, 10);
+                }
+                
+                localStorage.setItem(attemptKey, JSON.stringify(attemptDataWithTimestamp));
+            } catch (quotaError) {
+                console.error('❌ localStorage quota exceeded:', quotaError);
+                
+                // Aggressive cleanup and retry
+                console.log('🧹 Performing aggressive localStorage cleanup...');
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('pdf_attempt_') || 
+                        key.startsWith('exam_cache_') || 
+                        key.startsWith('progressive_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // Retry with minimal data
+                const minimalData = {
+                    attempt: {
+                        _id: latestAttempt._id,
+                        score: latestAttempt.score,
+                        totalMarks: latestAttempt.totalMarks,
+                        statistics: essentialAttemptData.statistics
+                    },
+                    timestamp: Date.now(),
+                    examId: examId
+                };
+                
+                try {
+                    localStorage.setItem(attemptKey, JSON.stringify(minimalData));
+                    toast.warning('PDF data reduced due to storage limits');
+                } catch (finalError) {
+                    console.error('❌ Cannot store PDF data even after cleanup:', finalError);
+                    toast.error('Cannot prepare PDF download due to storage limits. Please clear browser cache.');
+                    return;
+                }
+            }
 
-            // Clean up old attempt data (older than 1 hour)
-            const oneHourAgo = Date.now() - (60 * 60 * 1000)
+            // ENHANCED: Aggressive cleanup of old attempt data
+            const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000); // Reduced from 1 hour to 30 minutes
+            let cleanedCount = 0;
+            
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('pdf_attempt_')) {
                     try {
-                        const data = JSON.parse(localStorage.getItem(key))
-                        if (data.timestamp < oneHourAgo) {
-                            localStorage.removeItem(key)
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data.timestamp < thirtyMinutesAgo) {
+                            localStorage.removeItem(key);
+                            cleanedCount++;
                         }
                     } catch (e) {
-                        localStorage.removeItem(key)
+                        localStorage.removeItem(key);
+                        cleanedCount++;
                     }
                 }
-            })
+                
+                // Also clean up other potential storage hogs
+                if (key.startsWith('exam_cache_') || 
+                    key.startsWith('progressive_') || 
+                    key.startsWith('evaluation_cache_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data.timestamp && data.timestamp < thirtyMinutesAgo) {
+                            localStorage.removeItem(key);
+                            cleanedCount++;
+                        }
+                    } catch (e) {
+                        localStorage.removeItem(key);
+                        cleanedCount++;
+                    }
+                }
+            });
+            
+            if (cleanedCount > 0) {
+                console.log(`🧹 Cleaned up ${cleanedCount} old localStorage entries`);
+            }
             
             // Open the exam page with result view
             const params = new URLSearchParams({

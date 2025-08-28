@@ -2101,7 +2101,18 @@ export async function submitExamResultInternal(examData) {
     });
 
     // 6. Create new exam result (do not overwrite)
-    const examResult = new ExamResult({
+    console.log('💾 DATABASE SAVE: Creating ExamResult document:', {
+      traceId: tracer.requestId,
+      examId,
+      studentId,
+      attemptNumber: previousAttempts + 1,
+      finalScore,
+      totalMarks: exam.totalMarks || totalMarks,
+      questionsCount: exam.examQuestions.length,
+      answersCount: Object.keys(answers || {}).length
+    });
+    
+    const examResultData = {
       exam: examId,
       student: studentId,
       attemptNumber: previousAttempts + 1,
@@ -2131,11 +2142,105 @@ export async function submitExamResultInternal(examData) {
         ruleDescription: "Question-specific rules applied (see questionAnalysis for details)",
         ruleSource: examNegativeMarkingRule.source
       },
-    });
-    await examResult.save();
+    };
+    
+    // LOG PRE-SAVE DATA STRUCTURE
+    tracer.logDatabaseOperation('prepare_exam_result', examResultData, {
+      dataStructure: {
+        hasExamId: !!examResultData.exam,
+        hasStudentId: !!examResultData.student,
+        score: examResultData.score,
+        totalMarks: examResultData.totalMarks,
+        answersCount: Object.keys(examResultData.answers || {}).length,
+        hasStatistics: !!examResultData.statistics,
+        hasQuestionAnalysis: !!examResultData.questionAnalysis,
+        subjectPerformanceCount: examResultData.subjectPerformance?.length || 0
+      }
+    }, { operation: 'exam_result_data_preparation' });
+    
+    const examResult = new ExamResult(examResultData);
+    
+    try {
+      await examResult.save();
+      console.log('✅ DATABASE SAVE SUCCESS: ExamResult saved successfully:', {
+        traceId: tracer.requestId,
+        resultId: examResult._id,
+        score: examResult.score,
+        totalMarks: examResult.totalMarks,
+        attemptNumber: examResult.attemptNumber
+      });
+      
+      // LOG SUCCESSFUL SAVE
+      tracer.logDatabaseOperation('save_exam_result_main', examResultData, {
+        success: true,
+        resultId: examResult._id,
+        score: examResult.score,
+        totalMarks: examResult.totalMarks,
+        attemptNumber: examResult.attemptNumber,
+        createdAt: examResult.createdAt
+      }, { operation: 'traditional_exam_result_save' });
+      
+    } catch (saveError) {
+      console.error('❌ DATABASE SAVE ERROR: ExamResult save failed:', {
+        traceId: tracer.requestId,
+        error: saveError.message,
+        errorCode: saveError.code,
+        examId,
+        studentId
+      });
+      
+      tracer.logDatabaseOperation('save_exam_result_main', examResultData, {
+        success: false,
+        error: saveError.message,
+        errorCode: saveError.code,
+        errorName: saveError.name
+      }, { operation: 'traditional_exam_result_save_failed' });
+      
+      tracer.logError('EXAM_RESULT_SAVE_ERROR', saveError, examResultData);
+      throw saveError;
+    }
+    
     // 7. Update exam with result
-    exam.examResults.push(examResult._id);
-    await exam.save();
+    try {
+      exam.examResults.push(examResult._id);
+      await exam.save();
+      
+      console.log('✅ DATABASE UPDATE SUCCESS: Exam updated with result reference:', {
+        traceId: tracer.requestId,
+        examId,
+        resultId: examResult._id,
+        totalResultsNow: exam.examResults.length
+      });
+      
+      // LOG EXAM UPDATE SUCCESS
+      tracer.logDatabaseOperation('update_exam_with_result', 
+        { examId, resultId: examResult._id }, 
+        { success: true, totalResults: exam.examResults.length }, 
+        { operation: 'exam_results_array_update' }
+      );
+      
+    } catch (updateError) {
+      console.error('❌ DATABASE UPDATE ERROR: Exam update failed:', {
+        traceId: tracer.requestId,
+        error: updateError.message,
+        examId,
+        resultId: examResult._id
+      });
+      
+      tracer.logDatabaseOperation('update_exam_with_result', 
+        { examId, resultId: examResult._id }, 
+        { success: false, error: updateError.message }, 
+        { operation: 'exam_results_array_update_failed' }
+      );
+      
+      tracer.logError('EXAM_UPDATE_ERROR', updateError, { examId, resultId: examResult._id }, {
+        severity: 'MEDIUM',
+        reason: 'Result saved but exam array update failed'
+      });
+      
+      // Don't throw - the result is already saved
+      console.warn('⚠️ Result saved but exam update failed - data consistency issue detected');
+    }
 
     // Extract college details
     const collegeDetails = student.college ? {
@@ -2146,33 +2251,92 @@ export async function submitExamResultInternal(examData) {
     } : null;
 
 
+    // FINAL DATA INTEGRITY CHECK
+    const finalResult = {
+      score: finalScore,
+      totalMarks: exam.totalMarks || totalMarks,
+      percentage: ((finalScore / (exam.totalMarks || totalMarks)) * 100).toFixed(2),
+      correctAnswers: correctAnswersCount,
+      incorrectAnswers,
+      unattempted,
+      timeTaken,
+      completedAt: examResult.completedAt,
+      warnings, // Include warnings in the result
+      questionAnalysis, // Include questionAnalysis in immediate response
+      negativeMarkingRule: {
+        negativeMarks: examNegativeMarkingRule.negativeMarks,
+        description: "Question-specific rules applied",
+        source: examNegativeMarkingRule.source
+      },
+      collegeDetails, // Add college details to result
+      resultId: examResult._id
+    };
+    
+    // VALIDATE FINAL RESULT DATA
+    SubmissionTraceUtils.logCriticalDataCheck(
+      tracer.requestId,
+      'FINAL_RESULT_VALIDATION',
+      finalResult,
+      ['score', 'totalMarks', 'percentage', 'resultId']
+    );
+    
+    SubmissionTraceUtils.logScoreValidation(tracer.requestId, 'FINAL_RESULT_VALIDATION', {
+      finalScore: finalResult.score,
+      totalMarks: finalResult.totalMarks,
+      percentage: parseFloat(finalResult.percentage)
+    });
+    
+    // GENERATE FINAL TRACE SUMMARY
+    const traceSummary = tracer.generateTraceSummary();
+    
+    console.log('✅ TRADITIONAL SUBMISSION SUCCESS - TRACE COMPLETE:', {
+      traceId: tracer.requestId,
+      finalScore,
+      totalMarks: exam.totalMarks || totalMarks,
+      percentage: finalResult.percentage,
+      resultId: examResult._id,
+      dataIntegrity: traceSummary.dataIntegrityCheck.integrityMaintained,
+      totalProcessingStages: traceSummary.stages.length
+    });
+
     return {
       success: true,
       message: "Exam submitted successfully",
-      result: {
-        score: finalScore,
-        totalMarks: exam.totalMarks || totalMarks,
-        percentage: ((finalScore / (exam.totalMarks || totalMarks)) * 100).toFixed(2),
-        correctAnswers: correctAnswersCount,
-        incorrectAnswers,
-        unattempted,
-        timeTaken,
-        completedAt: examResult.completedAt,
-        warnings, // Include warnings in the result
-        questionAnalysis, // Include questionAnalysis in immediate response
-        negativeMarkingRule: {
-          negativeMarks: examNegativeMarkingRule.negativeMarks,
-          description: "Question-specific rules applied",
-          source: examNegativeMarkingRule.source
-        },
-        collegeDetails, // Add college details to result
-      },
+      result: finalResult,
+      traceId: tracer.requestId,
+      traceSummary
     };
   } catch (error) {
-    console.error("Error submitting exam result:", error);
+    console.error("Error submitting exam result:", {
+      traceId: tracer?.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // LOG CRITICAL ERROR
+    if (tracer) {
+      tracer.logError('SUBMIT_EXAM_RESULT_INTERNAL_ERROR', error, examData, {
+        severity: 'CRITICAL',
+        errorType: error.name,
+        errorCode: error.code
+      });
+      
+      // GENERATE ERROR TRACE SUMMARY
+      const traceSummary = tracer.generateTraceSummary();
+      
+      return {
+        success: false,
+        message: "Error submitting exam result",
+        error: error.message,
+        traceId: tracer.requestId,
+        traceSummary
+      };
+    }
+    
     return {
       success: false,
       message: "Error submitting exam result",
+      error: error.message
     };
   }
 }

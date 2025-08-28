@@ -8,7 +8,8 @@ import { getBulkScoringRules, getScoringRulesEngine } from "../../engines/scorin
 import crypto from 'crypto';
 import { MonitoringService } from "../../../lib/monitoring/MonitoringService";
 import { logDirectSubmission, logValidationFailure, logSystemError } from "../../services/performance/DirectStorageMonitor";
-import debugLogger from "../../../utils/debugLogger";
+import { stabilizeProgressiveData, stabilizeTransformData } from "../../../utils/objectStabilization";
+import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submissionDataTracer";
 
 /**
  * PROGRESSIVE SUBMISSION HANDLER
@@ -36,155 +37,338 @@ import debugLogger from "../../../utils/debugLogger";
 export async function submitProgressiveResultDirect(progressiveData) {
   const startTime = Date.now();
   
+  // INITIALIZE COMPREHENSIVE DATA TRACING
+  const tracer = createSubmissionTracer('PROG_SUB');
+  
   try {
-    console.log('⚡ ROUTING: Submitting to optimized endpoint for direct storage...');
+    console.log('⚡ ROUTING: Submitting to optimized endpoint for direct storage...', {
+      traceId: tracer.requestId
+    });
     
-    // DEBUG: Log incoming progressive data to trace zero values
-    debugLogger.logSubmission('START_PROGRESSIVE_DIRECT', {
-      progressiveData: JSON.parse(JSON.stringify(progressiveData)),
-      timestamp: Date.now(),
-      totalScore: progressiveData?.progressiveResults?.totalScore,
-      totalMarks: progressiveData?.progressiveResults?.totalMarks,
-      percentage: progressiveData?.progressiveResults?.percentage,
-      attempted: progressiveData?.progressiveResults?.attempted
+    // LOG ENTRY POINT - PROGRESSIVE SUBMISSION DATA RECEPTION
+    tracer.logEntryPoint('progressiveSubmissionHandler', progressiveData, {
+      endpoint: 'submitProgressiveResultDirect',
+      method: 'progressive_to_optimized_routing',
+      evaluationSource: progressiveData.evaluationSource || 'progressive_computation',
+      hasClientEvaluationResult: !!progressiveData.clientEvaluationResult
+    });
+    
+    // CRITICAL DATA VALIDATION AT ENTRY
+    const criticalMissing = SubmissionTraceUtils.logCriticalDataCheck(
+      tracer.requestId,
+      'PROGRESSIVE_ENTRY_VALIDATION',
+      progressiveData,
+      ['examId', 'studentId', 'answers']
+    );
+    
+    // STABILIZATION: Prevent object mutation during submission processing
+    console.log('🔒 STABILIZATION: Stabilizing progressive data to prevent mutations');
+    const stabilizedProgressiveData = stabilizeProgressiveData(progressiveData);
+    
+    // LOG STABILIZATION TRANSFORMATION
+    tracer.logTransformation('stabilize_progressive_data', progressiveData, stabilizedProgressiveData, {
+      transformationType: 'object_stabilization',
+      purpose: 'prevent_mutation_during_processing'
     });
     
     // Import the new optimized submission endpoint
     const { submitOptimizedExamResult } = await import('./optimizedSubmissionEndpoint');
     
     // Transform progressive data to optimized format
-    const optimizedData = transformToOptimizedFormat(progressiveData);
+    console.log('🔄 TRANSFORMATION: Converting progressive data to optimized format');
+    const optimizedData = transformToOptimizedFormat(stabilizedProgressiveData, tracer);
     
-    // DEBUG: Log transformed data
-    debugLogger.logSubmission('TRANSFORMED_DATA', {
-      optimizedData: JSON.parse(JSON.stringify(optimizedData)),
-      transformedTotalScore: optimizedData?.totalScore,
-      transformedPercentage: optimizedData?.percentage,
-      timestamp: Date.now()
+    // STABILIZATION: Ensure transformed data integrity
+    console.log('🔒 STABILIZATION: Final transformation data stabilization');
+    const finalOptimizedData = stabilizeTransformData(optimizedData);
+    
+    // LOG FINAL TRANSFORMATION
+    tracer.logTransformation('stabilize_transform_data', optimizedData, finalOptimizedData, {
+      transformationType: 'final_stabilization',
+      purpose: 'ensure_transformed_data_integrity'
     });
     
+    // VALIDATE TRANSFORMED DATA INTEGRITY
+    SubmissionTraceUtils.logScoreValidation(tracer.requestId, 'POST_TRANSFORMATION', {
+      finalScore: finalOptimizedData.finalScore,
+      totalMarks: finalOptimizedData.totalMarks,
+      percentage: finalOptimizedData.percentage
+    });
+    
+    SubmissionTraceUtils.logAnswerIntegrity(tracer.requestId, 'POST_TRANSFORMATION', finalOptimizedData.answers);
+    
     // Route to ultra-fast optimized endpoint
-    const result = await submitOptimizedExamResult(optimizedData);
+    console.log('⚡ ROUTING: Forwarding to optimized submission endpoint:', {
+      traceId: tracer.requestId,
+      dataFingerprint: tracer.dataFingerprints?.get('after_stabilize_transform_data')?.substring(0, 8)
+    });
+    const result = await submitOptimizedExamResult(finalOptimizedData);
     
     const totalTime = Date.now() - startTime;
     
     // Log performance monitoring
     await logDirectSubmission(progressiveData, totalTime, result.performanceMetrics?.validationTime || 0);
     
+    // GENERATE ROUTING TRACE SUMMARY
+    const traceSummary = tracer.generateTraceSummary();
+    
+    console.log('✅ PROGRESSIVE ROUTING SUCCESS - TRACE COMPLETE:', {
+      traceId: tracer.requestId,
+      totalTime: `${totalTime}ms`,
+      routingTime: `${totalTime - (result.processingTime || 0)}ms`,
+      optimizedEndpointTime: `${result.processingTime || 0}ms`,
+      dataIntegrity: traceSummary.dataIntegrityCheck.integrityMaintained,
+      resultSuccess: result.success
+    });
+    
     return {
       ...result,
       routingTime: totalTime - (result.processingTime || 0),
-      routedVia: 'optimized_endpoint'
+      routedVia: 'optimized_endpoint',
+      routingTraceSummary: traceSummary
     };
     
   } catch (error) {
-    console.error('❌ Optimized endpoint routing failed:', error);
+    console.error('❌ Optimized endpoint routing failed:', {
+      traceId: tracer.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // LOG ROUTING ERROR
+    tracer.logError('OPTIMIZED_ROUTING_FAILED', error, progressiveData, {
+      severity: 'HIGH',
+      fallbackAvailable: true,
+      errorType: error.name
+    });
+    
+    // LOG FALLBACK DECISION
+    tracer.logFallback(
+      `Routing failed: ${error.message}`,
+      'progressive_to_optimized_routing',
+      'legacy_progressive_submission',
+      progressiveData,
+      { routingError: error.message }
+    );
     
     // Fallback to legacy progressive submission
-    console.log('🔄 Falling back to legacy progressive submission...');
-    return await legacyProgressiveSubmission(progressiveData);
+    console.log('🔄 Falling back to legacy progressive submission...', {
+      traceId: tracer.requestId
+    });
+    const fallbackResult = await legacyProgressiveSubmission(progressiveData, tracer);
+    const traceSummary = tracer.generateTraceSummary();
+    return { ...fallbackResult, routingTraceSummary: traceSummary };
   }
 }
 
 /**
  * Transform progressive data to optimized format
  */
-function transformToOptimizedFormat(progressiveData) {
+function transformToOptimizedFormat(progressiveData, tracer) {
+  console.log('🔄 TRANSFORM: Starting progressive to optimized format transformation:', {
+    traceId: tracer.requestId,
+    hasClientEvaluationResult: !!progressiveData.clientEvaluationResult,
+    dataSource: progressiveData.clientEvaluationResult ? 'clientEvaluationResult' : 'progressiveData'
+  });
+  
   // Handle both client evaluation and progressive computation formats
   const baseData = progressiveData.clientEvaluationResult || progressiveData;
   
-  // DEBUG: Log transformation input
-  debugLogger.logSubmission('TRANSFORM_INPUT', {
-    progressiveData: JSON.parse(JSON.stringify(progressiveData)),
-    baseData: JSON.parse(JSON.stringify(baseData)),
-    hasClientEvaluationResult: !!progressiveData.clientEvaluationResult,
-    basedDataFinalScore: baseData.finalScore,
-    baseDataScore: baseData.score,
-    baseDataTotalMarks: baseData.totalMarks,
-    baseDataPercentage: baseData.percentage,
-    timestamp: Date.now()
+  // STABILIZATION: Ensure transformation input data integrity
+  const stabilizedBaseData = stabilizeTransformData(baseData);
+  
+  // LOG BASE DATA SELECTION
+  tracer.logTransformation('select_base_data', progressiveData, baseData, {
+    transformationType: 'base_data_extraction',
+    selectedSource: progressiveData.clientEvaluationResult ? 'clientEvaluationResult' : 'progressiveData_direct'
   });
   
   const transformed = {
-    examId: progressiveData.examId || baseData.examId,
-    studentId: progressiveData.studentId || baseData.studentId,
-    answers: progressiveData.answers || baseData.answers,
-    finalScore: baseData.finalScore || baseData.score || 0,
-    totalMarks: baseData.totalMarks || 0,
-    percentage: baseData.percentage || 0,
-    correctAnswers: baseData.correctAnswers || 0,
-    incorrectAnswers: baseData.incorrectAnswers || 0,
-    unattempted: baseData.unattempted || 0,
-    questionAnalysis: baseData.questionAnalysis || [],
-    subjectPerformance: baseData.subjectPerformance || [],
-    timeTaken: progressiveData.timeTaken || baseData.timeTaken || 0,
-    completedAt: progressiveData.completedAt || baseData.completedAt || new Date().toISOString(),
+    examId: progressiveData.examId || stabilizedBaseData.examId,
+    studentId: progressiveData.studentId || stabilizedBaseData.studentId,
+    answers: progressiveData.answers || stabilizedBaseData.answers,
+    finalScore: stabilizedBaseData.finalScore || stabilizedBaseData.score || 0,
+    totalMarks: stabilizedBaseData.totalMarks || 0,
+    percentage: stabilizedBaseData.percentage || 0,
+    correctAnswers: stabilizedBaseData.correctAnswers || 0,
+    incorrectAnswers: stabilizedBaseData.incorrectAnswers || 0,
+    unattempted: stabilizedBaseData.unattempted || 0,
+    questionAnalysis: stabilizedBaseData.questionAnalysis || [],
+    subjectPerformance: stabilizedBaseData.subjectPerformance || [],
+    timeTaken: progressiveData.timeTaken || stabilizedBaseData.timeTaken || 0,
+    completedAt: progressiveData.completedAt || stabilizedBaseData.completedAt || new Date().toISOString(),
     visitedQuestions: progressiveData.visitedQuestions || [],
     markedQuestions: progressiveData.markedQuestions || [],
     warnings: progressiveData.warnings || 0,
     
     // Progressive metadata
-    computationHash: baseData.computationHash || progressiveData.validationHash,
-    engineVersion: baseData.engineVersion || progressiveData.engineVersion || '1.3.0',
-    evaluationSource: progressiveData.evaluationSource || baseData.evaluationSource || 'progressive_computation'
+    computationHash: stabilizedBaseData.computationHash || progressiveData.validationHash,
+    engineVersion: stabilizedBaseData.engineVersion || progressiveData.engineVersion || '1.3.0',
+    evaluationSource: progressiveData.evaluationSource || stabilizedBaseData.evaluationSource || 'progressive_computation'
   };
 
-  // DEBUG: Check for zero values after transformation
+  // ENHANCED VALIDATION: Check for zero values and data corruption after transformation
   if (transformed.finalScore === 0 && Object.keys(transformed.answers || {}).length > 0) {
-    debugLogger.warn('ZERO FINAL SCORE AFTER TRANSFORMATION', {
-      originalFinalScore: baseData.finalScore,
-      originalScore: baseData.score,
+    console.warn('⚠️ Zero final score detected after transformation with answers present:', {
+      traceId: tracer.requestId,
+      originalFinalScore: stabilizedBaseData.finalScore,
+      originalScore: stabilizedBaseData.score,
       transformedFinalScore: transformed.finalScore,
-      answersCount: Object.keys(transformed.answers || {}).length,
-      progressiveResults: progressiveData.progressiveResults,
-      timestamp: Date.now()
+      answersCount: Object.keys(transformed.answers || {}).length
     });
+    
+    // LOG DATA CORRUPTION DETECTION
+    tracer.logError('ZERO_SCORE_CORRUPTION_DETECTED', 
+      new Error('Zero final score with answers present'), 
+      { originalData: stabilizedBaseData, transformedData: transformed },
+      { severity: 'MEDIUM', recoverable: true }
+    );
+    
+    // RECOVERY: Try to use original score if available
+    if (stabilizedBaseData.finalScore > 0) {
+      console.log('🔧 RECOVERY: Using original final score');
+      transformed.finalScore = stabilizedBaseData.finalScore;
+    } else if (stabilizedBaseData.score > 0) {
+      console.log('🔧 RECOVERY: Using original score as final score');
+      transformed.finalScore = stabilizedBaseData.score;
+    }
   }
 
   if (transformed.totalMarks === 0) {
-    debugLogger.error('ZERO TOTAL MARKS AFTER TRANSFORMATION', {
-      originalTotalMarks: baseData.totalMarks,
-      transformedTotalMarks: transformed.totalMarks,
-      timestamp: Date.now()
+    console.error('❌ Zero total marks detected after transformation:', {
+      traceId: tracer.requestId,
+      originalTotalMarks: stabilizedBaseData.totalMarks,
+      transformedTotalMarks: transformed.totalMarks
     });
+    
+    // LOG CRITICAL DATA CORRUPTION
+    tracer.logError('ZERO_TOTAL_MARKS_CORRUPTION', 
+      new Error('Zero total marks after transformation'), 
+      { originalData: stabilizedBaseData, transformedData: transformed },
+      { severity: 'HIGH', recoverable: true }
+    );
+    
+    // RECOVERY: Try to calculate from question analysis or use reasonable default
+    if (stabilizedBaseData.totalMarks > 0) {
+      console.log('🔧 RECOVERY: Using original total marks');
+      transformed.totalMarks = stabilizedBaseData.totalMarks;
+    } else if (transformed.questionAnalysis && transformed.questionAnalysis.length > 0) {
+      // Calculate from question count (assume 4 marks per question as default)
+      const estimatedTotalMarks = transformed.questionAnalysis.length * 4;
+      console.log(`🔧 RECOVERY: Estimated total marks from question count: ${estimatedTotalMarks}`);
+      transformed.totalMarks = estimatedTotalMarks;
+    }
   }
 
-  // DEBUG: Log transformation output
-  debugLogger.logSubmission('TRANSFORM_OUTPUT', {
-    transformed: JSON.parse(JSON.stringify(transformed)),
-    timestamp: Date.now()
+  // STABILIZATION: Final transformation output stabilization
+  const finalTransformed = stabilizeTransformData(transformed);
+  
+  // LOG FINAL TRANSFORMATION RESULT
+  tracer.logTransformation('complete_progressive_transformation', progressiveData, finalTransformed, {
+    transformationType: 'progressive_to_optimized_complete',
+    recoveryApplied: transformed.finalScore !== stabilizedBaseData.finalScore || transformed.totalMarks !== stabilizedBaseData.totalMarks,
+    dataIntegrityMaintained: finalTransformed.examId === progressiveData.examId && finalTransformed.studentId === progressiveData.studentId
   });
   
-  return transformed;
+  console.log('✅ TRANSFORM COMPLETE: Progressive to optimized format transformation finished:', {
+    traceId: tracer.requestId,
+    finalScore: finalTransformed.finalScore,
+    totalMarks: finalTransformed.totalMarks,
+    answersCount: Object.keys(finalTransformed.answers || {}).length,
+    hasValidStructure: !!(finalTransformed.examId && finalTransformed.studentId)
+  });
+  
+  return finalTransformed;
 }
 
 /**
  * Legacy progressive submission (fallback when optimized endpoint fails)
  */
-async function legacyProgressiveSubmission(progressiveData) {
+async function legacyProgressiveSubmission(progressiveData, tracer) {
   try {
-    console.log('📁 Using legacy progressive submission system...');
+    console.log('📁 Using legacy progressive submission system...', {
+      traceId: tracer.requestId
+    });
+    
+    // LOG LEGACY FALLBACK ENTRY
+    tracer.logFallback(
+      'Routing to legacy progressive system',
+      'optimized_endpoint_routing',
+      'legacy_progressive_submission',
+      progressiveData,
+      { legacyReason: 'optimized_endpoint_unavailable' }
+    );
     
     // Use existing legacy validation and storage
-    const validation = await validateProgressiveResults(progressiveData);
+    console.log('🔍 LEGACY VALIDATION: Starting progressive results validation');
+    const validation = await validateProgressiveResults(progressiveData, tracer);
+    
+    // LOG LEGACY VALIDATION RESULT
+    tracer.logValidation('legacy_progressive_validation', progressiveData, validation, {
+      validationType: 'legacy_progressive_results',
+      fallbackLevel: 'legacy_progressive'
+    });
     
     if (!validation.isValid) {
-      return await traditionalSubmissionFallback(progressiveData.rawExamData);
+      // LOG FURTHER FALLBACK DECISION
+      tracer.logFallback(
+        `Legacy validation failed: ${validation.reason}`,
+        'legacy_progressive_submission',
+        'traditional_submission_fallback',
+        progressiveData,
+        { validationFailure: validation.reason }
+      );
+      
+      return await traditionalSubmissionFallback(progressiveData.rawExamData, tracer);
     }
     
-    const result = await storeProgressiveResultDirect(progressiveData);
+    const result = await storeProgressiveResultDirect(progressiveData, tracer);
+    
+    // LOG LEGACY STORAGE SUCCESS
+    tracer.logDatabaseOperation('legacy_progressive_storage', progressiveData, result, {
+      operation: 'legacy_progressive_direct_storage',
+      fallbackLevel: 'legacy_progressive'
+    });
+    
+    console.log('✅ LEGACY PROGRESSIVE SUCCESS:', {
+      traceId: tracer.requestId,
+      submissionType: 'legacy_progressive',
+      resultSuccess: !!result
+    });
     
     return {
       success: true,
       message: "Your exam has been submitted successfully!",
       result: result,
       submissionType: 'legacy_progressive',
-      fallbackUsed: true
+      fallbackUsed: true,
+      traceId: tracer.requestId
     };
     
   } catch (error) {
-    console.error('❌ Legacy progressive submission failed:', error);
-    return await traditionalSubmissionFallback(progressiveData.rawExamData);
+    console.error('❌ Legacy progressive submission failed:', {
+      traceId: tracer.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // LOG LEGACY SUBMISSION FAILURE
+    tracer.logError('LEGACY_PROGRESSIVE_SUBMISSION_FAILED', error, progressiveData, {
+      severity: 'HIGH',
+      fallbackAvailable: true,
+      errorType: error.name
+    });
+    
+    // LOG FINAL FALLBACK DECISION
+    tracer.logFallback(
+      `Legacy submission failed: ${error.message}`,
+      'legacy_progressive_submission',
+      'traditional_submission_fallback',
+      progressiveData,
+      { legacySubmissionError: error.message }
+    );
+    
+    return await traditionalSubmissionFallback(progressiveData.rawExamData, tracer);
   }
 }
 
@@ -195,27 +379,65 @@ async function legacyProgressiveSubmission(progressiveData) {
 export async function handleProgressiveSubmission(submissionData) {
   const startTime = Date.now();
   
+  // INITIALIZE LEGACY PROGRESSIVE TRACING
+  const tracer = createSubmissionTracer('LEGACY_PROG');
+  
   try {
     await connectDB();
     
     console.log('🚀 Processing progressive submission:', {
+      traceId: tracer.requestId,
       examId: submissionData.examId,
       studentId: submissionData.studentId,
       isPreComputed: submissionData.isPreComputed,
       validationHash: submissionData.validationHash ? 'present' : 'missing'
     });
+    
+    // LOG LEGACY PROGRESSIVE ENTRY POINT
+    tracer.logEntryPoint('handleProgressiveSubmission', submissionData, {
+      endpoint: 'handleProgressiveSubmission',
+      method: 'legacy_progressive_submission',
+      isPreComputed: submissionData.isPreComputed,
+      hasValidationHash: !!submissionData.validationHash
+    });
+    
+    // VALIDATE CRITICAL DATA AT ENTRY
+    SubmissionTraceUtils.logCriticalDataCheck(
+      tracer.requestId,
+      'LEGACY_PROGRESSIVE_ENTRY',
+      submissionData,
+      ['examId', 'studentId', 'answers']
+    );
 
     // STEP 1: Fast-track validation for pre-computed results
     if (submissionData.isPreComputed && submissionData.validationHash) {
-      const validationResult = await validateProgressiveSubmission(submissionData);
+      console.log('⚡ FAST-TRACK: Validating pre-computed results with hash validation');
+      const validationResult = await validateProgressiveSubmission(submissionData, tracer);
+      
+      // LOG FAST-TRACK VALIDATION
+      tracer.logValidation('fast_track_hash_validation', submissionData, validationResult, {
+        validationType: 'precomputed_with_hash',
+        fastTrack: true,
+        hasValidationHash: !!submissionData.validationHash
+      });
       
       if (validationResult.isValid) {
         // INSTANT PATH: Direct database storage with pre-computed results
-        const directResult = await storeProgressiveSubmission(submissionData, validationResult);
+        console.log('⚡ INSTANT PATH: Storing pre-computed results directly');
+        const directResult = await storeProgressiveSubmission(submissionData, validationResult, tracer);
+        
+        // LOG INSTANT STORAGE
+        tracer.logDatabaseOperation('instant_precomputed_storage', submissionData, directResult, {
+          operation: 'instant_progressive_submission',
+          precomputed: true,
+          validationMethod: 'hash_validation'
+        });
         
         const responseTime = Date.now() - startTime;
         
-        console.log(`✅ Progressive submission stored in ${responseTime}ms`);
+        console.log(`✅ Progressive submission stored in ${responseTime}ms`, {
+          traceId: tracer.requestId
+        });
         
         MonitoringService.logActivity('ProgressiveSubmission', 'Instant submission successful', {
           examId: submissionData.examId,
@@ -223,7 +445,18 @@ export async function handleProgressiveSubmission(submissionData) {
           responseTimeMs: responseTime,
           score: directResult.result.score,
           totalMarks: directResult.result.totalMarks,
-          validationMethod: 'hash_validation'
+          validationMethod: 'hash_validation',
+          traceId: tracer.requestId
+        });
+        
+        // GENERATE INSTANT SUBMISSION TRACE SUMMARY
+        const traceSummary = tracer.generateTraceSummary();
+        
+        console.log('✅ INSTANT PROGRESSIVE SUCCESS - TRACE COMPLETE:', {
+          traceId: tracer.requestId,
+          responseTime: `${responseTime}ms`,
+          submissionType: 'progressive_instant',
+          dataIntegrity: traceSummary.dataIntegrityCheck.integrityMaintained
         });
         
         return {
@@ -233,26 +466,47 @@ export async function handleProgressiveSubmission(submissionData) {
           processingTime: responseTime,
           submissionType: 'progressive_instant',
           validationMethod: 'hash_validation',
-          performanceImprovement: calculatePerformanceImprovement(responseTime)
+          performanceImprovement: calculatePerformanceImprovement(responseTime),
+          traceSummary
         };
       } else {
         // Validation failed - fall back to server computation but log the attempt
-        console.warn('⚠️ Progressive validation failed, falling back to server computation:', validationResult.reason);
+        console.warn('⚠️ Progressive validation failed, falling back to server computation:', {
+          traceId: tracer.requestId,
+          reason: validationResult.reason
+        });
+        
+        // LOG VALIDATION FAILURE AND FALLBACK
+        tracer.logFallback(
+          `Validation failed: ${validationResult.reason}`,
+          'fast_track_precomputed_validation',
+          'traditional_server_computation',
+          submissionData,
+          { 
+            validationFailure: validationResult.reason,
+            hashMismatch: validationResult.hashMismatch,
+            computationDifference: validationResult.computationDifference
+          }
+        );
         
         MonitoringService.logActivity('ProgressiveSubmission', 'Validation failed - falling back', {
           examId: submissionData.examId,
           studentId: submissionData.studentId,
           validationFailureReason: validationResult.reason,
           hashMismatch: validationResult.hashMismatch,
-          computationDifference: validationResult.computationDifference
+          computationDifference: validationResult.computationDifference,
+          traceId: tracer.requestId
         });
       }
     }
 
     // STEP 2: Fallback to traditional server-side computation
-    console.log('🔄 Using traditional server-side computation');
+    console.log('🔄 Using traditional server-side computation', {
+      traceId: tracer.requestId
+    });
     
-    const serverResult = await submitExamResultInternal({
+    // PREPARE DATA FOR TRADITIONAL COMPUTATION
+    const traditionalData = {
       examId: submissionData.examId,
       studentId: submissionData.studentId,
       answers: submissionData.answers,
@@ -265,11 +519,48 @@ export async function handleProgressiveSubmission(submissionData) {
       markedQuestions: submissionData.markedQuestions || [],
       warnings: submissionData.warnings || 0,
       isProgressiveFallback: true // Flag for monitoring
+    };
+    
+    // LOG FALLBACK TO TRADITIONAL COMPUTATION
+    tracer.logFallback(
+      submissionData.isPreComputed ? 'Precomputed validation failed' : 'No precomputed results available',
+      'progressive_submission_handler',
+      'traditional_server_computation',
+      submissionData,
+      { hasPrecomputed: submissionData.isPreComputed }
+    );
+    
+    // LOG TRADITIONAL DATA PREPARATION
+    tracer.logTransformation('prepare_traditional_data', submissionData, traditionalData, {
+      transformationType: 'progressive_to_traditional',
+      removedFields: ['totalMarks'],
+      reason: 'client_totalMarks_incorrect'
+    });
+    
+    const serverResult = await submitExamResultInternal(traditionalData);
+    
+    // LOG TRADITIONAL COMPUTATION RESULT
+    tracer.logDatabaseOperation('traditional_server_computation', traditionalData, serverResult, {
+      operation: 'progressive_fallback_traditional',
+      fallbackReason: submissionData.isPreComputed ? 'validation_failed' : 'no_precomputed'
     });
     
     const responseTime = Date.now() - startTime;
     
-    console.log(`✅ Server computation completed in ${responseTime}ms`);
+    console.log(`✅ Server computation completed in ${responseTime}ms`, {
+      traceId: tracer.requestId
+    });
+    
+    // GENERATE TRADITIONAL COMPUTATION TRACE SUMMARY
+    const traceSummary = tracer.generateTraceSummary();
+    
+    console.log('✅ TRADITIONAL COMPUTATION SUCCESS - TRACE COMPLETE:', {
+      traceId: tracer.requestId,
+      responseTime: `${responseTime}ms`,
+      submissionType: 'server_computation_fallback',
+      dataIntegrity: traceSummary.dataIntegrityCheck.integrityMaintained,
+      fallbackReason: submissionData.isPreComputed ? 'validation_failed' : 'no_precomputed_results'
+    });
     
     return {
       success: serverResult.success,
@@ -278,13 +569,27 @@ export async function handleProgressiveSubmission(submissionData) {
       processingTime: responseTime,
       submissionType: 'server_computation_fallback',
       validationMethod: 'full_computation',
-      fallbackReason: submissionData.isPreComputed ? 'validation_failed' : 'no_precomputed_results'
+      fallbackReason: submissionData.isPreComputed ? 'validation_failed' : 'no_precomputed_results',
+      traceSummary
     };
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
     
-    console.error('❌ Progressive submission handler error:', error);
+    console.error('❌ Progressive submission handler error:', {
+      traceId: tracer.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // LOG CRITICAL ERROR
+    tracer.logError('PROGRESSIVE_SUBMISSION_HANDLER_ERROR', error, submissionData, {
+      severity: 'CRITICAL',
+      responseTime: `${responseTime}ms`,
+      errorType: error.name,
+      hasAnswers: !!submissionData.answers,
+      answersCount: Object.keys(submissionData.answers || {}).length
+    });
     
     MonitoringService.logError('ProgressiveSubmission', 'Submission handler error', {
       error: error.message,
@@ -292,6 +597,7 @@ export async function handleProgressiveSubmission(submissionData) {
       examId: submissionData.examId,
       studentId: submissionData.studentId,
       responseTimeMs: responseTime,
+      traceId: tracer.requestId,
       submissionData: {
         hasAnswers: !!submissionData.answers,
         answersCount: Object.keys(submissionData.answers || {}).length,
@@ -300,12 +606,17 @@ export async function handleProgressiveSubmission(submissionData) {
       }
     });
 
+    // GENERATE ERROR TRACE SUMMARY
+    const traceSummary = tracer.generateTraceSummary();
+
     return {
       success: false,
       message: "Error processing your submission. Please try again or contact support.",
       error: error.message,
       processingTime: responseTime,
-      submissionType: 'error_fallback'
+      submissionType: 'error_fallback',
+      traceId: tracer.requestId,
+      traceSummary
     };
   }
 }
@@ -316,37 +627,54 @@ export async function handleProgressiveSubmission(submissionData) {
  * Optimized validation that uses cached data and parallel processing
  * to achieve sub-5ms validation times while maintaining security.
  */
-async function validateProgressiveResults(progressiveData) {
+async function validateProgressiveResults(progressiveData, tracer) {
   const startTime = Date.now();
   
   try {
+    console.log('🔍 ULTRA-FAST VALIDATION: Starting progressive results validation:', {
+      traceId: tracer.requestId,
+      hasComputationHash: !!progressiveData.computationHash,
+      dataSize: JSON.stringify(progressiveData).length
+    });
     // LAYER 1: Hash validation (1ms)
     const hashValid = await validateComputationHash(progressiveData);
+    tracer.logValidation('computation_hash', progressiveData, { isValid: hashValid }, { validationLayer: 'layer_1_hash' });
     if (!hashValid) {
+      tracer.logError('HASH_VALIDATION_FAILED', new Error('Computation hash validation failed'), progressiveData);
       return { isValid: false, reason: 'hash_validation_failed' };
     }
     
     // LAYER 2: Statistical reasonableness check (1ms)
     const statsValid = validateStatisticalReasonableness(progressiveData);
+    tracer.logValidation('statistical_reasonableness', progressiveData, { isValid: statsValid }, { validationLayer: 'layer_2_stats' });
     if (!statsValid) {
+      tracer.logError('STATISTICAL_VALIDATION_FAILED', new Error('Statistical reasonableness check failed'), progressiveData);
       return { isValid: false, reason: 'statistical_validation_failed' };
     }
     
     // LAYER 3: Spot-check validation (1ms)
     const spotCheckValid = await performSpotCheck(progressiveData);
+    tracer.logValidation('spot_check', progressiveData, { isValid: spotCheckValid }, { validationLayer: 'layer_3_spot_check' });
     if (!spotCheckValid) {
+      tracer.logError('SPOT_CHECK_VALIDATION_FAILED', new Error('Spot check validation failed'), progressiveData);
       return { isValid: false, reason: 'spot_check_failed' };
     }
     
     // LAYER 4: Security constraints (1ms)
     const securityValid = validateSecurityConstraints(progressiveData);
+    tracer.logValidation('security_constraints', progressiveData, securityValid, { validationLayer: 'layer_4_security' });
     if (!securityValid.isValid) {
+      tracer.logError('SECURITY_VALIDATION_FAILED', new Error('Security constraints validation failed'), progressiveData, {
+        securityErrors: securityValid.errors
+      });
       return { isValid: false, reason: 'security_validation_failed' };
     }
     
     // LAYER 5: Temporal validation (1ms)
     const temporalValid = validateTemporalConstraints(progressiveData);
+    tracer.logValidation('temporal_constraints', progressiveData, { isValid: temporalValid }, { validationLayer: 'layer_5_temporal' });
     if (!temporalValid) {
+      tracer.logError('TEMPORAL_VALIDATION_FAILED', new Error('Temporal constraints validation failed'), progressiveData);
       return { isValid: false, reason: 'temporal_validation_failed' };
     }
     
@@ -371,33 +699,65 @@ async function validateProgressiveResults(progressiveData) {
  * Validate progressive submission with comprehensive security checks
  * LEGACY FUNCTION - Keep for backward compatibility
  */
-async function validateProgressiveSubmission(submissionData) {
+async function validateProgressiveSubmission(submissionData, tracer) {
   const startTime = performance.now();
   
   try {
-    console.log('🔍 Validating progressive submission...');
+    console.log('🔍 Validating progressive submission...', {
+      traceId: tracer.requestId
+    });
     
     // STEP 1: Basic data validation
     const basicValidation = validateBasicSubmissionData(submissionData);
+    tracer.logValidation('basic_submission_data', submissionData, basicValidation, { validationStep: 'step_1_basic' });
     if (!basicValidation.isValid) {
+      tracer.logError('BASIC_VALIDATION_FAILED', new Error('Basic submission data validation failed'), submissionData, {
+        validationErrors: basicValidation.errors
+      });
       return { isValid: false, reason: 'basic_validation_failed', details: basicValidation.errors };
     }
 
     // STEP 2: Fetch exam and verify context
     const exam = await Exam.findById(submissionData.examId).populate('examQuestions');
+    tracer.logDatabaseOperation('fetch_exam_for_validation', { examId: submissionData.examId }, {
+      success: !!exam,
+      examFound: !!exam,
+      questionsCount: exam?.examQuestions?.length || 0
+    }, { operation: 'validation_exam_fetch' });
+    
     if (!exam) {
+      tracer.logError('EXAM_NOT_FOUND_FOR_VALIDATION', new Error('Exam not found during validation'), submissionData);
       return { isValid: false, reason: 'exam_not_found' };
     }
 
     // STEP 3: Hash validation
     const hashValidation = await validateSubmissionHash(submissionData, exam);
+    tracer.logValidation('submission_hash', submissionData, hashValidation, { 
+      validationStep: 'step_3_hash',
+      exam: { id: exam._id, questionsCount: exam.examQuestions.length }
+    });
     if (!hashValidation.isValid) {
+      tracer.logError('HASH_VALIDATION_FAILED', new Error('Submission hash validation failed'), submissionData, {
+        hashMismatch: true,
+        expectedHash: hashValidation.expectedHash?.substring(0, 16),
+        receivedHash: hashValidation.receivedHash?.substring(0, 16)
+      });
       return { isValid: false, reason: 'hash_validation_failed', hashMismatch: true, details: hashValidation.details };
     }
 
     // STEP 4: Spot-check computation accuracy (validate 10% of answers)
-    const spotCheckValidation = await performSpotCheckValidation(submissionData, exam);
+    const spotCheckValidation = await performSpotCheckValidation(submissionData, exam, tracer);
+    tracer.logValidation('spot_check_computation', submissionData, spotCheckValidation, { 
+      validationStep: 'step_4_spot_check',
+      checkedCount: spotCheckValidation.checkedCount,
+      mismatchCount: spotCheckValidation.mismatchCount
+    });
     if (!spotCheckValidation.isValid) {
+      tracer.logError('SPOT_CHECK_VALIDATION_FAILED', new Error('Spot check computation validation failed'), submissionData, {
+        computationDifference: true,
+        mismatchCount: spotCheckValidation.mismatchCount,
+        mismatchRate: spotCheckValidation.mismatchRate
+      });
       return { 
         isValid: false, 
         reason: 'spot_check_failed', 
@@ -408,7 +768,15 @@ async function validateProgressiveSubmission(submissionData) {
 
     // STEP 5: Security and timing validation
     const securityValidation = validateSecurityConstraints(submissionData);
+    tracer.logValidation('security_constraints_legacy', submissionData, securityValidation, { 
+      validationStep: 'step_5_security',
+      securityScore: securityValidation.securityScore
+    });
     if (!securityValidation.isValid) {
+      tracer.logError('SECURITY_CONSTRAINTS_VALIDATION_FAILED', new Error('Security constraints validation failed'), submissionData, {
+        securityErrors: securityValidation.errors,
+        securityScore: securityValidation.securityScore
+      });
       return { isValid: false, reason: 'security_validation_failed', details: securityValidation.errors };
     }
 
@@ -518,8 +886,13 @@ async function validateSubmissionHash(submissionData, exam) {
 /**
  * Perform spot-check validation on a subset of answers
  */
-async function performSpotCheckValidation(submissionData, exam) {
+async function performSpotCheckValidation(submissionData, exam, tracer) {
   try {
+    console.log('🔎 SPOT CHECK: Starting spot check validation:', {
+      traceId: tracer.requestId,
+      questionsTotal: exam.examQuestions.length,
+      answersProvided: Object.keys(submissionData.answers || {}).length
+    });
     const questions = exam.examQuestions;
     const answersToCheck = Math.min(Math.ceil(questions.length * 0.1), 10); // Check 10% or max 10 questions
     
@@ -656,12 +1029,15 @@ function validateSecurityConstraints(submissionData) {
 /**
  * Store progressive submission directly to database
  */
-async function storeProgressiveSubmission(submissionData, validationResult) {
+async function storeProgressiveSubmission(submissionData, validationResult, tracer) {
   try {
-    console.log('💾 Storing progressive submission directly to database');
+    console.log('💾 Storing progressive submission directly to database', {
+      traceId: tracer.requestId,
+      validationTime: validationResult.validationTime
+    });
     
     // Use the existing submitExamResultInternal but mark as pre-validated
-    const storageResult = await submitExamResultInternal({
+    const internalSubmissionData = {
       examId: submissionData.examId,
       studentId: submissionData.studentId,
       answers: submissionData.answers,
@@ -690,12 +1066,37 @@ async function storeProgressiveSubmission(submissionData, validationResult) {
           securityScore: validationResult.securityScore
         }
       }
+    };
+    
+    // LOG INTERNAL SUBMISSION DATA PREPARATION
+    tracer.logTransformation('prepare_internal_submission', submissionData, internalSubmissionData, {
+      transformationType: 'progressive_to_internal',
+      removedFields: ['totalMarks'],
+      addedMetadata: ['isProgressiveSubmission', 'preComputedResults']
+    });
+    
+    const storageResult = await submitExamResultInternal(internalSubmissionData);
+    
+    // LOG INTERNAL SUBMISSION RESULT
+    tracer.logDatabaseOperation('internal_submission_storage', internalSubmissionData, storageResult, {
+      operation: 'progressive_internal_submission',
+      preValidated: true,
+      validationMetrics: validationResult.validationTime
     });
 
     return storageResult;
 
   } catch (error) {
-    console.error('❌ Progressive storage error:', error);
+    console.error('❌ Progressive storage error:', {
+      traceId: tracer.requestId,
+      error: error.message
+    });
+    
+    tracer.logError('PROGRESSIVE_STORAGE_ERROR', error, submissionData, {
+      severity: 'HIGH',
+      storageStage: 'internal_submission'
+    });
+    
     throw new Error('Failed to store progressive submission: ' + error.message);
   }
 }
@@ -1059,21 +1460,44 @@ function validateTemporalConstraints(progressiveData) {
 /**
  * Direct ExamResult storage without computation (7ms target)
  */
-async function storeProgressiveResultDirect(progressiveData) {
+async function storeProgressiveResultDirect(progressiveData, tracer) {
   try {
     await connectDB();
     
     const saveStartTime = Date.now();
     
+    console.log('💾 DIRECT STORAGE: Starting direct progressive result storage:', {
+      traceId: tracer.requestId,
+      hasClientEvaluationResult: !!progressiveData.clientEvaluationResult
+    });
+    
     // Use optimized model method for direct storage
     const examResult = await ExamResult.createDirectSubmission(progressiveData);
     
     const saveTime = Date.now() - saveStartTime;
-    console.log(`📊 ExamResult saved in ${saveTime}ms`);
+    console.log(`📊 ExamResult saved in ${saveTime}ms`, {
+      traceId: tracer.requestId
+    });
+    
+    // LOG DIRECT STORAGE OPERATION
+    tracer.logDatabaseOperation('direct_progressive_storage', progressiveData, {
+      success: !!examResult,
+      resultId: examResult?._id,
+      saveTime: `${saveTime}ms`
+    }, { operation: 'direct_progressive_submission' });
     
     return examResult;
   } catch (error) {
-    console.error('❌ Direct storage error:', error);
+    console.error('❌ Direct storage error:', {
+      traceId: tracer.requestId,
+      error: error.message
+    });
+    
+    tracer.logError('DIRECT_PROGRESSIVE_STORAGE_ERROR', error, progressiveData, {
+      severity: 'HIGH',
+      storageMethod: 'direct_submission'
+    });
+    
     throw new Error(`Failed to store progressive result: ${error.message}`);
   }
 }
@@ -1081,11 +1505,14 @@ async function storeProgressiveResultDirect(progressiveData) {
 /**
  * Traditional submission fallback for failed validations
  */
-async function traditionalSubmissionFallback(rawExamData) {
+async function traditionalSubmissionFallback(rawExamData, tracer) {
   try {
-    console.log('🔄 Using traditional server-side computation fallback');
+    console.log('🔄 Using traditional server-side computation fallback', {
+      traceId: tracer.requestId,
+      hasRawExamData: !!rawExamData
+    });
     
-    const serverResult = await submitExamResultInternal({
+    const traditionalData = {
       examId: rawExamData.examId,
       studentId: rawExamData.studentId,
       answers: rawExamData.answers,
@@ -1095,6 +1522,20 @@ async function traditionalSubmissionFallback(rawExamData) {
       markedQuestions: rawExamData.markedQuestions || [],
       warnings: rawExamData.warnings || 0,
       isProgressiveFallback: true
+    };
+    
+    // LOG TRADITIONAL FALLBACK DATA PREPARATION
+    tracer.logTransformation('prepare_traditional_fallback', rawExamData, traditionalData, {
+      transformationType: 'raw_to_traditional_fallback',
+      fallbackLevel: 'traditional_computation'
+    });
+    
+    const serverResult = await submitExamResultInternal(traditionalData);
+    
+    // LOG TRADITIONAL FALLBACK RESULT
+    tracer.logDatabaseOperation('traditional_fallback_computation', traditionalData, serverResult, {
+      operation: 'traditional_fallback_submission',
+      fallbackReason: 'progressive_validation_failed'
     });
     
     return {
@@ -1105,12 +1546,23 @@ async function traditionalSubmissionFallback(rawExamData) {
       validationMethod: 'full_computation'
     };
   } catch (error) {
-    console.error('❌ Traditional fallback failed:', error);
+    console.error('❌ Traditional fallback failed:', {
+      traceId: tracer.requestId,
+      error: error.message
+    });
+    
+    tracer.logError('TRADITIONAL_FALLBACK_FAILED', error, rawExamData, {
+      severity: 'CRITICAL',
+      fallbackLevel: 'traditional_computation',
+      noMoreFallbacks: true
+    });
+    
     return {
       success: false,
       message: "Error processing your submission. Please contact support.",
       error: error.message,
-      submissionType: 'error_fallback'
+      submissionType: 'error_fallback',
+      traceId: tracer.requestId
     };
   }
 }

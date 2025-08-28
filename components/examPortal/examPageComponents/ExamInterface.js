@@ -24,7 +24,7 @@ import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/pro
 import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 import { shouldCloseExamImmediately, getSubmissionSuccessMessage } from "../../../config/examFeatureFlags"
 import { logSubmissionStart, logImmediateClose, logSubmissionError } from "../../../lib/examBottleneckMonitor"
-import debugLogger from "../../../utils/debugLogger"
+import { stabilizeProgressiveData, stabilizeAnswers } from "../../../utils/objectStabilization"
 
 // PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
 import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
@@ -1620,30 +1620,21 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         evaluationSource: directStorageData.evaluationSource
                     });
 
-                    // DEBUG: Comprehensive logging before submission
-                    debugLogger.logSubmission('PRE_SUBMISSION_DATA', {
-                        directStorageData: JSON.parse(JSON.stringify(directStorageData)),
-                        currentAnswers: JSON.parse(JSON.stringify(currentAnswers)),
-                        progressiveResultsState: progressiveResults ? JSON.parse(JSON.stringify(progressiveResults)) : null,
-                        clientEngineProgressiveResults: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null,
-                        examId: exam.id,
-                        studentId: student.id,
-                        timestamp: Date.now()
-                    });
+                    // STABILIZATION: Ensure data integrity before submission
+                    const stabilizedDirectStorageData = stabilizeProgressiveData(directStorageData);
+                    const stabilizedAnswers = stabilizeAnswers(currentAnswers);
                     
                     // Check for zero value anomalies before submission
-                    if (directStorageData.finalScore === 0 && Object.keys(currentAnswers).length > 0) {
-                        debugLogger.warn('ZERO FINAL SCORE BEFORE SUBMISSION', {
-                            finalScore: directStorageData.finalScore,
-                            answeredQuestions: Object.keys(currentAnswers).length,
-                            answers: JSON.parse(JSON.stringify(currentAnswers)),
-                            clientEvaluation: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null,
-                            timestamp: Date.now()
+                    if (stabilizedDirectStorageData.finalScore === 0 && Object.keys(stabilizedAnswers).length > 0) {
+                        console.warn('⚠️ Zero final score detected before submission with answers present:', {
+                            finalScore: stabilizedDirectStorageData.finalScore,
+                            answeredQuestions: Object.keys(stabilizedAnswers).length,
+                            clientEvaluation: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null
                         });
                     }
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
-                    const directResult = await submitProgressiveResultDirect(directStorageData);
+                    const directResult = await submitProgressiveResultDirect(stabilizedDirectStorageData);
                     
                     // Track performance metrics
                     const performanceMonitor = getPerformanceMonitor();

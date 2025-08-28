@@ -2,9 +2,15 @@ import mongoose from "mongoose";
 
 let isConnected = false;    // to track connection status
 
+
 export const connectDB = async () => {
 
-    // if(!process.env.MONGODB_URI) return console.log("MONGODB_URI is not defined")
+    // ENHANCED: Proper error handling for missing MONGODB_URI
+    if(!process.env.MONGODB_URI) {
+        const errorMessage = "MONGODB_URI is not defined. Database connection cannot be established.";
+        console.error(`❌ CRITICAL DATABASE ERROR: ${errorMessage}`);
+        throw new Error(errorMessage);
+    }
 
     if(isConnected){
         // return console.log("+> using existing database connection");
@@ -44,7 +50,7 @@ export const connectDB = async () => {
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {
-        //    console.log('✅ M10 MongoDB connected - maxPoolSize: 400 (4x optimized for M10)');
+           console.log('✅ MongoDB connected successfully - Database:', mongoose.connection.db.databaseName);
        });
        
        mongoose.connection.on('error', (err) => {
