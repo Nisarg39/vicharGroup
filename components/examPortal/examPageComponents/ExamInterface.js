@@ -1231,6 +1231,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // BOTTLENECK MONITORING: Log submission start
         const monitoringId = logSubmissionStart(student?._id, exam?._id, submissionType);
         setCurrentSubmissionId(monitoringId);
+        
+        // Initialize submission timing outside try block for proper scope
+        const submissionStartTime = Date.now();
+        
         try {
             examCompletedRef.current = true;
             setWarningDialog(false); // Close warning dialog
@@ -1263,8 +1267,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             isAutoSubmit: true,
             timeRemaining: timeLeft
         };
-
-        const submissionStartTime = Date.now();
 
         // CLIENT-SIDE EVALUATION FINALIZATION: Generate complete exam result
         let clientEvaluationResult = null;
@@ -1319,15 +1321,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     
                     // Prepare complete data structure for direct storage using client evaluation
                     directStorageData = {
-                        ...clientEvaluationResult,
-                        // Ensure required fields are set
+                        // Required validation fields at root level
                         examId: exam._id,
                         studentId: student._id,
                         answers,
+                        finalScore: clientEvaluationResult.examResult?.finalScore || 0,
+                        totalMarks: clientEvaluationResult.examResult?.totalMarks || 0,
+                        percentage: clientEvaluationResult.examResult?.percentage || 0,
+                        correctAnswers: clientEvaluationResult.examResult?.correctAnswers || 0,
+                        incorrectAnswers: clientEvaluationResult.examResult?.incorrectAnswers || 0,
+                        unattempted: clientEvaluationResult.examResult?.unattempted || 0,
                         timeTaken: exam.examAvailability === 'scheduled' 
                             ? Math.floor((Date.now() - startTime) / 1000) 
                             : (getEffectiveExamDuration(exam) * 60) - timeLeft,
                         completedAt: new Date().toISOString(),
+                        
+                        // Additional fields from client evaluation
+                        questionAnalysis: clientEvaluationResult.examResult?.questionAnalysis || [],
+                        subjectPerformance: clientEvaluationResult.examResult?.subjectPerformance || [],
+                        
+                        // Metadata fields
                         submittedAt: new Date().toISOString(),
                         visitedQuestions: Array.from(visitedQuestions),
                         markedQuestions: Array.from(markedQuestions),
@@ -1337,6 +1350,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         isAutoSubmit: submissionType === 'auto_submit',
                         timeRemaining: timeLeft,
                         evaluationSource: 'client_evaluation_engine',
+                        
+                        // Add computation hash for validation
+                        computationHash: clientEvaluationResult.computationHash || `client_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+                        engineVersion: clientEvaluationResult.engineVersion || '1.0.0',
                         
                         // Raw data for fallback
                         rawExamData: {
@@ -1361,13 +1378,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         console.log('📊 Progressive computation data ready, submitting via direct storage...');
                         
                         directStorageData = {
-                            ...progressiveResult.results,
+                            // Required validation fields at root level
                             examId: exam._id,
                             studentId: student._id,
+                            answers,
+                            finalScore: progressiveResult.results?.finalScore || progressiveResult.results?.score || 0,
+                            totalMarks: progressiveResult.results?.totalMarks || 0,
+                            percentage: progressiveResult.results?.percentage || 0,
+                            correctAnswers: progressiveResult.results?.correctAnswers || 0,
+                            incorrectAnswers: progressiveResult.results?.incorrectAnswers || 0,
+                            unattempted: progressiveResult.results?.unattempted || 0,
                             timeTaken: exam.examAvailability === 'scheduled' 
                                 ? Math.floor((Date.now() - startTime) / 1000) 
                                 : (getEffectiveExamDuration(exam) * 60) - timeLeft,
                             completedAt: new Date().toISOString(),
+                            
+                            // Additional progressive computation fields
+                            questionAnalysis: progressiveResult.results?.questionAnalysis || [],
+                            subjectPerformance: progressiveResult.results?.subjectPerformance || [],
+                            
+                            // Metadata fields
                             submittedAt: new Date().toISOString(),
                             visitedQuestions: Array.from(visitedQuestions),
                             markedQuestions: Array.from(markedQuestions),
@@ -1377,6 +1407,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             isAutoSubmit: submissionType === 'auto_submit',
                             timeRemaining: timeLeft,
                             evaluationSource: 'progressive_computation',
+                            
+                            // Add computation hash for validation
+                            computationHash: progressiveResult.results?.computationHash || `progressive_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+                            engineVersion: progressiveResult.results?.engineVersion || '1.0.0',
                             
                             // Raw data for fallback
                             rawExamData: {
@@ -1400,7 +1434,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 if (directStorageData) {
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
-                    const submissionStartTime = Date.now();
                     const directResult = await submitProgressiveResultDirect(directStorageData);
                     
                     // Track performance metrics
@@ -1477,7 +1510,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     }
                 } else {
                     console.warn('⚠️ Progressive computation data not available, falling back to traditional method');
-                    console.log('🔍 Reason:', progressiveResult.reason);
+                    console.log('🔍 Reason: Progressive scoring not available or not pre-computed');
                     
                     // Update submission state for traditional fallback
                     setSubmissionState({ 
@@ -1515,7 +1548,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         
         // FIXED: Use exam.totalMarks from database instead of summing individual question marks
         // This prevents the 540 (180×3) bug where client calculation was incorrect
-        const totalMarks = exam.totalMarks || 0;
+        // Note: totalMarks is retrieved from exam.totalMarks during server-side processing
         
         // Calculate score for ALL questions, not just current subject
         (questions || []).forEach(question => {
@@ -1538,24 +1571,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             // REMOVED: totalMarks += question.marks || 4;  
             // This was causing the 540 bug by incorrectly summing individual question marks
         });
-
-        const examData = {
-            answers,
-            score,
-            totalMarks,
-            timeTaken: exam.examAvailability === 'scheduled' 
-                ? Math.floor((Date.now() - startTime) / 1000) 
-                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
-            completedAt: new Date().toISOString(),
-            visitedQuestions: Array.from(visitedQuestions),
-            markedQuestions: Array.from(markedQuestions),
-            warnings: warningCount,
-            examAvailability: exam?.examAvailability,
-            examEndTime: exam?.endTime,
-            isAutoSubmit: true,
-            timeRemaining: timeLeft,
-            submissionType: 'traditional_server'
-        };
 
         const totalSubmissionTime = Date.now() - submissionStartTime;
         

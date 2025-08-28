@@ -1,4 +1,5 @@
-import { MonitoringService } from "../../../lib/monitoring/MonitoringService";
+// Import removed - MonitoringService is client-side only
+// Using console logging and internal tracking instead
 import ExamResult from "../../models/exam_portal/examResult";
 
 /**
@@ -54,8 +55,12 @@ export async function logDirectSubmission(submissionData, processingTime, valida
       performanceCategory: categorizePerformance(processingTime)
     };
     
-    // Log to monitoring service
-    MonitoringService.logActivity('DirectStorageSuccess', 'Ultra-fast submission completed', metrics);
+    // Log to console and internal monitoring (server-side compatible)
+    console.log('📊 DIRECT_STORAGE_SUCCESS:', {
+      operation: 'DirectStorageSuccess',
+      description: 'Ultra-fast submission completed',
+      metrics
+    });
     
     // Log to console with emoji indicators
     const indicator = processingTime <= 15 ? '🚀' : processingTime <= 25 ? '⚡' : '⏱️';
@@ -89,8 +94,12 @@ export async function logValidationFailure(submissionData, validationResult, fal
         fallbackUsed: true
       };
       
-      // Log to monitoring service
-      MonitoringService.logActivity('DirectStorageValidationFailure', 'Fallback to server computation', failureMetrics);
+      // Log to console and internal monitoring (server-side compatible)
+      console.warn('⚠️ DIRECT_STORAGE_VALIDATION_FAILURE:', {
+        operation: 'DirectStorageValidationFailure',
+        description: 'Fallback to server computation',
+        metrics: failureMetrics
+      });
       
       console.warn(`⚠️ Validation failed: ${validationResult.reason}, fallback took ${fallbackTime}ms`);
       
@@ -119,8 +128,12 @@ export async function logSystemError(submissionData, error, recoveryAction) {
         systemLoad: process.cpuUsage()
       };
       
-      // Log to monitoring service
-      MonitoringService.logError('DirectStorageSystemError', 'System error during direct storage', errorMetrics);
+      // Log to console and internal monitoring (server-side compatible)
+      console.error('🚨 DIRECT_STORAGE_SYSTEM_ERROR:', {
+        operation: 'DirectStorageSystemError',
+        description: 'System error during direct storage',
+        metrics: errorMetrics
+      });
       
       console.error(`🚨 System error in direct storage: ${error.message}, recovery: ${recoveryAction}`);
       
@@ -172,8 +185,12 @@ export async function generatePerformanceReport(timeRange = 24) {
         recommendations: generateRecommendations(directStorageStats, traditionalStats, healthMetrics)
       };
       
-      // Log the report
-      MonitoringService.logActivity('DirectStoragePerformanceReport', 'Performance analysis completed', report);
+      // Log to console and internal monitoring (server-side compatible)
+      console.log('📈 DIRECT_STORAGE_PERFORMANCE_REPORT:', {
+        operation: 'DirectStoragePerformanceReport',
+        description: 'Performance analysis completed',
+        report
+      });
       
       return report;
     } catch (error) {
@@ -199,8 +216,12 @@ export async function monitorConcurrentSubmissions(concurrentCount, processingTi
         timestamp: new Date()
       };
       
-      // Log concurrency metrics
-      MonitoringService.logActivity('ConcurrentSubmissionMonitoring', 'Concurrency test completed', concurrencyMetrics);
+      // Log to console and internal monitoring (server-side compatible)
+      console.log('🏆 CONCURRENT_SUBMISSION_MONITORING:', {
+        operation: 'ConcurrentSubmissionMonitoring',
+        description: 'Concurrency test completed',
+        metrics: concurrencyMetrics
+      });
       
       const indicator = concurrencyMetrics.performanceUnderLoad >= 0.95 ? '🏆' : 
                        concurrencyMetrics.performanceUnderLoad >= 0.8 ? '✅' : '⚠️';
