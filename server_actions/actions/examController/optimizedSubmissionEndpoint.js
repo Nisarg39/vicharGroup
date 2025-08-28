@@ -1,8 +1,5 @@
 "use server";
 
-// BASIC LOGGING TEST - Optimized Submission Endpoint File Loaded
-console.log("🚀 SERVER: optimizedSubmissionEndpoint.js loaded at", new Date().toISOString());
-
 import { connectDB } from "../../config/mongoose";
 import Exam from "../../models/exam_portal/exam";
 import ExamResult from "../../models/exam_portal/examResult";
@@ -43,16 +40,11 @@ export async function submitOptimizedExamResult(optimizedData) {
   const startTime = Date.now();
   
   try {
-    console.log('⚡ OPTIMIZED ENDPOINT: Processing pre-computed submission...', {
-      examId: optimizedData.examId,
-      studentId: optimizedData.studentId,
-      finalScore: optimizedData.finalScore,
-      totalMarks: optimizedData.totalMarks
-    });
+    console.log('⚡ OPTIMIZED ENDPOINT: Processing pre-computed submission...');
     
     await connectDB();
     
-    // STEP 1: Ultra-fast validation (5ms target) - OPTIMIZED: Reduced logging
+    // STEP 1: Ultra-fast validation (5ms target)
     const validationStartTime = Date.now();
     const validation = await performUltraFastValidation(optimizedData);
     const validationTime = Date.now() - validationStartTime;
@@ -64,11 +56,10 @@ export async function submitOptimizedExamResult(optimizedData) {
       await logSubmissionFallback(optimizedData, 'validation_failed', validation.reason, validationTime);
       
       // FALLBACK: Route to traditional computation
-      const fallbackResult = await fallbackToTraditionalComputation(optimizedData);
-      return fallbackResult;
+      return await fallbackToTraditionalComputation(optimizedData);
     }
     
-    // STEP 2: Direct storage without any computation (10ms target) - OPTIMIZED: Reduced logging
+    // STEP 2: Direct storage without any computation (10ms target)
     const storageStartTime = Date.now();
     const result = await storeOptimizedResultDirect(optimizedData, validation);
     const storageTime = Date.now() - storageStartTime;
@@ -94,13 +85,6 @@ export async function submitOptimizedExamResult(optimizedData) {
     // Log to monitoring system
     await logOptimizedSubmissionPerformance(optimizedData, performanceMetrics);
     
-    console.log('✅ OPTIMIZED SUBMISSION SUCCESS:', {
-      totalTime: `${totalTime}ms`,
-      resultId: result.examResultData?.resultId,
-      score: result.examResultData?.score,
-      totalMarks: result.examResultData?.totalMarks
-    });
-    
     return {
       success: true,
       message: "Your exam has been submitted successfully!",
@@ -125,8 +109,7 @@ export async function submitOptimizedExamResult(optimizedData) {
     
     // EMERGENCY FALLBACK: Traditional computation
     console.log('🔄 Emergency fallback to traditional computation...');
-    const fallbackResult = await fallbackToTraditionalComputation(optimizedData, error);
-    return fallbackResult;
+    return await fallbackToTraditionalComputation(optimizedData, error);
   }
 }
 
@@ -205,12 +188,6 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
   const startTime = Date.now();
   
   try {
-    console.log('💾 DIRECT STORAGE - Starting optimized result storage:', {
-      examId: optimizedData.examId,
-      studentId: optimizedData.studentId,
-      finalScore: optimizedData.finalScore,
-      totalMarks: optimizedData.totalMarks
-    });
     const {
       examId,
       studentId,
@@ -306,81 +283,16 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
       isOfflineSubmission: false
     };
     
-    // LOG PRE-SAVE DATA INTEGRITY
-    console.log('📊 PRE-SAVE DATA VALIDATION:', {
-      traceId: tracer.requestId,
-      examResultData: {
-        hasExamId: !!examResultData.exam,
-        hasStudentId: !!examResultData.student,
-        score: examResultData.score,
-        totalMarks: examResultData.totalMarks,
-        answersCount: Object.keys(examResultData.answers || {}).length,
-        hasStatistics: !!examResultData.statistics,
-        attemptNumber: examResultData.attemptNumber
-      }
-    });
-    
-    // ENHANCED: Single database write operation with error handling
+    // Single database write operation
     const examResult = new ExamResult(examResultData);
+    await examResult.save();
     
-    try {
-      await examResult.save();
-      console.log(`✅ ExamResult saved successfully with ID: ${examResult._id}`);
-      
-      // CRITICAL: IMMEDIATE DATABASE VERIFICATION - Check if data was actually written
-      console.log('🔍 CRITICAL DATABASE VERIFICATION: Immediately checking if data was actually saved...');
-      const verificationResult = await ExamResult.findById(examResult._id).lean();
-      
-      if (verificationResult) {
-        console.log('✅ CRITICAL SUCCESS: Database write VERIFIED - Data is persistent!', {
-          verificationId: verificationResult._id,
-          verificationScore: verificationResult.score,
-          verificationTotalMarks: verificationResult.totalMarks,
-          verificationStudent: verificationResult.student,
-          verificationExam: verificationResult.exam,
-          actualDataPersisted: true
-        });
-      } else {
-        console.error('❌ CRITICAL FAILURE: Database write NOT VERIFIED - Data not found immediately after save!', {
-          attemptedSaveId: examResult._id,
-          saveSucceeded: true,
-          verificationFailed: true,
-          criticalIssue: 'DATA_NOT_PERSISTING'
-        });
-        throw new Error('CRITICAL: Database save succeeded but verification failed - data not persisting');
-      }
-      
-      
-    } catch (saveError) {
-      console.error('❌ CRITICAL: ExamResult save failed:', {
-        error: saveError.message,
-        stack: saveError.stack,
-        examId: examResultData.exam,
-        studentId: examResultData.student
-      });
-      
-      throw new Error(`Database save failed: ${saveError.message}`);
-    }
-    
-    // ENHANCED: Update exam results array with error handling
-    try {
-      await Exam.findByIdAndUpdate(
-        examId,
-        { $push: { examResults: examResult._id } },
-        { lean: true }
-      );
-      console.log(`✅ Exam updated successfully with result ID: ${examResult._id}`);
-      
-    } catch (updateError) {
-      console.error('❌ CRITICAL: Exam update failed:', {
-        error: updateError.message,
-        examId: examId,
-        resultId: examResult._id
-      });
-      
-      // Don't throw here as the result is already saved
-      console.warn('⚠️ Result saved but exam array update failed - will be corrected by background process');
-    }
+    // Update exam results array (single update operation)
+    await Exam.findByIdAndUpdate(
+      examId,
+      { $push: { examResults: examResult._id } },
+      { lean: true }
+    );
     
     const storageTime = Date.now() - startTime;
     console.log(`💾 Direct storage completed in ${storageTime}ms`);
@@ -426,22 +338,6 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
 
 async function validateBasicStructure(data) {
   try {
-    console.log('🔍 DEBUG: Server-side basic structure validation');
-    console.log('🔍 DEBUG: Received data structure:', {
-      examId: data.examId,
-      studentId: data.studentId,
-      finalScore: data.finalScore,
-      totalMarks: data.totalMarks,
-      percentage: data.percentage,
-      correctAnswers: data.correctAnswers,
-      incorrectAnswers: data.incorrectAnswers,
-      unattempted: data.unattempted,
-      completedAt: data.completedAt,
-      timeTaken: data.timeTaken,
-      answersCount: Object.keys(data.answers || {}).length,
-      evaluationSource: data.evaluationSource
-    });
-    
     const requiredFields = [
       'examId', 'studentId', 'answers', 'finalScore', 'totalMarks',
       'percentage', 'correctAnswers', 'incorrectAnswers', 'unattempted',
@@ -451,40 +347,22 @@ async function validateBasicStructure(data) {
     const errors = [];
     
     for (const field of requiredFields) {
-      // FIXED: Allow 0 values for numeric fields (scores can be 0)
       if (data[field] === undefined || data[field] === null) {
-        errors.push(`Missing required field: ${field} (received: ${data[field]})`);
-        console.log(`❌ DEBUG: Missing field ${field}, value:`, data[field]);
+        errors.push(`Missing required field: ${field}`);
       }
     }
     
-    // CRITICAL FIX: Additional validation for numeric fields that could be 0
-    if (data.finalScore !== undefined && typeof data.finalScore !== 'number') {
-      errors.push(`Invalid finalScore type: expected number, got ${typeof data.finalScore}`);
+    // Type validation
+    if (typeof data.finalScore !== 'number' || data.finalScore < 0) {
+      errors.push('Invalid finalScore');
     }
     
-    if (data.totalMarks !== undefined && typeof data.totalMarks !== 'number') {
-      errors.push(`Invalid totalMarks type: expected number, got ${typeof data.totalMarks}`);
+    if (typeof data.totalMarks !== 'number' || data.totalMarks <= 0) {
+      errors.push('Invalid totalMarks');
     }
     
-    // FIXED: Type validation - Allow negative scores and zero scores
-    if (data.finalScore !== undefined && typeof data.finalScore !== 'number') {
-      errors.push('Invalid finalScore: must be a number');
-    }
-    
-    if (data.totalMarks !== undefined && (typeof data.totalMarks !== 'number' || data.totalMarks <= 0)) {
-      errors.push('Invalid totalMarks: must be a positive number');
-    }
-    
-    // FIXED: Allow negative scores due to negative marking, but check reasonable bounds
-    if (data.finalScore !== undefined && data.totalMarks !== undefined) {
-      // Allow scores from -50% to 110% of total marks (reasonable bounds for negative marking)
-      const minAllowedScore = -Math.abs(data.totalMarks * 0.5);
-      const maxAllowedScore = data.totalMarks * 1.1;
-      
-      if (data.finalScore < minAllowedScore || data.finalScore > maxAllowedScore) {
-        errors.push(`Score ${data.finalScore} is outside reasonable bounds (${minAllowedScore} to ${maxAllowedScore})`);
-      }
+    if (data.finalScore > data.totalMarks) {
+      errors.push('Score exceeds maximum possible');
     }
     
     return { valid: errors.length === 0, errors };
@@ -537,11 +415,9 @@ async function validateSecurityConstraints(data) {
       errors.push('Score percentage outside reasonable bounds');
     }
     
-    // Time validation - Allow very short times for testing, but warn
-    if (data.timeTaken < 10) { // Less than 10 seconds is highly suspicious
-      errors.push('Submission time extremely short (< 10 seconds)');
-    } else if (data.timeTaken < 30) {
-      console.warn(`⚠️ Short submission time: ${data.timeTaken} seconds`);
+    // Time validation
+    if (data.timeTaken < 30) { // Less than 30 seconds is suspicious
+      errors.push('Submission time too short');
     }
     
     // Answer pattern validation
@@ -596,10 +472,7 @@ async function validateTemporalConstraints(data) {
  */
 async function fallbackToTraditionalComputation(optimizedData, validationError = null) {
   try {
-    console.log('🔄 FALLBACK: Using traditional server-side computation...', {
-      fallbackReason: validationError?.message || 'Validation failed',
-      hasOptimizedData: !!optimizedData
-    });
+    console.log('🔄 FALLBACK: Using traditional server-side computation...');
     
     // Import traditional submission function
     const { submitExamResultInternal } = await import('./studentExamActions');
@@ -620,21 +493,6 @@ async function fallbackToTraditionalComputation(optimizedData, validationError =
     
     const fallbackResult = await submitExamResultInternal(traditionalData);
     
-    console.log('📊 FALLBACK: Traditional computation result:', {
-      success: fallbackResult.success,
-      message: fallbackResult.message,
-      hasResult: !!fallbackResult.result
-    });
-    
-    if (!fallbackResult.success) {
-      console.error('❌ CRITICAL: Traditional fallback also failed!', {
-        error: fallbackResult.error,
-        message: fallbackResult.message,
-        examId: traditionalData.examId,
-        studentId: traditionalData.studentId
-      });
-    }
-    
     return {
       ...fallbackResult,
       processingMethod: 'traditional_fallback',
@@ -643,10 +501,7 @@ async function fallbackToTraditionalComputation(optimizedData, validationError =
     };
     
   } catch (error) {
-    console.error('❌ Fallback computation failed:', {
-      error: error.message,
-      stack: error.stack
-    });
+    console.error('❌ Fallback computation failed:', error);
     
     return {
       success: false,

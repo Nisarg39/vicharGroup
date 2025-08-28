@@ -24,7 +24,6 @@ import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/pro
 import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 import { shouldCloseExamImmediately, getSubmissionSuccessMessage } from "../../../config/examFeatureFlags"
 import { logSubmissionStart, logImmediateClose, logSubmissionError } from "../../../lib/examBottleneckMonitor"
-import { stabilizeProgressiveData, stabilizeAnswers } from "../../../utils/objectStabilization"
 
 // PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
 import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
@@ -1241,42 +1240,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
-        // CLIENT-SIDE ENTRY POINT LOGGING - Main submission function called
-        console.log("🎯 CLIENT: submitExam() called at", new Date().toISOString());
-        console.log("📊 CLIENT SUBMISSION DATA:", {
-            studentId: student?._id,
-            examId: exam?._id,
-            submissionType,
-            answersCount: Object.keys(answers).length,
-            isExamActive: isExamStarted && timeLeft > 0,
-            clientHasEvaluation: !!evaluationEngineRef.current
-        });
-        console.log("🚨 CLIENT DEBUG: Function entry confirmed - starting execution...");
-        
         // ATOMIC SUBMISSION SYSTEM: Acquire lock to prevent race conditions
-        console.log("🔐 CLIENT DEBUG: About to acquire atomic submission lock...");
-        console.log("🔍 CLIENT DEBUG: atomicSubmissionManager available?", !!atomicSubmissionManager.current);
-        
-        let lockResult;
-        try {
-            lockResult = await atomicSubmissionManager.current?.acquireLock(
-                submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
-                {
-                    examId: exam?._id,
-                    studentId: student?._id,
-                    triggerType: submissionType,
-                    attemptTime: new Date().toISOString()
-                }
-            );
-            console.log("✅ CLIENT DEBUG: Lock acquisition completed:", {
-                success: lockResult?.success,
-                lockId: lockResult?.lockId,
-                error: lockResult?.error
-            });
-        } catch (lockError) {
-            console.error("❌ CLIENT DEBUG: Lock acquisition failed:", lockError);
-            throw lockError;
-        }
+        const lockResult = await atomicSubmissionManager.current?.acquireLock(
+            submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
+            {
+                examId: exam?._id,
+                studentId: student?._id,
+                triggerType: submissionType,
+                attemptTime: new Date().toISOString()
+            }
+        );
         
         if (!lockResult?.success) {
             console.warn('🚫 Cannot submit exam - submission lock acquisition failed:', lockResult);
@@ -1351,18 +1324,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // CRITICAL FIX: Always attempt evaluation, even if not properly initialized during exam
         try {
             console.log('🎯 Attempting client-side evaluation for submission...');
-            console.log('🔍 DEBUG: Evaluation initialization status:', { evaluationInitialized, evaluationError });
-            console.log('🔍 DEBUG: Current answers structure:', Object.keys(answers).length, 'answers');
-            console.log('🔍 DEBUG: First few answers:', Object.entries(answers).slice(0, 3));
             
             // Try to finalize if initialized during exam
             if (evaluationInitialized && !evaluationError) {
-                console.log('📊 CLIENT DEBUG: Client evaluation engine was initialized - finalizing results...');
+                console.log('📊 Client evaluation engine was initialized - finalizing results...');
                 
-                let finalizationResult;
-                try {
-                    console.log('⏱️ CLIENT DEBUG: About to call ClientEvaluation.finalize...');
-                    finalizationResult = await ClientEvaluation.finalize({
+                const finalizationResult = await ClientEvaluation.finalize({
                     submissionType,
                     submittedAt: new Date().toISOString(),
                     timeTaken: exam.examAvailability === 'scheduled' 
@@ -1375,54 +1342,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     processingTime: 0
                 });
                 
-                console.log('✅ CLIENT DEBUG: ClientEvaluation.finalize completed:', {
-                    success: finalizationResult?.success,
-                    finalizationTime: finalizationResult?.finalizationTime
-                });
-                
                 if (finalizationResult.success) {
                     clientEvaluationResult = finalizationResult;
                     console.log(`✅ Client evaluation finalized in ${finalizationResult.finalizationTime.toFixed(2)}ms`);
                     console.log(`📊 Final Score: ${finalizationResult.examResult.finalScore}/${finalizationResult.examResult.totalMarks}`);
-                    console.log('🔍 DEBUG: Client evaluation result structure:', {
-                        success: finalizationResult.success,
-                        examResult: {
-                            finalScore: finalizationResult.examResult?.finalScore,
-                            totalMarks: finalizationResult.examResult?.totalMarks,
-                            percentage: finalizationResult.examResult?.percentage,
-                            correctAnswers: finalizationResult.examResult?.correctAnswers,
-                            incorrectAnswers: finalizationResult.examResult?.incorrectAnswers,
-                            unattempted: finalizationResult.examResult?.unattempted
-                        }
-                    });
-                } else {
-                    console.error('❌ CLIENT DEBUG: Client evaluation finalization failed:', finalizationResult.error);
-                }
-                } catch (finalizationError) {
-                    console.error('❌ CLIENT DEBUG: ClientEvaluation.finalize threw error:', finalizationError);
-                    // Continue with fallback evaluation
                 }
             }
             
             // FALLBACK: Initialize and evaluate at submission time if not done during exam
             if (!clientEvaluationResult) {
-                console.log('🔄 CLIENT DEBUG: Client evaluation not available - attempting emergency evaluation...');
+                console.log('🔄 Client evaluation not available - attempting emergency evaluation...');
                 
-                try {
-                    // Initialize evaluation engine with current data
-                    const emergencyEvaluationData = {
-                        exam,
-                        questions,
-                        student,
-                        timestamp: Date.now()
-                    };
-                    
-                    console.log('⏱️ CLIENT DEBUG: About to call ClientEvaluation.initialize for emergency...');
-                    const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
-                    console.log('✅ CLIENT DEBUG: Emergency initialization completed:', {
-                        success: emergencyInitResult?.success,
-                        error: emergencyInitResult?.error
-                    });
+                // Initialize evaluation engine with current data
+                const emergencyEvaluationData = {
+                    exam,
+                    questions,
+                    student,
+                    timestamp: Date.now()
+                };
+                
+                const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
                 
                 if (emergencyInitResult.success) {
                     console.log('🚨 Emergency client evaluation initialized successfully');
@@ -1453,24 +1392,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     if (emergencyFinalization.success) {
                         clientEvaluationResult = emergencyFinalization;
                         console.log(`🆘 Emergency evaluation completed: ${emergencyFinalization.examResult.finalScore}/${emergencyFinalization.examResult.totalMarks}`);
-                        console.log('🔍 DEBUG: Emergency evaluation result structure:', {
-                            success: emergencyFinalization.success,
-                            examResult: {
-                                finalScore: emergencyFinalization.examResult?.finalScore,
-                                totalMarks: emergencyFinalization.examResult?.totalMarks,
-                                percentage: emergencyFinalization.examResult?.percentage,
-                                correctAnswers: emergencyFinalization.examResult?.correctAnswers,
-                                incorrectAnswers: emergencyFinalization.examResult?.incorrectAnswers,
-                                unattempted: emergencyFinalization.examResult?.unattempted
-                            }
-                        });
-                    } else {
-                        console.error('❌ Emergency evaluation failed:', emergencyFinalization.error);
                     }
-                }
-                } catch (emergencyError) {
-                    console.error('❌ CLIENT DEBUG: Emergency evaluation error:', emergencyError);
-                    console.warn('⚠️ CLIENT DEBUG: Emergency evaluation failed - falling back to server evaluation');
                 }
             }
             
@@ -1481,26 +1403,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 examSubmissionData.score = clientEvaluationResult.examResult.finalScore;
                 examSubmissionData.totalMarks = clientEvaluationResult.examResult.totalMarks;
                 examSubmissionData.percentage = clientEvaluationResult.examResult.percentage;
-                console.log('✅ Client evaluation result added to submission data:', {
-                    score: clientEvaluationResult.examResult.finalScore,
-                    totalMarks: clientEvaluationResult.examResult.totalMarks,
-                    percentage: clientEvaluationResult.examResult.percentage
-                });
             } else {
                 console.warn('⚠️ Client evaluation completely failed - will rely on server evaluation');
-                console.log('🔍 DEBUG: Client evaluation failure details - checking variables:', {
-                    evaluationInitialized,
-                    evaluationError,
-                    answersCount: Object.keys(answers).length,
-                    questionsCount: questions?.length,
-                    examId: exam._id,
-                    studentId: student._id
-                });
             }
             
         } catch (error) {
-            console.error('❌ CLIENT DEBUG: Overall client evaluation error:', error);
-            console.warn('⚠️ CLIENT DEBUG: Falling back to server evaluation');
+            console.error('❌ Client evaluation error:', error);
+            console.warn('⚠️ Falling back to server evaluation');
         }
 
         // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
@@ -1515,31 +1424,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     console.log('📊 Client evaluation result ready, submitting via direct storage...');
                     
                     // Prepare complete data structure for direct storage using client evaluation
-                    console.log('🔍 DEBUG: Preparing direct storage data from client evaluation result');
-                    console.log('🔍 DEBUG: clientEvaluationResult.examResult:', clientEvaluationResult.examResult);
-                    
-                    const finalScore = clientEvaluationResult.examResult?.finalScore || 0;
-                    const totalMarks = clientEvaluationResult.examResult?.totalMarks || 0;
-                    const percentage = clientEvaluationResult.examResult?.percentage || 0;
-                    const correctAnswers = clientEvaluationResult.examResult?.correctAnswers || 0;
-                    const incorrectAnswers = clientEvaluationResult.examResult?.incorrectAnswers || 0;
-                    const unattempted = clientEvaluationResult.examResult?.unattempted || 0;
-                    
-                    console.log('🔍 DEBUG: Extracted values before assignment:', {
-                        finalScore, totalMarks, percentage, correctAnswers, incorrectAnswers, unattempted
-                    });
-                    
                     directStorageData = {
                         // Required validation fields at root level
                         examId: exam._id,
                         studentId: student._id,
                         answers,
-                        finalScore,
-                        totalMarks,
-                        percentage,
-                        correctAnswers,
-                        incorrectAnswers,
-                        unattempted,
+                        finalScore: clientEvaluationResult.examResult?.finalScore || 0,
+                        totalMarks: clientEvaluationResult.examResult?.totalMarks || 0,
+                        percentage: clientEvaluationResult.examResult?.percentage || 0,
+                        correctAnswers: clientEvaluationResult.examResult?.correctAnswers || 0,
+                        incorrectAnswers: clientEvaluationResult.examResult?.incorrectAnswers || 0,
+                        unattempted: clientEvaluationResult.examResult?.unattempted || 0,
                         timeTaken: exam.examAvailability === 'scheduled' 
                             ? Math.floor((Date.now() - startTime) / 1000) 
                             : (getEffectiveExamDuration(exam) * 60) - timeLeft,
@@ -1586,31 +1481,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     if (progressiveResult?.success && progressiveResult.results && progressiveResult.isPreComputed) {
                         console.log('📊 Progressive computation data ready, submitting via direct storage...');
                         
-                        console.log('🔍 DEBUG: Preparing direct storage data from progressive result');
-                        console.log('🔍 DEBUG: progressiveResult.results:', progressiveResult.results);
-                        
-                        const finalScore = progressiveResult.results?.finalScore || progressiveResult.results?.score || 0;
-                        const totalMarks = progressiveResult.results?.totalMarks || 0;
-                        const percentage = progressiveResult.results?.percentage || 0;
-                        const correctAnswers = progressiveResult.results?.correctAnswers || 0;
-                        const incorrectAnswers = progressiveResult.results?.incorrectAnswers || 0;
-                        const unattempted = progressiveResult.results?.unattempted || 0;
-                        
-                        console.log('🔍 DEBUG: Progressive extracted values before assignment:', {
-                            finalScore, totalMarks, percentage, correctAnswers, incorrectAnswers, unattempted
-                        });
-                        
                         directStorageData = {
                             // Required validation fields at root level
                             examId: exam._id,
                             studentId: student._id,
                             answers,
-                            finalScore,
-                            totalMarks,
-                            percentage,
-                            correctAnswers,
-                            incorrectAnswers,
-                            unattempted,
+                            finalScore: progressiveResult.results?.finalScore || progressiveResult.results?.score || 0,
+                            totalMarks: progressiveResult.results?.totalMarks || 0,
+                            percentage: progressiveResult.results?.percentage || 0,
+                            correctAnswers: progressiveResult.results?.correctAnswers || 0,
+                            incorrectAnswers: progressiveResult.results?.incorrectAnswers || 0,
+                            unattempted: progressiveResult.results?.unattempted || 0,
                             timeTaken: exam.examAvailability === 'scheduled' 
                                 ? Math.floor((Date.now() - startTime) / 1000) 
                                 : (getEffectiveExamDuration(exam) * 60) - timeLeft,
@@ -1655,74 +1536,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
                 
                 if (directStorageData) {
-                    console.log('🔍 DEBUG: Final directStorageData structure before submission:', {
-                        examId: directStorageData.examId,
-                        studentId: directStorageData.studentId,
-                        finalScore: directStorageData.finalScore,
-                        totalMarks: directStorageData.totalMarks,
-                        percentage: directStorageData.percentage,
-                        correctAnswers: directStorageData.correctAnswers,
-                        incorrectAnswers: directStorageData.incorrectAnswers,
-                        unattempted: directStorageData.unattempted,
-                        answersCount: Object.keys(directStorageData.answers || {}).length,
-                        evaluationSource: directStorageData.evaluationSource
-                    });
-
-                    // STABILIZATION: Ensure data integrity before submission
-                    const stabilizedDirectStorageData = stabilizeProgressiveData(directStorageData);
-                    const stabilizedAnswers = stabilizeAnswers(currentAnswers);
-                    
-                    // Check for zero value anomalies before submission
-                    if (stabilizedDirectStorageData.finalScore === 0 && Object.keys(stabilizedAnswers).length > 0) {
-                        console.warn('⚠️ Zero final score detected before submission with answers present:', {
-                            finalScore: stabilizedDirectStorageData.finalScore,
-                            answeredQuestions: Object.keys(stabilizedAnswers).length,
-                            clientEvaluation: evaluationEngineRef.current?.getProgressiveResults ? evaluationEngineRef.current.getProgressiveResults() : null
-                        });
-                    }
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
-                    console.log('🎯 CLIENT DEBUG: About to call submitProgressiveResultDirect...');
-                    console.log('🔍 CLIENT DEBUG: stabilizedDirectStorageData:', {
-                        examId: stabilizedDirectStorageData?.examId,
-                        studentId: stabilizedDirectStorageData?.studentId,
-                        hasAnswers: !!stabilizedDirectStorageData?.answers,
-                        hasClientEvaluationResult: !!stabilizedDirectStorageData?.clientEvaluationResult
-                    });
-                    
-                    let directResult;
-                    try {
-                        console.log('⏱️ CLIENT DEBUG: Calling submitProgressiveResultDirect now...');
-                        
-                        // EMERGENCY FIX: Add timeout to detect hangs (increased for database verification)
-                        const SUBMISSION_TIMEOUT = 30000; // 30 seconds (increased from 10 to allow for database verification)
-                        const timeoutPromise = new Promise((_, reject) => {
-                            setTimeout(() => {
-                                reject(new Error('EMERGENCY: Submission timed out after 30 seconds - likely hanging in submitProgressiveResultDirect'));
-                            }, SUBMISSION_TIMEOUT);
-                        });
-                        
-                        const submitPromise = submitProgressiveResultDirect(stabilizedDirectStorageData);
-                        
-                        directResult = await Promise.race([submitPromise, timeoutPromise]);
-                        
-                        console.log('✅ CLIENT DEBUG: submitProgressiveResultDirect returned:', {
-                            success: directResult?.success,
-                            message: directResult?.message,
-                            processingTime: directResult?.processingTime
-                        });
-                    } catch (submitError) {
-                        console.error('❌ CLIENT DEBUG: submitProgressiveResultDirect failed or timed out:', submitError);
-                        
-                        if (submitError.message.includes('EMERGENCY: Submission timed out')) {
-                            console.error('🚨 HANG DETECTED: submitProgressiveResultDirect is hanging! Using emergency fallback...');
-                            
-                            // EMERGENCY FALLBACK: Skip progressive submission entirely
-                            throw new Error('EMERGENCY_BYPASS_TO_TRADITIONAL');
-                        }
-                        
-                        throw submitError;
-                    }
+                    const directResult = await submitProgressiveResultDirect(directStorageData);
                     
                     // Track performance metrics
                     const performanceMonitor = getPerformanceMonitor();
@@ -1814,14 +1630,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 console.log('🔄 Using traditional submission fallback');
             } catch (error) {
                 console.error('❌ Enhanced progressive submission error:', error);
-                
-                // EMERGENCY BYPASS DETECTION
-                if (error.message === 'EMERGENCY_BYPASS_TO_TRADITIONAL') {
-                    console.error('🚨 EMERGENCY BYPASS ACTIVATED: submitProgressiveResultDirect was hanging!');
-                    console.log('🔄 EMERGENCY: Skipping all progressive computation - using traditional fallback immediately');
-                } else {
-                    console.log('🔄 Falling back to traditional server-side computation due to error:', error.message);
-                }
+                console.log('🔄 Falling back to traditional server-side computation');
                 
                 // Update submission state for error recovery
                 setSubmissionState({ 
@@ -2346,36 +2155,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setShowConfirmSubmit(true)
     }
 
-    const handleConfirmSubmit = async () => {
-        console.log("🎯 EXAM INTERFACE: handleConfirmSubmit called at", new Date().toISOString())
-        console.log("🎯 EXAM INTERFACE: Setting submission type and starting submission...")
-        
+    const handleConfirmSubmit = () => {
+        setShowConfirmSubmit(false)
         setSubmissionType('manual_submit'); // Mark as manual submit for proper messaging
-        
-        console.log("🎯 EXAM INTERFACE: About to call submitExam()")
-        console.log("🎯 EXAM INTERFACE: submitExam function type:", typeof submitExam)
-        
-        try {
-            console.log("🎯 EXAM INTERFACE: Calling submitExam() now...")
-            
-            // Wait for submission to complete before closing modal
-            await submitExam()
-            
-            console.log("✅ EXAM INTERFACE: submitExam() completed successfully")
-            
-            // Only close modal after successful submission
-            setShowConfirmSubmit(false)
-            
-            console.log("🎯 EXAM INTERFACE: Modal closed after successful submission")
-        } catch (error) {
-            console.error("❌ EXAM INTERFACE: Error in submitExam:", error)
-            
-            // On error, still close the modal to prevent stuck state
-            // The submitExam function should handle its own error states and navigation
-            setShowConfirmSubmit(false)
-            
-            console.log("⚠️ EXAM INTERFACE: Modal closed after submission error")
-        }
+        submitExam()
     }
 
     const handleCancelSubmit = () => {

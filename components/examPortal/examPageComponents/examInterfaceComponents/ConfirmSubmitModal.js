@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { VicharCard, VicharCardHeader, VicharCardTitle, VicharCardContent } from "../../../ui/vichar-card"
 import { VicharButton } from "../../../ui/vichar-button"
 import { AlertTriangle } from "lucide-react"
@@ -14,79 +14,13 @@ export default function ConfirmSubmitModal({
     exam 
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [timeoutId, setTimeoutId] = useState(null)
 
-    const handleSubmit = async () => {
-        console.log("🔥 SUBMIT MODAL: Submit button clicked at", new Date().toISOString())
-        console.log("🔥 SUBMIT MODAL: onSubmit function type:", typeof onSubmit)
-        console.log("🔥 SUBMIT MODAL: onSubmit function available:", !!onSubmit)
-        
+    const handleSubmit = () => {
         setIsSubmitting(true)
-        
-        // Set up automatic timeout to prevent stuck state
-        const timeout = setTimeout(() => {
-            console.warn("⚠️ SUBMIT TIMEOUT: Submission timed out after 10 seconds, resetting UI state")
-            setIsSubmitting(false)
-            // Don't call onCancel here as it might interfere with actual submission
-        }, 10000) // 10 second timeout
-        
-        setTimeoutId(timeout)
-        
-        try {
-            console.log("🚀 SUBMIT MODAL: About to call onSubmit function...")
-            if (typeof onSubmit === 'function') {
-                console.log("✅ SUBMIT MODAL: onSubmit is a function, calling it now...")
-                const result = await onSubmit()
-                console.log("📊 SUBMIT MODAL: onSubmit completed with result:", result)
-                
-                // Clear timeout since submission completed successfully
-                clearTimeout(timeout)
-                setTimeoutId(null)
-                setIsSubmitting(false)
-                
-                console.log("✅ SUBMIT MODAL: Submission completed successfully, modal state reset")
-            } else {
-                console.error("❌ SUBMIT MODAL: onSubmit is not a function! Type:", typeof onSubmit, "Value:", onSubmit)
-                setIsSubmitting(false)
-                clearTimeout(timeout)
-                setTimeoutId(null)
-                return
-            }
-        } catch (error) {
-            console.error("❌ SUBMIT MODAL: Error calling onSubmit:", error)
-            setIsSubmitting(false)
-            clearTimeout(timeout)
-            setTimeoutId(null)
-            
-            // Don't return here - let the modal close naturally after showing the error
-            console.log("⚠️ SUBMIT MODAL: Error handled, modal will close")
-        }
+        onSubmit()
     }
 
-    // Cleanup timeout on component unmount or when modal closes
-    useEffect(() => {
-        return () => {
-            if (timeoutId) {
-                clearTimeout(timeoutId)
-            }
-        }
-    }, [timeoutId])
-    
-    // Reset state when modal closes
-    useEffect(() => {
-        if (!showConfirmSubmit && timeoutId) {
-            clearTimeout(timeoutId)
-            setTimeoutId(null)
-            setIsSubmitting(false)
-        }
-    }, [showConfirmSubmit, timeoutId])
-
-    if (!showConfirmSubmit) {
-        console.log("🔍 SUBMIT MODAL: Modal hidden, showConfirmSubmit =", showConfirmSubmit)
-        return null
-    }
-    
-    console.log("🔍 SUBMIT MODAL: Modal rendering, isSubmitting =", isSubmitting, "showConfirmSubmit =", showConfirmSubmit)
+    if (!showConfirmSubmit) return null
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
@@ -146,10 +80,7 @@ export default function ConfirmSubmitModal({
                     {/* Action Buttons - Mobile Optimized */}
                     <div className="space-y-3">
                         <VicharButton
-                            onClick={() => {
-                                console.log("🔥 SUBMIT MODAL: Submit button clicked! isSubmitting =", isSubmitting)
-                                handleSubmit()
-                            }}
+                            onClick={handleSubmit}
                             disabled={isSubmitting}
                             className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl disabled:shadow-md transition-all duration-200 active:scale-95 disabled:active:scale-100 touch-action-manipulation"
                         >
@@ -157,10 +88,7 @@ export default function ConfirmSubmitModal({
                         </VicharButton>
                         <VicharButton
                             variant="outline"
-                            onClick={() => {
-                                console.log("🚫 SUBMIT MODAL: Cancel button clicked!")
-                                onCancel()
-                            }}
+                            onClick={onCancel}
                             className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 py-3 px-6 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 touch-action-manipulation"
                         >
                             Continue Exam
