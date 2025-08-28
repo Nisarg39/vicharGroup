@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { VicharCard, VicharCardHeader, VicharCardTitle, VicharCardContent } from "../../../ui/vichar-card"
 import { VicharButton } from "../../../ui/vichar-button"
 import { AlertTriangle } from "lucide-react"
@@ -14,11 +14,67 @@ export default function ConfirmSubmitModal({
     exam 
 }) {
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [timeoutId, setTimeoutId] = useState(null)
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        console.log("🔥 SUBMIT MODAL: Submit button clicked at", new Date().toISOString())
+        console.log("🔥 SUBMIT MODAL: onSubmit function type:", typeof onSubmit)
+        console.log("🔥 SUBMIT MODAL: onSubmit function available:", !!onSubmit)
+        
         setIsSubmitting(true)
-        onSubmit()
+        
+        // Set up automatic timeout to prevent stuck state
+        const timeout = setTimeout(() => {
+            console.warn("⚠️ SUBMIT TIMEOUT: Submission timed out after 10 seconds, resetting UI state")
+            setIsSubmitting(false)
+            // Don't call onCancel here as it might interfere with actual submission
+        }, 10000) // 10 second timeout
+        
+        setTimeoutId(timeout)
+        
+        try {
+            console.log("🚀 SUBMIT MODAL: About to call onSubmit function...")
+            if (typeof onSubmit === 'function') {
+                console.log("✅ SUBMIT MODAL: onSubmit is a function, calling it now...")
+                const result = await onSubmit()
+                console.log("📊 SUBMIT MODAL: onSubmit completed with result:", result)
+            } else {
+                console.error("❌ SUBMIT MODAL: onSubmit is not a function! Type:", typeof onSubmit, "Value:", onSubmit)
+                setIsSubmitting(false)
+                clearTimeout(timeout)
+                return
+            }
+        } catch (error) {
+            console.error("❌ SUBMIT MODAL: Error calling onSubmit:", error)
+            setIsSubmitting(false)
+            clearTimeout(timeout)
+            return
+        }
+        
+        // If we reach here, submission was successful
+        console.log("✅ SUBMIT MODAL: Submission process initiated successfully")
+        
+        // Note: Don't clear isSubmitting here - let the parent component handle it
+        // The timeout will reset it if needed
     }
+
+    // Cleanup timeout on component unmount or when modal closes
+    useEffect(() => {
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId)
+            }
+        }
+    }, [timeoutId])
+    
+    // Reset state when modal closes
+    useEffect(() => {
+        if (!showConfirmSubmit && timeoutId) {
+            clearTimeout(timeoutId)
+            setTimeoutId(null)
+            setIsSubmitting(false)
+        }
+    }, [showConfirmSubmit, timeoutId])
 
     if (!showConfirmSubmit) return null
 

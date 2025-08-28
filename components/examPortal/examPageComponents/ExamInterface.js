@@ -1468,6 +1468,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         console.error('❌ Emergency evaluation failed:', emergencyFinalization.error);
                     }
                 }
+                } catch (emergencyError) {
+                    console.error('❌ CLIENT DEBUG: Emergency evaluation error:', emergencyError);
+                    console.warn('⚠️ CLIENT DEBUG: Emergency evaluation failed - falling back to server evaluation');
+                }
             }
             
             // Update submission data if we have client evaluation result
@@ -1492,10 +1496,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     examId: exam._id,
                     studentId: student._id
                 });
-                } catch (emergencyError) {
-                    console.error('❌ CLIENT DEBUG: Emergency evaluation error:', emergencyError);
-                    console.warn('⚠️ CLIENT DEBUG: Emergency evaluation failed - falling back to server evaluation');
-                }
             }
             
         } catch (error) {
@@ -2346,10 +2346,29 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setShowConfirmSubmit(true)
     }
 
-    const handleConfirmSubmit = () => {
-        setShowConfirmSubmit(false)
+    const handleConfirmSubmit = async () => {
+        console.log("🎯 EXAM INTERFACE: handleConfirmSubmit called at", new Date().toISOString())
+        console.log("🎯 EXAM INTERFACE: Setting submission type and starting submission...")
+        
         setSubmissionType('manual_submit'); // Mark as manual submit for proper messaging
-        submitExam()
+        
+        console.log("🎯 EXAM INTERFACE: About to call submitExam()")
+        console.log("🎯 EXAM INTERFACE: submitExam function type:", typeof submitExam)
+        
+        try {
+            console.log("🎯 EXAM INTERFACE: Calling submitExam() now...")
+            const submissionPromise = submitExam()
+            console.log("🎯 EXAM INTERFACE: submitExam() promise created:", submissionPromise)
+            
+            // Close modal immediately after submission starts (don't wait for completion)
+            setShowConfirmSubmit(false)
+            
+            console.log("🎯 EXAM INTERFACE: Modal closed, submission is running in background")
+        } catch (error) {
+            console.error("❌ EXAM INTERFACE: Error calling submitExam:", error)
+            // Still close modal on error to avoid stuck state
+            setShowConfirmSubmit(false)
+        }
     }
 
     const handleCancelSubmit = () => {
