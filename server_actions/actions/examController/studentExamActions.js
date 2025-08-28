@@ -34,6 +34,7 @@ import {
 } from "../../../utils/examEvaluationConfig.js";
 import { validateExamDuration } from "../../../utils/examDurationHelpers";
 import { getEffectiveExamDuration } from "../../../utils/examTimingUtils";
+import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submissionDataTracer";
 
 // Subject normalization function for consistent matching across all exam evaluation logic
 function normalizeSubject(subject) {
@@ -1760,6 +1761,9 @@ export async function submitExamResultInternal(examData) {
     examId: examData?.examId,
     answersCount: examData?.answers?.length || 0
   });
+  
+  // Initialize tracer for this submission
+  const tracer = createSubmissionTracer('EXAM_RESULT');
   
   try {
     await connectDB();

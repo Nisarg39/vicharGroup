@@ -451,11 +451,13 @@ async function validateBasicStructure(data) {
       errors.push('Invalid finalScore');
     }
     
-    if (typeof data.totalMarks !== 'number' || data.totalMarks <= 0) {
+    // Allow zero totalMarks for cases where all questions were answered incorrectly
+    // or for special exam configurations
+    if (typeof data.totalMarks !== 'number' || data.totalMarks < 0) {
       errors.push('Invalid totalMarks');
     }
     
-    if (data.finalScore > data.totalMarks) {
+    if (data.finalScore > data.totalMarks && data.totalMarks > 0) {
       errors.push('Score exceeds maximum possible');
     }
     
