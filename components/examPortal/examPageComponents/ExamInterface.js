@@ -1241,16 +1241,42 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
+        // CLIENT-SIDE ENTRY POINT LOGGING - Main submission function called
+        console.log("🎯 CLIENT: submitExam() called at", new Date().toISOString());
+        console.log("📊 CLIENT SUBMISSION DATA:", {
+            studentId: student?._id,
+            examId: exam?._id,
+            submissionType,
+            answersCount: Object.keys(answers).length,
+            isExamActive: isExamActive,
+            clientHasEvaluation: !!evaluationEngineRef.current
+        });
+        console.log("🚨 CLIENT DEBUG: Function entry confirmed - starting execution...");
+        
         // ATOMIC SUBMISSION SYSTEM: Acquire lock to prevent race conditions
-        const lockResult = await atomicSubmissionManager.current?.acquireLock(
-            submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
-            {
-                examId: exam?._id,
-                studentId: student?._id,
-                triggerType: submissionType,
-                attemptTime: new Date().toISOString()
-            }
-        );
+        console.log("🔐 CLIENT DEBUG: About to acquire atomic submission lock...");
+        console.log("🔍 CLIENT DEBUG: atomicSubmissionManager available?", !!atomicSubmissionManager.current);
+        
+        let lockResult;
+        try {
+            lockResult = await atomicSubmissionManager.current?.acquireLock(
+                submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
+                {
+                    examId: exam?._id,
+                    studentId: student?._id,
+                    triggerType: submissionType,
+                    attemptTime: new Date().toISOString()
+                }
+            );
+            console.log("✅ CLIENT DEBUG: Lock acquisition completed:", {
+                success: lockResult?.success,
+                lockId: lockResult?.lockId,
+                error: lockResult?.error
+            });
+        } catch (lockError) {
+            console.error("❌ CLIENT DEBUG: Lock acquisition failed:", lockError);
+            throw lockError;
+        }
         
         if (!lockResult?.success) {
             console.warn('🚫 Cannot submit exam - submission lock acquisition failed:', lockResult);
@@ -1331,9 +1357,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             
             // Try to finalize if initialized during exam
             if (evaluationInitialized && !evaluationError) {
-                console.log('📊 Client evaluation engine was initialized - finalizing results...');
+                console.log('📊 CLIENT DEBUG: Client evaluation engine was initialized - finalizing results...');
                 
-                const finalizationResult = await ClientEvaluation.finalize({
+                let finalizationResult;
+                try {
+                    console.log('⏱️ CLIENT DEBUG: About to call ClientEvaluation.finalize...');
+                    finalizationResult = await ClientEvaluation.finalize({
                     submissionType,
                     submittedAt: new Date().toISOString(),
                     timeTaken: exam.examAvailability === 'scheduled' 
@@ -1344,6 +1373,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     warnings: warningCount,
                     userAgent: navigator.userAgent,
                     processingTime: 0
+                });
+                
+                console.log('✅ CLIENT DEBUG: ClientEvaluation.finalize completed:', {
+                    success: finalizationResult?.success,
+                    finalizationTime: finalizationResult?.finalizationTime
                 });
                 
                 if (finalizationResult.success) {
@@ -1362,23 +1396,33 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         }
                     });
                 } else {
-                    console.error('❌ Client evaluation finalization failed:', finalizationResult.error);
+                    console.error('❌ CLIENT DEBUG: Client evaluation finalization failed:', finalizationResult.error);
+                }
+                } catch (finalizationError) {
+                    console.error('❌ CLIENT DEBUG: ClientEvaluation.finalize threw error:', finalizationError);
+                    // Continue with fallback evaluation
                 }
             }
             
             // FALLBACK: Initialize and evaluate at submission time if not done during exam
             if (!clientEvaluationResult) {
-                console.log('🔄 Client evaluation not available - attempting emergency evaluation...');
+                console.log('🔄 CLIENT DEBUG: Client evaluation not available - attempting emergency evaluation...');
                 
-                // Initialize evaluation engine with current data
-                const emergencyEvaluationData = {
-                    exam,
-                    questions,
-                    student,
-                    timestamp: Date.now()
-                };
-                
-                const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
+                try {
+                    // Initialize evaluation engine with current data
+                    const emergencyEvaluationData = {
+                        exam,
+                        questions,
+                        student,
+                        timestamp: Date.now()
+                    };
+                    
+                    console.log('⏱️ CLIENT DEBUG: About to call ClientEvaluation.initialize for emergency...');
+                    const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
+                    console.log('✅ CLIENT DEBUG: Emergency initialization completed:', {
+                        success: emergencyInitResult?.success,
+                        error: emergencyInitResult?.error
+                    });
                 
                 if (emergencyInitResult.success) {
                     console.log('🚨 Emergency client evaluation initialized successfully');
@@ -1448,11 +1492,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     examId: exam._id,
                     studentId: student._id
                 });
+                } catch (emergencyError) {
+                    console.error('❌ CLIENT DEBUG: Emergency evaluation error:', emergencyError);
+                    console.warn('⚠️ CLIENT DEBUG: Emergency evaluation failed - falling back to server evaluation');
+                }
             }
             
         } catch (error) {
-            console.error('❌ Client evaluation error:', error);
-            console.warn('⚠️ Falling back to server evaluation');
+            console.error('❌ CLIENT DEBUG: Overall client evaluation error:', error);
+            console.warn('⚠️ CLIENT DEBUG: Falling back to server evaluation');
         }
 
         // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
@@ -1634,7 +1682,47 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     }
                     
                     // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
-                    const directResult = await submitProgressiveResultDirect(stabilizedDirectStorageData);
+                    console.log('🎯 CLIENT DEBUG: About to call submitProgressiveResultDirect...');
+                    console.log('🔍 CLIENT DEBUG: stabilizedDirectStorageData:', {
+                        examId: stabilizedDirectStorageData?.examId,
+                        studentId: stabilizedDirectStorageData?.studentId,
+                        hasAnswers: !!stabilizedDirectStorageData?.answers,
+                        hasClientEvaluationResult: !!stabilizedDirectStorageData?.clientEvaluationResult
+                    });
+                    
+                    let directResult;
+                    try {
+                        console.log('⏱️ CLIENT DEBUG: Calling submitProgressiveResultDirect now...');
+                        
+                        // EMERGENCY FIX: Add timeout to detect hangs
+                        const SUBMISSION_TIMEOUT = 10000; // 10 seconds
+                        const timeoutPromise = new Promise((_, reject) => {
+                            setTimeout(() => {
+                                reject(new Error('EMERGENCY: Submission timed out after 10 seconds - likely hanging in submitProgressiveResultDirect'));
+                            }, SUBMISSION_TIMEOUT);
+                        });
+                        
+                        const submitPromise = submitProgressiveResultDirect(stabilizedDirectStorageData);
+                        
+                        directResult = await Promise.race([submitPromise, timeoutPromise]);
+                        
+                        console.log('✅ CLIENT DEBUG: submitProgressiveResultDirect returned:', {
+                            success: directResult?.success,
+                            message: directResult?.message,
+                            processingTime: directResult?.processingTime
+                        });
+                    } catch (submitError) {
+                        console.error('❌ CLIENT DEBUG: submitProgressiveResultDirect failed or timed out:', submitError);
+                        
+                        if (submitError.message.includes('EMERGENCY: Submission timed out')) {
+                            console.error('🚨 HANG DETECTED: submitProgressiveResultDirect is hanging! Using emergency fallback...');
+                            
+                            // EMERGENCY FALLBACK: Skip progressive submission entirely
+                            throw new Error('EMERGENCY_BYPASS_TO_TRADITIONAL');
+                        }
+                        
+                        throw submitError;
+                    }
                     
                     // Track performance metrics
                     const performanceMonitor = getPerformanceMonitor();
@@ -1726,7 +1814,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 console.log('🔄 Using traditional submission fallback');
             } catch (error) {
                 console.error('❌ Enhanced progressive submission error:', error);
-                console.log('🔄 Falling back to traditional server-side computation');
+                
+                // EMERGENCY BYPASS DETECTION
+                if (error.message === 'EMERGENCY_BYPASS_TO_TRADITIONAL') {
+                    console.error('🚨 EMERGENCY BYPASS ACTIVATED: submitProgressiveResultDirect was hanging!');
+                    console.log('🔄 EMERGENCY: Skipping all progressive computation - using traditional fallback immediately');
+                } else {
+                    console.log('🔄 Falling back to traditional server-side computation due to error:', error.message);
+                }
                 
                 // Update submission state for error recovery
                 setSubmissionState({ 
