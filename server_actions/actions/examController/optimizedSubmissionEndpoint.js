@@ -242,9 +242,21 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
     }
     
     // Check attempt limit (fast query)
+    console.log('🔥 CRITICAL ATTEMPT CHECK: Checking previous attempts...', {
+      examId: examId,
+      studentId: studentId
+    });
+    
     const previousAttempts = await ExamResult.countDocuments({ 
       exam: examId, 
       student: studentId 
+    });
+    
+    const currentAttemptNumber = previousAttempts + 1;
+    console.log('🔥 CRITICAL ATTEMPT RESULT:', {
+      previousAttempts: previousAttempts,
+      currentAttemptNumber: currentAttemptNumber,
+      maxAllowed: exam.reattempt || 1
     });
     
     const maxAttempts = exam.reattempt || 1;
@@ -256,7 +268,7 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
     const examResultData = {
       exam: examId,
       student: studentId,
-      attemptNumber: previousAttempts + 1,
+      attemptNumber: currentAttemptNumber,
       answers,
       visitedQuestions,
       markedQuestions,
@@ -320,6 +332,31 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
       dataStructure: Object.keys(examResultData)
     });
     
+    // Check for existing submission before creating new one (race condition protection)
+    console.log('🔥 CRITICAL DUPLICATE CHECK: Checking for existing submission...', {
+      examId: examId,
+      studentId: studentId,
+      attemptNumber: currentAttemptNumber
+    });
+    
+    const existingSubmission = await ExamResult.findOne({
+      exam: examId,
+      student: studentId,
+      attemptNumber: currentAttemptNumber
+    });
+    
+    if (existingSubmission) {
+      console.error('❌ CRITICAL DUPLICATE SUBMISSION DETECTED:', {
+        existingId: existingSubmission._id,
+        existingAttempt: existingSubmission.attemptNumber,
+        currentAttempt: currentAttemptNumber,
+        createdAt: existingSubmission.createdAt
+      });
+      throw new Error(`Duplicate submission detected - attempt ${currentAttemptNumber} already exists for this exam`);
+    }
+    
+    console.log('✅ CRITICAL DUPLICATE CHECK: No duplicate found, proceeding with save');
+    
     const examResult = new ExamResult(examResultData);
     console.log('🔥 CRITICAL DATABASE SAVE: ExamResult model created, attempting save...');
     
@@ -327,6 +364,7 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
       const savedResult = await examResult.save();
       console.log('✅ CRITICAL DATABASE SUCCESS: ExamResult saved successfully!', {
         resultId: savedResult._id,
+        attemptNumber: savedResult.attemptNumber,
         saveTimestamp: new Date().toISOString()
       });
     } catch (saveError) {
@@ -336,6 +374,8 @@ async function storeOptimizedResultDirect(optimizedData, validation) {
         name: saveError.name,
         validationErrors: saveError.errors,
         stack: saveError.stack,
+        isDuplicateKeyError: saveError.code === 11000,
+        duplicateKeyInfo: saveError.code === 11000 ? saveError.keyPattern : null,
         examResultData: JSON.stringify(examResultData, null, 2)
       });
       throw saveError;

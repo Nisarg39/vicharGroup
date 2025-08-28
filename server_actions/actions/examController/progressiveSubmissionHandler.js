@@ -38,13 +38,17 @@ import createSubmissionTracer, { SubmissionTraceUtils } from "../../utils/submis
  * This is the primary entry point for pre-computed client evaluation results.
  */
 export async function submitProgressiveResultDirect(progressiveData) {
-  // ENTRY POINT LOGGING - Progressive submission function called
-  console.log("🔥 PROGRESSIVE SUBMISSION ENTRY: submitProgressiveResultDirect called at", new Date().toISOString());
-  console.log("📦 PROGRESSIVE SUBMISSION DATA:", {
+  // CRITICAL ENTRY LOGGING - Progressive submission function called
+  console.log("🔥 CRITICAL SERVER ENTRY: submitProgressiveResultDirect called at", new Date().toISOString());
+  console.log("📦 CRITICAL PROGRESSIVE DATA CHECK:", {
     studentId: progressiveData?.studentId,
     examId: progressiveData?.examId,
     hasProgressiveResults: !!progressiveData?.progressiveResults,
-    answersCount: progressiveData?.answers?.length || 0
+    hasAnswers: !!progressiveData?.answers,
+    answersCount: Object.keys(progressiveData?.answers || {}).length,
+    hasClientEvaluationResult: !!progressiveData?.clientEvaluationResult,
+    finalScore: progressiveData?.clientEvaluationResult?.finalScore || progressiveData?.finalScore,
+    totalMarks: progressiveData?.clientEvaluationResult?.totalMarks || progressiveData?.totalMarks
   });
   
   const startTime = Date.now();

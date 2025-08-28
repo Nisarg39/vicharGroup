@@ -1,8 +1,5 @@
 "use server";
 
-// BASIC LOGGING TEST - Server Action File Loaded
-console.log("🚀 SERVER: studentExamActions.js loaded at", new Date().toISOString());
-
 import { connectDB } from "../../config/mongoose";
 import Exam from "../../models/exam_portal/exam";
 import Student from "../../models/student";
