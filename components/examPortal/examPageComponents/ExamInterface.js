@@ -1319,10 +1319,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     
                     // Prepare complete data structure for direct storage using client evaluation
                     directStorageData = {
-                        ...clientEvaluationResult.examResult,
+                        ...clientEvaluationResult,
                         // Ensure required fields are set
                         examId: exam._id,
                         studentId: student._id,
+                        answers,
                         timeTaken: exam.examAvailability === 'scheduled' 
                             ? Math.floor((Date.now() - startTime) / 1000) 
                             : (getEffectiveExamDuration(exam) * 60) - timeLeft,

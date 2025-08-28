@@ -1,5 +1,3 @@
-"use server";
-
 import { connectDB } from "../../config/mongoose";
 import ExamResult from "../../models/exam_portal/examResult";
 
