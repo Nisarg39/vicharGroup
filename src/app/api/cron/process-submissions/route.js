@@ -62,7 +62,7 @@ export async function GET(request) {
   try {
     // Verify cron authentication
     const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.VERCEL_CRON_SECRET;
+    const cronSecret = process.env.CRON_SECRET || process.env.VERCEL_CRON_SECRET;
     
     if (!cronSecret) {
       console.error('ExamCronProcessor - Missing VERCEL_CRON_SECRET environment variable:', {
