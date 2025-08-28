@@ -288,6 +288,25 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         const initializeClientEvaluation = async () => {
             try {
                 console.log('🎯 Initializing client-side evaluation engine...');
+                console.log('📊 Exam data available:', !!exam, 'Questions:', questions?.length, 'Student:', !!student);
+                
+                // Debug log exam and questions data
+                if (!exam) {
+                    console.error('❌ Exam data is missing during client evaluation initialization');
+                    return;
+                }
+                
+                if (!questions || questions.length === 0) {
+                    console.error('❌ Questions data is missing or empty during client evaluation initialization');
+                    return;
+                }
+                
+                if (!student) {
+                    console.error('❌ Student data is missing during client evaluation initialization');
+                    return;
+                }
+                
+                console.log('✅ All required data present for client evaluation initialization');
                 
                 // Initialize Service Worker integration for offline capabilities
                 serviceWorkerIntegration.current = getServiceWorkerIntegration({
@@ -310,12 +329,43 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 };
                 
                 // Initialize client evaluation engine
+                console.log('🔧 Starting ClientEvaluation.initialize() with data:', {
+                    examId: evaluationData.exam?._id,
+                    questionsCount: evaluationData.questions?.length,
+                    studentId: evaluationData.student?._id,
+                    hasValidExam: !!evaluationData.exam,
+                    hasValidQuestions: Array.isArray(evaluationData.questions) && evaluationData.questions.length > 0,
+                    hasValidStudent: !!evaluationData.student
+                });
+                
                 const initResult = await ClientEvaluation.initialize(evaluationData);
+                
+                console.log('🔧 ClientEvaluation.initialize() result:', {
+                    success: initResult.success,
+                    error: initResult.error,
+                    initializationTime: initResult.initializationTime,
+                    questionsLoaded: initResult.questionsLoaded,
+                    rulesPreloaded: initResult.rulesPreloaded
+                });
                 
                 if (initResult.success) {
                     setEvaluationInitialized(true);
                     setEvaluationError(null);
                     console.log(`✅ Client evaluation engine initialized in ${initResult.initializationTime.toFixed(2)}ms`);
+                    
+                    // Test a simple evaluation to ensure the engine is working
+                    if (Object.keys(answers).length > 0) {
+                        const testQuestionId = Object.keys(answers)[0];
+                        const testAnswer = answers[testQuestionId];
+                        console.log('🧪 Testing client evaluation with existing answer:', testQuestionId, testAnswer);
+                        
+                        try {
+                            const testResult = await ClientEvaluation.evaluateAnswer(testQuestionId, testAnswer);
+                            console.log('🧪 Test evaluation result:', testResult);
+                        } catch (testError) {
+                            console.error('🧪 Test evaluation failed:', testError);
+                        }
+                    }
                     
                     // Initialize offline evaluation if supported
                     if (serviceWorkerIntegration.current && swResult.offlineCapable) {
@@ -1270,9 +1320,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
         // CLIENT-SIDE EVALUATION FINALIZATION: Generate complete exam result
         let clientEvaluationResult = null;
-        if (evaluationInitialized && !evaluationError) {
-            try {
-                console.log('🎯 Finalizing client-side evaluation for submission...');
+        
+        // CRITICAL FIX: Always attempt evaluation, even if not properly initialized during exam
+        try {
+            console.log('🎯 Attempting client-side evaluation for submission...');
+            
+            // Try to finalize if initialized during exam
+            if (evaluationInitialized && !evaluationError) {
+                console.log('📊 Client evaluation engine was initialized - finalizing results...');
                 
                 const finalizationResult = await ClientEvaluation.finalize({
                     submissionType,
@@ -1284,28 +1339,77 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     markedQuestions: Array.from(markedQuestions),
                     warnings: warningCount,
                     userAgent: navigator.userAgent,
-                    processingTime: 0 // Will be calculated during finalization
+                    processingTime: 0
                 });
                 
                 if (finalizationResult.success) {
                     clientEvaluationResult = finalizationResult;
                     console.log(`✅ Client evaluation finalized in ${finalizationResult.finalizationTime.toFixed(2)}ms`);
                     console.log(`📊 Final Score: ${finalizationResult.examResult.finalScore}/${finalizationResult.examResult.totalMarks}`);
-                    
-                    // Update submission data with client evaluation result
-                    examSubmissionData.clientEvaluationResult = finalizationResult.examResult;
-                    examSubmissionData.evaluationSource = 'client_side_engine';
-                    examSubmissionData.score = finalizationResult.examResult.finalScore;
-                    examSubmissionData.totalMarks = finalizationResult.examResult.totalMarks;
-                    examSubmissionData.percentage = finalizationResult.examResult.percentage;
-                } else {
-                    console.warn('⚠️ Client evaluation finalization failed:', finalizationResult.error);
                 }
-                
-            } catch (error) {
-                console.error('❌ Client evaluation finalization error:', error);
-                // Continue with normal submission flow
             }
+            
+            // FALLBACK: Initialize and evaluate at submission time if not done during exam
+            if (!clientEvaluationResult) {
+                console.log('🔄 Client evaluation not available - attempting emergency evaluation...');
+                
+                // Initialize evaluation engine with current data
+                const emergencyEvaluationData = {
+                    exam,
+                    questions,
+                    student,
+                    timestamp: Date.now()
+                };
+                
+                const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
+                
+                if (emergencyInitResult.success) {
+                    console.log('🚨 Emergency client evaluation initialized successfully');
+                    
+                    // Evaluate all current answers
+                    if (Object.keys(answers).length > 0) {
+                        const batchEvaluation = await ClientEvaluation.evaluateAnswers(answers);
+                        
+                        if (batchEvaluation.success) {
+                            console.log(`✅ Emergency batch evaluation completed: ${batchEvaluation.successCount}/${batchEvaluation.totalAnswers} answers evaluated`);
+                        }
+                    }
+                    
+                    // Finalize emergency evaluation
+                    const emergencyFinalization = await ClientEvaluation.finalize({
+                        submissionType: 'emergency_evaluation',
+                        submittedAt: new Date().toISOString(),
+                        timeTaken: exam.examAvailability === 'scheduled' 
+                            ? Math.floor((Date.now() - startTime) / 1000) 
+                            : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                        visitedQuestions: Array.from(visitedQuestions),
+                        markedQuestions: Array.from(markedQuestions),
+                        warnings: warningCount,
+                        userAgent: navigator.userAgent,
+                        processingTime: 0
+                    });
+                    
+                    if (emergencyFinalization.success) {
+                        clientEvaluationResult = emergencyFinalization;
+                        console.log(`🆘 Emergency evaluation completed: ${emergencyFinalization.examResult.finalScore}/${emergencyFinalization.examResult.totalMarks}`);
+                    }
+                }
+            }
+            
+            // Update submission data if we have client evaluation result
+            if (clientEvaluationResult) {
+                examSubmissionData.clientEvaluationResult = clientEvaluationResult.examResult;
+                examSubmissionData.evaluationSource = 'client_side_engine';
+                examSubmissionData.score = clientEvaluationResult.examResult.finalScore;
+                examSubmissionData.totalMarks = clientEvaluationResult.examResult.totalMarks;
+                examSubmissionData.percentage = clientEvaluationResult.examResult.percentage;
+            } else {
+                console.warn('⚠️ Client evaluation completely failed - will rely on server evaluation');
+            }
+            
+        } catch (error) {
+            console.error('❌ Client evaluation error:', error);
+            console.warn('⚠️ Falling back to server evaluation');
         }
 
         // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
@@ -1710,7 +1814,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         // CLIENT-SIDE EVALUATION: Real-time evaluation if engine is initialized
         if (evaluationInitialized && !evaluationError) {
             try {
+                console.log('🔄 Evaluating answer in real-time:', questionId, answer);
                 const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, answer);
+                console.log('📊 Real-time evaluation result:', evaluationResult);
                 
                 if (evaluationResult.success) {
                     // Update progressive results with real-time scoring
