@@ -147,13 +147,30 @@ export const useTimerManagement = (exam) => {
         }
     }, [isExamStarted, startTime, timeLeft])
     
+    // Ref management methods to avoid direct ref access from main component
+    const setTimerInitialized = useCallback((initialized) => {
+        timerInitializedRef.current = initialized
+        console.log('🔧 Timer initialized flag set to:', initialized)
+    }, [])
+    
+    const clearWarnings = useCallback(() => {
+        warningsShownRef.current.clear()
+        console.log('🗑️ Timer warnings cleared')
+    }, [])
+    
+    const resetTimerFlags = useCallback(() => {
+        timerInitializedRef.current = false
+        warningsShownRef.current.clear()
+        console.log('🔄 Timer flags reset')
+    }, [])
+    
     return {
         // State
         timeLeft,
         isExamStarted,
         startTime,
         
-        // Refs (for ExamTimer component)
+        // Refs (for ExamTimer component only)
         timerRef,
         timerInitializedRef,
         warningsShownRef,
@@ -163,6 +180,11 @@ export const useTimerManagement = (exam) => {
         stopTimer,
         resumeTimer,
         updateTimeLeft,
+        
+        // Ref management methods
+        setTimerInitialized,
+        clearWarnings,
+        resetTimerFlags,
         
         // Utilities
         getTimerData,

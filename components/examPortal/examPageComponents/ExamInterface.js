@@ -67,7 +67,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         resumeTimer,
         updateTimeLeft,
         getTimerData,
-        isTimerReady
+        isTimerReady,
+        setTimerInitialized,
+        clearWarnings,
+        resetTimerFlags
     } = useTimerManagement(exam)
 
     // HOOK: Exam State - handles core exam state management
@@ -78,14 +81,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         visitedQuestions,
         hasSavedProgress,
         showContinuePrompt,
-        examCompletedRef: hookExamCompletedRef,
+        // examCompletedRef removed from useExamState to prevent conflicts
         handleAnswerChange,
         handleMultipleAnswerChange,
         handleClear,
         toggleMarkedQuestion,
         markQuestionVisited,
         navigateToQuestion,
-        getCurrentQuestion: getExamCurrentQuestion,
+        // getCurrentQuestion removed - using navigation hook's currentQuestion instead
         getQuestionAnswer,
         getProgressStats,
         loadSavedProgress,
@@ -401,9 +404,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         switchToSubject(newSubject);
     };
 
-    // Note: subjectQuestions and currentQuestion are now provided by useQuestionNavigation hook
+    // Use consistent currentQuestion from navigation hook
     const currentQuestion = navCurrentQuestion;
     const totalQuestions = subjectQuestions ? subjectQuestions.length : 0;
+    
+    // Get consistent global index for current question
+    const currentGlobalIndex = currentQuestion 
+        ? questions.findIndex(q => q._id === currentQuestion._id)
+        : getGlobalQuestionIndex(currentQuestionIndex, selectedSubject);
     const answeredQuestions = Object.keys(answers).filter(qid => subjectQuestions.some(q => q._id === qid)).length;
     const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
 
@@ -507,7 +515,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (savedProgress) {
             try {
                 const progress = JSON.parse(savedProgress);
-                setAnswers(progress.answers || {});
+                
+                // Load saved progress using hook method
+                loadSavedProgress(progress);
                 setWarningCount(progress.warningCount || 0); // Restore warning count
                 
                 // Fix: Restore selected subject first, then set question index
@@ -515,22 +525,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     setSelectedSubject(progress.selectedSubject);
                 }
                 
-                // Reset to 0 to ensure proper loading, then set to saved index after subject is set
-                setCurrentQuestionIndex(0);
+                // Resume timer with saved data
+                resumeTimer(progress.startTime, progress.timeLeft);
+                setTimerInitialized(true); // Mark timer as initialized when loading progress
                 
-                // Use setTimeout to ensure subject change completes first
-                setTimeout(() => {
-                    setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
-                }, 100);
-                
-                setMarkedQuestions(new Set(progress.markedQuestions || []));
-                setVisitedQuestions(new Set(progress.visitedQuestions || []));
-                setStartTime(progress.startTime || Date.now());
-                // Use consistent helper function for time calculation
-                const calculatedTimeLeft = calculateRemainingTime(exam, progress.startTime);
-                setTimeLeft(calculatedTimeLeft);
-                timerInitializedRef.current = true; // Mark timer as initialized when loading progress
-                setIsExamStarted(true);
                 toast.success("Previous progress loaded");
             } catch (error) {
                 console.error('Error loading saved progress:', error);
@@ -584,7 +582,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (isExamStarted) {
             const globalIndex = getGlobalQuestionIndex(currentQuestionIndex, selectedSubject);
             if (!visitedQuestions.has(globalIndex)) {
-                setVisitedQuestions(prev => new Set([...prev, globalIndex]));
+                markQuestionVisited(globalIndex);
             }
         }
     }, [isExamStarted, currentQuestionIndex, selectedSubject]);
@@ -843,21 +841,17 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const startExam = () => {
         const savedProgress = localStorage.getItem(progressKey);
         if (!savedProgress) {
-            const now = Date.now();
-            setStartTime(now);
-            setAnswers({});
-            setCurrentQuestionIndex(0);
-            setMarkedQuestions(new Set());
-            setVisitedQuestions(new Set());
+            // Reset exam state using hook methods instead of direct state setters
+            resetExamState(); // This handles: setAnswers({}), setCurrentQuestionIndex(0), setMarkedQuestions(new Set()), setVisitedQuestions(new Set())
             setWarningCount(0);
-            // Use consistent helper function for time calculation
-            const calculatedTimeLeft = calculateRemainingTime(exam, now);
-            setTimeLeft(calculatedTimeLeft);
+            // Start timer using the hook method
+            startTimer(); // This handles: setStartTime(now), setIsExamStarted(true), setTimeLeft(calculatedTimeLeft)
+        } else {
+            // If there is saved progress, just start the timer without resetting state
+            startTimer();
         }
-        setIsExamStarted(true);
         // Clear any previous warnings for this exam session
-        warningsShownRef.current.clear();
-        timerInitializedRef.current = false; // Reset timer initialization flag
+        resetTimerFlags(); // Clear warnings and reset initialization flag
         
         // Progressive scoring initialization now handled by useEffect above
         
@@ -1689,28 +1683,19 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         if (savedProgress) {
             try {
                 const progress = JSON.parse(savedProgress);
-                setAnswers(progress.answers || {});
+                
+                // Load saved progress using hook method
+                loadSavedProgress(progress);
                 setWarningCount(progress.warningCount || 0);
                 
                 if (progress.selectedSubject) {
                     setSelectedSubject(progress.selectedSubject);
                 }
                 
-                setCurrentQuestionIndex(0);
-                setTimeout(() => {
-                    setCurrentQuestionIndex(progress.currentQuestionIndex || 0);
-                }, 100);
+                // Resume timer with saved data
+                resumeTimer(progress.startTime, progress.timeLeft);
+                setTimerInitialized(true);
                 
-                setMarkedQuestions(new Set(progress.markedQuestions || []));
-                setVisitedQuestions(new Set(progress.visitedQuestions || []));
-                setStartTime(progress.startTime || Date.now());
-                
-                // Use consistent helper function for time calculation
-                const calculatedTimeLeft = calculateRemainingTime(exam, progress.startTime);
-                setTimeLeft(calculatedTimeLeft);
-                
-                timerInitializedRef.current = true;
-                setIsExamStarted(true);
                 toast.success("Previous progress loaded");
             } catch (error) {
                 console.error('Error loading saved progress:', error);
@@ -1723,22 +1708,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // 3. Handler for 'Start New Exam' - using consistent helper functions
     const handleStartNewExam = () => {
         localStorage.removeItem(progressKey);
-        setAnswers({});
-        setCurrentQuestionIndex(0);
-        setMarkedQuestions(new Set());
-        setVisitedQuestions(new Set());
+        
+        // Reset all exam state using hook methods
+        resetExamState(); // This handles: setAnswers({}), setCurrentQuestionIndex(0), setMarkedQuestions(new Set()), setVisitedQuestions(new Set())
         setWarningCount(0);
         
-        // Use consistent helper function for time calculation
-        const now = Date.now();
-        const calculatedTimeLeft = calculateRemainingTime(exam, now);
-        setTimeLeft(calculatedTimeLeft);
-        
-        setIsExamStarted(false);
+        // Stop timer and reset timer state
+        stopTimer(); // This handles: setIsExamStarted(false), setStartTime(null), setTimeLeft(0)
         setShowContinuePrompt(false);
         // Clear warning tracking for new exam
-        warningsShownRef.current.clear();
-        timerInitializedRef.current = false;
+        resetTimerFlags(); // Clear warnings and reset initialization flag
     };
 
     // Note: Navigation handlers (handlePrevious, handleNext) are now provided by useQuestionNavigation hook
@@ -2314,7 +2293,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 answers={answers}
                                 markedQuestions={markedQuestions}
                                 visitedQuestions={visitedQuestions}
-                                currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                                currentQuestionIndex={currentGlobalIndex}
                                 onGoToQuestion={(index) => {
                                     handleNavigatorGoToQuestion(index);
                                     setShowMobileNavigator(false);
@@ -2336,7 +2315,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             <div className="lg:hidden">
                 <ExamNavigation
                     currentQuestionIndex={currentQuestionIndex}
-                    currentGlobalIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                    currentGlobalIndex={currentGlobalIndex}
                     totalQuestions={totalQuestions}
                     markedQuestions={markedQuestions}
                     onPrevious={handlePrevious}
@@ -2378,7 +2357,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 lg:p-4 flex-shrink-0">
                                     <ExamNavigation
                                         currentQuestionIndex={currentQuestionIndex}
-                                        currentGlobalIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                                        currentGlobalIndex={currentGlobalIndex}
                                         totalQuestions={totalQuestions}
                                         markedQuestions={markedQuestions}
                                         onPrevious={handlePrevious}
@@ -2400,7 +2379,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         answers={answers}
                                         markedQuestions={markedQuestions}
                                         visitedQuestions={visitedQuestions}
-                                        currentQuestionIndex={getGlobalQuestionIndex(currentQuestionIndex, selectedSubject)}
+                                        currentQuestionIndex={currentGlobalIndex}
                                         onGoToQuestion={handleNavigatorGoToQuestion}
                                         isCetExam={isCetExam}
                                         cetAccess={competitiveExamAccess}

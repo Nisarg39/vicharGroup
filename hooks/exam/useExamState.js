@@ -24,8 +24,8 @@ export const useExamState = (exam, questions) => {
     const [hasSavedProgress, setHasSavedProgress] = useState(false)
     const [showContinuePrompt, setShowContinuePrompt] = useState(false)
     
-    // Refs for performance optimization
-    const examCompletedRef = useRef(false)
+    // Note: examCompletedRef removed to prevent conflicts with useSubmissionLogic
+    // Exam completion is now managed exclusively by useSubmissionLogic hook
     
     /**
      * Handle answer selection for a question
@@ -227,18 +227,17 @@ export const useExamState = (exam, questions) => {
         setVisitedQuestions(new Set())
         setHasSavedProgress(false)
         setShowContinuePrompt(false)
-        examCompletedRef.current = false
+        // examCompletedRef removed - managed by useSubmissionLogic
         
         console.log('🔄 Exam state reset')
     }, [])
     
     /**
      * Mark exam as completed
-     * Sets completion flag to prevent further modifications
+     * Note: Exam completion is now managed by useSubmissionLogic hook
      */
     const markExamCompleted = useCallback(() => {
-        examCompletedRef.current = true
-        console.log('✅ Exam marked as completed')
+        console.log('✅ Exam completion managed by useSubmissionLogic hook')
     }, [])
     
     // Debug logging for state changes in development
@@ -264,7 +263,7 @@ export const useExamState = (exam, questions) => {
         showContinuePrompt,
         
         // Refs
-        examCompletedRef,
+        // examCompletedRef removed - managed by useSubmissionLogic
         
         // Actions
         handleAnswerChange,
