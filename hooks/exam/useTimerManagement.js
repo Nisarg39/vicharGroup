@@ -8,11 +8,14 @@ import { calculateRemainingTime } from '../../utils/examTimingUtils'
  * 
  * Manages all timer-related state and functionality for exam interface.
  * Extracted from ExamInterface.js to improve code organization and prevent memory leaks.
+ * Includes integrated auto-submit functionality to eliminate race conditions.
  * 
  * @param {Object} exam - Exam object containing timing configuration
+ * @param {Object} options - Optional configuration including auto-submit callback
  * @returns {Object} Timer management state and functions
  */
-export const useTimerManagement = (exam) => {
+export const useTimerManagement = (exam, options = {}) => {
+    const { onAutoSubmit } = options
     // Timer state
     const [timeLeft, setTimeLeft] = useState(0)
     const [isExamStarted, setIsExamStarted] = useState(false)
@@ -22,6 +25,8 @@ export const useTimerManagement = (exam) => {
     const timerRef = useRef(null)
     const timerInitializedRef = useRef(false)
     const warningsShownRef = useRef(new Set())
+    const autoSubmitTriggeredRef = useRef(false)
+    const lastTimeUpdateRef = useRef(0)
     
     /**
      * Start the exam timer
@@ -96,13 +101,7 @@ export const useTimerManagement = (exam) => {
         })
     }, [exam])
     
-    /**
-     * Update time left
-     * Used by ExamTimer component to update the current time
-     */
-    const updateTimeLeft = useCallback((newTimeLeft) => {
-        setTimeLeft(newTimeLeft)
-    }, [])
+    // Note: updateTimeLeft function removed - timer updates are now handled internally by the integrated timer loop
     
     /**
      * Get timer data for saving progress
@@ -164,6 +163,95 @@ export const useTimerManagement = (exam) => {
         console.log('🔄 Timer flags reset')
     }, [])
     
+    /**
+     * Integrated timer loop with auto-submit functionality
+     * Eliminates race conditions by managing timer and auto-submit in one place
+     */
+    useEffect(() => {
+        if (!isExamStarted || !startTime) return
+
+        // Start timer interval
+        timerRef.current = setInterval(() => {
+            try {
+                // Use consistent helper function for time calculation
+                const calculatedTimeLeft = calculateRemainingTime(exam, startTime)
+                
+                // STABLE UPDATE: Only update state if time has actually changed by at least 1 second
+                // This prevents unnecessary re-renders and cascading effects
+                if (Math.abs(calculatedTimeLeft - lastTimeUpdateRef.current) >= 1) {
+                    lastTimeUpdateRef.current = calculatedTimeLeft
+                    setTimeLeft(calculatedTimeLeft)
+                }
+                
+                // Show time warnings - using stable warning thresholds
+                const warnings = [
+                    { time: 300, message: "⚠️ 5 minutes remaining! Please review your answers.", type: "warning" },
+                    { time: 60, message: "🚨 1 minute remaining! Exam will auto-submit soon.", type: "error" },
+                    { time: 30, message: "⏰ 30 seconds remaining! Auto-submit imminent.", type: "error" },
+                    { time: 10, message: "🔥 10 seconds remaining! Submitting now...", type: "error" }
+                ]
+                
+                // STABLE WARNING SYSTEM: Check warnings without triggering state changes
+                warnings.forEach(warning => {
+                    if (calculatedTimeLeft === warning.time && !warningsShownRef.current.has(warning.time)) {
+                        warningsShownRef.current.add(warning.time)
+                        
+                        // Import toast dynamically to avoid circular dependencies
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            if (warning.type === "error") {
+                                toast.error(warning.message, { duration: 4000 })
+                            } else {
+                                toast(warning.message, {
+                                    icon: '⚠️',
+                                    style: {
+                                        background: '#f59e0b',
+                                        color: '#fff',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                    },
+                                    duration: 4000
+                                })
+                            }
+                        })
+                    }
+                })
+                
+                // STABLE AUTO-SUBMIT: Prevent multiple auto-submit calls
+                if (calculatedTimeLeft <= 0 && !autoSubmitTriggeredRef.current) {
+                    autoSubmitTriggeredRef.current = true
+                    console.log('⏰ Timer expired - triggering integrated auto-submit')
+                    
+                    if (onAutoSubmit) {
+                        // Import toast dynamically
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
+                                duration: 6000,
+                                style: { fontSize: '16px', fontWeight: 'bold' }
+                            })
+                        })
+                        
+                        // Call auto-submit callback immediately (no delay to prevent race conditions)
+                        onAutoSubmit()
+                    }
+                }
+            } catch (error) {
+                console.error('Timer calculation error:', error)
+                // Continue timer but skip this update
+            }
+        }, 1000)
+        
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current)
+                timerRef.current = null
+            }
+        }
+    }, [isExamStarted, startTime, exam._id, exam.examAvailability, exam.endTime, onAutoSubmit])
+
+    // Reset auto-submit flag when exam restarts or startTime changes
+    useEffect(() => {
+        autoSubmitTriggeredRef.current = false
+    }, [startTime, isExamStarted])
+    
     return {
         // State
         timeLeft,
@@ -179,7 +267,6 @@ export const useTimerManagement = (exam) => {
         startTimer,
         stopTimer,
         resumeTimer,
-        updateTimeLeft,
         
         // Ref management methods
         setTimerInitialized,

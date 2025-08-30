@@ -11,9 +11,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
  * 
  * @param {Object} exam - Exam object
  * @param {Array} questions - Array of exam questions
+ * @param {Object} options - Optional configuration including progressive scoring callbacks
  * @returns {Object} Exam state management functions and state
  */
-export const useExamState = (exam, questions) => {
+export const useExamState = (exam, questions, options = {}) => {
+    const { 
+        onAnswerChange: progressiveAnswerCallback,
+        onAnswerClear: progressiveAnswerClearCallback 
+    } = options;
     // Core exam state
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState({})
@@ -29,7 +34,7 @@ export const useExamState = (exam, questions) => {
     
     /**
      * Handle answer selection for a question
-     * Updates the answers state with new answer
+     * Updates the answers state with new answer and triggers progressive evaluation
      */
     const handleAnswerChange = useCallback((questionId, answer) => {
         const newAnswers = {
@@ -42,11 +47,16 @@ export const useExamState = (exam, questions) => {
             questionId,
             answer: typeof answer === 'string' ? answer : JSON.stringify(answer)
         })
-    }, [answers])
+        
+        // Trigger progressive evaluation callback if provided
+        if (progressiveAnswerCallback) {
+            progressiveAnswerCallback(questionId, answer, newAnswers)
+        }
+    }, [answers, progressiveAnswerCallback])
     
     /**
      * Handle multiple answers for a question (for multi-select questions)
-     * Updates answers state with array of selected options
+     * Updates answers state with array of selected options and triggers progressive evaluation
      */
     const handleMultipleAnswerChange = useCallback((questionId, selectedAnswers) => {
         const newAnswers = {
@@ -59,11 +69,16 @@ export const useExamState = (exam, questions) => {
             questionId,
             selectedCount: selectedAnswers?.length || 0
         })
-    }, [answers])
+        
+        // Trigger progressive evaluation callback if provided
+        if (progressiveAnswerCallback) {
+            progressiveAnswerCallback(questionId, selectedAnswers, newAnswers)
+        }
+    }, [answers, progressiveAnswerCallback])
     
     /**
      * Clear answer for current question
-     * Removes the answer from answers state
+     * Removes the answer from answers state and triggers progressive evaluation update
      */
     const handleClear = useCallback((questionId) => {
         if (!questionId) {
@@ -76,7 +91,12 @@ export const useExamState = (exam, questions) => {
         setAnswers(newAnswers)
         
         console.log('🗑️ Answer cleared for question:', questionId)
-    }, [answers])
+        
+        // Trigger progressive evaluation clear callback if provided
+        if (progressiveAnswerClearCallback) {
+            progressiveAnswerClearCallback(questionId, newAnswers)
+        }
+    }, [answers, progressiveAnswerClearCallback])
     
     /**
      * Toggle marked status for a question

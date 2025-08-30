@@ -740,6 +740,19 @@ export default function ExamHome({ examId }) {
                         setExamResult(result.result);
                         setHasAttempted(true);
                         
+                        // CRITICAL FIX: Immediately refresh attempts list to prevent "Continue Exam" bug
+                        // This ensures the UI immediately reflects the completed exam state
+                        try {
+                            const attemptsResponse = await getAllExamAttempts(student._id, examId);
+                            if (attemptsResponse.success) {
+                                setAllAttempts(attemptsResponse.attempts);
+                                console.log('✅ CRITICAL FIX: Attempts list refreshed after scheduled completion', attemptsResponse.attempts.length);
+                            }
+                        } catch (error) {
+                            console.error('⚠️ Failed to refresh attempts after scheduled completion:', error);
+                            // Don't let this error block the submission process
+                        }
+                        
                         // Update previous result state using the submission result
                         const formattedResult = {
                             score: result.result.score,
@@ -773,6 +786,19 @@ export default function ExamHome({ examId }) {
                         // For practice exams or scheduled exams after end time, show results immediately
                         // useEffect will handle fetching attempts when examResult changes
                         setHasAttempted(true);
+                        
+                        // CRITICAL FIX: Immediately refresh attempts list to prevent "Continue Exam" bug
+                        // This ensures the UI immediately reflects the completed exam state
+                        try {
+                            const attemptsResponse = await getAllExamAttempts(student._id, examId);
+                            if (attemptsResponse.success) {
+                                setAllAttempts(attemptsResponse.attempts);
+                                console.log('✅ CRITICAL FIX: Attempts list refreshed after completion', attemptsResponse.attempts.length);
+                            }
+                        } catch (error) {
+                            console.error('⚠️ Failed to refresh attempts after completion:', error);
+                            // Don't let this error block the submission process
+                        }
                         
                         // Use the submission result directly
                         const formattedResult = {
@@ -826,6 +852,17 @@ export default function ExamHome({ examId }) {
                     setOfflineSubmissions(updatedSubmissions);
                     localStorage.setItem('offline_submissions', JSON.stringify(updatedSubmissions));
                 }
+                
+                // CRITICAL FIX: Also update hasAttempted for offline submissions
+                setHasAttempted(true);
+                
+                // Clear local progress since exam is completed
+                const progressKey = getProgressKey();
+                if (progressKey) {
+                    localStorage.removeItem(progressKey);
+                    console.log('✅ CRITICAL FIX: Cleared local progress after offline completion');
+                }
+                
                 toast.success('Exam completed! Will sync when connection is restored.');
                 setCurrentView('home');
             }
@@ -840,10 +877,29 @@ export default function ExamHome({ examId }) {
 
     // Add a helper to check for saved progress
     const hasUncompletedExam = (() => {
+        // CRITICAL FIX: Don't show "Continue Exam" if exam has already been attempted/completed
+        if (hasAttempted && allAttempts.length > 0) {
+            console.log('🚫 CRITICAL FIX: Blocking Continue Exam - exam already attempted', allAttempts.length, 'times');
+            return false;
+        }
+        
         const progressKey = exam && student?._id ? `exam_progress_${exam._id}_${student._id}` : null;
         if (progressKey) {
             const savedProgress = localStorage.getItem(progressKey);
-            return !!savedProgress;
+            const hasProgress = !!savedProgress;
+            
+            if (hasProgress) {
+                console.log('📝 Found saved progress for exam, checking if exam was already completed...');
+                // Double-check: if we have attempts but also have saved progress, 
+                // this might be stale data - prefer the server state
+                if (hasAttempted && allAttempts.length > 0) {
+                    console.log('🧹 CRITICAL FIX: Clearing stale progress - exam already completed');
+                    localStorage.removeItem(progressKey);
+                    return false;
+                }
+            }
+            
+            return hasProgress;
         }
         return false;
     })();

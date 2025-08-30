@@ -183,6 +183,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // WARNING COUNT STATE - DECLARED HERE TO PREVENT TDZ ERROR
     const [warningCount, setWarningCount] = useState(0); // Track total warnings
     
+    // CLIENT-SIDE EVALUATION ENGINE STATE - DECLARED HERE TO PREVENT TDZ ERROR
+    const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
+    const [evaluationInitialized, setEvaluationInitialized] = useState(false)
+    const [progressiveResults, setProgressiveResults] = useState(null)
+    const [evaluationError, setEvaluationError] = useState(null)
+    const [offlineCapable, setOfflineCapable] = useState(false)
+    
     // UPDATE AUTO-SUBMIT FUNCTION REF: Connect timer with submission hook
     useEffect(() => {
         autoSubmitFunctionRef.current = () => {
@@ -202,13 +209,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             handleAutoSubmit(examData, timerData)
         }
     }, [answers, visitedQuestions, markedQuestions, warningCount, evaluationInitialized, startTime, timeLeft, handleAutoSubmit])
-    
-    // CLIENT-SIDE EVALUATION ENGINE STATE
-    const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
-    const [evaluationInitialized, setEvaluationInitialized] = useState(false)
-    const [progressiveResults, setProgressiveResults] = useState(null)
-    const [evaluationError, setEvaluationError] = useState(null)
-    const [offlineCapable, setOfflineCapable] = useState(false)
     
     // Service Worker integration
     const serviceWorkerIntegration = useRef(null)

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
+import { getSubjectUnlockSchedule } from '../../utils/examDurationHelpers'
 
 /**
  * Question Navigation Management Hook
@@ -13,19 +14,18 @@ import toast from 'react-hot-toast'
  * @param {Object} exam - Exam object
  * @param {Array} questions - Array of exam questions
  * @param {Object} examState - Exam state from useExamState hook
+ * @param {Object} timerData - Timer data containing startTime and isExamStarted for subject unlocking
  * @returns {Object} Navigation management state and functions
  */
-export const useQuestionNavigation = (exam, questions, examState) => {
+export const useQuestionNavigation = (exam, questions, examState, timerData = null) => {
     const { currentQuestionIndex, setCurrentQuestionIndex, markQuestionVisited } = examState
     
-    // Navigation state
-    const [selectedSubject, setSelectedSubject] = useState(() => {
-        // Initialize with first available subject
-        const firstAvailableSubject = getAllSubjects()[0] || ""
-        return firstAvailableSubject
-    })
-    
+    // Navigation state - defer initialization to useEffect to properly handle subject locking
+    const [selectedSubject, setSelectedSubject] = useState("")
     const [showMobileNavigator, setShowMobileNavigator] = useState(false)
+    
+    // Real-time unlocking state - updates every minute for MHT-CET subject unlocking
+    const [currentMinute, setCurrentMinute] = useState(Math.floor(Date.now() / 60000))
     
     // Navigation refs for managing state transitions
     const previousSubjectRef = useRef(selectedSubject)
@@ -33,25 +33,175 @@ export const useQuestionNavigation = (exam, questions, examState) => {
     const manualSubjectSelectionRef = useRef(false)
     const manualSelectionTimeoutRef = useRef(null)
     
-    // Exam type detection
-    const isJeeExam = exam?.examType?.toLowerCase() === 'jee'
-    const isNeetExam = exam?.examType?.toLowerCase() === 'neet' 
-    const isCetExam = exam?.examType?.toLowerCase() === 'cet'
+    // Exam type detection - check both examType and stream for comprehensive detection
+    const isJeeExam = exam?.examType?.toLowerCase() === 'jee' || 
+                      exam?.stream?.toLowerCase()?.includes('jee')
+    const isNeetExam = exam?.examType?.toLowerCase() === 'neet' || 
+                       exam?.stream?.toLowerCase()?.includes('neet')
+    const isCetExam = exam?.examType?.toLowerCase() === 'cet' || 
+                      exam?.stream?.toLowerCase()?.includes('cet')
     const isCompetitiveExam = isJeeExam || isNeetExam || isCetExam
     
     /**
+     * Get subject order based on exam type
+     * Returns proper subject ordering for competitive exams
+     */
+    const getSubjectOrder = useCallback(() => {
+        // Define proper subject order for each exam type
+        if (isCetExam) {
+            // CET: Physics → Chemistry → Mathematics → Biology
+            return ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'Maths', 'Math']
+        }
+        if (isJeeExam) {
+            // JEE: Physics → Chemistry → Mathematics  
+            return ['Physics', 'Chemistry', 'Mathematics', 'Maths', 'Math']
+        }
+        if (isNeetExam) {
+            // NEET: Physics → Chemistry → Biology
+            return ['Physics', 'Chemistry', 'Biology']
+        }
+        // Default: alphabetical order for other exam types
+        return []
+    }, [isCetExam, isJeeExam, isNeetExam])
+
+    /**
      * Get all unique subjects from questions
-     * Returns array of subject names
+     * Returns array of subject names in proper exam-specific order
+     * Added safety checks to prevent TDZ errors
      */
     const getAllSubjects = useCallback(() => {
-        if (!questions || questions.length === 0) return []
-        
-        const subjects = [...new Set(questions.map(q => q.subject))].filter(Boolean)
-        return subjects.sort() // Consistent ordering
-    }, [questions])
+        try {
+            if (!questions || !Array.isArray(questions) || questions.length === 0) {
+                console.warn('⚠️ No questions available for subject extraction')
+                return []
+            }
+            
+            const subjects = [...new Set(questions
+                .map(q => q?.subject)
+                .filter(Boolean)
+            )]
+            
+            // Apply exam-specific ordering for competitive exams
+            if (isCompetitiveExam) {
+                const subjectOrder = getSubjectOrder()
+                const orderedSubjects = []
+                
+                // First, add subjects in the defined order
+                subjectOrder.forEach(orderedSubject => {
+                    if (subjects.includes(orderedSubject)) {
+                        orderedSubjects.push(orderedSubject)
+                    }
+                })
+                
+                // Then add any remaining subjects not in the order (alphabetically)
+                subjects.forEach(subject => {
+                    if (!orderedSubjects.includes(subject)) {
+                        orderedSubjects.push(subject)
+                    }
+                })
+                
+                console.log('📚 Applied exam-specific subject order:', {
+                    examType: isCetExam ? 'CET' : isJeeExam ? 'JEE' : 'NEET',
+                    originalOrder: subjects.sort(),
+                    appliedOrder: orderedSubjects
+                })
+                
+                return orderedSubjects
+            }
+            
+            // For non-competitive exams, use alphabetical order
+            return subjects.sort()
+        } catch (error) {
+            console.error('❌ Error getting subjects:', error)
+            return []
+        }
+    }, [questions, isCompetitiveExam, getSubjectOrder])
     
     // Memoized subjects list
     const allSubjects = useMemo(() => getAllSubjects(), [getAllSubjects])
+    
+    /**
+     * Get subject unlock schedule for competitive exams with real-time updates
+     * Returns subject access information including locked status that updates every minute
+     */
+    const subjectUnlockSchedule = useMemo(() => {
+        if (!timerData?.startTime || !timerData?.isExamStarted || !isCompetitiveExam) {
+            return { allUnlocked: true, subjectAccess: {}, streamConfig: null }
+        }
+        
+        try {
+            // Force recalculation every minute for real-time unlocking
+            const currentMinute = Math.floor(Date.now() / 60000)
+            const schedule = getSubjectUnlockSchedule(exam, new Date(timerData.startTime))
+            
+            console.log('🔓 Subject unlock schedule calculated:', {
+                examType: exam?.stream,
+                currentMinute,
+                allUnlocked: schedule.allUnlocked,
+                lockedSubjects: Object.keys(schedule.subjectAccess || {}).filter(s => schedule.subjectAccess[s]?.isLocked)
+            })
+            
+            return schedule
+        } catch (error) {
+            console.error('❌ Error getting subject unlock schedule:', error)
+            return { allUnlocked: true, subjectAccess: {}, streamConfig: null }
+        }
+    }, [exam, timerData?.startTime, timerData?.isExamStarted, isCompetitiveExam, currentMinute])
+    
+    /**
+     * Check if a specific subject is locked
+     * @param {string} subject - Subject name to check
+     * @returns {boolean} - True if subject is locked
+     */
+    const isSubjectLocked = useCallback((subject) => {
+        if (!isCompetitiveExam || subjectUnlockSchedule.allUnlocked) {
+            return false
+        }
+        
+        // Check direct match first
+        let subjectAccess = subjectUnlockSchedule.subjectAccess?.[subject]
+        
+        // For CET exams, check subject name variations
+        if (isCetExam && !subjectAccess) {
+            const subjectVariations = [subject]
+            if (subject.toLowerCase().includes('math')) {
+                subjectVariations.push('Mathematics', 'Maths', 'Math')
+            } else if (subject === 'Maths') {
+                subjectVariations.push('Mathematics', 'Math')
+            } else if (subject === 'Mathematics') {
+                subjectVariations.push('Maths', 'Math')
+            } else if (subject === 'Biology') {
+                subjectVariations.push('Bio')
+            }
+            
+            for (const variation of subjectVariations) {
+                const access = subjectUnlockSchedule.subjectAccess?.[variation]
+                if (access) {
+                    subjectAccess = access
+                    break
+                }
+            }
+        }
+        
+        return subjectAccess?.isLocked || false
+    }, [isCompetitiveExam, isCetExam, subjectUnlockSchedule])
+    
+    /**
+     * Get first available (unlocked) subject
+     * Returns first subject that is not locked
+     */
+    const getFirstAvailableSubject = useCallback(() => {
+        const orderedSubjects = getAllSubjects()
+        
+        for (const subject of orderedSubjects) {
+            if (!isSubjectLocked(subject)) {
+                return subject
+            }
+        }
+        
+        // Fallback: return first subject if none are available (shouldn't happen)
+        return orderedSubjects[0] || ""
+    }, [getAllSubjects, isSubjectLocked])
     
     /**
      * Get questions for current selected subject
@@ -231,11 +381,20 @@ export const useQuestionNavigation = (exam, questions, examState) => {
     /**
      * Switch to specific subject
      * Updates selected subject and resets question index
+     * Respects subject locking rules for competitive exams
      */
     const switchToSubject = useCallback((subject) => {
         if (!allSubjects.includes(subject)) {
             console.warn('⚠️ Invalid subject:', subject)
-            return
+            return false
+        }
+        
+        // Check if subject is locked for competitive exams
+        if (isSubjectLocked(subject)) {
+            console.warn('⚠️ Cannot switch to locked subject:', subject)
+            // Show user-friendly message but don't prevent the switch completely
+            // Let the parent component handle the error display
+            return false
         }
         
         setSelectedSubject(subject)
@@ -251,7 +410,8 @@ export const useQuestionNavigation = (exam, questions, examState) => {
         }, 5000)
         
         console.log('🔄 Switched to subject:', subject)
-    }, [allSubjects, setCurrentQuestionIndex])
+        return true
+    }, [allSubjects, isSubjectLocked, setCurrentQuestionIndex])
     
     /**
      * Get navigation statistics
@@ -286,6 +446,47 @@ export const useQuestionNavigation = (exam, questions, examState) => {
         }
     }, [selectedSubject, setCurrentQuestionIndex])
     
+    // Initialize subject selection with proper ordering and locking rules when questions load
+    useEffect(() => {
+        if (questions && questions.length > 0 && (!selectedSubject || selectedSubject === "")) {
+            const firstAvailableSubject = getFirstAvailableSubject()
+            if (firstAvailableSubject) {
+                console.log('🔄 Auto-selecting first available subject with proper ordering and locking:', {
+                    firstAvailableSubject,
+                    allOrderedSubjects: getAllSubjects(),
+                    examType: isCetExam ? 'CET' : isJeeExam ? 'JEE' : isNeetExam ? 'NEET' : 'Other',
+                    isCompetitiveExam,
+                    subjectsLocked: isCompetitiveExam ? getAllSubjects().filter(s => isSubjectLocked(s)) : []
+                })
+                setSelectedSubject(firstAvailableSubject)
+            }
+        }
+    }, [
+        questions, 
+        selectedSubject, 
+        getFirstAvailableSubject, 
+        getAllSubjects,
+        isSubjectLocked,
+        isCetExam, 
+        isJeeExam, 
+        isNeetExam, 
+        isCompetitiveExam
+    ])
+    
+    // Real-time minute updates for subject unlocking
+    useEffect(() => {
+        if (!isCompetitiveExam || !timerData?.isExamStarted) return
+
+        const updateMinute = () => {
+            setCurrentMinute(Math.floor(Date.now() / 60000))
+        }
+
+        // Update every minute
+        const interval = setInterval(updateMinute, 60000)
+        
+        return () => clearInterval(interval)
+    }, [isCompetitiveExam, timerData?.isExamStarted])
+
     // Cleanup timeouts on unmount
     useEffect(() => {
         return () => {
@@ -313,6 +514,11 @@ export const useQuestionNavigation = (exam, questions, examState) => {
         showMobileNavigator,
         allSubjects,
         subjectQuestions,
+        
+        // Subject locking information
+        subjectUnlockSchedule,
+        isSubjectLocked,
+        getFirstAvailableSubject,
         
         // Computed values
         currentQuestion: getCurrentQuestion(),

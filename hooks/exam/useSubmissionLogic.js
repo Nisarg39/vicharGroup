@@ -288,6 +288,17 @@ export const useSubmissionLogic = (exam, student, onComplete) => {
                         })
                         
                         if (onComplete) {
+                            console.log('🎯 CRITICAL FIX: Calling onComplete callback with submission result');
+                            // Clear any local progress since exam is now completed
+                            const progressKey = exam && `exam_progress_${exam._id}_${directStorageData.studentId}`;
+                            if (progressKey) {
+                                try {
+                                    localStorage.removeItem(progressKey);
+                                    console.log('✅ CRITICAL FIX: Local progress cleared via useSubmissionLogic');
+                                } catch (error) {
+                                    console.warn('⚠️ Failed to clear local progress in useSubmissionLogic:', error);
+                                }
+                            }
                             onComplete(directResult.data)
                         }
                         
