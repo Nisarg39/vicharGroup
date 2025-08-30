@@ -42,19 +42,108 @@ import { handleProgressiveSubmission } from "../../../server_actions/actions/exa
 // ATOMIC SUBMISSION SYSTEM: Import atomic submission manager to eliminate race conditions
 import { getAtomicSubmissionManager, SUBMISSION_TYPES } from "../../../utils/atomicSubmissionManager"
 
+// CUSTOM HOOKS: Import refactored exam management hooks
+import { useTimerManagement } from "../../../hooks/exam/useTimerManagement"
+import { useExamState } from "../../../hooks/exam/useExamState"
+import { useQuestionNavigation } from "../../../hooks/exam/useQuestionNavigation"
+import { useSubmissionLogic } from "../../../hooks/exam/useSubmissionLogic"
+
 // Removed: normalizeSubject function - now using consistent subject names from helper functions
 
 // Removed: isRestrictedSubject function - now using proper helper functions from examDurationHelpers.js
 // This ensures consistent subject restriction logic across the application
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-    const [answers, setAnswers] = useState({})
-    const [markedQuestions, setMarkedQuestions] = useState(new Set())
-    const [visitedQuestions, setVisitedQuestions] = useState(new Set())
-    const [timeLeft, setTimeLeft] = useState(0) // Initialize to 0, let useEffect handle calculation
-    const [isExamStarted, setIsExamStarted] = useState(false)
-    const [showConfirmSubmit, setShowConfirmSubmit] = useState(false)
+    // HOOK: Timer Management - handles all timer-related state and functionality
+    const {
+        timeLeft,
+        isExamStarted,
+        startTime,
+        timerRef: hookTimerRef,
+        timerInitializedRef: hookTimerInitializedRef,
+        warningsShownRef: hookWarningsShownRef,
+        startTimer,
+        stopTimer,
+        resumeTimer,
+        updateTimeLeft,
+        getTimerData,
+        isTimerReady
+    } = useTimerManagement(exam)
+
+    // HOOK: Exam State - handles core exam state management
+    const {
+        currentQuestionIndex,
+        answers,
+        markedQuestions,
+        visitedQuestions,
+        hasSavedProgress,
+        showContinuePrompt,
+        examCompletedRef: hookExamCompletedRef,
+        handleAnswerChange,
+        handleMultipleAnswerChange,
+        handleClear,
+        toggleMarkedQuestion,
+        markQuestionVisited,
+        navigateToQuestion,
+        getCurrentQuestion: getExamCurrentQuestion,
+        getQuestionAnswer,
+        getProgressStats,
+        loadSavedProgress,
+        getExamStateForSaving,
+        resetExamState,
+        markExamCompleted,
+        setCurrentQuestionIndex,
+        setShowContinuePrompt,
+        setHasSavedProgress
+    } = useExamState(exam, questions)
+
+    // HOOK: Submission Logic - handles exam submission with atomic locking
+    const {
+        showConfirmSubmit,
+        submissionState,
+        submissionLockStatus,
+        submissionType,
+        currentSubmissionId,
+        modalRef,
+        examCompletedRef,
+        handleSubmit,
+        handleAutoSubmit,
+        confirmSubmission,
+        cancelSubmission,
+        resetSubmissionState,
+        getSubmissionStatus,
+        handleExamWindowClose,
+        setSubmissionState,
+        setSubmissionType
+    } = useSubmissionLogic(exam, student, onComplete)
+
+    // HOOK: Question Navigation - handles subject switching and question navigation  
+    const {
+        selectedSubject,
+        showMobileNavigator,
+        allSubjects,
+        subjectQuestions,
+        currentQuestion: navCurrentQuestion,
+        navigationStats,
+        subjectSwitchInProgressRef,
+        manualSubjectSelectionRef,
+        manualSelectionTimeoutRef,
+        handlePrevious,
+        handleNext,
+        handleNavigatorGoToQuestion,
+        switchToSubject,
+        getGlobalQuestionIndex,
+        setSelectedSubject,
+        setShowMobileNavigator,
+        isJeeExam,
+        isNeetExam,
+        isCetExam,
+        isCompetitiveExam
+    } = useQuestionNavigation(exam, questions, {
+        currentQuestionIndex,
+        setCurrentQuestionIndex,
+        markQuestionVisited
+    })
     
     // CLIENT-SIDE EVALUATION ENGINE STATE
     const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
@@ -66,143 +155,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Service Worker integration
     const serviceWorkerIntegration = useRef(null)
     const evaluationEngineRef = useRef(null)
-    // Removed: examProgress state - simplified progress tracking
-    const timerRef = useRef(null) // Used for cleanup, actual timer in ExamTimer component
     const mainExamRef = useRef(null); // For fullscreen
-    const warningsShownRef = useRef(new Set()); // Track which warnings have been shown
-    const timerInitializedRef = useRef(false); // Track if timer has been initialized
-
-    // Add state for continue exam prompt
-    const [showContinuePrompt, setShowContinuePrompt] = useState(false);
-    const [hasSavedProgress, setHasSavedProgress] = useState(false);
-
-    // Track if exam is completed to avoid fullscreen warning after submit
-    const examCompletedRef = useRef(false);
-    
-    // ATOMIC SUBMISSION SYSTEM: Replace simple race condition prevention with atomic manager
-    const atomicSubmissionManager = useRef(null);
-    const [submissionLockStatus, setSubmissionLockStatus] = useState({
-        hasLock: false,
-        lockId: null,
-        submissionType: null,
-        state: 'idle',
-        lastError: null
-    });
-
-    // State for mobile floating question navigator
-    const [showMobileNavigator, setShowMobileNavigator] = useState(false);
     const [warningCount, setWarningCount] = useState(0); // Track total warnings
 
-    // ENHANCED SUBMISSION FEEDBACK STATE
-    const [submissionState, setSubmissionState] = useState({
-        status: 'idle', // 'idle', 'submitting', 'success', 'error'
-        message: '',
-        performanceMetrics: null,
-        showProgress: false,
-        performanceBadge: null,
-        submissionTime: 0
-    });
+    // Note: The following state and refs are now managed by custom hooks:
+    // - Timer state: timeLeft, isExamStarted, startTime (useTimerManagement)
+    // - Exam state: currentQuestionIndex, answers, markedQuestions, visitedQuestions (useExamState)  
+    // - Navigation state: selectedSubject, showMobileNavigator (useQuestionNavigation)
+    // - Submission state: showConfirmSubmit, submissionState, etc. (useSubmissionLogic)
     
-    // Track submission type for appropriate messaging
-    const [submissionType, setSubmissionType] = useState('manual_submit'); // 'manual_submit', 'auto_submit'
-    
-    // Track submission for monitoring
-    const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
-    
-    // ACCESSIBILITY: Focus management for submission modals
-    const modalRef = useRef(null);
-    
-    // WINDOW CLOSE UTILITY: Handle exam completion by closing browser window/tab
-    const handleExamWindowClose = async (completionData) => {
-        try {
-            const { submissionType, success = true, error = false, message } = completionData;
-            
-            // 1. Exit fullscreen mode first
-            if (document.fullscreenElement) {
-                console.log('🖥️ Exiting fullscreen mode before window close...');
-                await document.exitFullscreen().catch(err => {
-                    console.log('ℹ️ Fullscreen exit failed (normal for some browsers):', err.message);
-                });
-            }
-            
-            // 2. Show appropriate success/error message
-            const displayMessage = message || (success 
-                ? `Exam submitted successfully! This window will close automatically.`
-                : `Submission encountered an issue but has been saved. This window will close automatically.`);
-            
-            console.log(`✅ ${success ? 'Success' : 'Error'} - ${displayMessage}`);
-            
-            // 3. Show toast notification
-            if (success) {
-                toast.success(displayMessage, { 
-                    duration: 3000,
-                    style: { fontSize: '16px', fontWeight: 'bold' }
-                });
-            } else {
-                toast.error(displayMessage, { 
-                    duration: 4000,
-                    style: { fontSize: '16px', fontWeight: 'bold' }
-                });
-            }
-            
-            // 4. Close browser window/tab after delay
-            setTimeout(() => {
-                console.log('🔄 Attempting to close browser window/tab...');
-                
-                // Try to close the window (works for popups, new tabs opened by JS)
-                try {
-                    window.close();
-                    
-                    // If window.close() doesn't work (direct URL access), provide fallback
-                    setTimeout(() => {
-                        console.log('ℹ️ Window close may have failed - providing fallback navigation');
-                        
-                        // Show additional message to user
-                        toast.info('You can now close this tab or navigate back to your dashboard.', {
-                            duration: 8000,
-                            style: { fontSize: '14px' }
-                        });
-                        
-                        // Fallback: Navigate to dashboard after additional delay
-                        setTimeout(() => {
-                            try {
-                                window.location.href = '/dashboard';
-                            } catch (navError) {
-                                console.log('ℹ️ Navigation fallback failed:', navError);
-                                // Final fallback: Navigate to root
-                                window.location.href = '/';
-                            }
-                        }, 3000);
-                    }, 1000);
-                } catch (closeError) {
-                    console.log('ℹ️ Window close failed (expected for direct URL access):', closeError);
-                    
-                    // Direct fallback for browsers that prevent window.close()
-                    toast.info('Exam completed! You can now close this tab.', {
-                        duration: 8000,
-                        style: { fontSize: '16px', fontWeight: 'bold' }
-                    });
-                    
-                    // Navigate to dashboard as fallback
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 2000);
-                }
-            }, success ? 2000 : 3000); // Longer delay for errors
-            
-        } catch (error) {
-            console.error('❌ Error during window close handling:', error);
-            
-            // Ultimate fallback
-            toast.error('Exam submitted but window close failed. Please close this tab manually.', {
-                duration: 8000
-            });
-            
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 3000);
-        }
-    };
+    // Note: handleExamWindowClose is now provided by useSubmissionLogic hook
     
     // Handle keyboard navigation for modals
     useEffect(() => {
@@ -392,164 +354,55 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
 
-    // 2. Add state for startTime
-    const [startTime, setStartTime] = useState(null);
+    // Note: startTime is now managed by useTimerManagement hook
 
 
     // --- SUBJECTWISE FILTERING ---
-    // Check exam stream types for specialized logic
-    const isJeeExam = exam?.stream?.toLowerCase().includes('jee');
-    const isCetExam = exam?.stream?.toLowerCase().includes('cet');
-    const isNeetExam = exam?.stream?.toLowerCase().includes('neet');
-    const isCompetitiveExam = isJeeExam || isCetExam || isNeetExam;
+    // Note: Exam type flags (isJeeExam, isCetExam, isNeetExam, isCompetitiveExam) are now provided by useQuestionNavigation hook
     
-    // Get all unique subjects from questions with competitive exam ordering (Physics, Chemistry, then others alphabetically)
-    const allSubjects = (() => {
-        const uniqueSubjects = Array.from(new Set((questions || []).map(q => q.subject))).filter(Boolean);
-        const priorityOrder = ['Physics', 'Chemistry'];
-        const orderedSubjects = [];
-        
-        // Add priority subjects first if they exist
-        priorityOrder.forEach(subject => {
-            if (uniqueSubjects.includes(subject)) {
-                orderedSubjects.push(subject);
-            }
-        });
-        
-        // Add remaining subjects alphabetically
-        const remainingSubjects = uniqueSubjects
-            .filter(subject => !priorityOrder.includes(subject))
-            .sort();
-        
-        return [...orderedSubjects, ...remainingSubjects];
-    })();
-    const [selectedSubject, setSelectedSubject] = useState(() => {
-        // For competitive exams, start with the first available (unlocked) subject
-        if (isCompetitiveExam) {
-            // Use proper access rules from helper functions
-            const accessRules = getExamAccessRules(exam);
-            if (accessRules.restrictedSubjects && accessRules.restrictedSubjects.length > 0) {
-                // Find first subject that's not in the restricted list
-                const availableSubject = allSubjects.find(subject => 
-                    !accessRules.restrictedSubjects.includes(subject)
-                );
-                return availableSubject || allSubjects[0] || "";
-            }
-        }
-        return allSubjects[0] || "";
-    });
+    // Note: allSubjects is now provided by useQuestionNavigation hook
+    // Note: selectedSubject is now managed by useQuestionNavigation hook
 
-    // FIXED: Stable subject switching to prevent cascade effects
-    // Use ref to track previous subject and prevent unnecessary resets
-    const previousSubjectRef = useRef(selectedSubject);
-    
-    useEffect(() => {
-        // Only reset question index if subject actually changed
-        if (previousSubjectRef.current !== selectedSubject) {
-            previousSubjectRef.current = selectedSubject;
-            setCurrentQuestionIndex(0);
-        }
-    }, [selectedSubject]);
+    // Note: Subject switching logic is now handled by useQuestionNavigation hook
 
-    // Handle manual subject changes with improved CET support
+    // Handle manual subject changes - now uses navigation hook
     const handleSubjectChange = (newSubject) => {
-        console.log('CET Debug: Manual subject change attempted:', { 
-            newSubject, 
-            currentSubject: selectedSubject, 
-            isCetExam,
-            competitiveExamAccess: competitiveExamAccess.subjectAccess 
-        });
+        console.log('Subject change requested:', newSubject);
         
-        // Check if subject is locked with enhanced subject name matching for CET
-        if (isCompetitiveExam && competitiveExamAccess.subjectAccess) {
-            // Enhanced subject name variations for CET exams
+        // Check if subject is locked for competitive exams
+        if (isCompetitiveExam && competitiveExamAccess?.subjectAccess) {
+            // Check subject variations for CET exams
             const subjectVariations = [newSubject];
             
             if (isCetExam) {
-                // Mathematics variations
                 if (newSubject.toLowerCase().includes('math')) {
                     subjectVariations.push('Mathematics', 'Maths', 'Math');
-                }
-                // Biology variations  
-                else if (newSubject.toLowerCase().includes('bio')) {
+                } else if (newSubject.toLowerCase().includes('bio')) {
                     subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
-                }
-                // Handle reverse matching - if selecting "Biology", also check "Bio"
-                else if (newSubject === 'Biology') {
+                } else if (newSubject === 'Biology') {
                     subjectVariations.push('Bio', 'Botany', 'Zoology');
                 } else if (newSubject === 'Mathematics') {
                     subjectVariations.push('Maths', 'Math');
                 }
             }
             
-            console.log('CET Debug: Checking subject variations:', subjectVariations);
-            
             // Check if any variation is locked
-            let isLocked = false;
-            let remainingTime = 0;
-            let lockedVariation = null;
-            
             for (const variation of subjectVariations) {
                 const subjectAccess = competitiveExamAccess.subjectAccess[variation];
                 if (subjectAccess?.isLocked) {
-                    isLocked = true;
-                    remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, variation);
-                    lockedVariation = variation;
-                    break;
+                    const remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, variation);
+                    toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
+                    return;
                 }
             }
-            
-            console.log('CET Debug: Lock check result:', { isLocked, remainingTime, lockedVariation });
-            
-            if (isLocked) {
-                toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
-                return;
-            }
         }
         
-        // Clear any existing manual selection timeout
-        if (manualSelectionTimeoutRef.current) {
-            clearTimeout(manualSelectionTimeoutRef.current);
-        }
-        
-        // Mark this as a manual selection to prevent auto-switching
-        manualSubjectSelectionRef.current = true;
-        console.log('CET Debug: Setting manual selection flag to prevent auto-override');
-        
-        // Set timeout to clear manual selection flag after 3 seconds
-        manualSelectionTimeoutRef.current = setTimeout(() => {
-            manualSubjectSelectionRef.current = false;
-            console.log('CET Debug: Manual selection flag cleared after timeout');
-        }, 3000);
-        
-        setSelectedSubject(newSubject);
-        console.log('CET Debug: Subject changed manually to:', newSubject);
+        // Use navigation hook to switch subject
+        switchToSubject(newSubject);
     };
 
-    // Filter and organize questions by selected subject
-    // For JEE exams, organize by sections (A before B)
-    const subjectQuestions = (() => {
-        const filtered = (questions || []).filter(q => q.subject === selectedSubject);
-        
-        if (isJeeExam) {
-            // Sort by section: Section A (1) before Section B (2), then by questionNumber
-            return filtered.sort((a, b) => {
-                // First sort by section (1 = Section A, 2 = Section B)
-                const sectionA = a.section || 1; // Default to section 1 if null
-                const sectionB = b.section || 1;
-                
-                if (sectionA !== sectionB) {
-                    return sectionA - sectionB;
-                }
-                
-                // Within same section, sort by question number
-                return (a.questionNumber || 0) - (b.questionNumber || 0);
-            });
-        }
-        
-        return filtered;
-    })();
-    const currentQuestion = subjectQuestions && subjectQuestions.length > 0 ? subjectQuestions[currentQuestionIndex] : null;
+    // Note: subjectQuestions and currentQuestion are now provided by useQuestionNavigation hook
+    const currentQuestion = navCurrentQuestion;
     const totalQuestions = subjectQuestions ? subjectQuestions.length : 0;
     const answeredQuestions = Object.keys(answers).filter(qid => subjectQuestions.some(q => q._id === qid)).length;
     const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
@@ -796,11 +649,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         allSubjects.join(',') // Stable string representation
     ]);
 
-    // FIXED: Check subject lock status using computed access state
-    // Prevents circular dependencies and stabilizes subject switching
-    const subjectSwitchInProgressRef = useRef(false);
-    const manualSubjectSelectionRef = useRef(false); // Track manual selections
-    const manualSelectionTimeoutRef = useRef(null); // Track timeout for manual selection reset
+    // Note: subjectSwitchInProgressRef and manualSubjectSelectionRef are now provided by useQuestionNavigation hook
     
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime || subjectSwitchInProgressRef.current) return;
@@ -1789,241 +1638,40 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     }
     // --- FULLSCREEN LOGIC END ---
 
-    // Handle answer selection
-    const handleAnswerChange = async (questionId, answer) => {
-        // Reset submission state when user makes changes
-        if (submissionState.status !== 'idle') {
-            setSubmissionState({
-                status: 'idle',
-                message: '',
-                performanceMetrics: null,
-                showProgress: false,
-                performanceBadge: null,
-                submissionTime: 0
-            });
-        }
+    // Note: handleAnswerChange is now provided by useExamState hook with progressive scoring integration
 
-        // Update local answers state
-        const newAnswers = {
-            ...answers,
-            [questionId]: answer
-        };
-        
-        setAnswers(newAnswers);
+    // Note: handleMultipleAnswerChange is now provided by useExamState hook
 
-        // CLIENT-SIDE EVALUATION: Real-time evaluation if engine is initialized
-        if (evaluationInitialized && !evaluationError) {
-            try {
-                console.log('🔄 Evaluating answer in real-time:', questionId, answer);
-                const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, answer);
-                console.log('📊 Real-time evaluation result:', evaluationResult);
-                
-                if (evaluationResult.success) {
-                    // Update progressive results with real-time scoring
-                    setProgressiveResults(prev => ({
-                        ...prev,
-                        totalScore: evaluationResult.progressiveScore || prev?.totalScore || 0,
-                        percentage: evaluationResult.progressivePercentage || prev?.percentage || 0,
-                        quickStats: evaluationResult.quickStats,
-                        lastUpdated: Date.now()
-                    }));
-                    
-                    // Log performance if evaluation time exceeds target
-                    if (evaluationResult.evaluationTime > 5) {
-                        console.warn(`⚠️ Answer evaluation slow: ${evaluationResult.evaluationTime.toFixed(2)}ms for question ${questionId}`);
-                    }
-                } else {
-                    console.warn(`⚠️ Client evaluation failed for question ${questionId}:`, evaluationResult.error);
-                }
-            } catch (error) {
-                console.error('❌ Client evaluation error:', error);
-                // Don't break the UI - continue with normal flow
-            }
-        }
-
-        // PROGRESSIVE COMPUTATION: Update progressive scoring in background (fallback)
-        if (progressiveScoring?.isInitialized?.()) {
-            progressiveScoring.updateProgressiveAnswers(newAnswers);
-        }
-    }
-
-    // Handle multiple choice answers
-    const handleMultipleAnswerChange = async (questionId, option, isChecked) => {
-        // Reset submission state when user makes changes
-        if (submissionState.status !== 'idle') {
-            setSubmissionState({
-                status: 'idle',
-                message: '',
-                performanceMetrics: null,
-                showProgress: false,
-                performanceBadge: null,
-                submissionTime: 0
-            });
-        }
-
-        let newAnswer;
-        
-        // Update local answers state and get new answer
-        setAnswers(prev => {
-            const currentAnswers = prev[questionId] || []
-            if (isChecked) {
-                newAnswer = [...currentAnswers, option];
-                return {
-                    ...prev,
-                    [questionId]: newAnswer
-                }
-            } else {
-                newAnswer = currentAnswers.filter(a => a !== option);
-                return {
-                    ...prev,
-                    [questionId]: newAnswer
-                }
-            }
-        });
-
-        // CLIENT-SIDE EVALUATION: Real-time evaluation for multiple choice answers
-        if (evaluationInitialized && !evaluationError && newAnswer) {
-            try {
-                const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, newAnswer);
-                
-                if (evaluationResult.success) {
-                    // Update progressive results with real-time scoring
-                    setProgressiveResults(prev => ({
-                        ...prev,
-                        totalScore: evaluationResult.progressiveScore || prev?.totalScore || 0,
-                        percentage: evaluationResult.progressivePercentage || prev?.percentage || 0,
-                        quickStats: evaluationResult.quickStats,
-                        lastUpdated: Date.now()
-                    }));
-                } else {
-                    console.warn(`⚠️ Client evaluation failed for question ${questionId}:`, evaluationResult.error);
-                }
-            } catch (error) {
-                console.error('❌ Client evaluation error for multiple choice:', error);
-                // Don't break the UI - continue with normal flow
-            }
-        }
-    }
-
-    // Toggle question marking
-    const toggleMarkedQuestion = (questionIndex) => {
-        setMarkedQuestions(prev => {
-            const newSet = new Set(prev)
-            if (newSet.has(questionIndex)) {
-                newSet.delete(questionIndex)
-            } else {
-                newSet.add(questionIndex)
-            }
-            return newSet
-        })
-    }
+    // Note: toggleMarkedQuestion is now provided by useExamState hook
 
     
-    // Helper function to get global question index from subject-relative index
-    // Fixed to handle sorted JEE questions correctly
-    const getGlobalQuestionIndex = (subjectRelativeIndex, subject) => {
-        // Get the sorted subject questions (same sorting as used in display)
-        const filtered = (questions || []).filter(q => q.subject === subject);
-        
-        let sortedSubjectQuestions;
-        if (isJeeExam) {
-            // Apply the same sorting as in subjectQuestions
-            sortedSubjectQuestions = filtered.sort((a, b) => {
-                const sectionA = a.section || 1;
-                const sectionB = b.section || 1;
-                
-                if (sectionA !== sectionB) {
-                    return sectionA - sectionB;
-                }
-                
-                return (a.questionNumber || 0) - (b.questionNumber || 0);
-            });
-        } else {
-            sortedSubjectQuestions = filtered;
-        }
-        
-        if (sortedSubjectQuestions.length === 0) return 0;
-        
-        const targetQuestion = sortedSubjectQuestions[subjectRelativeIndex];
-        if (!targetQuestion) return 0;
-        
-        // Find the global index of this question in the original unsorted array
-        return questions.findIndex(q => q._id === targetQuestion._id);
-    }
+    // Note: getGlobalQuestionIndex is now provided by useQuestionNavigation hook
     
     // Handle navigation from QuestionNavigator (receives global index)
-    const handleNavigatorGoToQuestion = (globalIndex) => {
-        const targetQuestion = questions[globalIndex];
-        if (!targetQuestion) return;
-        
-        // Switch to the subject of the target question
-        if (targetQuestion.subject !== selectedSubject) {
-            setSelectedSubject(targetQuestion.subject);
-        }
-        
-        // Get the sorted subject questions (same sorting as used in display)
-        const filtered = (questions || []).filter(q => q.subject === targetQuestion.subject);
-        
-        let sortedSubjectQuestions;
-        if (isJeeExam) {
-            // Apply the same sorting as in subjectQuestions
-            sortedSubjectQuestions = filtered.sort((a, b) => {
-                const sectionA = a.section || 1;
-                const sectionB = b.section || 1;
-                
-                if (sectionA !== sectionB) {
-                    return sectionA - sectionB;
-                }
-                
-                return (a.questionNumber || 0) - (b.questionNumber || 0);
-            });
-        } else {
-            sortedSubjectQuestions = filtered;
-        }
-        
-        // Find the subject-relative index in the sorted array
-        const subjectRelativeIndex = sortedSubjectQuestions.findIndex(q => q._id === targetQuestion._id);
-        
-        if (subjectRelativeIndex !== -1) {
-            setCurrentQuestionIndex(subjectRelativeIndex);
-        }
-    }
+    // Note: handleNavigatorGoToQuestion is now provided by useQuestionNavigation hook
 
-    // Auto-submit when time expires with enhanced feedback
-    const handleAutoSubmit = () => {
-        console.log('🚨 AUTO-SUBMIT TRIGGERED!', {
-            examId: exam._id,
-            studentId: student._id,
-            timeLeft: timeLeft,
-            timestamp: new Date().toISOString(),
-            totalAnswers: Object.keys(answers).length,
-            visitedQuestions: visitedQuestions.size,
-            markedQuestions: markedQuestions.size,
-            warningCount: warningCount
-        });
-        
-        // Clear any existing timers
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-        }
-        
-        console.log('📢 Showing auto-submit toast notification to student');
+    // Auto-submit wrapper to use hook's handleAutoSubmit
+    const handleAutoSubmitWrapper = () => {
+        console.log('⏰ Time expired - triggering auto-submit');
         toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
             duration: 6000,
-            style: {
-                fontSize: '16px',
-                fontWeight: 'bold'
-            }
+            style: { fontSize: '16px', fontWeight: 'bold' }
         });
         
-        console.log('⏳ Auto-submit waiting 1 second before calling submitExam()');
-        // Small delay to ensure toast is visible before submission
+        // Use hook's auto-submit with current exam data
+        const examData = {
+            answers,
+            visitedQuestions,
+            markedQuestions,
+            warningCount,
+            progressiveScoring: { isInitialized: () => evaluationInitialized }
+        };
+        const timerData = { startTime, timeLeft };
+        
         setTimeout(() => {
-            console.log('🎯 Auto-submit calling submitExam() - Emergency Queue System should activate now!');
-            setSubmissionType('auto_submit'); // Mark as auto-submit for proper messaging
-            submitExam();
+            handleAutoSubmit(examData, timerData);
         }, 1000);
-    }
+    };
 
     // 1. On mount, check for saved progress and show prompt if found
     useEffect(() => {
@@ -2093,26 +1741,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         timerInitializedRef.current = false;
     };
 
-    // Navigation handlers
-    const handlePrevious = () => {
-        setCurrentQuestionIndex(prev => Math.max(0, prev - 1))
-    }
-
-    const handleNext = () => {
-        if (currentQuestionIndex < totalQuestions - 1) {
-            // Move to next question in current subject
-            setCurrentQuestionIndex(prev => prev + 1)
-        } else {
-            // At last question of current subject, check if there's a next subject
-            const currentSubjectIndex = allSubjects.indexOf(selectedSubject)
-            if (currentSubjectIndex < allSubjects.length - 1) {
-                // Move to first question of next subject
-                const nextSubject = allSubjects[currentSubjectIndex + 1]
-                setSelectedSubject(nextSubject)
-                setCurrentQuestionIndex(0)
-            }
-        }
-    }
+    // Note: Navigation handlers (handlePrevious, handleNext) are now provided by useQuestionNavigation hook
 
     const handleToggleMarked = () => {
         // Use the current question's actual global index from the original questions array
@@ -2122,8 +1751,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }
 
-    const handleClear = async () => {
-        if (currentQuestion && currentQuestion._id) {
+    const handleClearWrapper = () => {
+        if (currentQuestion?._id) {
             // Reset submission state when user makes changes
             if (submissionState.status !== 'idle') {
                 setSubmissionState({
@@ -2136,34 +1765,28 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 });
             }
 
-            const questionId = currentQuestion._id;
-            
-            // Update local answers state
-            setAnswers(prev => {
-                const newAnswers = { ...prev }
-                delete newAnswers[questionId]
-                return newAnswers
-            });
-
-            // OLD PROGRESSIVE COMPUTATION CODE REMOVED - Now handled by new progressive hook
-
+            // Use hook's handleClear
+            handleClear(currentQuestion._id);
             toast.success("Selection cleared!")
         }
     }
 
-    const handleSubmit = () => {
-        setShowConfirmSubmit(true)
+    // Note: handleSubmit is now provided by useSubmissionLogic hook as 'handleSubmit'
+
+    const handleConfirmSubmitWrapper = () => {
+        const examData = {
+            answers,
+            visitedQuestions,
+            markedQuestions,
+            warningCount,
+            progressiveScoring: { isInitialized: () => evaluationInitialized }
+        };
+        const timerData = { startTime, timeLeft };
+        
+        confirmSubmission(examData, timerData);
     }
 
-    const handleConfirmSubmit = () => {
-        setShowConfirmSubmit(false)
-        setSubmissionType('manual_submit'); // Mark as manual submit for proper messaging
-        submitExam()
-    }
-
-    const handleCancelSubmit = () => {
-        setShowConfirmSubmit(false)
-    }
+    // Note: handleCancelSubmit is now provided by useSubmissionLogic hook as 'cancelSubmission'
 
     // College details state
     const [collegeDetails, setCollegeDetails] = useStateReact(null);
@@ -2216,9 +1839,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 isExamStarted={isExamStarted}
                 startTime={startTime}
                 exam={exam}
-                onTimeUpdate={setTimeLeft}
-                onTimeExpired={handleAutoSubmit}
-                warningsShownRef={warningsShownRef}
+                onTimeUpdate={updateTimeLeft}
+                onTimeExpired={handleAutoSubmitWrapper}
+                warningsShownRef={hookWarningsShownRef}
             />
             {/* Enhanced Submission Feedback Modal with Smooth Transitions - Responsive & Accessible */}
             {submissionState.status === 'submitting' && (
@@ -2719,10 +2342,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     onPrevious={handlePrevious}
                     onNext={handleNext}
                     onToggleMarked={handleToggleMarked}
-                    onClear={handleClear}
+                    onClear={handleClearWrapper}
                     onSubmit={handleSubmit}
                     VicharButton={VicharButton}
-                    isOnLastSubject={isLastSubject}
+                    isOnLastSubject={navigationStats?.isLastSubject}
                 />
             </div>
 
@@ -2761,10 +2384,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         onPrevious={handlePrevious}
                                         onNext={handleNext}
                                         onToggleMarked={handleToggleMarked}
-                                        onClear={handleClear}
+                                        onClear={handleClearWrapper}
                                         onSubmit={handleSubmit}
                                         VicharButton={VicharButton}
-                                        isOnLastSubject={isLastSubject}
+                                        isOnLastSubject={navigationStats?.isLastSubject}
                                                 />
                                 </div>
                             </div>
@@ -2910,8 +2533,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 showConfirmSubmit={showConfirmSubmit}
                 totalQuestions={totalQuestionsAll}
                 answeredQuestions={answeredQuestionsAll}
-                onCancel={handleCancelSubmit}
-                onSubmit={handleConfirmSubmit}
+                onCancel={cancelSubmission}
+                onSubmit={handleConfirmSubmitWrapper}
                 VicharButton={VicharButton}
                 exam={exam}
             />
