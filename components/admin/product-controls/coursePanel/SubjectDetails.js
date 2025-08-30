@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { addChapter, updateChapter, deleteChapter } from "../../../../server_actions/actions/adminActions"
+import { useAdminAccess } from "../../../../hooks/useAdminAccess"
 import VideoLectures from "./chapterPanel/VideoLectures"
 import Dpp from "./chapterPanel/Dpp"
 import ChapterExercise from "./chapterPanel/ChapterExercise"
 
 export default function SubjectDetiails({subject, setSubjects, productType}){
+    const { isAdmin, isLoading } = useAdminAccess()
     const [subjectDetails, setSubjectDetails] = useState(subject)
     const [serialNumber, setSerialNumber] = useState('')
     const [chapterName, setChapterName] = useState('')
@@ -204,12 +206,14 @@ export default function SubjectDetiails({subject, setSubjects, productType}){
                                                 >
                                                     Edit
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDelete(chapter._id)}
-                                                    className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
-                                                >
-                                                    Delete
-                                                </button>
+                                                {!isLoading && isAdmin && (
+                                                    <button
+                                                        onClick={() => handleDelete(chapter._id)}
+                                                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         <button 

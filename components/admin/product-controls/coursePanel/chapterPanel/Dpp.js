@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { addDpp, updateDpp, deleteDpp } from "../../../../../server_actions/actions/adminActions";
+import { useAdminAccess } from "../../../../../hooks/useAdminAccess";
 import DppQuestion from "./DppQuestion";
 import DppQuestionsList from "./DppQuestionsList";
 
 export default function Dpp({chapter, productType}){
-
+    const { isAdmin, isLoading } = useAdminAccess()
     const [serialNumber, setSerialNumber] = useState('')
     const [name, setName] = useState('')
     const [dppCode, setDppCode] = useState('')
@@ -280,12 +281,14 @@ export default function Dpp({chapter, productType}){
                                                             >
                                                                 {expandedDpp === dpp._id ? 'Hide Questions' : 'View Questions'}
                                                             </button>
-                                                            <button 
-                                                                onClick={() => handleDelete(dpp._id)}
-                                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                                            >
-                                                                Delete
-                                                            </button>
+                                                            {!isLoading && isAdmin && (
+                                                                <button 
+                                                                    onClick={() => handleDelete(dpp._id)}
+                                                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
