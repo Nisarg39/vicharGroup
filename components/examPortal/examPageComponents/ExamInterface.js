@@ -11,7 +11,6 @@ import ExamNavigation from "./examInterfaceComponents/ExamNavigation"
 import ExamStartScreen from "./examInterfaceComponents/ExamStartScreen"
 import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
-import ExamTimer from "./ExamTimer"
 
 // CLIENT-SIDE EVALUATION ENGINE: Import new evaluation system
 import { ClientEvaluation } from "../../../lib/progressive-scoring/ClientEvaluationEngine"
@@ -54,7 +53,22 @@ import { useSubmissionLogic } from "../../../hooks/exam/useSubmissionLogic"
 // This ensures consistent subject restriction logic across the application
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
-    // HOOK: Timer Management - handles all timer-related state and functionality
+    // AUTO-SUBMIT FUNCTION REF: Store reference to submission hook's handleAutoSubmit
+    const autoSubmitFunctionRef = useRef(null)
+
+    // INTEGRATED AUTO-SUBMIT CALLBACK: Create stable callback for timer integration
+    const handleIntegratedAutoSubmit = useCallback(() => {
+        console.log('🚀 Integrated auto-submit triggered from timer')
+        
+        if (autoSubmitFunctionRef.current) {
+            // Call the submission hook's auto-submit function directly
+            autoSubmitFunctionRef.current()
+        } else {
+            console.warn('⚠️ Auto-submit function not available - submission hook not initialized')
+        }
+    }, [])
+
+    // HOOK: Timer Management - handles all timer-related state and functionality with integrated auto-submit
     const {
         timeLeft,
         isExamStarted,
@@ -65,15 +79,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         startTimer,
         stopTimer,
         resumeTimer,
-        updateTimeLeft,
         getTimerData,
         isTimerReady,
         setTimerInitialized,
         clearWarnings,
         resetTimerFlags
-    } = useTimerManagement(exam)
+    } = useTimerManagement(exam, {
+        onAutoSubmit: handleIntegratedAutoSubmit
+    })
 
-    // HOOK: Exam State - handles core exam state management
+    // PROGRESSIVE CALLBACK REFS: Create stable refs for progressive evaluation callbacks
+    const progressiveAnswerCallbackRef = useRef(null)
+    const progressiveAnswerClearCallbackRef = useRef(null)
+
+    // HOOK: Exam State - handles core exam state management with progressive evaluation integration
     const {
         currentQuestionIndex,
         answers,
@@ -98,7 +117,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setCurrentQuestionIndex,
         setShowContinuePrompt,
         setHasSavedProgress
-    } = useExamState(exam, questions)
+    } = useExamState(exam, questions, {
+        onAnswerChange: (questionId, answer, allAnswers) => {
+            progressiveAnswerCallbackRef.current?.(questionId, answer, allAnswers)
+        },
+        onAnswerClear: (questionId, allAnswers) => {
+            progressiveAnswerClearCallbackRef.current?.(questionId, allAnswers)
+        }
+    })
 
     // HOOK: Submission Logic - handles exam submission with atomic locking
     const {
@@ -126,6 +152,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         showMobileNavigator,
         allSubjects,
         subjectQuestions,
+        subjectUnlockSchedule,
+        isSubjectLocked,
+        getFirstAvailableSubject,
         currentQuestion: navCurrentQuestion,
         navigationStats,
         subjectSwitchInProgressRef,
@@ -146,7 +175,33 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         currentQuestionIndex,
         setCurrentQuestionIndex,
         markQuestionVisited
+    }, {
+        startTime,
+        isExamStarted
     })
+    
+    // WARNING COUNT STATE - DECLARED HERE TO PREVENT TDZ ERROR
+    const [warningCount, setWarningCount] = useState(0); // Track total warnings
+    
+    // UPDATE AUTO-SUBMIT FUNCTION REF: Connect timer with submission hook
+    useEffect(() => {
+        autoSubmitFunctionRef.current = () => {
+            console.log('🎯 Calling submission hook handleAutoSubmit')
+            
+            // Prepare exam data for submission
+            const examData = {
+                answers,
+                visitedQuestions,
+                markedQuestions,
+                warningCount,
+                progressiveScoring: { isInitialized: () => evaluationInitialized }
+            }
+            const timerData = { startTime, timeLeft }
+            
+            // Call the submission hook's handleAutoSubmit directly
+            handleAutoSubmit(examData, timerData)
+        }
+    }, [answers, visitedQuestions, markedQuestions, warningCount, evaluationInitialized, startTime, timeLeft, handleAutoSubmit])
     
     // CLIENT-SIDE EVALUATION ENGINE STATE
     const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
@@ -159,7 +214,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const serviceWorkerIntegration = useRef(null)
     const evaluationEngineRef = useRef(null)
     const mainExamRef = useRef(null); // For fullscreen
-    const [warningCount, setWarningCount] = useState(0); // Track total warnings
+    const atomicSubmissionManager = useRef(null); // For atomic submission management
 
     // Note: The following state and refs are now managed by custom hooks:
     // - Timer state: timeLeft, isExamStarted, startTime (useTimerManagement)
@@ -247,6 +302,49 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // PROGRESSIVE COMPUTATION: Initialize progressive scoring engine
     const progressiveScoring = useProgressiveScoring(exam, questions, student);
+
+    // PROGRESSIVE EVALUATION CALLBACKS: Connect real-time scoring with answer changes
+    progressiveAnswerCallbackRef.current = useCallback(async (questionId, answer, allAnswers) => {
+        if (progressiveScoring?.isInitialized?.()) {
+            try {
+                console.log('🚀 Triggering progressive evaluation for:', questionId);
+                
+                // Update progressive scoring with new answer
+                const progressiveResult = await progressiveScoring.updateAnswers(allAnswers);
+                if (progressiveResult?.success) {
+                    setProgressiveResults(progressiveResult.data);
+                    console.log('✅ Progressive scoring updated:', progressiveResult.data);
+                }
+                
+                // Update client evaluation engine if available
+                if (evaluationInitialized) {
+                    const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, answer);
+                    if (evaluationResult?.success) {
+                        console.log('✅ Client evaluation completed:', evaluationResult);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Progressive evaluation error:', error);
+            }
+        }
+    }, [progressiveScoring, evaluationInitialized]);
+
+    progressiveAnswerClearCallbackRef.current = useCallback(async (questionId, allAnswers) => {
+        if (progressiveScoring?.isInitialized?.()) {
+            try {
+                console.log('🗑️ Clearing progressive evaluation for:', questionId);
+                
+                // Update progressive scoring without the cleared answer
+                const progressiveResult = await progressiveScoring.updateAnswers(allAnswers);
+                if (progressiveResult?.success) {
+                    setProgressiveResults(progressiveResult.data);
+                    console.log('✅ Progressive scoring updated after clear:', progressiveResult.data);
+                }
+            } catch (error) {
+                console.error('❌ Progressive clear error:', error);
+            }
+        }
+    }, [progressiveScoring]);
 
     // CLIENT-SIDE EVALUATION ENGINE: Initialize client evaluation engine
     useEffect(() => {
@@ -372,36 +470,24 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const handleSubjectChange = (newSubject) => {
         console.log('Subject change requested:', newSubject);
         
-        // Check if subject is locked for competitive exams
-        if (isCompetitiveExam && competitiveExamAccess?.subjectAccess) {
-            // Check subject variations for CET exams
-            const subjectVariations = [newSubject];
-            
-            if (isCetExam) {
-                if (newSubject.toLowerCase().includes('math')) {
-                    subjectVariations.push('Mathematics', 'Maths', 'Math');
-                } else if (newSubject.toLowerCase().includes('bio')) {
-                    subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
-                } else if (newSubject === 'Biology') {
-                    subjectVariations.push('Bio', 'Botany', 'Zoology');
-                } else if (newSubject === 'Mathematics') {
-                    subjectVariations.push('Maths', 'Math');
-                }
+        // Use navigation hook's switchToSubject function which includes locking logic
+        const success = switchToSubject(newSubject);
+        
+        // Show error message if switch failed due to locking
+        if (!success && isSubjectLocked(newSubject)) {
+            // Calculate remaining time for user feedback
+            let remainingTime = 0;
+            const subjectAccess = subjectUnlockSchedule.subjectAccess?.[newSubject];
+            if (subjectAccess?.remainingTime) {
+                remainingTime = Math.ceil(subjectAccess.remainingTime / 1000 / 60); // Convert to minutes
             }
             
-            // Check if any variation is locked
-            for (const variation of subjectVariations) {
-                const subjectAccess = competitiveExamAccess.subjectAccess[variation];
-                if (subjectAccess?.isLocked) {
-                    const remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, variation);
-                    toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
-                    return;
-                }
+            if (remainingTime > 0) {
+                toast.error(`${newSubject} will be available in ${remainingTime} minutes`);
+            } else {
+                toast.error(`${newSubject} is currently locked`);
             }
         }
-        
-        // Use navigation hook to switch subject
-        switchToSubject(newSubject);
     };
 
     // Use consistent currentQuestion from navigation hook
@@ -1644,28 +1730,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     // Handle navigation from QuestionNavigator (receives global index)
     // Note: handleNavigatorGoToQuestion is now provided by useQuestionNavigation hook
 
-    // Auto-submit wrapper to use hook's handleAutoSubmit
-    const handleAutoSubmitWrapper = () => {
-        console.log('⏰ Time expired - triggering auto-submit');
-        toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
-            duration: 6000,
-            style: { fontSize: '16px', fontWeight: 'bold' }
-        });
-        
-        // Use hook's auto-submit with current exam data
-        const examData = {
-            answers,
-            visitedQuestions,
-            markedQuestions,
-            warningCount,
-            progressiveScoring: { isInitialized: () => evaluationInitialized }
-        };
-        const timerData = { startTime, timeLeft };
-        
-        setTimeout(() => {
-            handleAutoSubmit(examData, timerData);
-        }, 1000);
-    };
+    // Note: Auto-submit functionality now integrated into useTimerManagement hook
 
     // 1. On mount, check for saved progress and show prompt if found
     useEffect(() => {
@@ -1813,15 +1878,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             className={`bg-gray-50 ${isExamStarted ? 'exam-mode' : ''}`}
         >
             
-            {/* ExamTimer Component - Handles timer logic */}
-            <ExamTimer
-                isExamStarted={isExamStarted}
-                startTime={startTime}
-                exam={exam}
-                onTimeUpdate={updateTimeLeft}
-                onTimeExpired={handleAutoSubmitWrapper}
-                warningsShownRef={hookWarningsShownRef}
-            />
+            {/* Timer logic now integrated into useTimerManagement hook */}
             {/* Enhanced Submission Feedback Modal with Smooth Transitions - Responsive & Accessible */}
             {submissionState.status === 'submitting' && (
                 <div 
@@ -2140,39 +2197,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
                         <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
-                                // FIXED: Check if subject is locked for competitive exams - Use consistent variation logic
-                                let isLocked = false;
+                                // Use navigation hook's integrated locking logic
+                                const isLocked = isSubjectLocked(subject);
                                 let remainingTime = 0;
                                 
-                                if (isCompetitiveExam && competitiveExamAccess.subjectAccess) {
-                                    // Check direct match first
-                                    let subjectAccess = competitiveExamAccess.subjectAccess[subject];
-                                    
-                                    // For CET exams, also check subject name variations (same logic as auto-switch)
-                                    if (isCetExam && !subjectAccess) {
-                                        const subjectVariations = [subject];
-                                        if (subject.toLowerCase().includes('math')) {
-                                            subjectVariations.push('Mathematics', 'Maths', 'Math');
-                                        } else if (subject.toLowerCase().includes('bio')) {
-                                            subjectVariations.push('Biology', 'Bio', 'Botany', 'Zoology');
-                                        } else if (subject === 'Biology') {
-                                            subjectVariations.push('Bio');
-                                        } else if (subject === 'Mathematics') {
-                                            subjectVariations.push('Maths', 'Math');
-                                        }
-                                        
-                                        for (const variation of subjectVariations) {
-                                            const access = competitiveExamAccess.subjectAccess[variation];
-                                            if (access) {
-                                                subjectAccess = access;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (subjectAccess?.isLocked) {
-                                        isLocked = true;
-                                        remainingTime = getSubjectUnlockTime(competitiveExamAccess.subjectAccess, subject);
+                                if (isLocked) {
+                                    const subjectAccess = subjectUnlockSchedule.subjectAccess?.[subject];
+                                    if (subjectAccess?.remainingTime) {
+                                        remainingTime = Math.ceil(subjectAccess.remainingTime / 1000 / 60); // Convert to minutes
                                     }
                                 }
                                 
@@ -2215,7 +2247,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     )}
                     
                     {/* Competitive Exam Time Restriction Info */}
-                    {isCompetitiveExam && !competitiveExamAccess.allUnlocked && (
+                    {isCompetitiveExam && !subjectUnlockSchedule.allUnlocked && (
                         <div className="mt-2 text-center">
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                                 <p className="text-xs text-amber-700 font-medium">
@@ -2223,8 +2255,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                     {isJeeExam && '🔒 Some sections may have time restrictions'}
                                     {isNeetExam && (
                                         // NEET has no subject restrictions, so this should rarely show
-                                        competitiveExamAccess.subjectAccess && 
-                                        Object.values(competitiveExamAccess.subjectAccess).some(access => access.isLocked)
+                                        subjectUnlockSchedule.subjectAccess && 
+                                        Object.values(subjectUnlockSchedule.subjectAccess).some(access => access.isLocked)
                                             ? '🔒 Some subjects are temporarily restricted'
                                             : null
                                     )}
@@ -2299,7 +2331,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                     setShowMobileNavigator(false);
                                 }}
                                 isCetExam={isCetExam}
-                                cetAccess={competitiveExamAccess}
+                                cetAccess={subjectUnlockSchedule}
                                 isJeeExam={isJeeExam}
                                 isNeetExam={isNeetExam}
                                 isCompetitiveExam={isCompetitiveExam}
@@ -2382,7 +2414,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         currentQuestionIndex={currentGlobalIndex}
                                         onGoToQuestion={handleNavigatorGoToQuestion}
                                         isCetExam={isCetExam}
-                                        cetAccess={competitiveExamAccess}
+                                        cetAccess={subjectUnlockSchedule}
                                         isJeeExam={isJeeExam}
                                         isNeetExam={isNeetExam}
                                         isCompetitiveExam={isCompetitiveExam}
