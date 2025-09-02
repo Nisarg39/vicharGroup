@@ -916,7 +916,7 @@ async function checkExamEligibilityUncached(details) {
     return {
       success: true,
       message: "You are eligible to give this exam",
-      exam: JSON.parse(JSON.stringify(examWithMarkingRules)),
+      exam: examWithMarkingRules,
     };
   } catch (error) {
     console.error("Error checking exam eligibility:", error);
@@ -2326,7 +2326,7 @@ export async function submitExamResultInternal(examData) {
     return {
       success: true,
       message: "Exam submitted successfully",
-      result: JSON.parse(JSON.stringify(finalResult)),
+      result: finalResult,
       traceId: tracer.requestId,
       traceSummary
     };
@@ -2590,7 +2590,7 @@ export async function getStudentExamResult(studentId, examId) {
     return {
       success: true,
       message: "Result fetched successfully",
-      result: JSON.parse(JSON.stringify(cleanResult)),
+      result: cleanResult,
     };
   } catch (error) {
     console.error("Error fetching student exam result:", error);
@@ -2719,7 +2719,7 @@ export async function getAllExamAttempts(studentId, examId) {
     
     return {
       success: true,
-      attempts: JSON.parse(JSON.stringify(cleanResults)),
+      attempts: cleanResults,
     };
   } catch (error) {
     console.error("getAllExamAttempts error:", error);
@@ -3045,7 +3045,7 @@ export async function getExamForProgressiveComputation(examId, studentId) {
         ...exam,
         _id: exam._id.toString()
       },
-      questions: JSON.parse(JSON.stringify(questionsWithAnswers)),
+      questions: questionsWithAnswers,
       markingScheme: markingSchemeResult.success ? markingSchemeResult.markingScheme : null,
       progressiveEnabled: true,
       securityMetadata: {

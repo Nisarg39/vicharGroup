@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react';
 import JoinCollege from './examViewComponents/JoinCollege';
-import MyTestSeries from './examViewComponents/MyTestSeriesOptimized';
+import MyTestSeries from './examViewComponents/MyTestSeries';
 
 export default function ExamView() {
     const [activeSection, setActiveSection] = useState('joinCollege');

@@ -100,7 +100,7 @@ export const useSubmissionLogic = (exam, student, onComplete) => {
                 })
             }
             
-            // Close browser window/tab immediately after showing toast
+            // Close browser window/tab after delay
             setTimeout(() => {
                 console.log('🔄 Attempting to close browser window/tab...')
                 
@@ -138,7 +138,7 @@ export const useSubmissionLogic = (exam, student, onComplete) => {
                         window.location.href = '/dashboard'
                     }, 2000)
                 }
-            }, success ? 1000 : 2000) // Reduced delay to close faster
+            }, success ? 2000 : 3000)
             
         } catch (error) {
             console.error('❌ Error during window close handling:', error)
@@ -280,17 +280,16 @@ export const useSubmissionLogic = (exam, student, onComplete) => {
                         // Release lock
                         await atomicSubmissionManager.current?.releaseLock(lockId)
                         
-                        // FIXED: Call handleExamWindowClose BEFORE onComplete to prevent unmounting race condition
-                        // This ensures window.close() executes before component starts unmounting
-                        handleExamWindowClose({
+                        // Handle completion
+                        await handleExamWindowClose({
                             submissionType,
                             success: true,
                             message: 'Exam submitted successfully!'
                         })
                         
-                        // Clear local progress since exam is now completed
                         if (onComplete) {
                             console.log('🎯 CRITICAL FIX: Calling onComplete callback with submission result');
+                            // Clear any local progress since exam is now completed
                             const progressKey = exam && `exam_progress_${exam._id}_${directStorageData.studentId}`;
                             if (progressKey) {
                                 try {

@@ -28,9 +28,6 @@ export const useTimerManagement = (exam, options = {}) => {
     const autoSubmitTriggeredRef = useRef(false)
     const lastTimeUpdateRef = useRef(0)
     
-    // PHASE 1 FIX: Mount tracking to prevent memory leaks
-    const isMountedRef = useRef(true)
-    
     /**
      * Start the exam timer
      * Initializes startTime and sets exam as started
@@ -127,18 +124,13 @@ export const useTimerManagement = (exam, options = {}) => {
         return isExamStarted && startTime && timerInitializedRef.current
     }, [isExamStarted, startTime])
     
-    // PHASE 1 FIX: Enhanced cleanup on unmount with mount tracking
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            isMountedRef.current = false
             if (timerRef.current) {
                 clearInterval(timerRef.current)
                 timerRef.current = null
             }
-            // Clean up all refs to prevent memory leaks
-            warningsShownRef.current.clear()
-            autoSubmitTriggeredRef.current = false
-            timerInitializedRef.current = false
         }
     }, [])
     
@@ -181,15 +173,6 @@ export const useTimerManagement = (exam, options = {}) => {
         // Start timer interval
         timerRef.current = setInterval(() => {
             try {
-                // BUG #1 FIX: Atomic mount check - single verification point at start of callback
-                if (!isMountedRef.current) {
-                    if (timerRef.current) {
-                        clearInterval(timerRef.current)
-                        timerRef.current = null
-                    }
-                    return
-                }
-                
                 // Use consistent helper function for time calculation
                 const calculatedTimeLeft = calculateRemainingTime(exam, startTime)
                 
@@ -197,7 +180,6 @@ export const useTimerManagement = (exam, options = {}) => {
                 // This prevents unnecessary re-renders and cascading effects
                 if (Math.abs(calculatedTimeLeft - lastTimeUpdateRef.current) >= 1) {
                     lastTimeUpdateRef.current = calculatedTimeLeft
-                    // BUG #1 FIX: State update is now atomic - mount was verified at callback start
                     setTimeLeft(calculatedTimeLeft)
                 }
                 
@@ -234,7 +216,6 @@ export const useTimerManagement = (exam, options = {}) => {
                 })
                 
                 // STABLE AUTO-SUBMIT: Prevent multiple auto-submit calls
-                // BUG #1 FIX: Auto-submit logic is now atomic - mount was verified at callback start
                 if (calculatedTimeLeft <= 0 && !autoSubmitTriggeredRef.current) {
                     autoSubmitTriggeredRef.current = true
                     console.log('⏰ Timer expired - triggering integrated auto-submit')
@@ -242,7 +223,6 @@ export const useTimerManagement = (exam, options = {}) => {
                     if (onAutoSubmit) {
                         // Import toast dynamically
                         import('react-hot-toast').then(({ default: toast }) => {
-                            // BUG #1 FIX: Toast display is now atomic - mount was verified at callback start
                             toast.error("⏰ Time's up! Your exam has been automatically submitted.", { 
                                 duration: 6000,
                                 style: { fontSize: '16px', fontWeight: 'bold' }
@@ -255,11 +235,6 @@ export const useTimerManagement = (exam, options = {}) => {
                 }
             } catch (error) {
                 console.error('Timer calculation error:', error)
-                // BUG #1 FIX: Error handling is now atomic - mount was verified at callback start
-                if (timerRef.current) {
-                    clearInterval(timerRef.current)
-                    timerRef.current = null
-                }
                 // Continue timer but skip this update
             }
         }, 1000)

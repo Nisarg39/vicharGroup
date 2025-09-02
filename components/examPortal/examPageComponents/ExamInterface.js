@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import toast from "react-hot-toast"
 
+// Import sub-components
 import ExamHeader from "./examInterfaceComponents/ExamHeader"
 import QuestionDisplay from "./examInterfaceComponents/QuestionDisplay"
 import QuestionNavigator from "./examInterfaceComponents/QuestionNavigator"
@@ -10,14 +11,21 @@ import ExamNavigation from "./examInterfaceComponents/ExamNavigation"
 import ExamStartScreen from "./examInterfaceComponents/ExamStartScreen"
 import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
+
+// CLIENT-SIDE EVALUATION ENGINE: Import new evaluation system
 import { ClientEvaluation } from "../../../lib/progressive-scoring/ClientEvaluationEngine"
 import { getServiceWorkerIntegration } from "../../../lib/progressive-scoring/ServiceWorkerIntegration"
+
+// PROGRESSIVE COMPUTATION: Import progressive scoring integration
 import { useProgressiveScoring, ProgressiveScoreDisplay } from "../../../lib/progressive-scoring/ExamInterfaceIntegration"
+
+// DIRECT STORAGE SYSTEM: Import enhanced submission handler for 15ms target
 import { submitProgressiveResultDirect } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 import { shouldCloseExamImmediately, getSubmissionSuccessMessage } from "../../../config/examFeatureFlags"
 import { logSubmissionStart, logImmediateClose, logSubmissionError } from "../../../lib/examBottleneckMonitor"
-import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
 
+// PERFORMANCE MONITORING: Import performance monitoring for 15ms target tracking
+import { getPerformanceMonitor } from "../../../lib/progressive-scoring/PerformanceMonitor"
 
 import { VicharCard } from "../../ui/vichar-card"
 import { VicharButton } from "../../ui/vichar-button"
@@ -27,61 +35,32 @@ import { useState as useStateReact } from "react"
 import { getStudentDetails } from "../../../server_actions/actions/studentActions"
 import { getSubjectUnlockTime, getExamAccessRules, getSubjectUnlockSchedule } from "../../../utils/examDurationHelpers"
 import { calculateRemainingTime, getEffectiveExamDuration } from "../../../utils/examTimingUtils"
+// Progressive Computation System
 import { handleProgressiveSubmission } from "../../../server_actions/actions/examController/progressiveSubmissionHandler"
 
 // ATOMIC SUBMISSION SYSTEM: Import atomic submission manager to eliminate race conditions
 import { getAtomicSubmissionManager, SUBMISSION_TYPES } from "../../../utils/atomicSubmissionManager"
 
+// CUSTOM HOOKS: Import refactored exam management hooks
 import { useTimerManagement } from "../../../hooks/exam/useTimerManagement"
 import { useExamState } from "../../../hooks/exam/useExamState"
 import { useQuestionNavigation } from "../../../hooks/exam/useQuestionNavigation"
 import { useSubmissionLogic } from "../../../hooks/exam/useSubmissionLogic"
 
+// Removed: normalizeSubject function - now using consistent subject names from helper functions
 
-// State validation helper function to replace console.log timing dependencies
-const validateStateSync = (dependencies, timeout = 100) => {
-    return new Promise((resolve) => {
-        const validateStates = () => {
-            const allValid = dependencies.every(dep => dep.validator(dep.value));
-            if (allValid) {
-                resolve(true);
-            } else {
-                // Check again after next tick to allow state updates
-                setTimeout(validateStates, 10);
-            }
-        };
-        
-        // Start validation immediately
-        validateStates();
-        
-        // Fallback timeout to prevent infinite waiting
-        setTimeout(() => resolve(false), timeout);
-    });
-};
-
-// Async coordination helper to replace console.log timing
-const ensureAsyncReady = async (asyncOperation, fallback = null) => {
-    try {
-        if (typeof asyncOperation === 'function') {
-            const result = await asyncOperation();
-            return result;
-        }
-        return asyncOperation;
-    } catch (error) {
-        return fallback;
-    }
-};
+// Removed: isRestrictedSubject function - now using proper helper functions from examDurationHelpers.js
+// This ensures consistent subject restriction logic across the application
 
 export default function ExamInterface({ exam, questions, student, onComplete, isOnline, onBack }) {
+    // AUTO-SUBMIT FUNCTION REF: Store reference to submission hook's handleAutoSubmit
     const autoSubmitFunctionRef = useRef(null)
 
-    const handleIntegratedAutoSubmit = useCallback(async () => {
-        // Replace console.log with proper async state validation
-        const isReady = await validateStateSync([
-            { value: autoSubmitFunctionRef.current, validator: (v) => typeof v === 'function' }
-        ], 50);
+    // INTEGRATED AUTO-SUBMIT CALLBACK: Create stable callback for timer integration
+    const handleIntegratedAutoSubmit = useCallback(() => {
+        console.log('🚀 Integrated auto-submit triggered from timer')
         
-        if (isReady && autoSubmitFunctionRef.current) {
+        if (autoSubmitFunctionRef.current) {
             // Call the submission hook's auto-submit function directly
             autoSubmitFunctionRef.current()
         } else {
@@ -89,6 +68,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [])
 
+    // HOOK: Timer Management - handles all timer-related state and functionality with integrated auto-submit
     const {
         timeLeft,
         isExamStarted,
@@ -108,9 +88,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         onAutoSubmit: handleIntegratedAutoSubmit
     })
 
+    // PROGRESSIVE CALLBACK REFS: Create stable refs for progressive evaluation callbacks
     const progressiveAnswerCallbackRef = useRef(null)
     const progressiveAnswerClearCallbackRef = useRef(null)
 
+    // HOOK: Exam State - handles core exam state management with progressive evaluation integration
     const {
         currentQuestionIndex,
         answers,
@@ -118,12 +100,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         visitedQuestions,
         hasSavedProgress,
         showContinuePrompt,
+        // examCompletedRef removed from useExamState to prevent conflicts
         handleAnswerChange,
         handleMultipleAnswerChange,
         handleClear,
         toggleMarkedQuestion,
         markQuestionVisited,
         navigateToQuestion,
+        // getCurrentQuestion removed - using navigation hook's currentQuestion instead
         getQuestionAnswer,
         getProgressStats,
         loadSavedProgress,
@@ -142,6 +126,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     })
 
+    // HOOK: Submission Logic - handles exam submission with atomic locking
     const {
         showConfirmSubmit,
         submissionState,
@@ -161,6 +146,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         setSubmissionType
     } = useSubmissionLogic(exam, student, onComplete)
 
+    // HOOK: Question Navigation - handles subject switching and question navigation  
     const {
         selectedSubject,
         showMobileNavigator,
@@ -194,38 +180,33 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isExamStarted
     })
     
+    // WARNING COUNT STATE - DECLARED HERE TO PREVENT TDZ ERROR
     const [warningCount, setWarningCount] = useState(0); // Track total warnings
     
+    // CLIENT-SIDE EVALUATION ENGINE STATE - DECLARED HERE TO PREVENT TDZ ERROR
     const [clientEvaluationEngine, setClientEvaluationEngine] = useState(null)
     const [evaluationInitialized, setEvaluationInitialized] = useState(false)
     const [progressiveResults, setProgressiveResults] = useState(null)
     const [evaluationError, setEvaluationError] = useState(null)
     const [offlineCapable, setOfflineCapable] = useState(false)
     
+    // UPDATE AUTO-SUBMIT FUNCTION REF: Connect timer with submission hook
     useEffect(() => {
-        autoSubmitFunctionRef.current = async () => {
-            // Replace console.log with proper state validation
-            const stateReady = await validateStateSync([
-                { value: answers, validator: (v) => v !== null && typeof v === 'object' },
-                { value: visitedQuestions, validator: (v) => v instanceof Set },
-                { value: markedQuestions, validator: (v) => v instanceof Set },
-                { value: handleAutoSubmit, validator: (v) => typeof v === 'function' }
-            ], 100);
+        autoSubmitFunctionRef.current = () => {
+            console.log('🎯 Calling submission hook handleAutoSubmit')
             
-            if (stateReady) {
-                const examData = {
-                    answers,
-                    visitedQuestions,
-                    markedQuestions,
-                    warningCount,
-                    progressiveScoring: { isInitialized: () => evaluationInitialized }
-                }
-                const timerData = { startTime, timeLeft }
-                
-                await ensureAsyncReady(() => handleAutoSubmit(examData, timerData));
-            } else {
-                console.error('❌ Auto-submit failed: Required state not ready');
+            // Prepare exam data for submission
+            const examData = {
+                answers,
+                visitedQuestions,
+                markedQuestions,
+                warningCount,
+                progressiveScoring: { isInitialized: () => evaluationInitialized }
             }
+            const timerData = { startTime, timeLeft }
+            
+            // Call the submission hook's handleAutoSubmit directly
+            handleAutoSubmit(examData, timerData)
         }
     }, [answers, visitedQuestions, markedQuestions, warningCount, evaluationInitialized, startTime, timeLeft, handleAutoSubmit])
     
@@ -235,8 +216,18 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const mainExamRef = useRef(null); // For fullscreen
     const atomicSubmissionManager = useRef(null); // For atomic submission management
 
+    // Note: The following state and refs are now managed by custom hooks:
+    // - Timer state: timeLeft, isExamStarted, startTime (useTimerManagement)
+    // - Exam state: currentQuestionIndex, answers, markedQuestions, visitedQuestions (useExamState)  
+    // - Navigation state: selectedSubject, showMobileNavigator (useQuestionNavigation)
+    // - Submission state: showConfirmSubmit, submissionState, etc. (useSubmissionLogic)
+    
+    // Note: handleExamWindowClose is now provided by useSubmissionLogic hook
+    
+    // Handle keyboard navigation for modals
     useEffect(() => {
         const handleKeyDown = (event) => {
+            // Only handle keyboard events when modal is open
             if (submissionState.status === 'idle') return;
             
             // Handle Escape key for error modal
@@ -251,7 +242,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 });
                 return;
             }
-
+            
+            // Handle Tab key for focus trapping in error modal
             if (event.key === 'Tab' && submissionState.status === 'error') {
                 const modal = modalRef.current;
                 if (!modal) return;
@@ -279,9 +271,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [submissionState.status]);
-
+    
+    // Focus management when modals open/close
     useEffect(() => {
         if (submissionState.status === 'error' && modalRef.current) {
+            // Focus the first button in error modal
             const firstButton = modalRef.current.querySelector('button');
             if (firstButton) {
                 setTimeout(() => firstButton.focus(), 100);
@@ -289,39 +283,45 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [submissionState.status]);
 
+    // ATOMIC SUBMISSION SYSTEM: Initialize atomic submission manager on mount
     useEffect(() => {
+        // Initialize the atomic submission manager
         atomicSubmissionManager.current = getAtomicSubmissionManager();
         
         console.log('🔒 Atomic submission manager initialized');
-
+        
+        // Cleanup on unmount
         return () => {
             if (atomicSubmissionManager.current) {
+                // Force release any held locks on component cleanup
                 atomicSubmissionManager.current.forceReleaseLock();
                 console.log('🗑️ Atomic submission manager cleaned up');
             }
         };
     }, []);
 
+    // PROGRESSIVE COMPUTATION: Initialize progressive scoring engine
     const progressiveScoring = useProgressiveScoring(exam, questions, student);
 
+    // PROGRESSIVE EVALUATION CALLBACKS: Connect real-time scoring with answer changes
     progressiveAnswerCallbackRef.current = useCallback(async (questionId, answer, allAnswers) => {
         if (progressiveScoring?.isInitialized?.()) {
             try {
-                // Replace console.log with proper async progressive evaluation
-                const progressiveResult = await ensureAsyncReady(
-                    () => progressiveScoring.updateAnswers(allAnswers),
-                    { success: false }
-                );
+                console.log('🚀 Triggering progressive evaluation for:', questionId);
                 
+                // Update progressive scoring with new answer
+                const progressiveResult = await progressiveScoring.updateAnswers(allAnswers);
                 if (progressiveResult?.success) {
                     setProgressiveResults(progressiveResult.data);
+                    console.log('✅ Progressive scoring updated:', progressiveResult.data);
                 }
-
+                
+                // Update client evaluation engine if available
                 if (evaluationInitialized) {
-                    await ensureAsyncReady(
-                        () => ClientEvaluation.evaluateAnswer(questionId, answer),
-                        { success: false }
-                    );
+                    const evaluationResult = await ClientEvaluation.evaluateAnswer(questionId, answer);
+                    if (evaluationResult?.success) {
+                        console.log('✅ Client evaluation completed:', evaluationResult);
+                    }
                 }
             } catch (error) {
                 console.error('❌ Progressive evaluation error:', error);
@@ -332,14 +332,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     progressiveAnswerClearCallbackRef.current = useCallback(async (questionId, allAnswers) => {
         if (progressiveScoring?.isInitialized?.()) {
             try {
-                // Replace console.log with proper async progressive clearing
-                const progressiveResult = await ensureAsyncReady(
-                    () => progressiveScoring.updateAnswers(allAnswers),
-                    { success: false }
-                );
+                console.log('🗑️ Clearing progressive evaluation for:', questionId);
                 
+                // Update progressive scoring without the cleared answer
+                const progressiveResult = await progressiveScoring.updateAnswers(allAnswers);
                 if (progressiveResult?.success) {
                     setProgressiveResults(progressiveResult.data);
+                    console.log('✅ Progressive scoring updated after clear:', progressiveResult.data);
                 }
             } catch (error) {
                 console.error('❌ Progressive clear error:', error);
@@ -347,36 +346,44 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [progressiveScoring]);
 
+    // CLIENT-SIDE EVALUATION ENGINE: Initialize client evaluation engine
     useEffect(() => {
         const initializeClientEvaluation = async () => {
             try {
-                // Replace console.log with proper state validation
-                const dataValidation = await validateStateSync([
-                    { value: exam, validator: (v) => v !== null && typeof v === 'object' && v._id },
-                    { value: questions, validator: (v) => Array.isArray(v) && v.length > 0 },
-                    { value: student, validator: (v) => v !== null && typeof v === 'object' && v._id }
-                ], 200);
+                console.log('🎯 Initializing client-side evaluation engine...');
+                console.log('📊 Exam data available:', !!exam, 'Questions:', questions?.length, 'Student:', !!student);
                 
-                if (!dataValidation) {
-                    console.error('❌ Required data validation failed for client evaluation initialization');
+                // Debug log exam and questions data
+                if (!exam) {
+                    console.error('❌ Exam data is missing during client evaluation initialization');
                     return;
                 }
                 
-                // All required data validated and ready
+                if (!questions || questions.length === 0) {
+                    console.error('❌ Questions data is missing or empty during client evaluation initialization');
+                    return;
+                }
+                
+                if (!student) {
+                    console.error('❌ Student data is missing during client evaluation initialization');
+                    return;
+                }
+                
+                console.log('✅ All required data present for client evaluation initialization');
+                
+                // Initialize Service Worker integration for offline capabilities
                 serviceWorkerIntegration.current = getServiceWorkerIntegration({
                     enableBackgroundSync: true,
                     cacheExpiry: 24 * 60 * 60 * 1000 // 24 hours
                 });
                 
-                const swResult = await ensureAsyncReady(
-                    () => serviceWorkerIntegration.current.initialize(),
-                    { success: false, offlineCapable: false }
-                );
-                
+                const swResult = await serviceWorkerIntegration.current.initialize();
                 if (swResult.success) {
                     setOfflineCapable(swResult.offlineCapable);
+                    console.log(`📡 Service Worker initialized - Offline capable: ${swResult.offlineCapable}`);
                 }
-
+                
+                // Prepare evaluation data
                 const evaluationData = {
                     exam,
                     questions,
@@ -384,27 +391,43 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     timestamp: Date.now()
                 };
                 
-                // Initialize client evaluation engine with proper async coordination
-                const initResult = await ensureAsyncReady(
-                    () => ClientEvaluation.initialize(evaluationData),
-                    { success: false, error: 'Initialization failed', initializationTime: 0 }
-                );
+                // Initialize client evaluation engine
+                console.log('🔧 Starting ClientEvaluation.initialize() with data:', {
+                    examId: evaluationData.exam?._id,
+                    questionsCount: evaluationData.questions?.length,
+                    studentId: evaluationData.student?._id,
+                    hasValidExam: !!evaluationData.exam,
+                    hasValidQuestions: Array.isArray(evaluationData.questions) && evaluationData.questions.length > 0,
+                    hasValidStudent: !!evaluationData.student
+                });
+                
+                const initResult = await ClientEvaluation.initialize(evaluationData);
+                
+                console.log('🔧 ClientEvaluation.initialize() result:', {
+                    success: initResult.success,
+                    error: initResult.error,
+                    initializationTime: initResult.initializationTime,
+                    questionsLoaded: initResult.questionsLoaded,
+                    rulesPreloaded: initResult.rulesPreloaded
+                });
                 
                 if (initResult.success) {
-                    // Set states synchronously first
                     setEvaluationInitialized(true);
                     setEvaluationError(null);
+                    console.log(`✅ Client evaluation engine initialized in ${initResult.initializationTime.toFixed(2)}ms`);
                     
-                    // Test existing answers if available - with proper async coordination
+                    // Test a simple evaluation to ensure the engine is working
                     if (Object.keys(answers).length > 0) {
                         const testQuestionId = Object.keys(answers)[0];
                         const testAnswer = answers[testQuestionId];
+                        console.log('🧪 Testing client evaluation with existing answer:', testQuestionId, testAnswer);
                         
-                        // Replace console.log timing with proper async test
-                        await ensureAsyncReady(
-                            () => ClientEvaluation.evaluateAnswer(testQuestionId, testAnswer),
-                            null
-                        );
+                        try {
+                            const testResult = await ClientEvaluation.evaluateAnswer(testQuestionId, testAnswer);
+                            console.log('🧪 Test evaluation result:', testResult);
+                        } catch (testError) {
+                            console.error('🧪 Test evaluation failed:', testError);
+                        }
                     }
                     
                     // Initialize offline evaluation if supported
@@ -429,12 +452,28 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [isExamStarted, exam, questions, student]);
 
+    // 1. Update the localStorage key to include both examId and studentId for uniqueness
     const progressKey = `exam_progress_${exam._id}_${student._id}`;
+
+    // Note: startTime is now managed by useTimerManagement hook
+
+
+    // --- SUBJECTWISE FILTERING ---
+    // Note: Exam type flags (isJeeExam, isCetExam, isNeetExam, isCompetitiveExam) are now provided by useQuestionNavigation hook
+    
+    // Note: allSubjects is now provided by useQuestionNavigation hook
+    // Note: selectedSubject is now managed by useQuestionNavigation hook
+
+    // Note: Subject switching logic is now handled by useQuestionNavigation hook
 
     // Handle manual subject changes - now uses navigation hook
     const handleSubjectChange = (newSubject) => {
         console.log('Subject change requested:', newSubject);
+        
+        // Use navigation hook's switchToSubject function which includes locking logic
         const success = switchToSubject(newSubject);
+        
+        // Show error message if switch failed due to locking
         if (!success && isSubjectLocked(newSubject)) {
             // Calculate remaining time for user feedback
             let remainingTime = 0;
@@ -488,20 +527,37 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     };
 
     const currentSectionInfo = getCurrentSectionInfo();
-    const competitiveExamAccess = useMemo(() => {
 
+    // FIXED: Enhanced subject access logic with STABLE OBJECT REFERENCES
+    // This prevents infinite loops by memoizing the unlock schedule computation
+    const competitiveExamAccess = useMemo(() => {
         if (!startTime || !isExamStarted) {
+            // Return stable fallback object to prevent re-renders
             return { allUnlocked: true, subjectAccess: {}, streamConfig: null, examType: 'practice' };
         }
         
         try {
+            // STABLE COMPUTATION: Only recalculates when exam or startTime changes
+            // Using JSON.stringify to create stable cache key for exam object
             const examKey = `${exam._id}_${exam.stream}_${exam.examAvailability}_${exam.endTime}`;
             const timeKey = Math.floor(startTime / 60000); // Round to minutes for stability
             const cacheKey = `${examKey}_${timeKey}`;
-
+            
+            // Use the utility function but ensure stable object references
             const unlockSchedule = getSubjectUnlockSchedule(exam, new Date(startTime));
             
-            // Subject access calculated for CET exams
+            // DEBUG: Log subject access for CET exams
+            if (isCetExam) {
+                console.log('CET Subject Access Debug:', {
+                    allUnlocked: unlockSchedule.allUnlocked,
+                    subjectAccess: unlockSchedule.subjectAccess,
+                    currentTime: new Date().toISOString(),
+                    startTime: new Date(startTime).toISOString(),
+                    examEndTime: exam.endTime ? new Date(exam.endTime).toISOString() : 'N/A'
+                });
+            }
+            
+            // STABLE RETURN: Create consistent object structure
             return {
                 allUnlocked: Boolean(unlockSchedule.allUnlocked),
                 subjectAccess: unlockSchedule.subjectAccess || {},
@@ -511,6 +567,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             };
         } catch (error) {
             console.error('Error calculating subject unlock schedule:', error);
+            // Return stable fallback object to prevent exam from breaking
             return { allUnlocked: true, subjectAccess: {}, streamConfig: null, examType: 'practice' };
         }
     }, [
@@ -520,6 +577,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         exam.endTime,
         Math.floor(startTime / 60000), // Rounded startTime for stability
         isExamStarted,
+        // CRITICAL FIX: Add current time for MHT-CET exams to enable automatic Biology/Maths unlock
+        // This only affects exams with time-locked subjects (MHT-CET), preventing performance impact on NEET/JEE
         isCetExam ? Math.floor(Date.now() / 60000) : null
     ]);
 
@@ -527,16 +586,32 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
     const totalQuestionsAll = (questions || []).length;
     const answeredQuestionsAll = Object.keys(answers).filter(qid => (questions || []).some(q => q._id === qid)).length;
     const isLastSubject = allSubjects[allSubjects.length - 1] === selectedSubject;
+    // Submit button is now always available throughout the exam
+
+    // Debug logging removed for security - do not log exam questions/answers
+
+    // Removed: loadExamProgress function - logic moved to handleContinueExam for clarity
+
+    // Removed: saveExamProgress function - now handled by auto-save effect directly
+    // This eliminates duplicate logic and ensures consistent progress saving
+
+    // 1. On mount, always check for saved progress and restore answers, currentQuestionIndex, markedQuestions, startTime, and timeLeft before starting the timer.
     useEffect(() => {
         const savedProgress = localStorage.getItem(progressKey);
         if (savedProgress) {
             try {
                 const progress = JSON.parse(savedProgress);
+                
+                // Load saved progress using hook method
                 loadSavedProgress(progress);
                 setWarningCount(progress.warningCount || 0); // Restore warning count
+                
+                // Fix: Restore selected subject first, then set question index
                 if (progress.selectedSubject) {
                     setSelectedSubject(progress.selectedSubject);
                 }
+                
+                // Resume timer with saved data
                 resumeTimer(progress.startTime, progress.timeLeft);
                 setTimerInitialized(true); // Mark timer as initialized when loading progress
                 
@@ -547,66 +622,35 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 localStorage.removeItem(progressKey);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [progressKey]);
 
     // PROGRESSIVE COMPUTATION: Initialize when exam starts
     useEffect(() => {
         if (isExamStarted && progressiveScoring?.isSupported) {
-            // Replace console.log with proper async state validation
-            const initializeProgressiveScoring = async () => {
-                try {
-                    // Validate required dependencies first
-                    const dependenciesReady = await validateStateSync([
-                        { value: exam, validator: (v) => v && v._id },
-                        { value: student, validator: (v) => v && v._id },
-                        { value: progressiveScoring.initializeProgressive, validator: (v) => typeof v === 'function' }
-                    ], 150);
-
-                    if (!dependenciesReady) {
-                        console.error('❌ Progressive scoring dependencies not ready');
-                        return false;
-                    }
-
-                    // Initialize performance monitoring for 15ms target tracking
-                    const performanceMonitor = getPerformanceMonitor();
-                    performanceMonitor.initializeSession(
-                        exam._id, 
-                        student._id, 
-                        exam.stream || 'general'
-                    );
-
-                    // Initialize progressive scoring with proper async coordination
-                    const result = await ensureAsyncReady(
-                        () => progressiveScoring.initializeProgressive(),
-                        { success: false }
-                    );
-          
-                    if (result.success) {
-                        // Validate progressive scoring is actually ready with proper state coordination
-                        const isReady = await validateStateSync([
-                            { value: progressiveScoring.isInitialized, validator: (v) => typeof v === 'function' }
-                        ], 100);
-
-                        if (isReady) {
-                            const actuallyReady = await ensureAsyncReady(
-                                () => progressiveScoring.isInitialized(),
-                                false
-                            );
-                            
-                            if (actuallyReady) {
-                                toast.success("Ultra-fast scoring activated!");
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('❌ Progressive initialization error:', error);
-                    return false;
-                }
-            };
+            console.log('🔧 Initializing progressive scoring engine with performance monitoring...');
             
-            initializeProgressiveScoring();
+            // Initialize performance monitoring for 15ms target tracking
+            const performanceMonitor = getPerformanceMonitor();
+            performanceMonitor.initializeSession(
+                exam._id, 
+                student._id, 
+                exam.stream || 'general'
+            );
+            
+            progressiveScoring.initializeProgressive().then(result => {
+                if (result.success) {
+                    console.log('✅ Progressive scoring activated for exam');
+                    console.log(`📊 Engine loaded ${result.questionsLoaded} questions`);
+                    console.log('📈 Performance monitoring active for 15ms target tracking');
+                    toast.success("Ultra-fast scoring activated!");
+                } else {
+                    console.log('⚠️ Progressive scoring failed, using server computation');
+                    console.log('Reason:', result.reason);
+                }
+            }).catch(error => {
+                console.error('❌ Progressive initialization error:', error);
+            });
         }
     }, [isExamStarted, progressiveScoring]);
 
@@ -617,6 +661,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [answers, progressiveScoring]);
 
+
+
+    // Mark initial question as visited when exam starts or when navigating
     useEffect(() => {
         if (isExamStarted) {
             const globalIndex = getGlobalQuestionIndex(currentQuestionIndex, selectedSubject);
@@ -626,41 +673,29 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, [isExamStarted, currentQuestionIndex, selectedSubject]);
 
+    // Track previously locked subjects for notification purposes
     const [previouslyLockedSubjects, setPreviouslyLockedSubjects] = useState(new Set());
-
+    
+    // FIXED: Track subject unlocking with stable dependencies and prevent cascade effects
+    // Use competitiveExamAccess directly instead of recalculating
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime) return;
         
         const checkInterval = setInterval(() => {
             try {
-                // PHASE 1 FIX: Check if component is still mounted before operations
-                if (!isMountedRef.current) {
-                    clearInterval(checkInterval);
-                    return;
-                }
-                
-                // PHASE 2 OPTIMIZATION: Early exit if all subjects already unlocked and no previously locked subjects to notify about
-                if (competitiveExamAccess.allUnlocked && previouslyLockedSubjects.size === 0) {
-                    return; // No work needed, skip this check
-                }
-                
+                // Use already computed competitiveExamAccess to avoid recalculation
+                // This prevents the circular dependency with getSubjectUnlockSchedule
                 if (competitiveExamAccess.allUnlocked && previouslyLockedSubjects.size > 0) {
                     const examType = isNeetExam ? 'NEET' : isCetExam ? 'CET' : 'JEE';
                     const subjectList = Array.from(previouslyLockedSubjects).join(' & ');
-                    // PHASE 1 FIX: Only show toast if component is still mounted
-                    if (isMountedRef.current) {
-                        toast.success(`🔓 ${subjectList} now available in ${examType}!`);
-                        setPreviouslyLockedSubjects(new Set());
-                    }
+                    toast.success(`🔓 ${subjectList} now available in ${examType}!`);
+                    setPreviouslyLockedSubjects(new Set());
                 }
             } catch (error) {
                 console.error('Error checking subject unlock status:', error);
-                // PHASE 1 FIX: Clean up interval on error if component is unmounted
-                if (!isMountedRef.current) {
-                    clearInterval(checkInterval);
-                }
+                // Continue interval but skip this check
             }
-        }, 90000); // PHASE 2 OPTIMIZATION: Check every 90 seconds instead of 60 (33% reduction)
+        }, 60000); // Check every minute
         
         return () => clearInterval(checkInterval);
     }, [
@@ -672,9 +707,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isCetExam
     ]);
 
+    // FIXED: Initialize locked subjects using computed access state
+    // Prevents recalculation and circular dependencies
     useEffect(() => {
         if (isCompetitiveExam && isExamStarted && startTime) {
             try {
+                // Use already computed competitiveExamAccess instead of recalculating
                 if (!competitiveExamAccess.allUnlocked && competitiveExamAccess.subjectAccess) {
                     const lockedSubjects = Object.keys(competitiveExamAccess.subjectAccess)
                         .filter(subject => competitiveExamAccess.subjectAccess[subject].isLocked)
@@ -684,6 +722,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
             } catch (error) {
                 console.error('Error initializing locked subjects tracking:', error);
+                // Continue without tracking locked subjects
             }
         }
     }, [
@@ -694,22 +733,30 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         allSubjects.join(',') // Stable string representation
     ]);
 
+    // Note: subjectSwitchInProgressRef and manualSubjectSelectionRef are now provided by useQuestionNavigation hook
+    
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime || subjectSwitchInProgressRef.current) return;
-
+        
+        // CRITICAL FIX: Don't auto-switch if user just made a manual selection
         if (manualSubjectSelectionRef.current) {
-            // Skipping auto-switch due to recent manual selection
+            console.log('CET Debug: Skipping auto-switch due to recent manual selection');
             return;
         }
         
         try {
+            // Use already computed competitiveExamAccess to avoid recalculation
             if (competitiveExamAccess.allUnlocked) {
-                // All subjects unlocked, no auto-switching needed
+                if (isCetExam) {
+                    console.log('CET Debug: All subjects unlocked, no auto-switching needed');
+                }
                 return;
             }
-
+            
+            // Enhanced subject lock checking with CET-specific name matching
             let currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
-
+            
+            // For CET exams, also check subject name variations
             if (isCetExam && !currentSubjectAccess) {
                 const subjectVariations = [selectedSubject];
                 if (selectedSubject.toLowerCase().includes('math')) {
@@ -726,14 +773,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     const access = competitiveExamAccess.subjectAccess?.[variation];
                     if (access) {
                         currentSubjectAccess = access;
-                        // Found subject access via variation
+                        console.log('CET Debug: Found subject access via variation:', { selectedSubject, variation, access });
                         break;
                     }
                 }
             }
             
             if (currentSubjectAccess?.isLocked) {
-                // Current subject is locked, finding alternative
+                console.log('CET Debug: Current subject is locked, finding alternative:', { selectedSubject, currentSubjectAccess });
                 
                 // Find the first available (unlocked) subject
                 const availableSubject = allSubjects.find(subject => {
@@ -741,27 +788,26 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     return !subjectAccess?.isLocked;
                 });
                 
-                // Available subject found for auto-switch
+                console.log('CET Debug: Available subject found:', { availableSubject, allSubjects });
                 
-                if (availableSubject && availableSubject !== selectedSubject && isMountedRef.current) {
+                if (availableSubject && availableSubject !== selectedSubject) {
+                    // Prevent cascading subject switches
                     subjectSwitchInProgressRef.current = true;
                     setSelectedSubject(availableSubject);
                     
                     const remainingTime = Math.ceil(currentSubjectAccess.remainingTime / 1000 / 60);
-                    // PHASE 1 FIX: Only show toast if component is still mounted
-                    if (isMountedRef.current) {
-                        toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
-                    }
+                    toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
                     
-                    // Auto-switched subjects from locked to available
-                    // PHASE 1 FIX: Only set timeout if component is still mounted
-                    if (isMountedRef.current) {
-                        setTimeout(() => {
-                            if (isMountedRef.current) {
-                                subjectSwitchInProgressRef.current = false;
-                            }
-                        }, 1000);
-                    }
+                    console.log('CET Debug: Auto-switched subjects:', { 
+                        from: selectedSubject, 
+                        to: availableSubject, 
+                        remainingTime 
+                    });
+                    
+                    // Reset the flag after a short delay
+                    setTimeout(() => {
+                        subjectSwitchInProgressRef.current = false;
+                    }, 1000);
                 }
             }
         } catch (error) {
@@ -774,45 +820,28 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isExamStarted, 
         competitiveExamAccess.allUnlocked,
         competitiveExamAccess.subjectAccess,
+        // CRITICAL FIX: Removed selectedSubject dependency to prevent race condition with manual selection
+        // The effect will now only run when access rules change, not when user manually changes subject
         allSubjects.join(',') // Stable string representation
     ]);
 
-    // BUG #2 FIX: Dynamic timeout ref for MHT-CET compliance
-    const pollingTimeoutRef = useRef(null);
-    
+    // CRITICAL FIX: Separate timer-based check for locked subjects to prevent race conditions
     useEffect(() => {
         if (!isCompetitiveExam || !isExamStarted || !startTime) return;
         
         const checkCurrentSubjectLock = () => {
-            // PHASE 1 FIX: Check if component is still mounted before operations
-            if (!isMountedRef.current) {
-                return;
-            }
-            
             // Skip if manual selection is in progress
             if (manualSubjectSelectionRef.current || subjectSwitchInProgressRef.current) {
-                // BUG #2 FIX: Schedule next check even when skipping
-                pollingTimeoutRef.current = scheduleNextCheck();
                 return;
             }
             
             try {
-                // BUG #2 FIX: Remove early exit conditions that violate MHT-CET compliance
-                // For MHT-CET Biology/Mathematics unlock periods, we must continue checking
-                if (competitiveExamAccess.allUnlocked && !isCetExam) {
-                    // Only skip for non-CET exams when all unlocked
-                    pollingTimeoutRef.current = scheduleNextCheck();
-                    return;
-                }
+                if (competitiveExamAccess.allUnlocked) return;
                 
-                if (!competitiveExamAccess.subjectAccess && !isCetExam) {
-                    // Only skip for non-CET exams when no access data
-                    pollingTimeoutRef.current = scheduleNextCheck();
-                    return;
-                }
-
+                // Check if current subject is locked using same variation logic
                 let currentSubjectAccess = competitiveExamAccess.subjectAccess?.[selectedSubject];
-
+                
+                // For CET exams, also check subject name variations
                 if (isCetExam && !currentSubjectAccess) {
                     const subjectVariations = [selectedSubject];
                     if (selectedSubject.toLowerCase().includes('math')) {
@@ -834,74 +863,34 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     }
                 }
                 
-                // PHASE 2 OPTIMIZATION: Early exit if current subject is not locked - no switching needed
-                if (!currentSubjectAccess?.isLocked) {
-                    return; // Current subject is available, no need to check for alternatives
-                }
-
+                // If current subject becomes locked, switch to available subject
                 if (currentSubjectAccess?.isLocked) {
                     const availableSubject = allSubjects.find(subject => {
                         const subjectAccess = competitiveExamAccess.subjectAccess?.[subject];
                         return !subjectAccess?.isLocked;
                     });
                     
-                    if (availableSubject && availableSubject !== selectedSubject && isMountedRef.current) {
+                    if (availableSubject && availableSubject !== selectedSubject) {
                         subjectSwitchInProgressRef.current = true;
                         setSelectedSubject(availableSubject);
                         
                         const remainingTime = Math.ceil(currentSubjectAccess.remainingTime / 1000 / 60);
-                        // PHASE 1 FIX: Only show toast if component is still mounted
-                        if (isMountedRef.current) {
-                            toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
-                        }
+                        toast(`Switched to ${availableSubject} - ${selectedSubject} will unlock in ${remainingTime} minutes`);
                         
-                        // PHASE 1 FIX: Only set timeout if component is still mounted
-                        if (isMountedRef.current) {
-                            setTimeout(() => {
-                                if (isMountedRef.current) {
-                                    subjectSwitchInProgressRef.current = false;
-                                }
-                            }, 1000);
-                        }
+                        setTimeout(() => {
+                            subjectSwitchInProgressRef.current = false;
+                        }, 1000);
                     }
                 }
             } catch (error) {
                 console.error('Error in timer-based subject lock check:', error);
             }
-            
-            // BUG #2 FIX: Schedule next check after completion
-            pollingTimeoutRef.current = scheduleNextCheck();
-        };
-
-        // BUG #2 FIX: MHT-CET Compliance - restore 30s polling with 15s critical period handling
-        const getPollingInterval = () => {
-            if (!isCetExam) {
-                return 30000; // 30 seconds for non-CET exams
-            }
-            
-            // For MHT-CET exams, check if we're in critical Biology/Mathematics unlock period (85-125 minutes)
-            const elapsedTimeMs = Date.now() - startTime;
-            const elapsedMinutes = elapsedTimeMs / (1000 * 60);
-            const isCriticalUnlockPeriod = elapsedMinutes >= 85 && elapsedMinutes <= 125;
-            
-            return isCriticalUnlockPeriod ? 15000 : 30000; // 15s during critical period, 30s otherwise
         };
         
-        const scheduleNextCheck = () => {
-            if (!isMountedRef.current) return;
-            const nextInterval = getPollingInterval();
-            return setTimeout(checkCurrentSubjectLock, nextInterval);
-        };
+        // Check every 30 seconds instead of on every state change
+        const interval = setInterval(checkCurrentSubjectLock, 30000);
         
-        // Initial check
-        pollingTimeoutRef.current = scheduleNextCheck();
-        
-        return () => {
-            if (pollingTimeoutRef.current) {
-                clearTimeout(pollingTimeoutRef.current);
-                pollingTimeoutRef.current = null;
-            }
-        };
+        return () => clearInterval(interval);
     }, [
         isCompetitiveExam, 
         isExamStarted, 
@@ -912,8 +901,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         isCetExam
     ]);
 
+    // 2. Auto-save to localStorage only (no server calls during exam)
     useEffect(() => {
         if (isExamStarted) {
+            // Save to localStorage only - no server calls until submission
             const progress = {
                 answers,
                 currentQuestionIndex,
@@ -926,23 +917,36 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 lastSaved: new Date().toISOString()
             };
             localStorage.setItem(progressKey, JSON.stringify(progress));
+            // Progress saved locally
+            // Progress saved locally
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [answers, currentQuestionIndex, visitedQuestions, markedQuestions, isExamStarted]);
 
     // 3. When starting a new exam, only reset state if there is no saved progress
     const startExam = () => {
         const savedProgress = localStorage.getItem(progressKey);
         if (!savedProgress) {
+            // Reset exam state using hook methods instead of direct state setters
             resetExamState(); // This handles: setAnswers({}), setCurrentQuestionIndex(0), setMarkedQuestions(new Set()), setVisitedQuestions(new Set())
             setWarningCount(0);
+            // Start timer using the hook method
             startTimer(); // This handles: setStartTime(now), setIsExamStarted(true), setTimeLeft(calculatedTimeLeft)
         } else {
+            // If there is saved progress, just start the timer without resetting state
             startTimer();
         }
+        // Clear any previous warnings for this exam session
         resetTimerFlags(); // Clear warnings and reset initialization flag
+        
+        // Progressive scoring initialization now handled by useEffect above
+        
         toast.success("Exam started! Good luck!");
     };
 
+    // Timer logic moved to ExamTimer component
+
+    // Cleanup manual selection timeout on unmount
     useEffect(() => {
         return () => {
             if (manualSelectionTimeoutRef.current) {
@@ -953,13 +957,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
 
     // --- FULLSCREEN LOGIC START ---
     const [warningDialog, setWarningDialog] = useState(false);
- 
+    
+    // Detect iOS devices (iPhone, iPad, iPod)
     const isIOS = () => {
         return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                (navigator.userAgentData?.platform === 'iOS') ||
                (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
     };
-
+    
+    // Check if Fullscreen API is supported
     const isFullscreenSupported = () => {
         return !isIOS() && (
             document.fullscreenEnabled ||
@@ -969,6 +975,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         );
     };
 
+    // Function to request full-screen mode (exactly like reference)
     const enterFullScreen = () => {
         // Skip fullscreen on iOS devices
         if (!isFullscreenSupported()) {
@@ -1026,22 +1033,27 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }, []);
 
+    // On exam start/continue, enter fullscreen and hide navigation
     useEffect(() => {
         if (isExamStarted) {
             enterFullScreen();
             
+            // Add exam-mode class to body for global navigation hiding
             document.body.classList.add('exam-mode');
-
+            
+            // Hide navigation elements during exam
             const navElements = document.querySelectorAll('nav, .navbar, .navigation, [role="navigation"]');
             navElements.forEach(nav => {
                 nav.style.display = 'none';
             });
-
+            
+            // Hide header/top navigation if it exists
             const headerElements = document.querySelectorAll('header, .header, .top-nav');
             headerElements.forEach(header => {
                 header.style.display = 'none';
             });
             
+            // Hide any sidebar or menu elements
             const sidebarElements = document.querySelectorAll('.sidebar, .menu, .drawer, [role="menu"]');
             sidebarElements.forEach(sidebar => {
                 sidebar.style.display = 'none';
@@ -1050,6 +1062,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         
         // Cleanup function to restore navigation when exam ends
         return () => {
+            // Remove exam-mode class from body
             document.body.classList.remove('exam-mode');
             
             if (examCompletedRef.current) {
@@ -1071,37 +1084,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         };
     }, [isExamStarted]);
 
+
+    // Out of focus detection (exactly like reference)
     const warningIssuedRef = useRef(false); // Track if warning was already issued for current violation
-    
-    // PHASE 1 FIX: Mount tracking to prevent memory leaks in polling intervals
-    const isMountedRef = useRef(true);
-    
-    // PHASE 1 FIX: Cleanup mount tracking on component unmount
-    useEffect(() => {
-        return () => {
-            isMountedRef.current = false;
-            
-            // PHASE 3 FIX: Cleanup performance monitor to prevent memory leaks
-            try {
-                const performanceMonitor = getPerformanceMonitor();
-                if (performanceMonitor && typeof performanceMonitor.cleanup === 'function') {
-                    performanceMonitor.cleanup();
-                }
-            } catch (error) {
-                console.error('Error cleaning up performance monitor:', error);
-            }
-            
-            // PHASE 3 FIX: Cleanup service worker integration to prevent memory leaks
-            try {
-                if (serviceWorkerIntegration.current && typeof serviceWorkerIntegration.current.cleanup === 'function') {
-                    serviceWorkerIntegration.current.cleanup();
-                    serviceWorkerIntegration.current = null;
-                }
-            } catch (error) {
-                console.error('Error cleaning up service worker integration:', error);
-            }
-        };
-    }, []);
     
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -1109,12 +1094,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             if (!isExamStarted) {
                 return;
             }
-
+            
+            // Don't show warning if exam is completed
             if (examCompletedRef.current) {
                 setWarningDialog(false);
                 return;
             }
-
+            
+            // On iOS, only check for visibility and focus, not fullscreen
             const isViolation = isIOS() 
                 ? (document.visibilityState !== 'visible' || document.hasFocus() === false)
                 : (document.visibilityState !== 'visible' || !document.fullscreenElement || document.hasFocus() === false);
@@ -1135,8 +1122,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
                 setWarningDialog(true);
             }
+            // Note: Dialog closing is now handled only by the enterFullScreen function
+            // This prevents the dialog from auto-dismissing when conditions change
         };
 
+        // Only add listeners if exam has started
         if (isExamStarted) {
             document.addEventListener('visibilitychange', handleVisibilityChange);
             // Only add fullscreen listener if supported
@@ -1159,6 +1149,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         };
     }, [isExamStarted]);
 
+
+
+
+    // Block navigation away
     useEffect(() => {
         function handleBeforeUnload(e) {
             if (isExamStarted && !examCompletedRef.current) {
@@ -1173,7 +1167,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         };
     }, [isExamStarted]);
 
+    // Enhanced exam submission with progressive computation support and performance feedback
     const submitExam = async () => {
+        // ATOMIC SUBMISSION SYSTEM: Acquire lock to prevent race conditions
         const lockResult = await atomicSubmissionManager.current?.acquireLock(
             submissionType === 'auto_submit' ? SUBMISSION_TYPES.AUTO : SUBMISSION_TYPES.MANUAL,
             {
@@ -1197,7 +1193,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 return;
             }
         }
-
+        
+        // Update submission lock status
         setSubmissionLockStatus({
             hasLock: true,
             lockId: lockResult.lockId,
@@ -1209,10 +1206,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         console.log(`🔐 Submission lock acquired successfully: ${lockResult.lockId} (${submissionType})`);
         
         const lockId = lockResult.lockId;
-
+        
+        // BOTTLENECK MONITORING: Log submission start
         const monitoringId = logSubmissionStart(student?._id, exam?._id, submissionType);
         setCurrentSubmissionId(monitoringId);
-
+        
+        // Initialize submission timing outside try block for proper scope
         const submissionStartTime = Date.now();
         
         try {
@@ -1220,6 +1219,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             setWarningDialog(false); // Close warning dialog
             exitFullscreen();
 
+            // ENHANCED SUBMISSION FEEDBACK: Show loading state immediately
             setSubmissionState({ 
                 status: 'submitting', 
                 message: 'Processing your exam...',
@@ -1228,7 +1228,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 performanceBadge: null,
                 submissionTime: 0
             });
-
+        
+        // Prepare exam data for submission
         const examSubmissionData = {
             answers,
             score: 0, // Will be calculated by progressive system or server
@@ -1246,19 +1247,66 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             timeRemaining: timeLeft
         };
 
+        // CLIENT-SIDE EVALUATION FINALIZATION: Generate complete exam result
         let clientEvaluationResult = null;
-
+        
+        // CRITICAL FIX: Always attempt evaluation, even if not properly initialized during exam
         try {
-            // Replace console.log with proper state validation for client-side evaluation
-            const evaluationReady = await validateStateSync([
-                { value: ClientEvaluation.finalize, validator: (v) => typeof v === 'function' }
-            ], 100);
+            console.log('🎯 Attempting client-side evaluation for submission...');
             
             // Try to finalize if initialized during exam
-            if (evaluationInitialized && !evaluationError && evaluationReady) {
-                const finalizationResult = await ensureAsyncReady(
-                    () => ClientEvaluation.finalize({
-                        submissionType,
+            if (evaluationInitialized && !evaluationError) {
+                console.log('📊 Client evaluation engine was initialized - finalizing results...');
+                
+                const finalizationResult = await ClientEvaluation.finalize({
+                    submissionType,
+                    submittedAt: new Date().toISOString(),
+                    timeTaken: exam.examAvailability === 'scheduled' 
+                        ? Math.floor((Date.now() - startTime) / 1000) 
+                        : (getEffectiveExamDuration(exam) * 60) - timeLeft,
+                    visitedQuestions: Array.from(visitedQuestions),
+                    markedQuestions: Array.from(markedQuestions),
+                    warnings: warningCount,
+                    userAgent: navigator.userAgent,
+                    processingTime: 0
+                });
+                
+                if (finalizationResult.success) {
+                    clientEvaluationResult = finalizationResult;
+                    console.log(`✅ Client evaluation finalized in ${finalizationResult.finalizationTime.toFixed(2)}ms`);
+                    console.log(`📊 Final Score: ${finalizationResult.examResult.finalScore}/${finalizationResult.examResult.totalMarks}`);
+                }
+            }
+            
+            // FALLBACK: Initialize and evaluate at submission time if not done during exam
+            if (!clientEvaluationResult) {
+                console.log('🔄 Client evaluation not available - attempting emergency evaluation...');
+                
+                // Initialize evaluation engine with current data
+                const emergencyEvaluationData = {
+                    exam,
+                    questions,
+                    student,
+                    timestamp: Date.now()
+                };
+                
+                const emergencyInitResult = await ClientEvaluation.initialize(emergencyEvaluationData);
+                
+                if (emergencyInitResult.success) {
+                    console.log('🚨 Emergency client evaluation initialized successfully');
+                    
+                    // Evaluate all current answers
+                    if (Object.keys(answers).length > 0) {
+                        const batchEvaluation = await ClientEvaluation.evaluateAnswers(answers);
+                        
+                        if (batchEvaluation.success) {
+                            console.log(`✅ Emergency batch evaluation completed: ${batchEvaluation.successCount}/${batchEvaluation.totalAnswers} answers evaluated`);
+                        }
+                    }
+                    
+                    // Finalize emergency evaluation
+                    const emergencyFinalization = await ClientEvaluation.finalize({
+                        submissionType: 'emergency_evaluation',
                         submittedAt: new Date().toISOString(),
                         timeTaken: exam.examAvailability === 'scheduled' 
                             ? Math.floor((Date.now() - startTime) / 1000) 
@@ -1268,56 +1316,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         warnings: warningCount,
                         userAgent: navigator.userAgent,
                         processingTime: 0
-                    }),
-                    { success: false }
-                );
-                
-                if (finalizationResult.success) {
-                    clientEvaluationResult = finalizationResult;
-                }
-            }
-            if (!clientEvaluationResult) {
-                // Replace console.log with proper async emergency evaluation
-                const emergencyEvaluationData = {
-                    exam,
-                    questions,
-                    student,
-                    timestamp: Date.now()
-                };
-                
-                const emergencyInitResult = await ensureAsyncReady(
-                    () => ClientEvaluation.initialize(emergencyEvaluationData),
-                    { success: false }
-                );
-                
-                if (emergencyInitResult.success) {
-                    // Evaluate all current answers with proper async coordination
-                    if (Object.keys(answers).length > 0) {
-                        await ensureAsyncReady(
-                            () => ClientEvaluation.evaluateAnswers(answers),
-                            { success: false }
-                        );
-                    }
-                    
-                    // Finalize emergency evaluation with proper async coordination
-                    const emergencyFinalization = await ensureAsyncReady(
-                        () => ClientEvaluation.finalize({
-                            submissionType: 'emergency_evaluation',
-                            submittedAt: new Date().toISOString(),
-                            timeTaken: exam.examAvailability === 'scheduled' 
-                                ? Math.floor((Date.now() - startTime) / 1000) 
-                                : (getEffectiveExamDuration(exam) * 60) - timeLeft,
-                            visitedQuestions: Array.from(visitedQuestions),
-                            markedQuestions: Array.from(markedQuestions),
-                            warnings: warningCount,
-                            userAgent: navigator.userAgent,
-                            processingTime: 0
-                        }),
-                        { success: false }
-                    );
+                    });
                     
                     if (emergencyFinalization.success) {
                         clientEvaluationResult = emergencyFinalization;
+                        console.log(`🆘 Emergency evaluation completed: ${emergencyFinalization.examResult.finalScore}/${emergencyFinalization.examResult.totalMarks}`);
                     }
                 }
             }
@@ -1338,14 +1341,20 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             console.warn('⚠️ Falling back to server evaluation');
         }
 
+        // ENHANCED PROGRESSIVE COMPUTATION: Try direct storage submission first (15ms target)
         if ((progressiveScoring?.isInitialized?.()) || clientEvaluationResult) {
             try {
+                console.log('🚀 Attempting enhanced progressive submission with direct storage...');
+                
+                // Use client evaluation result if available, otherwise try progressive computation
                 let directStorageData;
                 
                 if (clientEvaluationResult) {
-                    // Client evaluation result ready for direct storage submission
-
+                    console.log('📊 Client evaluation result ready, submitting via direct storage...');
+                    
+                    // Prepare complete data structure for direct storage using client evaluation
                     directStorageData = {
+                        // Required validation fields at root level
                         examId: exam._id,
                         studentId: student._id,
                         answers,
@@ -1360,9 +1369,11 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             : (getEffectiveExamDuration(exam) * 60) - timeLeft,
                         completedAt: new Date().toISOString(),
                         
+                        // Additional fields from client evaluation
                         questionAnalysis: clientEvaluationResult.examResult?.questionAnalysis || [],
                         subjectPerformance: clientEvaluationResult.examResult?.subjectPerformance || [],
                         
+                        // Metadata fields
                         submittedAt: new Date().toISOString(),
                         visitedQuestions: Array.from(visitedQuestions),
                         markedQuestions: Array.from(markedQuestions),
@@ -1372,9 +1383,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         isAutoSubmit: submissionType === 'auto_submit',
                         timeRemaining: timeLeft,
                         evaluationSource: 'client_evaluation_engine',
+                        
+                        // Add computation hash for validation
                         computationHash: clientEvaluationResult.computationHash || `client_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
                         engineVersion: clientEvaluationResult.engineVersion || '1.0.0',
-
+                        
+                        // Raw data for fallback
                         rawExamData: {
                             examId: exam._id,
                             studentId: student._id,
@@ -1390,11 +1404,14 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     };
                     
                 } else {
+                    // Fallback to progressive computation
                     const progressiveResult = await progressiveScoring?.getProgressiveResults();
                     
                     if (progressiveResult?.success && progressiveResult.results && progressiveResult.isPreComputed) {
-                        // Progressive computation data ready for direct storage submission
+                        console.log('📊 Progressive computation data ready, submitting via direct storage...');
+                        
                         directStorageData = {
+                            // Required validation fields at root level
                             examId: exam._id,
                             studentId: student._id,
                             answers,
@@ -1448,15 +1465,21 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 }
                 
                 if (directStorageData) {
+                    
+                    // ULTRA-FAST DIRECT STORAGE SUBMISSION (15ms target)
                     const directResult = await submitProgressiveResultDirect(directStorageData);
-
+                    
+                    // Track performance metrics
                     const performanceMonitor = getPerformanceMonitor();
                     const performanceResults = performanceMonitor.logSubmissionAttempt(directResult, submissionStartTime);
                     
                     if (directResult.success) {
                         const totalSubmissionTime = Date.now() - submissionStartTime;
                         
-                        // Ultra-fast submission completed with performance tracking
+                        console.log(`✅ ULTRA-FAST submission completed in ${directResult.processingTime}ms`);
+                        console.log(`⚡ Performance improvement: ${directResult.performanceImprovement}`);
+                        console.log(`🎯 Target achieved: ${directResult.performanceMetrics?.targetAchieved}`);
+                        console.log(`📊 Performance rank: ${performanceResults.performanceRank}`);
                         
                         // ENHANCED SUBMISSION FEEDBACK: Success state with performance metrics
                         const performanceBadge = performanceResults.target15msAchieved ? '⚡ Ultra-Fast' : 
@@ -1478,7 +1501,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         });
                         
                         if (performanceResults.target15msAchieved) {
-                            // 15ms target achieved - ultra-fast submission success
+                            console.log('🏆 15ms TARGET ACHIEVED! ULTRA-FAST SUBMISSION SUCCESS!');
+                            // Show special toast for ultra-fast achievement
                             toast.success(`🏆 Ultra-Fast Submission! Completed in ${totalSubmissionTime}ms`, { duration: 4000 });
                         } else {
                             toast.success(`Exam submitted successfully in ${totalSubmissionTime}ms`);
@@ -1486,6 +1510,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         
                         // Clear saved progress
                         localStorage.removeItem(progressKey);
+                        
+                        // EMERGENCY BOTTLENECK FIX: Close exam window instead of navigating to result
+                        // This eliminates mass DB calls during simultaneous submissions
                         setTimeout(async () => {
                             await handleExamWindowClose({
                                 submissionType,
@@ -1501,7 +1528,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         }, 1500); // Show success feedback for 1.5 seconds
                         return;
                     } else {
-                        // Direct storage submission failed, falling back to traditional method
+                        console.warn('⚠️ Direct storage submission failed, falling back to traditional method');
+                        console.log('🔍 Failure reason:', directResult.validationFailure?.reason);
                         
                         // Update submission state to show fallback
                         setSubmissionState({ 
@@ -1514,7 +1542,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         });
                     }
                 } else {
-                    // Progressive computation data not available, falling back to traditional method
+                    console.warn('⚠️ Progressive computation data not available, falling back to traditional method');
+                    console.log('🔍 Reason: Progressive scoring not available or not pre-computed');
                     
                     // Update submission state for traditional fallback
                     setSubmissionState({ 
@@ -1527,10 +1556,10 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     });
                 }
                 
-                // Using traditional submission fallback
+                console.log('🔄 Using traditional submission fallback');
             } catch (error) {
                 console.error('❌ Enhanced progressive submission error:', error);
-                // Falling back to traditional server-side computation
+                console.log('🔄 Falling back to traditional server-side computation');
                 
                 // Update submission state for error recovery
                 setSubmissionState({ 
@@ -1545,9 +1574,16 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
 
         // FALLBACK: Traditional server-side computation
-        // Using traditional server-side computation
+        console.log('🔄 Using traditional server-side computation...');
         
+        // Calculate score using traditional method
         let score = 0;
+        
+        // FIXED: Use exam.totalMarks from database instead of summing individual question marks
+        // This prevents the 540 (180×3) bug where client calculation was incorrect
+        // Note: totalMarks is retrieved from exam.totalMarks during server-side processing
+        
+        // Calculate score for ALL questions, not just current subject
         (questions || []).forEach(question => {
             const userAnswer = answers[question._id];
             if (userAnswer) {
@@ -1779,6 +1815,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         }
     }
 
+    // Note: handleSubmit is now provided by useSubmissionLogic hook as 'handleSubmit'
+
     const handleConfirmSubmitWrapper = () => {
         const examData = {
             answers,
@@ -1792,6 +1830,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         confirmSubmission(examData, timerData);
     }
 
+    // Note: handleCancelSubmit is now provided by useSubmissionLogic hook as 'cancelSubmission'
+
+    // College details state
     const [collegeDetails, setCollegeDetails] = useStateReact(null);
 
     useEffect(() => {
@@ -1836,6 +1877,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
             ref={mainExamRef}
             className={`bg-gray-50 ${isExamStarted ? 'exam-mode' : ''}`}
         >
+            
+            {/* Timer logic now integrated into useTimerManagement hook */}
+            {/* Enhanced Submission Feedback Modal with Smooth Transitions - Responsive & Accessible */}
             {submissionState.status === 'submitting' && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 transition-all duration-300 animate-in fade-in px-4"
@@ -1940,6 +1984,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 </div>
                             )}
                             
+                            {/* Performance metrics with enhanced styling - responsive & accessible */}
                             <div 
                                 id="success-dialog-description"
                                 className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm space-y-2 animate-in slide-in-from-bottom-4 duration-500 delay-700"
@@ -1982,6 +2027,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 </div>
             )}
             
+            {/* Error Feedback Modal with Progressive-Aware Error Messages - Responsive & Accessible */}
             {submissionState.status === 'error' && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 transition-all duration-500 animate-in fade-in px-4"
@@ -1995,6 +2041,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-sm sm:max-w-md text-center transform transition-all duration-700 animate-in zoom-in-95 fade-in"
                     >
                         <div className="mb-4 sm:mb-6">
+                            {/* Error icon with warning animation - responsive */}
                             <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4">
                                 <div className="absolute inset-0 bg-red-100 rounded-full animate-ping opacity-30"></div>
                                 <div className="relative bg-red-100 rounded-full p-3 sm:p-4 transform animate-in zoom-in-50 duration-500">
@@ -2011,11 +2058,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             >
                                 {submissionState.message}
                             </h3>
+                            
+                            {/* Screen reader announcement for errors */}
                             <div className="sr-only" aria-live="assertive" aria-atomic="true">
                                 Error: {submissionState.message}. 
                                 {submissionState.performanceMetrics?.fallbackAvailable && 'Backup system available. '}
                                 You can try again.
                             </div>
+                            
+                            {/* Error details with performance context - responsive & accessible */}
                             <div 
                                 id="error-dialog-description"
                                 className="bg-red-50 rounded-lg sm:rounded-xl p-3 sm:p-4 text-sm space-y-3 animate-in slide-in-from-bottom-4 duration-500 delay-700"
@@ -2045,10 +2096,13 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                     </p>
                                 </div>
                             </div>
-
+                            
+                            {/* Recovery actions - responsive */}
                             <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
                                 <button
                                     onClick={() => {
+                                        // FLICKERING FIX: Directly transition to submitting state instead of idle
+                                        // This prevents the brief flash when error modal disappears before loading modal appears
                                         setSubmissionState({ 
                                             status: 'submitting', 
                                             message: 'Retrying submission...', 
@@ -2057,7 +2111,9 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                             performanceBadge: null, 
                                             submissionTime: 0 
                                         });
+                                        // Set submission type for retry (treat as manual submission)
                                         setSubmissionType('manual_submit');
+                                        // Use setTimeout to ensure state update completes before submitExam
                                         setTimeout(() => submitExam(), 0);
                                     }}
                                     className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 rounded-lg sm:rounded-xl font-medium hover:bg-blue-700 transition-colors active:scale-95 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -2141,6 +2197,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Tabs value={selectedSubject} onValueChange={handleSubjectChange} className="w-full">
                         <TabsList className="w-full bg-gray-50 rounded-xl p-1 grid grid-flow-col auto-cols-fr gap-1 min-h-[48px]">
                             {allSubjects.map(subject => {
+                                // Use navigation hook's integrated locking logic
                                 const isLocked = isSubjectLocked(subject);
                                 let remainingTime = 0;
                                 
@@ -2177,6 +2234,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         </TabsList>
                     </Tabs>
                     
+                    {/* JEE Section Progress Info */}
                     {isJeeExam && currentSectionInfo && currentSectionInfo.sectionBCount > 0 && (
                         <div className="mt-2 text-center">
                             <p className="text-xs text-gray-600">
@@ -2187,7 +2245,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                             </p>
                         </div>
                     )}
-
+                    
+                    {/* Competitive Exam Time Restriction Info */}
                     {isCompetitiveExam && !subjectUnlockSchedule.allUnlocked && (
                         <div className="mt-2 text-center">
                             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -2195,6 +2254,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                     {isCetExam && '🔒 Bio & Maths papers will unlock in 90 minutes'}
                                     {isJeeExam && '🔒 Some sections may have time restrictions'}
                                     {isNeetExam && (
+                                        // NEET has no subject restrictions, so this should rarely show
                                         subjectUnlockSchedule.subjectAccess && 
                                         Object.values(subjectUnlockSchedule.subjectAccess).some(access => access.isLocked)
                                             ? '🔒 Some subjects are temporarily restricted'
@@ -2206,9 +2266,12 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     )}
                 </div>
             )}
-
+            
+            {/* Mobile Layout - Optimized for Phones */}
             <div className="lg:hidden flex flex-col h-screen relative transition-all duration-300">
+                {/* Main Content Area - Scrollable */}
                 <div className="flex-1 overflow-y-auto pb-safe" style={{paddingBottom: 'calc(160px + env(safe-area-inset-bottom))'}}>
+                    {/* Question Display */}
                     <div className="bg-white mx-2 mt-2 rounded-2xl shadow-sm border border-gray-100">
                         <div className="p-3 sm:p-4">
                             <QuestionDisplay
@@ -2225,7 +2288,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         </div>
                     </div>
                 </div>
-
+                
+                {/* Floating Question Navigator Button */}
                 <button
                     onClick={() => setShowMobileNavigator(true)}
                     className="fixed bottom-24 right-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 active:scale-95"
@@ -2234,7 +2298,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     <Grid className="w-6 h-6" />
                 </button>
             </div>
-
+            
+            {/* Mobile Question Navigator Overlay - Outside blurred container */}
             {showMobileNavigator && (
                 <div className="fixed z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto lg:hidden" 
                      style={{
@@ -2252,7 +2317,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                         >
                             <X className="w-5 h-5 text-gray-600" />
                         </button>
-
+                        
+                        {/* Question Navigator Content */}
                         <div className="flex-1 overflow-hidden min-h-0">
                             <QuestionNavigator
                                 questions={questions}
@@ -2276,7 +2342,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                     </div>
                 </div>
             )}
-
+            
+            {/* Sticky Navigation - Mobile Only */}
             <div className="lg:hidden">
                 <ExamNavigation
                     currentQuestionIndex={currentQuestionIndex}
@@ -2293,11 +2360,15 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                 />
             </div>
 
+            {/* Desktop Layout - Fixed Height to Prevent Scrolling */}
             <div className="hidden lg:flex lg:flex-col lg:h-screen lg:overflow-hidden">
+                {/* Desktop Content Container with Proper Height Management */}
                 <div className="flex-1 flex flex-col min-h-0">
                     <div className="max-w-7xl mx-auto px-4 py-3 flex-1 flex flex-col min-h-0">
                         <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
+                            {/* Main Content Area - Scrollable */}
                             <div className="col-span-8 flex flex-col min-h-0">
+                                {/* Question Display - Optimized Height */}
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-320px)] max-h-[600px] flex flex-col min-h-0 mb-3">
                                     <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
                                         <QuestionDisplay
@@ -2313,7 +2384,8 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                         />
                                     </div>
                                 </div>
-
+                                
+                                {/* Navigation Controls - Fixed at Bottom */}
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 lg:p-4 flex-shrink-0">
                                     <ExamNavigation
                                         currentQuestionIndex={currentQuestionIndex}
@@ -2331,6 +2403,7 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
                                 </div>
                             </div>
                             
+                            {/* Sidebar - Question Navigator - Fixed Height */}
                             <div className="col-span-4 flex flex-col min-h-0">
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col min-h-0">
                                     <QuestionNavigator

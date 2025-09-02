@@ -309,7 +309,7 @@ const SignIn = () => {
                                     >
                                         {isLoading ? 'Sending OTP...' : 'Send OTP'}
                                     </button>
-                                    {/* <div className="flex items-center justify-center">
+                                    <div className="flex items-center justify-center">
                                         <div className="flex-grow border-t border-gray-300"></div>
                                         <div className="mx-4 text-gray-500 font-medium">OR</div>
                                         <div className="flex-grow border-t border-gray-300"></div>
@@ -328,7 +328,7 @@ const SignIn = () => {
                                             </svg>
                                             <span>Sign in with Google</span>
                                         </button>
-                                    </div> */}
+                                    </div>
                                 </>
                             )}
                         </div>

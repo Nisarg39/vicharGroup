@@ -100,7 +100,7 @@ export async function submitOptimizedExamResult(optimizedData) {
     return {
       success: true,
       message: "Your exam has been submitted successfully!",
-      result: JSON.parse(JSON.stringify(result.examResultData)),
+      result: result.examResultData,
       processingTime: totalTime,
       performanceMetrics,
       optimizationDetails: {
