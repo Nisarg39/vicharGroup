@@ -5,7 +5,7 @@ let isConnected = false;    // to track connection status
 
 export const connectDB = async () => {
     // DATABASE CONNECTION LOGGING
-    console.log("🔌 DATABASE: connectDB() called at", new Date().toISOString());
+    // console.log("🔌 DATABASE: connectDB() called at", new Date().toISOString()); 
     
     // ENHANCED: Proper error handling for missing MONGODB_URI
     if(!process.env.MONGODB_URI) {
@@ -15,7 +15,7 @@ export const connectDB = async () => {
     }
 
     if(isConnected){
-        console.log("♻️ DATABASE: Using existing connection");
+        // console.log("♻️ DATABASE: Using existing connection"); 
         return;
     } 
 
@@ -50,7 +50,7 @@ export const connectDB = async () => {
        });
 
        isConnected = true
-       console.log("✅ DATABASE: MongoDB connection established successfully");
+    //    console.log("✅ DATABASE: MongoDB connection established successfully");
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {
