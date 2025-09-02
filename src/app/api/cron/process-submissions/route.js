@@ -507,7 +507,7 @@ async function processExamSubmission(examData, cronJobId) {
         unattempted++;
         const correctAnswer = question.isMultipleAnswer ? question.multipleAnswer : question.answer;
         questionAnalysis.push({
-          questionId: question._id,
+          questionId: question._id.toString(),
           status: "unattempted",
           marks: 0,
           userAnswer: null,
@@ -564,7 +564,7 @@ async function processExamSubmission(examData, cronJobId) {
         
         finalScore += marksAwarded;
         questionAnalysis.push({
-          questionId: question._id,
+          questionId: question._id.toString(),
           status: status,
           marks: marksAwarded,
           userAnswer: normalizedUserAnswer,
@@ -585,7 +585,7 @@ async function processExamSubmission(examData, cronJobId) {
           finalScore += adminPositiveMarks;
           correctAnswersCount++;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: "correct",
             marks: adminPositiveMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,
@@ -599,7 +599,7 @@ async function processExamSubmission(examData, cronJobId) {
           finalScore -= adminNegativeMarks;
           incorrectAnswers++;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: "incorrect",
             marks: -adminNegativeMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,

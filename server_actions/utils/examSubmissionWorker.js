@@ -208,7 +208,7 @@ class ExamSubmissionProcessor {
           unattempted++;
           const correctAnswer = question.isMultipleAnswer ? question.multipleAnswer : question.answer;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: "unattempted",
             marks: 0,
             userAnswer: null,
@@ -265,7 +265,7 @@ class ExamSubmissionProcessor {
           
           finalScore += marksAwarded;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: status,
             marks: marksAwarded,
             userAnswer: normalizedUserAnswer,
@@ -286,7 +286,7 @@ class ExamSubmissionProcessor {
             finalScore += adminPositiveMarks;
             correctAnswersCount++;
             questionAnalysis.push({
-              questionId: question._id,
+              questionId: question._id.toString(),
               status: "correct",
               marks: adminPositiveMarks,
               userAnswer: evaluationResult.details?.userValue || userAnswer,
@@ -300,7 +300,7 @@ class ExamSubmissionProcessor {
             finalScore -= adminNegativeMarks;
             incorrectAnswers++;
             questionAnalysis.push({
-              questionId: question._id,
+              questionId: question._id.toString(),
               status: "incorrect",
               marks: -adminNegativeMarks,
               userAnswer: evaluationResult.details?.userValue || userAnswer,

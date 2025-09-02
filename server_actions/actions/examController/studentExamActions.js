@@ -85,7 +85,7 @@ async function getNegativeMarkingRuleForExam(exam) {
     const defaultRules = await DefaultNegativeMarkingRule.find({
       stream: exam.stream,
       isActive: true
-    }).sort({ priority: -1 });
+    }).sort({ priority: -1 }).lean();
 
     for (const rule of defaultRules) {
       // Check for exact match with subject and standard - ENHANCED with normalization
@@ -416,7 +416,7 @@ export async function getNegativeMarkingRuleForQuestion(exam, question) {
     const defaultRules = await DefaultNegativeMarkingRule.find({
       stream: exam.stream,
       isActive: true
-    }).sort({ priority: -1 });
+    }).sort({ priority: -1 }).lean();
 
     // Get question's subject if available
     const questionSubject = question.subject;
@@ -897,15 +897,16 @@ async function checkExamEligibilityUncached(details) {
     // Include correct answers and marking scheme for progressive scoring
     if (examWithMarkingRules.examQuestions && examWithMarkingRules.examQuestions.length > 0) {
       examWithMarkingRules.examQuestions = examWithMarkingRules.examQuestions.map(question => ({
-        ...question,
-        // Include correct answers for progressive computation
+        // Convert MongoDB document to plain object to avoid serialization issues
+        ...JSON.parse(JSON.stringify(question)),
+        // Include correct answers for progressive computation  
         correctAnswer: question.answer,
         multipleCorrectAnswers: question.multipleAnswer,
         // Include question-specific marking rules
         questionMarkingRule: question.negativeMarkingRule || null,
         // Progressive computation metadata
         progressiveEnabled: true
-      }));
+        }));
       
       // Add progressive computation flag to exam
       examWithMarkingRules.progressiveComputationEnabled = true;
@@ -913,10 +914,11 @@ async function checkExamEligibilityUncached(details) {
     }
 
     // 8. Return eligibility result with progressive computation data
+    // CRITICAL FIX: Properly serialize examWithMarkingRules to avoid MongoDB serialization warnings
     return {
       success: true,
       message: "You are eligible to give this exam",
-      exam: examWithMarkingRules,
+      exam: JSON.parse(JSON.stringify(examWithMarkingRules)),
     };
   } catch (error) {
     console.error("Error checking exam eligibility:", error);
@@ -961,15 +963,15 @@ async function checkExamEligibilityUncached(details) {
  */
 export async function submitExamResult(examData) {
   // ENTRY POINT LOGGING - Main submission function called
-  console.log("🎯 SUBMISSION ENTRY: submitExamResult called at", new Date().toISOString());
-  console.log("📦 SUBMISSION DATA:", {
-    studentId: examData?.studentId,
-    examId: examData?.examId,
-    hasClientEvaluation: !!examData?.clientEvaluationResult,
-    hasProgressiveResults: !!examData?.progressiveResults,
-    isPreComputed: !!examData?.isPreComputed,
-    answersCount: examData?.answers?.length || 0
-  });
+  // console.log("🎯 SUBMISSION ENTRY: submitExamResult called at", new Date().toISOString());
+  // console.log("📦 SUBMISSION DATA:", {
+  //   studentId: examData?.studentId,
+  //   examId: examData?.examId,
+  //   hasClientEvaluation: !!examData?.clientEvaluationResult,
+  //   hasProgressiveResults: !!examData?.progressiveResults,
+  //   isPreComputed: !!examData?.isPreComputed,
+  //   answersCount: examData?.answers?.length || 0
+  // });
   
   // Wrap entire submission logic with retry mechanism for maximum reliability
   return await retryExamSubmission(async (data) => {
@@ -1340,7 +1342,7 @@ async function performPreTransactionValidations(examData) {
   if (clientEvaluationResult) {
     finalScore = clientEvaluationResult.finalScore || clientEvaluationResult.score || 0;
     totalMarks = clientEvaluationResult.totalMarks || exam.totalMarks || 0;
-    questionAnalysis = clientEvaluationResult.questionAnalysis || [];
+    questionAnalysis = JSON.parse(JSON.stringify(clientEvaluationResult.questionAnalysis || []));
     subjectPerformance = clientEvaluationResult.subjectPerformance || [];
     statistics = {
       correctAnswers: clientEvaluationResult.correctAnswers || 0,
@@ -1645,7 +1647,7 @@ async function processDirectClientStorage(examData) {
       // Client evaluation engine results
       finalScore = clientEvaluationResult.finalScore || clientEvaluationResult.score || 0;
       totalMarks = clientEvaluationResult.totalMarks || exam.totalMarks || 0;
-      questionAnalysis = clientEvaluationResult.questionAnalysis || [];
+      questionAnalysis = JSON.parse(JSON.stringify(clientEvaluationResult.questionAnalysis || []));
       subjectPerformance = clientEvaluationResult.subjectPerformance || [];
       statistics = {
         correctAnswers: clientEvaluationResult.correctAnswers || 0,
@@ -1790,7 +1792,7 @@ export async function submitExamResultInternal(examData) {
     }
 
     // 2. Fetch exam details and check attempt limit
-    const exam = await Exam.findById(examId).populate("examQuestions");
+    const exam = await Exam.findById(examId).populate("examQuestions").lean()
     if (!exam) {
       return {
         success: false,
@@ -1799,7 +1801,7 @@ export async function submitExamResultInternal(examData) {
     }
 
     // Fetch student details with college information
-    const student = await Student.findById(studentId).populate('college');
+    const student = await Student.findById(studentId).populate('college').lean()
     if (!student) {
       return {
         success: false,
@@ -1934,7 +1936,7 @@ export async function submitExamResultInternal(examData) {
         unattempted++;
         const correctAnswer = question.isMultipleAnswer ? question.multipleAnswer : question.answer;
         questionAnalysis.push({
-          questionId: question._id,
+          questionId: question._id.toString(),
           status: "unattempted",
           marks: 0,
           userAnswer: null,
@@ -2004,7 +2006,7 @@ export async function submitExamResultInternal(examData) {
         
         finalScore += marksAwarded;
         questionAnalysis.push({
-          questionId: question._id,
+          questionId: question._id.toString(),
           status: status,
           marks: marksAwarded,
           userAnswer: normalizedUserAnswer,
@@ -2026,7 +2028,7 @@ export async function submitExamResultInternal(examData) {
           finalScore += adminPositiveMarks;
           correctAnswersCount++;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: "correct",
             marks: adminPositiveMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,
@@ -2041,7 +2043,7 @@ export async function submitExamResultInternal(examData) {
           finalScore -= adminNegativeMarks;
           incorrectAnswers++;
           questionAnalysis.push({
-            questionId: question._id,
+            questionId: question._id.toString(),
             status: "incorrect",
             marks: -adminNegativeMarks,
             userAnswer: evaluationResult.details?.userValue || userAnswer,
@@ -2286,7 +2288,7 @@ export async function submitExamResultInternal(examData) {
       timeTaken,
       completedAt: examResult.completedAt,
       warnings, // Include warnings in the result
-      questionAnalysis, // Include questionAnalysis in immediate response
+      questionAnalysis: JSON.parse(JSON.stringify(questionAnalysis)), // Include questionAnalysis in immediate response
       negativeMarkingRule: {
         negativeMarks: examNegativeMarkingRule.negativeMarks,
         description: "Question-specific rules applied",
@@ -2385,8 +2387,8 @@ export async function getExamQuestions(examId) {
 
     const exam = await Exam.findById(examId)
       .populate("examQuestions")
-      .select("examQuestions examName examDurationMinutes totalMarks negativeMarks stream");
-
+      .select("examQuestions examName examDurationMinutes totalMarks negativeMarks stream")
+      .lean();
     if (!exam) {
       return {
         success: false,
@@ -2533,7 +2535,7 @@ export async function getStudentExamResult(studentId, examId) {
         path: "college",
         select: "collegeName collegeCode collegeLogo collegeLocation"
       }
-    });
+    }).lean();
 
     if (!result) {
       return {
@@ -2543,7 +2545,7 @@ export async function getStudentExamResult(studentId, examId) {
     }
 
     // Properly serialize result to avoid circular references
-    const resultObj = result.toObject();
+    const resultObj = result;
     
     // Extract college details
     const collegeDetails = resultObj.student?.college ? {
@@ -2555,8 +2557,8 @@ export async function getStudentExamResult(studentId, examId) {
 
     
     const cleanResult = {
-      _id: resultObj._id,
-      exam: resultObj.exam,
+      _id: JSON.parse(JSON.stringify(resultObj._id)),
+      exam: JSON.parse(JSON.stringify(resultObj.exam)),
       examName: resultObj.exam.examName,
       examSubject: resultObj.exam.examSubject,
       stream: resultObj.exam.stream,
@@ -2568,14 +2570,14 @@ export async function getStudentExamResult(studentId, examId) {
       completedAt: resultObj.completedAt,
       isOfflineSubmission: resultObj.isOfflineSubmission,
       statistics: resultObj.statistics,
-      questionAnalysis: resultObj.questionAnalysis,
+      questionAnalysis: JSON.parse(JSON.stringify(resultObj.questionAnalysis)),
       negativeMarkingInfo: resultObj.negativeMarkingInfo ? {
         negativeMarks: resultObj.negativeMarkingInfo.negativeMarks,
         ruleDescription: resultObj.negativeMarkingInfo.ruleDescription,
         ruleSource: resultObj.negativeMarkingInfo.ruleSource,
         ruleUsed: null, // College-specific rules no longer exist
         defaultRuleUsed: resultObj.negativeMarkingInfo.defaultRuleUsed ? {
-          _id: resultObj.negativeMarkingInfo.defaultRuleUsed._id,
+          _id: JSON.parse(JSON.stringify(resultObj.negativeMarkingInfo.defaultRuleUsed._id)),
           negativeMarks: resultObj.negativeMarkingInfo.defaultRuleUsed.negativeMarks,
           description: resultObj.negativeMarkingInfo.defaultRuleUsed.description,
           stream: resultObj.negativeMarkingInfo.defaultRuleUsed.stream,
@@ -2590,7 +2592,7 @@ export async function getStudentExamResult(studentId, examId) {
     return {
       success: true,
       message: "Result fetched successfully",
-      result: cleanResult,
+      result: JSON.parse(JSON.stringify(cleanResult)),
     };
   } catch (error) {
     console.error("Error fetching student exam result:", error);
@@ -2700,14 +2702,14 @@ export async function getAllExamAttempts(studentId, examId) {
     // Simple serialization without population for now
     const cleanResults = results.map((result) => {
       return {
-        _id: result._id,
+        _id: JSON.parse(JSON.stringify(result._id)),
         score: result.score,
         totalMarks: result.totalMarks,
         percentage: ((result.score / result.totalMarks) * 100).toFixed(2),
         timeTaken: result.timeTaken,
         completedAt: result.completedAt,
         statistics: result.statistics,
-        questionAnalysis: result.questionAnalysis,
+        questionAnalysis: JSON.parse(JSON.stringify(result.questionAnalysis)),
         attemptNumber: result.attemptNumber,
         negativeMarkingInfo: result.negativeMarkingInfo ? {
           negativeMarks: result.negativeMarkingInfo.negativeMarks,
@@ -2751,7 +2753,7 @@ export async function getEligibleExamsForStudent(studentId) {
     const enrollments = await EnrolledStudent.find({
       student: studentId,
       status: 'approved'
-    }).populate('college');
+    }).populate('college').lean();
 
     if (!enrollments || enrollments.length === 0) {
       return {
@@ -2774,7 +2776,7 @@ export async function getEligibleExamsForStudent(studentId) {
         { examStatus: 'active', status: { $in: ['scheduled', 'completed', 'cancelled'] } },
         { examStatus: 'inactive', status: { $in: ['scheduled', 'completed', 'cancelled'] } }
       ]
-    }).populate('college').populate('examQuestions');
+    }).populate('college').populate('examQuestions').lean()
 
     // 5. Check eligibility for each exam
     const eligibleExams = [];
@@ -2832,7 +2834,7 @@ export async function getEligibleExamsForStudent(studentId) {
         const canAttempt = previousAttempts < maxAttempts && exam.examStatus === 'active' && hasQuestions;
 
         eligibleExams.push({
-          _id: exam._id,
+          _id: JSON.parse(JSON.stringify(exam._id)),
           examName: exam.examName,
           examInstructions: exam.examInstructions,
           examDurationMinutes: getEffectiveExamDuration(exam),
@@ -2848,7 +2850,7 @@ export async function getEligibleExamsForStudent(studentId) {
           examStatus: exam.examStatus, // Add exam status
           status: exam.status, // Add exam lifecycle status
           college: {
-            _id: exam.college._id,
+            _id: JSON.parse(JSON.stringify(exam.college._id)),
             collegeName: exam.college.collegeName,
             collegeCode: exam.college.collegeCode,
             collegeLogo: exam.college.collegeLogo,
@@ -2891,7 +2893,7 @@ export async function getEligibleExamsForStudent(studentId) {
       totalExams: eligibleExams.length,
       enrollments: enrollments.map(enr => ({
         college: {
-          _id: enr.college._id,
+          _id: JSON.parse(JSON.stringify(enr.college._id)),
           collegeName: enr.college.collegeName,
           collegeCode: enr.college.collegeCode,
           collegeLogo: enr.college.collegeLogo,
@@ -3042,7 +3044,7 @@ export async function getExamForProgressiveComputation(examId, studentId) {
     return {
       success: true,
       exam: {
-        ...exam,
+        ...JSON.parse(JSON.stringify(exam)),
         _id: exam._id.toString()
       },
       questions: questionsWithAnswers,

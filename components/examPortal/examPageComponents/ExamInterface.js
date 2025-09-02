@@ -11,6 +11,7 @@ import ExamNavigation from "./examInterfaceComponents/ExamNavigation"
 import ExamStartScreen from "./examInterfaceComponents/ExamStartScreen"
 import ContinueExamPrompt from "./examInterfaceComponents/ContinueExamPrompt"
 import ConfirmSubmitModal from "./examInterfaceComponents/ConfirmSubmitModal"
+import { useTimerManagement } from  "../../../hooks/exam/useTimerManagement"
 
 // CLIENT-SIDE EVALUATION ENGINE: Import new evaluation system
 import { ClientEvaluation } from "../../../lib/progressive-scoring/ClientEvaluationEngine"
@@ -42,7 +43,6 @@ import { handleProgressiveSubmission } from "../../../server_actions/actions/exa
 import { getAtomicSubmissionManager, SUBMISSION_TYPES } from "../../../utils/atomicSubmissionManager"
 
 // CUSTOM HOOKS: Import refactored exam management hooks
-import { useTimerManagement } from "../../../hooks/exam/useTimerManagement"
 import { useExamState } from "../../../hooks/exam/useExamState"
 import { useQuestionNavigation } from "../../../hooks/exam/useQuestionNavigation"
 import { useSubmissionLogic } from "../../../hooks/exam/useSubmissionLogic"
@@ -943,8 +943,6 @@ export default function ExamInterface({ exam, questions, student, onComplete, is
         
         toast.success("Exam started! Good luck!");
     };
-
-    // Timer logic moved to ExamTimer component
 
     // Cleanup manual selection timeout on unmount
     useEffect(() => {

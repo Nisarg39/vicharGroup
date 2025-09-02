@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react';
 import JoinCollege from './examViewComponents/JoinCollege';
-import MyTestSeries from './examViewComponents/MyTestSeries';
+import MyTestSeriesOptimized from './examViewComponents/MyTestSeriesOptimized';
 
 export default function ExamView() {
     const [activeSection, setActiveSection] = useState('joinCollege');
@@ -52,7 +52,7 @@ export default function ExamView() {
                 <div className="transform transition-all duration-500 hover:scale-[1.01]">
                     <div className="bg-white/90 backdrop-blur-xl p-3 sm:p-6 lg:p-8 rounded-3xl shadow-xl border border-gray-100/50 hover:shadow-2xl transition-all duration-500 hover:bg-white/95">
                         {activeSection === 'joinCollege' && <JoinCollege />}
-                        {activeSection === 'purchased' && <MyTestSeries />}
+                        {activeSection === 'purchased' && <MyTestSeriesOptimized />}
                     </div>
                 </div>
 
