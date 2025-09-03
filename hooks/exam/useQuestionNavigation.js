@@ -204,6 +204,40 @@ export const useQuestionNavigation = (exam, questions, examState, timerData = nu
     }, [getAllSubjects, isSubjectLocked])
     
     /**
+     * Find alternative navigation paths when current path is blocked
+     * Returns list of available subjects that can be navigated to
+     */
+    const getAlternativeNavigationPaths = useCallback(() => {
+        const alternatives = []
+        
+        allSubjects.forEach(subject => {
+            if (subject !== selectedSubject && !isSubjectLocked(subject)) {
+                alternatives.push(subject)
+            }
+        })
+        
+        return alternatives
+    }, [allSubjects, selectedSubject, isSubjectLocked])
+    
+    /**
+     * Provide navigation suggestions when blocked
+     * Shows toast with alternative subjects that can be accessed
+     */
+    const showNavigationAlternatives = useCallback(() => {
+        const alternatives = getAlternativeNavigationPaths()
+        
+        if (alternatives.length > 0) {
+            const alternativeList = alternatives.slice(0, 3).join(', ') // Show max 3 alternatives
+            const moreCount = alternatives.length > 3 ? ` (+${alternatives.length - 3} more)` : ''
+            toast.success(`Alternative subjects available: ${alternativeList}${moreCount}. Click on subject tabs to navigate.`, {
+                duration: 5000
+            })
+        } else {
+            toast.error('No alternative subjects are currently available.')
+        }
+    }, [getAlternativeNavigationPaths])
+    
+    /**
      * Get questions for current selected subject
      * Returns filtered and sorted questions for the subject
      */
@@ -274,7 +308,7 @@ export const useQuestionNavigation = (exam, questions, examState, timerData = nu
     
     /**
      * Navigate to previous question
-     * Handles both within-subject and cross-subject navigation
+     * Handles both within-subject and cross-subject navigation with subject lock validation
      */
     const handlePrevious = useCallback(() => {
         if (currentQuestionIndex > 0) {
@@ -284,21 +318,49 @@ export const useQuestionNavigation = (exam, questions, examState, timerData = nu
             // At first question of current subject, check if there's a previous subject
             const currentSubjectIndex = allSubjects.indexOf(selectedSubject)
             if (currentSubjectIndex > 0) {
-                const prevSubject = allSubjects[currentSubjectIndex - 1]
-                const prevSubjectQuestions = (questions || []).filter(q => q.subject === prevSubject)
+                // Find the nearest unlocked previous subject
+                let targetSubjectIndex = currentSubjectIndex - 1
+                let foundUnlockedSubject = false
                 
-                // Switch to previous subject and go to its last question
-                setSelectedSubject(prevSubject)
-                setCurrentQuestionIndex(prevSubjectQuestions.length - 1)
+                // Search backwards for an unlocked subject
+                while (targetSubjectIndex >= 0) {
+                    const targetSubject = allSubjects[targetSubjectIndex]
+                    
+                    if (!isSubjectLocked(targetSubject)) {
+                        const prevSubjectQuestions = (questions || []).filter(q => q.subject === targetSubject)
+                        
+                        // Switch to unlocked previous subject and go to its last question
+                        setSelectedSubject(targetSubject)
+                        setCurrentQuestionIndex(prevSubjectQuestions.length - 1)
+                        
+                        console.log('🔙 Navigated to previous unlocked subject:', targetSubject)
+                        foundUnlockedSubject = true
+                        break
+                    }
+                    
+                    targetSubjectIndex--
+                }
                 
-                console.log('🔙 Navigated to previous subject:', prevSubject)
+                // If no unlocked previous subject found, show feedback with alternatives
+                if (!foundUnlockedSubject) {
+                    const immediateNextSubject = allSubjects[currentSubjectIndex - 1]
+                    if (isSubjectLocked(immediateNextSubject)) {
+                        console.log('⚠️ Cannot navigate to previous subject - subject is locked:', immediateNextSubject)
+                        toast.error(`Cannot navigate to ${immediateNextSubject} - subject is locked. Complete the current subject or wait for the unlock time.`)
+                        
+                        // Show alternative navigation options after a brief delay
+                        setTimeout(() => {
+                            showNavigationAlternatives()
+                        }, 1500)
+                    }
+                }
             }
         }
-    }, [currentQuestionIndex, selectedSubject, allSubjects, questions, setCurrentQuestionIndex])
+    }, [currentQuestionIndex, selectedSubject, allSubjects, questions, setCurrentQuestionIndex, isSubjectLocked, showNavigationAlternatives])
     
     /**
      * Navigate to next question
-     * Handles both within-subject and cross-subject navigation
+     * Handles both within-subject and cross-subject navigation with subject lock validation
      */
     const handleNext = useCallback(() => {
         const totalSubjectQuestions = subjectQuestions ? subjectQuestions.length : 0
@@ -310,15 +372,53 @@ export const useQuestionNavigation = (exam, questions, examState, timerData = nu
             // At last question of current subject, check if there's a next subject
             const currentSubjectIndex = allSubjects.indexOf(selectedSubject)
             if (currentSubjectIndex < allSubjects.length - 1) {
-                // Move to first question of next subject
-                const nextSubject = allSubjects[currentSubjectIndex + 1]
-                setSelectedSubject(nextSubject)
-                setCurrentQuestionIndex(0)
+                // Find the nearest unlocked next subject
+                let targetSubjectIndex = currentSubjectIndex + 1
+                let foundUnlockedSubject = false
                 
-                console.log('⏭️ Navigated to next subject:', nextSubject)
+                // Search forwards for an unlocked subject
+                while (targetSubjectIndex < allSubjects.length) {
+                    const targetSubject = allSubjects[targetSubjectIndex]
+                    
+                    if (!isSubjectLocked(targetSubject)) {
+                        // Move to first question of unlocked next subject
+                        setSelectedSubject(targetSubject)
+                        setCurrentQuestionIndex(0)
+                        
+                        console.log('⏭️ Navigated to next unlocked subject:', targetSubject)
+                        foundUnlockedSubject = true
+                        break
+                    }
+                    
+                    targetSubjectIndex++
+                }
+                
+                // If no unlocked next subject found, show feedback with alternatives
+                if (!foundUnlockedSubject) {
+                    const immediateNextSubject = allSubjects[currentSubjectIndex + 1]
+                    if (isSubjectLocked(immediateNextSubject)) {
+                        console.log('⚠️ Cannot navigate to next subject - subject is locked:', immediateNextSubject)
+                        
+                        // Get subject access info for better user feedback
+                        const subjectAccess = subjectUnlockSchedule.subjectAccess?.[immediateNextSubject]
+                        const unlockTime = subjectAccess?.unlockTime
+                        
+                        if (unlockTime) {
+                            const unlockTimeFormatted = new Date(unlockTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            toast.error(`${immediateNextSubject} is locked and will unlock at ${unlockTimeFormatted}. Please wait or navigate to another available subject.`)
+                        } else {
+                            toast.error(`Cannot navigate to ${immediateNextSubject} - subject is locked. Complete the current subject or wait for the unlock time.`)
+                        }
+                        
+                        // Show alternative navigation options after a brief delay
+                        setTimeout(() => {
+                            showNavigationAlternatives()
+                        }, 1500)
+                    }
+                }
             }
         }
-    }, [currentQuestionIndex, subjectQuestions, selectedSubject, allSubjects, setCurrentQuestionIndex])
+    }, [currentQuestionIndex, subjectQuestions, selectedSubject, allSubjects, setCurrentQuestionIndex, isSubjectLocked, subjectUnlockSchedule, showNavigationAlternatives])
     
     /**
      * Navigate to specific question by global index
@@ -519,6 +619,8 @@ export const useQuestionNavigation = (exam, questions, examState, timerData = nu
         subjectUnlockSchedule,
         isSubjectLocked,
         getFirstAvailableSubject,
+        getAlternativeNavigationPaths,
+        showNavigationAlternatives,
         
         // Computed values
         currentQuestion: getCurrentQuestion(),
