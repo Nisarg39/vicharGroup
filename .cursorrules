@@ -1,0 +1,110 @@
+# Cursor Rules for VicharGroup React/Next.js Project
+
+## Project Overview
+This is a React/Next.js educational platform with exam portal, payment system, and admin features.
+
+## Tech Stack
+- **Framework**: Next.js 14.2.5 with App Router
+- **UI Library**: shadcn/ui with Radix UI primitives
+- **Styling**: Tailwind CSS
+- **State Management**: Redux Toolkit
+- **Database**: MongoDB with Mongoose
+- **Authentication**: NextAuth.js
+- **Payment**: Razorpay
+- **Editor**: SunEditor for rich text
+
+## Code Standards
+
+### File Structure
+- Use relative imports for components (e.g., `../components/Button`)
+- Use absolute imports with `@/` prefix only for src files when needed
+- Follow Next.js App Router conventions
+- Keep components in `/components` directory
+- Server actions in `/server_actions` directory
+- Use shadcn/ui component aliases: `@/components/ui`, `@/lib/utils`, `@/hooks`
+
+### Import Patterns
+- Components: `../components/ComponentName` or `@/components/ui/ComponentName`
+- Utils: `@/lib/utils` (for shadcn utilities)
+- Hooks: `@/hooks/HookName` or `../hooks/HookName`
+- Server actions: `../server_actions/actionName`
+
+### React/Next.js Best Practices
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use Next.js Image component for images
+- Follow App Router patterns (page.js, layout.js, loading.js)
+- Use TypeScript for new files when possible
+- Implement proper loading states and error handling
+
+### UI/Component Guidelines
+- Use shadcn/ui components as the primary UI library
+- Follow the design system in `components/DesignSystemContext.md`
+- Use Tailwind CSS for styling
+- Implement responsive design
+- Use Radix UI primitives for complex components
+
+### State Management
+- Use Redux Toolkit for global state
+- Use React hooks for local component state
+- Implement proper data fetching patterns
+
+### Database & API
+- Use Mongoose for MongoDB operations
+- Implement proper error handling for API routes
+- Use server actions for form submissions
+- Follow RESTful API conventions
+
+### Security
+- Implement proper authentication checks
+- Validate all user inputs
+- Use environment variables for sensitive data
+- Implement proper CORS policies
+
+## Code Quality
+- Write clean, readable code
+- Add proper comments for complex logic
+- Implement proper error handling
+- Use meaningful variable and function names
+- Follow DRY principles
+
+## Performance
+- Implement code splitting
+- Use dynamic imports for heavy components
+- Optimize images and assets
+- Implement proper caching strategies
+- Use React.memo for expensive components
+
+## Testing
+- Write unit tests for utility functions
+- Test critical user flows
+- Implement proper error scenarios
+
+## File Naming
+- Use PascalCase for components
+- Use camelCase for utilities and hooks
+- Use kebab-case for pages and routes
+- Use descriptive names that indicate purpose
+
+## Development Workflow
+- Use `npm run dev` for development server
+- Use `npm run build` for production build
+- Use `npm run start` for production server
+- Use `npm run lint` for code linting
+- Use `npm install` for dependency management
+
+## Git Commands (Allowed)
+- `git status` - Check repository status
+- `git add` - Stage changes
+- `git commit` - Commit changes
+- `git diff` - View changes
+- `ls`, `find`, `grep`, `cat` - File operations
+- `mkdir`, `rm`, `cd` - Directory operations
+
+## UI Design Patterns
+- Follow Neobrutalism design principles
+- Maintain current border radius and colors
+- Add hover animations according to design style
+- Use floating and animating elements with 50% opacity
+- Ensure images blend well with card design
+- Keep border radius consistent across elements

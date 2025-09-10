@@ -471,6 +471,18 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     }
   }, [tabValue, formData]);
 
+  // Get watermark text based on current tab
+  const getCurrentWatermarkText = useMemo(() => {
+    switch (tabValue) {
+      case 0: return 'Question Editor';
+      case 1: return 'Option A Editor';
+      case 2: return 'Option B Editor';
+      case 3: return 'Option C Editor';
+      case 4: return 'Option D Editor';
+      default: return 'Editor';
+    }
+  }, [tabValue]);
+
   // Memoize the modules configuration to prevent re-creation on every render
   const modules = useMemo(() => {
     const baseModules = {
@@ -909,26 +921,36 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     saveCurrentEditorContent();
   }, [tabValue, saveCurrentEditorContent]);
 
-  // Keyboard shortcut handler for tab switching
+  // Keyboard shortcut handler for tab switching and formula editor
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Only trigger on Ctrl+Arrow or Ctrl+Number
+      // Only trigger on Ctrl+Number
       if (e.ctrlKey) {
-        // Save current content before switching
-        saveCurrentEditorContent();
-        
-        // Ctrl+ArrowLeft/ArrowRight for previous/next tab
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          setTabValue((prev) => (prev > 0 ? prev - 1 : 0));
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          setTabValue((prev) => (prev < 5 ? prev + 1 : 5));
-        }
         // Ctrl+1-6 for direct tab access (1=Question, 2=OptionA, ..., 6=Answer)
         if (e.key >= '1' && e.key <= '6') {
           e.preventDefault();
+          // Save current content before switching
+          saveCurrentEditorContent();
           setTabValue(Number(e.key) - 1);
+        }
+      }
+      
+      // Alt+4 for formula editor
+      if (e.altKey && e.key === '4') {
+        e.preventDefault();
+        if (quillRef.current && tabValue !== 5) { // Don't trigger on Answer tab
+          const quill = quillRef.current.getEditor();
+          const toolbar = quill.getModule('toolbar');
+          // Trigger formula handler
+          if (toolbar.handlers && toolbar.handlers.formula) {
+            toolbar.handlers.formula.call(toolbar);
+          } else {
+            // Fallback: simulate clicking the formula button
+            const formulaButton = document.querySelector('.ql-formula');
+            if (formulaButton) {
+              formulaButton.click();
+            }
+          }
         }
       }
     };
@@ -936,7 +958,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [saveCurrentEditorContent]);
+  }, [saveCurrentEditorContent, tabValue]);
 
   return (
     <div className="w-full bg-white rounded-xl shadow-lg overflow-hidden">
@@ -1083,7 +1105,7 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
         <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/></svg>
           <span>
-            Use <span className="font-medium text-gray-600">Ctrl + 1-6</span> to switch tabs directly, or <span className="font-medium text-gray-600">Ctrl + ←/→</span> to move between tabs.
+            Use <span className="font-medium text-gray-600">Ctrl + 1-6</span> to switch tabs directly, <span className="font-medium text-gray-600">Alt + 4</span> for formula editor.
           </span>
         </div>
       </div>
@@ -1105,6 +1127,24 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
           .ql-container .ql-tooltip {
             max-width: 95vw;
             word-break: break-word;
+          }
+          /* Watermark styling */
+          .quill-editor-with-watermark .ql-editor {
+            position: relative;
+          }
+          .quill-editor-with-watermark .ql-editor::after {
+            content: var(--watermark-text);
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            transform: rotate(-45deg);
+            font-size: 18px;
+            font-weight: bold;
+            color: rgba(169, 169, 169, 0.12);
+            pointer-events: none;
+            z-index: 1;
+            white-space: nowrap;
+            user-select: none;
           }
         `}</style>
         {tabValue === 5 ? (
@@ -1226,14 +1266,17 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
           </div>
         ) : (
           isQuillReady ? (
-            <div key={`quill-${tabValue}`} className="min-h-[300px]">
+            <div 
+              key={`quill-${tabValue}`} 
+              className="min-h-[300px] quill-editor-with-watermark" 
+              style={{'--watermark-text': `"${getCurrentWatermarkText}"`}}
+            >
               <ReactQuill
                 ref={quillRef}
                 value={getCurrentEditorValue}
                 onChange={handleQuillChange}
                 modules={modules}
                 theme="snow"
-                placeholder="Write your content here..."
                 preserveWhitespace={true}
                 style={{height: '350px'}}
                 className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto [&_.ql-editor_img]:cursor-pointer [&_.ql-editor_img]:border-2 [&_.ql-editor_img]:border-dashed [&_.ql-editor_img]:border-transparent hover:[&_.ql-editor_img]:border-blue-300 transition-all duration-200"

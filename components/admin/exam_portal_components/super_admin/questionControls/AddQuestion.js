@@ -1146,6 +1146,37 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
             white-space: nowrap;
             user-select: none;
           }
+          /* Fix editor size to prevent zoom scaling */
+          .quill-editor-with-watermark {
+            width: 100% !important;
+            height: 350px !important;
+            min-height: 350px !important;
+            max-height: 350px !important;
+            transform: scale(1) !important;
+            transform-origin: top left !important;
+          }
+          .quill-editor-with-watermark .ql-container {
+            width: 100% !important;
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
+            transform: scale(1) !important;
+            transform-origin: top left !important;
+          }
+          .quill-editor-with-watermark .ql-editor {
+            width: 100% !important;
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
+            transform: scale(1) !important;
+            transform-origin: top left !important;
+            overflow-y: auto !important;
+          }
+          /* Prevent toolbar from scaling */
+          .quill-editor-with-watermark .ql-toolbar {
+            transform: scale(1) !important;
+            transform-origin: top left !important;
+          }
         `}</style>
         {tabValue === 5 ? (
           <div className="bg-white rounded-xl shadow-sm p-4 space-y-4">
@@ -1278,8 +1309,13 @@ const AddQuestion = ({ subjects, questionToEdit, onClose, onUpdate }) => {
                 modules={modules}
                 theme="snow"
                 preserveWhitespace={true}
-                style={{height: '350px'}}
-                className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto [&_.ql-editor_img]:cursor-pointer [&_.ql-editor_img]:border-2 [&_.ql-editor_img]:border-dashed [&_.ql-editor_img]:border-transparent hover:[&_.ql-editor_img]:border-blue-300 transition-all duration-200"
+                style={{
+                  height: '350px',
+                  width: '100%',
+                  transform: 'scale(1)',
+                  transformOrigin: 'top left'
+                }}
+                className="bg-white [&_.ql-container]:!h-[300px] [&_.ql-container]:!w-full [&_.ql-editor]:!h-[300px] [&_.ql-editor]:!w-full [&_.ql-editor]:!min-h-[300px] [&_.ql-editor]:!max-h-[300px] [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto [&_.ql-editor_img]:cursor-pointer [&_.ql-editor_img]:border-2 [&_.ql-editor_img]:border-dashed [&_.ql-editor_img]:border-transparent hover:[&_.ql-editor_img]:border-blue-300 transition-all duration-200"
               />
             </div>
           ) : (

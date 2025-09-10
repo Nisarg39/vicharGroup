@@ -50,11 +50,11 @@ export const connectDB = async () => {
        });
 
        isConnected = true
-       console.log("✅ DATABASE: MongoDB connection established successfully");
+    //    console.log("✅ DATABASE: MongoDB connection established successfully");
 
        // Monitor connection pool (useful for debugging)
        mongoose.connection.on('connected', () => {
-           console.log('✅ MongoDB connected successfully - Database:', mongoose.connection.db.databaseName);
+        //    console.log('✅ MongoDB connected successfully - Database:', mongoose.connection.db.databaseName);
        });
        
        mongoose.connection.on('error', (err) => {
