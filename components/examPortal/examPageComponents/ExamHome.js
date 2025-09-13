@@ -8,7 +8,7 @@ import { getStudentDetails } from "../../../server_actions/actions/studentAction
 import { studentDetails } from "../../../features/login/LoginSlice"
 import { checkExamEligibility, submitExamResult, getStudentExamResult, getAllExamAttempts, clearExamCacheData } from "../../../server_actions/actions/examController/studentExamActions"
 
-// Import sub-components
+// Import sub-components of exam portal
 import LoadingSpinner from "./examHomeComponents/LoadingSpinner"
 import ContinueExamPrompt from "./examHomeComponents/ContinueExamPrompt"
 import ExamHeader from "./examHomeComponents/ExamHeader"
